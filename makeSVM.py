@@ -167,7 +167,7 @@ for i in signifTVals:
     # Violin plots
     ax = fig.add_subplot(2,3,n)
     ax = sns.violinplot(data=df_feat_i, order=["Epileptic", "Healthy"])
-    plt.xlabel('Individual')
+    plt.xlabel('Diagnosis')
     ylabel = 'Feature ' + str(i)
     plt.ylabel(ylabel)
 
