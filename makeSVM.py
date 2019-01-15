@@ -9,7 +9,7 @@ import sklearn
 from scipy.stats import stats,ttest_ind
 
 # Import and store the feature matrix in the variable tsData
-path = '/Users/AV/Desktop/FeatureMatrixData/featureMatrixPy.txt'
+path = 'featureMatrixPy.txt'
 tsData = pd.read_csv(path,header=None);
 # print(tsData)
 
@@ -20,8 +20,8 @@ tsData = pd.read_csv(path,header=None);
 
 # Create a 'target' column where rows 0-99 have the value 1 (indicating a seizure)
 # and rows 100-199 have the value 0 (indicating no seizure)
-zeros = np.zeros((100), dtype=int)
-ones = np.ones((100), dtype=int)
+zeros = np.zeros(100, dtype=int)
+ones = np.ones(100, dtype=int)
 targetCol = np.hstack((ones, zeros))
 targetCol = np.reshape(targetCol,(200,1))
 
