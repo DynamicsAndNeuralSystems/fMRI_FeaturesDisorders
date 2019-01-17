@@ -64,7 +64,10 @@ def giveMeSmallFeatMat(element,roi):
 
     return smallFeatMat
 #-------------------------------------------------------------------------------
-''' Enter function description here '''
+''' This function takes the index of an element in the cell 'roiTS' as an input
+    and returns a matrix composed of rows of 1 x 22 feature vectors for every
+    subject for each ROI in the specified element
+    Note: The number of ROI varies from element to element '''
 
 def giveMeBigFeatMat(element):
 
@@ -85,6 +88,6 @@ def giveMeBigFeatMat(element):
 #-------------------------------------------------------------------------------
 
 # Testing...
-print(giveMeBigFeatMat(2).shape)
+x = giveMeBigFeatMat(2)
 
-# np.savetxt('featureMatrixPy.txt',x,delimiter=',')
+# np.savetxt('element2.txt',x,delimiter=',')
