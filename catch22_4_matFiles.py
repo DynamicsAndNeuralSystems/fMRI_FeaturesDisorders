@@ -9,18 +9,17 @@ path = '/Users/AV/Dropbox/UCLA/'
 TS_path_names = sorted(glob.glob(path + '*.mat'))
 
 #-------------------------------------------------------------------------------
-''' This function extracts data from any element of 'roiTS' within the cfg
+def gettsData(path,element):
+    ''' This function extracts data from any element of 'roiTS' within the cfg
     structure in the .mat file '''
 
-def gettsData(path,element):
     matFile = sio.loadmat(path)
     tsData = matFile['cfg'][0][0]['roiTS'][0][element]
     return tsData
 #-------------------------------------------------------------------------------
-''' This function returns a catch-22 feature vector from an input time-series
-    list '''
-
 def giveMeFeatureVector(tsData):
+    ''' This function returns a catch-22 feature vector from an input time-series
+    list '''
 
     features = dir(catch22)
     features = [item for item in features if not '__' in item]
@@ -32,12 +31,11 @@ def giveMeFeatureVector(tsData):
 
     return featureVector
 #-------------------------------------------------------------------------------
-''' This function takes any element of the 'roiTS' cell from each of the
+def giveMeSmallFeatMat(element,roi):
+    ''' This function takes any element of the 'roiTS' cell from each of the
     subject data files and an input ROI (a specified column of the matrix),
     converts these columns into a list, processes them using the catch22 module
     and stores them in a variable that is returned, smallFeatMat '''
-
-def giveMeSmallFeatMat(element,roi):
 
     # Initialise indices
     i = 0
@@ -64,12 +62,13 @@ def giveMeSmallFeatMat(element,roi):
 
     return smallFeatMat
 #-------------------------------------------------------------------------------
-''' This function takes the index of an element in the cell 'roiTS' as an input
+def giveMeBigFeatMat(element):
+    ''' This function takes the index of an element in the cell 'roiTS' as an input
     and returns a matrix composed of rows of 1 x 22 feature vectors for every
     subject for each ROI in the specified element
     Note: The number of ROI varies from element to element '''
 
-def giveMeBigFeatMat(element):
+    element = element-1
 
     # Assuming each of the data files have an indentical structure, use the first
     # element's data as a template to initialise a few variables
@@ -84,10 +83,11 @@ def giveMeBigFeatMat(element):
             smallFeatMat = giveMeSmallFeatMat(element,n)
             bigFeatMat = np.vstack([bigFeatMat,smallFeatMat])
 
-    return bigFeatMat
+    return bigFeatMat, element+1
 #-------------------------------------------------------------------------------
-
 # Testing...
-x = giveMeBigFeatMat(2)
+# Which element of 'roiTS' should be analysed?
+x, element = giveMeBigFeatMat(1)
 
-# np.savetxt('element2.txt',x,delimiter=',')
+# Save file
+np.savetxt('element' + str(element) + '.txt',x,delimiter=',')
