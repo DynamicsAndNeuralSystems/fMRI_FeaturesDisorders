@@ -3,11 +3,11 @@ import scipy.io as sio
 import catch22
 import numpy as np
 
-path = '/Users/AV/Dropbox/UCLA/'
+# Make sure you add that last slash
+path = '/Users/AV/Dropbox/UCLA/cfgData/'
 
 # This will arrange the assigned file type in ALPHABETICAL ORDER
 TS_path_names = sorted(glob.glob(path + '*.mat'))
-
 #-------------------------------------------------------------------------------
 def gettsData(path,element):
     ''' This function extracts data from any element of 'roiTS' within the cfg
