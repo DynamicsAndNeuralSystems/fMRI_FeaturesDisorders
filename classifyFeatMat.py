@@ -1,189 +1,174 @@
 #!/usr/local/bin/python3
-import sys
+
+# In[1]:
+
+# Setting up
+
+# Import required modules
+import glob
+import scipy.io as sio
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-plt.style.use('classic')
+plt.style.use('ggplot')
 import seaborn as sns
 import sklearn
-from scipy.stats import stats,ttest_ind
+import analysisFunctions as af
+
+'''
+Run below code (commented out) in a for loop to generate the fdArray.txt file
+
+# df = pd.DataFrame({'fd': [], 'Total': [], 'SCZ:Control': [], 'AvgRegAcc': [], 'AvgFeatAcc': []})
+#
+# # Make fd array
+# fdArray = np.linspace(0.2,0.12,9)
+# print(fdArray)
+#
+# for threshold_fd in fdArray:
+'''
+
+threshold_fd = 0.16 # Need to remove this if running the code above
+
+# Store the path of the folder containing the data
+# Alternatively, could use user input -
+# path = input('Enter the file path of the data: ')
+path = '/Users/AV/Dropbox/UCLA/cfgData/'
+
+# Need to alphabetise and store the filenames in the path
+TS_path_names = sorted(glob.glob(path + '*.mat'))
+
+# In[2]:
+
+TS_path_names = af.removePathNames(threshold_fd, TS_path_names)
+
+# In[3]:
+
+# Reading in the feature matrix data from the .txt file
 
 # Import and store the feature matrix in the variable tsData
-path = 'featureMatrixPy.txt'
-tsData = pd.read_csv(path,header=None);
-# print(tsData)
+filePath = '/Users/AV/Desktop/FeatureMatrixData/element1.txt'
+tsData = pd.read_csv(filePath,header=None);
 
-"NEED TO GENERALISE FOR ANY CASE"
-[rows, cols] = tsData.shape
+# In[4]:
 
-# bool = input('Is the first half of the data set the control set? y/n ')
+# Creating the target column
 
-# Create a 'target' column where rows 0-99 have the value 1 (indicating a seizure)
-# and rows 100-199 have the value 0 (indicating no seizure)
-zeros = np.zeros(100, dtype=int)
-ones = np.ones(100, dtype=int)
-targetCol = np.hstack((ones, zeros))
-targetCol = np.reshape(targetCol,(200,1))
+targetCol = af.getTargetCol(TS_path_names)
 
-# Need to z-score the feature matrix and save it back into the variable, tsData
-# We are looking down each column and calculating the z-score for each feature
+Control = (targetCol == 0).sum()
+print('Control = ' + str(Control))
+SCZ = (targetCol == 1).sum()
+print('SCZ = ' + str(SCZ))
+print('')
+Total = int(SCZ + Control)
+SCZ2Ctrl = '{0:.2f}'.format(SCZ/Control)
+
+# In[5]:
+
+# ROI selection
+
+# Need to z-score the selection of tsData
 from scipy.stats import zscore
-tsData_zscored = tsData.apply(zscore)
-# print(tsData)
+tsDataSlice, ROI, maxROI = af.getROISlice(TS_path_names, tsData, 1)
+# tsDataSlice_zscored = tsDataSlice.apply(zscore)
 
-# Assign data to variables
-X = tsData_zscored
-y = np.ravel(targetCol)
+# # Assign the data to variables
+# X = tsDataSlice_zscored
+# y = np.ravel(targetCol)
 
-# Split the data into training and test sets
-from sklearn.model_selection import train_test_split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.10)
+# In[6]:
 
-# Import the support vector classifier and find the best fit using the training data
-from sklearn.svm import SVC
-svclassifier = SVC(kernel='linear')
-svclassifier.fit(X_train, y_train)
+# Need to store the data as a 3D feature matrix which will allow access to relevant slices
+# [rows,cols,layers] = i, j, k = 185, 22, ROIs - varies element to element
 
-# Using the SVC derived from fitting to the training set, classify the test set
-# and store this in a variable
-y_pred = svclassifier.predict(X_test)
+featMat3D = np.zeros((len(TS_path_names),22,maxROI))
 
-# Compare the predictions made by the SVC to the correct classifications
-# Display the results using a confusion matrix and the classification accuracy
-from sklearn.metrics import accuracy_score, confusion_matrix
-print(confusion_matrix(y_test, y_pred))
-print('')
-print('The classification accuracy of the SVM for a single random split is ' +
-str(accuracy_score(y_test, y_pred) * 100) + '%')
+# Loop through each slice and store it in the matrix
+for i in range(1, maxROI+1):
+    featMat3D[:,:,i-1] = af.getROISlice(TS_path_names, tsData, i)[0]
 
-# Calculate specificity (true negatives) and sensitivity (true positives)
-confMat = confusion_matrix(y_test, y_pred)
-specificity = (confMat[0,0] / (confMat[0,0] + confMat[1,0])) * 100
-sensitivity = (confMat[1,1] / (confMat[1,1] + confMat[0,1])) * 100
-print('The specificity is ' + str("%.1f" % specificity) + '% and the sensitivity is '
-+ str("%.1f" % sensitivity) + '%')
-print('')
+# In[7]:
 
-"NEED TO CALCULATE THE AVERAGE SPECIFICITY AND SENSITIVITY"
-# Performing a 10-fold validation using cross_val_score
-from sklearn.model_selection import cross_val_score
-scores = cross_val_score(svclassifier, X, y, cv=10) * 100
-scores = scores.astype(int)
+# Perform 10-Fold Cross Validation
 
-# Print scores
-print('10-fold CV scores as a percentage: ' + str(scores))
-print('')
+# Store the function's output as a variable
+# scores = af.get10FoldCVScore(X,y)
 
-avgCVScore = np.mean(scores)
-print('The average 10-fold CV score is ' + str("%.1f" % avgCVScore) + '%')
-print('')
+# # Print scores
+# print('10-fold CV scores as a percentage: ' + str(scores))
+# print('')
+#
+# # Mean 10-fold CV score with an error of 1 std dev
+# print("Accuracy as a percentage: %0.1f (+/- %0.1f)" % (scores.mean(), scores.std()))
 
-# Compute the t-value (from a two-tail t-test) and the p-value
-# Store these two values (t-value, then p-value) in each row, 22 in total for each feature
+# In[8]:
 
-# Initialise the array and assign its shape
-tpValArray = np.zeros([22, 2])
-[rows, cols] = tpValArray.shape
+# Store the function's main output
+signifTVals = af.getTPVals(targetCol, tsDataSlice)[2]
 
-"NEED TO GENERALISE FOR ANY CASE"
-# Loop through the array and store the t and p values
-for i in range(rows):
+# In[9]:
 
-    # Calculate the t and p values by inputting the two halves of each of the 22 columns
-    # of the normalised data into the ttest functions
-    # Store the statistics in the variable, tpVal (which changes on each iteration of the outer loop)
-    setE_FeatureCol = tsData.iloc[0:100,i]
-    setA_FeatureCol = tsData.iloc[100:200,i]
-    tpVal = stats.ttest_ind(setA_FeatureCol, setE_FeatureCol)
-
-    for j in range(cols):
-
-        # Store the values into each column
-        tpValArray[i,j] = tpVal[j]
-
-# Since it is a two-tailed t-test, need to multiply the p-values by two (second column)
-tpValArray[:,1] = tpValArray[:,1] * 2
-
-# Formatting the tpValArray
-tpValDf = pd.DataFrame(data=tpValArray, columns=['t-value', 'p-value'])
-tpValDf.index.name = 'Feature i'
-print(tpValDf)
-print('')
-
-# Sort the data (including the indices) in descending order by MAGNITUDE
-tpValDf_sorted = tpValDf.abs().sort_values(by='t-value',ascending=False)
-print(tpValDf_sorted)
-print('')
-
-# Store the first five indices of the sorted dataframe - will need to use these
-# indices to access the relevant feature columns in X, the feature matrix
-indexVals = tpValDf_sorted.index.values
-signifTVals = indexVals[:5]
-print(signifTVals)
-print('')
-
-#-------------------------------------------------------------------------------
 # PCA
-from sklearn.preprocessing import StandardScaler
 
-# Standardizing the features
-x = StandardScaler().fit_transform(tsData)
+# af.showMePCAFig(tsDataSlice, targetCol)
 
-from sklearn.decomposition import PCA
-pca = PCA(n_components=2)
-principalComponents = pca.fit_transform(x)
-principalDf = pd.DataFrame(data=principalComponents
-             , columns=['PC1', 'PC2'])
+# In[10]:
 
-targetCol_df = pd.DataFrame(data=targetCol, columns=['target'])
+# Violin plots
 
-finalDf = pd.concat([principalDf, targetCol_df], axis = 1)
+# af.showMeViolinPlts(targetCol, signifTVals, X, ROI)
 
-print(finalDf)
+# In[11]:
 
-# Plotting the PCA scatterplot using Seaborn
-sns.set()
-ax = sns.relplot(x='PC1', y='PC2', data=finalDf, hue='target',palette='Set1')
-plt.show()
-#-------------------------------------------------------------------------------
-# Create an index for the subplot
-n = 1;
+# Plotting the number of regions with classification accuracies greater than 60%
 
-fig = plt.figure()
+''' # AvgRegAcc = '''
+af.showMeRegAccPlot(maxROI, TS_path_names, tsData, targetCol, 1)
+# print('Avg Reg Acc (%) = ' + str(AvgRegAcc))
 
-for i in signifTVals:
-    # Obtaining Seizure_Feature_i & Healthy_Feature_i
-    # (all the rows) from the ith column of the feature matrix
-    sf_i = X.iloc[0:100,i]
-    hf_i = X.iloc[100:200,i]
+# In[12]:
 
-    # Stacking columns side by side
-    feat_i = np.column_stack((sf_i,hf_i))
+# Plot feature accuracies
 
-    # Making the numpy array into a dataframe
-    df_feat_i = pd.DataFrame(data=feat_i, columns=['Epileptic', 'Healthy'])
-    # print(df_feat_i)
+''' # AvgFeatAcc = '''
+af.showMeFeatAccPlot(featMat3D, targetCol, 1)
 
-    # Violin plots
-    ax = fig.add_subplot(2,3,n)
-    ax = sns.violinplot(data=df_feat_i, order=["Epileptic", "Healthy"])
-    plt.xlabel('Diagnosis')
-    ylabel = 'Feature ' + str(i)
-    plt.ylabel(ylabel)
+'''
+# print('Avg Feat Acc (%) = ' + str(AvgFeatAcc))
+# print('')
 
-    # Increment index
-    n += 1;
+# df = df.append({'fd': threshold_fd, 'Total': Total, 'SCZ:Control': SCZ2Ctrl,
+#                 'AvgRegAcc': AvgRegAcc, 'AvgFeatAcc': AvgFeatAcc}, ignore_index=True)
 
-plt.tight_layout()
-plt.show()
+# print(df)
 
-# pVal = tpValDf.iloc[:,1]
-#
-# from scipy.interpolate import spline
-# x = np.arange(22)
-# print(x)
-# x_smooth = np.linspace(x.min(),x.max(),300)
-# pVal_smooth = spline(x,pVal,x_smooth)
-#
-# plt.plot(x_smooth,pVal_smooth)
-# plt.show()
+# df.to_csv('fdArray.txt')
+'''
+
+'''
+For refernece ONLY:
+
+List of catch22 features
+1.	CO_Embed2_Dist_tau_d_expfit_meandiff
+2.	CO_FirstMin_ac
+3.	CO_HistogramAMI_even_2_5
+4.	CO_f1ecac
+5.	CO_trev_1_num
+6.	DN_HistogramMode_10
+7.	DN_HistogramMode_5
+8.	DN_OutlierInclude_n_001_mdrmd
+9.	DN_OutlierInclude_p_001_mdrmd
+10.	FC_LocalSimple_mean1_tauresrat
+11.	FC_LocalSimple_mean3_stderr
+12.	IN_AutoMutualInfoStats_40_gaussian_fmmi
+13.	MD_hrv_classic_pnn40
+14.	PeriodicityWang_th0_01
+15.	SB_BinaryStats_diff_longstretch0
+16.	SB_BinaryStats_mean_longstretch1
+17.	SB_MotifThree_quantile_hh
+18.	SB_TransitionMatrix_3ac_sumdiagcov
+19.	SC_FluctAnal_2_dfa_50_1_2_logi_prop_r1
+20.	SC_FluctAnal_2_rsrangefit_50_1_logi_prop_r1
+21.	SP_Summaries_welch_rect_area_5_1
+22.	SP_Summaries_welch_rect_centroid
+'''
