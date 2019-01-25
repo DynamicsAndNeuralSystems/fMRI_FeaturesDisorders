@@ -146,7 +146,7 @@ af.showMeFeatAccPlot(featMat3D, targetCol, 1)
 '''
 
 '''
-For refernece ONLY:
+For reference ONLY:
 
 List of catch22 features
 1.	CO_Embed2_Dist_tau_d_expfit_meandiff
