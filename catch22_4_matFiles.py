@@ -4,7 +4,7 @@ import catch22
 import numpy as np
 
 # Make sure you add that last slash
-path = '/Users/AV/Dropbox/UCLA/cfgData/'
+path = '/Users/AV/Dropbox/COBRE/cfgData/'
 
 # This will arrange the assigned file type in ALPHABETICAL ORDER
 TS_path_names = sorted(glob.glob(path + '*.mat'))
@@ -90,4 +90,4 @@ def giveMeBigFeatMat(element):
 x, element = giveMeBigFeatMat(1)
 
 # Save file
-np.savetxt('element' + str(element) + '.txt',x,delimiter=',')
+np.savetxt('COBRE_element' + str(element) + '.txt',x,delimiter=',')

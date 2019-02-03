@@ -20,11 +20,12 @@ def removePathNames(threshold_fd, TS_path_names):
     filePath = '/Users/AV/Dropbox/UCLA/movementData/fdAvgs.txt'
     fdAvgs = pd.read_csv(filePath,header=None);
 
-    indices = np.where(fdAvgs > threshold_fd)[0]
+    indices2Del = np.where(fdAvgs > threshold_fd)[0]
+    indices2Keep = np.where(fdAvgs <= threshold_fd)[0]
 
-    for i in sorted(indices, reverse=True):
+    for i in sorted(indices2Del, reverse=True):
         del TS_path_names[i]
-    return TS_path_names
+    return TS_path_names, indices2Keep
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -58,7 +59,7 @@ def getTargetCol(TS_path_names):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def getROISlice(TS_path_names, tsData, ROI):
+def getROISlice(Orig_TS_path_names, tsData, ROI, indices2Keep):
     ''' This function takes a ROI as an input and gets the relevant slice
     (or rows) from tsData '''
 
@@ -70,11 +71,12 @@ def getROISlice(TS_path_names, tsData, ROI):
     while validROI == False:
 
         # Rows per region of interest = len(TS_path_names)
-        rowsPerROI = len(TS_path_names)
+        rowsPerROI = len(Orig_TS_path_names)
         [rows,cols] = tsData.shape
 
         # Get the rows corresponding to the mth region of interest
-        Slice = tsData.iloc[((int(ROI)-1)*rowsPerROI):(int(ROI)*rowsPerROI),:]
+        ROISlice = tsData.iloc[((int(ROI)-1)*rowsPerROI):(int(ROI)*rowsPerROI),:]
+        ROISlice = ROISlice.iloc[indices2Keep,:]
 
         # Assigning min and max values for input 'm'
         minROI = 1
@@ -82,7 +84,7 @@ def getROISlice(TS_path_names, tsData, ROI):
 
         if minROI <= int(ROI) <= maxROI:
             validROI == True
-            return Slice, ROI, maxROI
+            return ROISlice, ROI, maxROI
 #         else:
 #             print('Error: Please select a ROI between ' + str(minROI) + ' and ' + str(maxROI))
 #             print('')
@@ -90,12 +92,13 @@ def getROISlice(TS_path_names, tsData, ROI):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def getFeatSlice(featMat3D, feat):
+def getFeatSlice(featMat3D, feature):
     ''' This function returns a slice of all the data related to a particular
     feature, which it receives as an integer input '''
 
-    Slice = featMat3D[:,abs(feat-1),:]
-    return Slice
+    if 0 < feature <= 22:
+        FeatSlice = featMat3D[:,feature-1,:]
+        return FeatSlice
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -104,20 +107,20 @@ def get10FoldCVScore(X,y):
 
     # Import the support vector classifier and balance the classes
     from sklearn.svm import SVC
-    svclassifier = SVC(kernel='linear', class_weight = 'balanced')
+    svclassifier = SVC(kernel='linear') # , class_weight = {0:(SCZ/Total),1:(Control/Total)})
 
     # Split the data into training and test sets
-    from sklearn.model_selection import KFold
-    kf = KFold(n_splits=10)
+    from sklearn.model_selection import StratifiedKFold
+    skf = StratifiedKFold(n_splits=10)
 
     # Import accuracy score
-    from sklearn.metrics import accuracy_score
+    from sklearn.metrics import balanced_accuracy_score
 
     # Initialise a few variables
     scores = np.zeros(10)
     i = 0
 
-    for train_index, test_index in kf.split(X):
+    for train_index, test_index in skf.split(X,y):
 
         train_index = train_index.tolist()
         test_index = test_index.tolist()
@@ -138,7 +141,7 @@ def get10FoldCVScore(X,y):
 #         print('y_pred = ', y_pred)
 #         print('')
 
-        scores[i] = '{0:.1f}'.format(accuracy_score(y_test, y_pred)*100)
+        scores[i] = '{0:.1f}'.format(balanced_accuracy_score(y_test, y_pred)*100)
 #         print('Acc % = ', scores[i])
 #         print('')
 
@@ -148,7 +151,7 @@ def get10FoldCVScore(X,y):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def getTPVals(targetCol, tsDataSlice):
+def getTPVals(targetCol, DataSlice):
     ''' This function computes the t-values (from a two-tail t-test) and
     the p-values
     It stores these two values (t-value, then p-value) in each row,
@@ -174,14 +177,17 @@ def getTPVals(targetCol, tsDataSlice):
     bStart = b[0]
     bEnd = b[-1] + 1
 
+    # Convert data into a dataframe
+    DataSlice = pd.DataFrame(data=DataSlice)
+
     # Loop through the array and store the t and p values
     for i in range(rows):
 
         # Calculate the t and p values by inputting the two halves of each of the 22 columns
         # of the normalised data into the ttest functions
         # Store the statistics in the variable, tpVal (which changes on each iteration of the outer loop)
-        controlFeatCol = tsDataSlice.iloc[aStart:aEnd,i]
-        SCZFeatCol = tsDataSlice.iloc[bStart:bEnd,i]
+        controlFeatCol = DataSlice.iloc[aStart:aEnd,i]
+        SCZFeatCol = DataSlice.iloc[bStart:bEnd,i]
         tpVal = stats.ttest_ind(controlFeatCol, SCZFeatCol)
 
         for j in range(cols):
@@ -208,13 +214,13 @@ def getTPVals(targetCol, tsDataSlice):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def showMePCAFig(tsDataSlice, targetCol):
+def showMePCAFig(DataSlice, targetCol):
     ''' This function displays a figure derived from PCA '''
 
     from sklearn.preprocessing import StandardScaler
 
     # Standardizing the features
-    x = StandardScaler().fit_transform(tsDataSlice)
+    x = StandardScaler().fit_transform(DataSlice)
 
     from sklearn.decomposition import PCA
     pca = PCA(n_components=2)
@@ -234,10 +240,14 @@ def showMePCAFig(tsDataSlice, targetCol):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def showMeViolinPlts(targetCol, signifTVals, X, ROI):
+def showMeViolinPlts(targetCol, signifTVals, DataSlice, boolean, number):
     ''' This function creates violin plots using 4 main variables:
-    targetCol, signifTVals, X, ROI - probably can be modified a little to
-    plot the features as well as the regions '''
+    targetCol, signifTVals, DataSlice, boolean
+    # boolean == 0: when looking at FeatSlices
+    # boolean == 1: when looking at ROISlices '''
+
+    # boolean = int(input('Is DataSlice = FeatSlice or ROISlice? Enter 0 or 1 respectively: '))
+    # number = input('Which Feature / ROI is being analysed?: ')
 
     # Create an index for the subplot
     n = 1;
@@ -253,11 +263,16 @@ def showMeViolinPlts(targetCol, signifTVals, X, ROI):
     bStart = b[0]
     bEnd = b[-1] + 1
 
+    DataSlice = pd.DataFrame(data=DataSlice)
+
+    # Z-score the data
+    DataSlice = DataSlice.apply(zscore)
+
     for i in signifTVals:
         # Obtain control feature i and SCZ feature i (all the rows)
         # from the ith column of the z-scored feature matrix
-        cf_i = X.iloc[aStart:aEnd,i]
-        sf_i = X.iloc[bStart:bEnd,i]
+        cf_i = DataSlice.iloc[aStart:aEnd,i]
+        sf_i = DataSlice.iloc[bStart:bEnd,i]
 
         # Convert into a dataframe
         df_feat_i = pd.DataFrame({'SCZ':sf_i,'Control':cf_i})
@@ -266,20 +281,27 @@ def showMeViolinPlts(targetCol, signifTVals, X, ROI):
         ax = fig.add_subplot(2,3,n)
         ax = sns.violinplot(data=df_feat_i, order=['SCZ','Control'])
         plt.xlabel('Diagnosis')
-        ylabel = 'Feature ' + str(i)
+
+        if boolean == 0:
+            ylabel = 'ROI ' + str(i)
+        elif boolean == 1:
+            ylabel = 'Feature ' + str(i)
         plt.ylabel(ylabel)
 
         # Increment index
         n += 1;
 
-    plt.suptitle('Top 5 Features in ROI ' + str(ROI), fontsize=12.5, y=1.05)
+    if boolean == 0:
+         plt.suptitle('Top 5 ROI in Feature ' + str(number), fontsize=12.5, y=1.05)
+    elif boolean == 1:
+        plt.suptitle('Top 5 Features in ROI ' + str(number), fontsize=12.5, y=1.05)
     plt.tight_layout()
     plt.show()
     return
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def showMeRegAccPlot(maxROI, TS_path_names, tsData, targetCol, bool):
+def showMeROIAccPlot(maxROI, Orig_TS_path_names, tsData, targetCol, boolean, indices2Keep):
     ''' This function displays the region accuracy plot and the top 5 regions
     having the highest accuracies
     If 0 is given as an input, this function suppresses any printed messages
@@ -288,10 +310,11 @@ def showMeRegAccPlot(maxROI, TS_path_names, tsData, targetCol, bool):
     # Initialise a few variables
     regions = np.zeros([maxROI])
     region_acc = np.zeros([maxROI])
+    roiErr = np.zeros([maxROI])
 
     for n in range(1, maxROI+1):
 
-        tsDataSlice = getROISlice(TS_path_names, tsData, n)[0]
+        tsDataSlice = getROISlice(Orig_TS_path_names, tsData, n, indices2Keep)[0]
         tsDataSlice_zscored = tsDataSlice.apply(zscore)
 
         # Assign the data to variables
@@ -299,15 +322,17 @@ def showMeRegAccPlot(maxROI, TS_path_names, tsData, targetCol, bool):
         y = np.ravel(targetCol)
 
         avgScore = get10FoldCVScore(X,y).mean()
+        avgSTD = get10FoldCVScore(X,y).std()
         regions[n-1] = n
         region_acc[n-1] = avgScore
+        roiErr[n-1] = avgSTD
 
-    df = pd.DataFrame({'Region':regions,'% Accuracy':region_acc})
+    df = pd.DataFrame({'Region':regions,'% Accuracy':region_acc,'ROI Error':roiErr})
     df['Region'] = df.Region.astype(int)
 
     df_sorted = df.sort_values(by='% Accuracy',ascending=False)
 
-    if bool == 1:
+    if boolean == 1:
         print(df_sorted[:5].to_string(index=False))
         print('')
 
@@ -315,18 +340,23 @@ def showMeRegAccPlot(maxROI, TS_path_names, tsData, targetCol, bool):
         "{0:.2f}".format(df['% Accuracy'].mean()) + '%')
         print('')
 
+        print('Mean Error (across all regions) = ' +
+        "{0:.2f}".format(df['ROI Error'].mean()) + '%')
+        print('')
+
         plt.hist(region_acc, bins='auto')
         plt.xlabel('Classification Accuracy (%)')
         plt.ylabel('No. of Regions')
         plt.show()
         return
-    elif bool == 0:
-        meanRegAcc = '{0:.2f}'.format(df['% Accuracy'].mean())
-        return meanRegAcc
+    elif boolean == 0:
+        meanROIAcc = '{0:.2f}'.format(df['% Accuracy'].mean())
+        AvgROIError = '{0:.2f}'.format(df['ROI Error'].mean())
+        return meanROIAcc, AvgROIError
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def showMeFeatAccPlot(featMat3D, targetCol, bool):
+def showMeFeatAccPlot(featMat3D, targetCol, boolean):
     ''' This function displays the feature accuracy plot and the top 5 features
     having the highest accuracies
     If 0 is given as an input, this function suppresses any printed messages
@@ -335,6 +365,7 @@ def showMeFeatAccPlot(featMat3D, targetCol, bool):
     # Initialise a few variables
     feats = np.zeros(22)
     feat_acc = np.zeros(22)
+    featErr = np.zeros([22])
 
     for n in range(1, 23):
 
@@ -346,15 +377,17 @@ def showMeFeatAccPlot(featMat3D, targetCol, bool):
         y = np.ravel(targetCol)
 
         avgScore = get10FoldCVScore(X,y).mean()
+        avgSTD = get10FoldCVScore(X,y).std()
         feats[n-1] = n
         feat_acc[n-1] = avgScore
+        featErr[n-1] = avgSTD
 
-    df = pd.DataFrame({'Feature':feats,'% Accuracy':feat_acc})
+    df = pd.DataFrame({'Feature':feats,'% Accuracy':feat_acc,'Feat Error':featErr})
     df['Feature'] = df.Feature.astype(int)
 
     df_sorted = df.sort_values(by='% Accuracy',ascending=False)
 
-    if bool == 1:
+    if boolean == 1:
         print(df_sorted[:5].to_string(index=False))
         print('')
 
@@ -362,12 +395,17 @@ def showMeFeatAccPlot(featMat3D, targetCol, bool):
         "{0:.2f}".format(df['% Accuracy'].mean()) + '%')
         print('')
 
+        print('Mean Error (across all features) = ' +
+        "{0:.2f}".format(df['Feat Error'].mean()) + '%')
+        print('')
+
         plt.hist(feat_acc, bins='auto')
         plt.xlabel('Classification Accuracy (%)')
         plt.ylabel('No. of Features')
         plt.show()
         return
-    elif bool == 0:
+    elif boolean == 0:
         meanFeatAcc = '{0:.2f}'.format(df['% Accuracy'].mean())
-        return meanFeatAcc
+        AvgFeatError = '{0:.2f}'.format(df['Feat Error'].mean())
+        return meanFeatAcc, AvgFeatError
 #-------------------------------------------------------------------------------
