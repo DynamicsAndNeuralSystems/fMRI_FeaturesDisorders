@@ -17,10 +17,10 @@ import analysisFunctions as af
 
 # Run below code (commented out) in a for loop to generate the fdArray.txt file
 
-df = pd.DataFrame({'fd': [], 'SCZ': [], 'Control': [], 'Total': [],
-'SCZ:Control': [], 'AvgROIAcc': [], 'AvgROIError': [], 'AvgFeatAcc': [], 'AvgFeatError': []})
+# df = pd.DataFrame({'fd': [], 'SCZ': [], 'Control': [], 'Total': [],
+# 'SCZ:Control': [], 'AvgROIAcc': [], 'AvgROIError': [], 'AvgFeatAcc': [], 'AvgFeatError': []})
 
-# df = pd.DataFrame({'fd': [], 'feat3BalancedAcc': [], 'stdDev': []})
+df = pd.DataFrame({'fd': [], 'feat3BalancedAcc': [], 'stdDev': []})
 
 # Make fd array
 filePath = '/Users/AV/Dropbox/UCLA/movementData/fdAvgs.txt'
@@ -28,7 +28,7 @@ fdAvgs = pd.read_csv(filePath,header=None);
 maxFd =  "%.2f" % fdAvgs.max()
 minFd = "%.2f" % fdAvgs.min()
 # print(maxFd)
-fdArray = np.linspace(0.72,0.12,21)
+fdArray = np.linspace(0.72,0.18,19)
 print(fdArray)
 
 for threshold_fd in fdArray:
@@ -62,7 +62,6 @@ for threshold_fd in fdArray:
     # Creating the target column
 
     targetCol = af.getTargetCol(TS_path_names)
-
     Control = (targetCol == 0).sum()
     print('Control = ' + str(Control))
     SCZ = (targetCol == 1).sum()
@@ -78,6 +77,17 @@ for threshold_fd in fdArray:
     # Need to z-score the selection of tsData
     from scipy.stats import zscore
     ROISlice, ROI, maxROI = af.getROISlice(Orig_TS_path_names, tsData, 1, indices2Keep)
+
+    # Creating the target column
+
+    # filePath = '/Users/AV/Dropbox/COBRE/participants.csv'
+    # COBRE = pd.read_csv(filePath,header=None);
+    #
+    # targetCol = COBRE.iloc[1:,2]
+    # targetCol = targetCol.tolist()
+    # targetCol = pd.DataFrame(data=targetCol, columns=['target'])
+    # targetCol = targetCol.iloc[indices2Keep,:]
+    # targetCol = np.asarray(targetCol,dtype=np.int)
 
     # Assign the data to variables
     y = np.ravel(targetCol)
@@ -107,17 +117,16 @@ for threshold_fd in fdArray:
     # Store the function's output as a variable
     # scores = af.get10FoldCVScore(X,y)
 
-#     feat3BalancedAcc = af.get10FoldCVScore(X,y).mean()
-#     stdDev = af.get10FoldCVScore(X,y).std()
-#
-#     df = df.append({'fd': threshold_fd, 'feat3BalancedAcc': feat3BalancedAcc, 'stdDev': stdDev}, ignore_index=True)
-#
-#     print(df)
-#
-# df.to_csv('feat3BalancedAcc.txt', index=False)
+    feat3BalancedAcc = af.get10FoldCVScore(X,y).mean()
+    stdDev = af.get10FoldCVScore(X,y).std()
 
+    df = df.append({'fd': threshold_fd, 'feat3BalancedAcc': feat3BalancedAcc, 'stdDev': stdDev}, ignore_index=True)
 
+    print(df)
 
+df.to_csv('feat3BalancedAcc_UCLA.txt', index=False)
+
+'''
     # Print scores
     # print('10-fold CV scores as a percentage: ' + str(scores))
     # print('')
@@ -166,8 +175,8 @@ for threshold_fd in fdArray:
 
     print(df)
 
-df.to_csv('fdArray.txt', index=False)
-
+df.to_csv('fdArray_COBRE.txt', index=False)
+'''
 '''
 
 # In[13]:
