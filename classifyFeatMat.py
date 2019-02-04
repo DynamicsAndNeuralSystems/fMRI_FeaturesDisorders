@@ -20,15 +20,15 @@ import analysisFunctions as af
 # df = pd.DataFrame({'fd': [], 'SCZ': [], 'Control': [], 'Total': [],
 # 'SCZ:Control': [], 'AvgROIAcc': [], 'AvgROIError': [], 'AvgFeatAcc': [], 'AvgFeatError': []})
 
-df = pd.DataFrame({'fd': [], 'feat3BalancedAcc': [], 'stdDev': []})
+# df = pd.DataFrame({'fd': [], 'feat_BalancedAcc': [], 'stdDev': []})
 
 # Make fd array
-filePath = '/Users/AV/Dropbox/UCLA/movementData/fdAvgs.txt'
+filePath = '/Users/AV/Dropbox/COBRE/movementData/fdAvgs_COBRE.txt'
 fdAvgs = pd.read_csv(filePath,header=None);
 maxFd =  "%.2f" % fdAvgs.max()
 minFd = "%.2f" % fdAvgs.min()
 # print(maxFd)
-fdArray = np.linspace(0.72,0.18,19)
+fdArray = [0.30] # np.linspace(0.72,0.18,19)
 print(fdArray)
 
 for threshold_fd in fdArray:
@@ -38,7 +38,7 @@ for threshold_fd in fdArray:
     # Store the path of the folder containing the data
     # Alternatively, could use user input -
     # path = input('Enter the file path of the data: ')
-    path = '/Users/AV/Dropbox/UCLA/cfgData/'
+    path = '/Users/AV/Dropbox/COBRE/cfgData/'
 
     # Need to alphabetise and store the filenames in the path
     Orig_TS_path_names = sorted(glob.glob(path + '*.mat'))
@@ -54,14 +54,29 @@ for threshold_fd in fdArray:
     # Reading in the feature matrix data from the .txt file
 
     # Import and store the feature matrix in the variable tsData
-    filePath = '/Users/AV/Desktop/FeatureMatrixData/element1.txt'
+    filePath = '/Users/AV/Desktop/FeatureMatrixData/element1_COBRE.txt'
     tsData = pd.read_csv(filePath,header=None);
 
     # In[4]:
 
-    # Creating the target column
+    # Creating the target column (UCLA)
 
-    targetCol = af.getTargetCol(TS_path_names)
+    # targetCol = af.getTargetCol(TS_path_names)
+
+    # Creating the target column (COBRE)
+
+    filePath = '/Users/AV/Dropbox/COBRE/participants.csv'
+    COBRE = pd.read_csv(filePath,header=None);
+
+    targetCol = COBRE.iloc[1:,2]
+    targetCol = targetCol.tolist()
+    targetCol = pd.DataFrame(data=targetCol, columns=['target'])
+    targetCol = targetCol.iloc[indices2Keep,:]
+    targetCol = np.asarray(targetCol,dtype=np.int)
+
+    targetColModified = np.where(targetCol==1, 0, targetCol)
+    targetCol = np.where(targetCol==2, 1, targetColModified)
+
     Control = (targetCol == 0).sum()
     print('Control = ' + str(Control))
     SCZ = (targetCol == 1).sum()
@@ -77,17 +92,6 @@ for threshold_fd in fdArray:
     # Need to z-score the selection of tsData
     from scipy.stats import zscore
     ROISlice, ROI, maxROI = af.getROISlice(Orig_TS_path_names, tsData, 1, indices2Keep)
-
-    # Creating the target column
-
-    # filePath = '/Users/AV/Dropbox/COBRE/participants.csv'
-    # COBRE = pd.read_csv(filePath,header=None);
-    #
-    # targetCol = COBRE.iloc[1:,2]
-    # targetCol = targetCol.tolist()
-    # targetCol = pd.DataFrame(data=targetCol, columns=['target'])
-    # targetCol = targetCol.iloc[indices2Keep,:]
-    # targetCol = np.asarray(targetCol,dtype=np.int)
 
     # Assign the data to variables
     y = np.ravel(targetCol)
@@ -115,24 +119,24 @@ for threshold_fd in fdArray:
     # Perform 10-Fold Cross Validation
 
     # Store the function's output as a variable
-    # scores = af.get10FoldCVScore(X,y)
+    scores = af.get10FoldCVScore(X,y)
 
-    feat3BalancedAcc = af.get10FoldCVScore(X,y).mean()
-    stdDev = af.get10FoldCVScore(X,y).std()
+#     feat_BalancedAcc = af.get10FoldCVScore(X,y).mean()
+#     stdDev = af.get10FoldCVScore(X,y).std()
+#
+#     df = df.append({'fd': threshold_fd, 'feat_BalancedAcc': feat_BalancedAcc, 'stdDev': stdDev}, ignore_index=True)
+#
+#     print(df)
+#
+# df.to_csv('feat_BalancedAcc_UCLA.txt', index=False)
 
-    df = df.append({'fd': threshold_fd, 'feat3BalancedAcc': feat3BalancedAcc, 'stdDev': stdDev}, ignore_index=True)
 
-    print(df)
-
-df.to_csv('feat3BalancedAcc_UCLA.txt', index=False)
-
-'''
     # Print scores
-    # print('10-fold CV scores as a percentage: ' + str(scores))
-    # print('')
+    print('10-fold CV scores as a percentage: ' + str(scores))
+    print('')
 
     # Mean 10-fold CV score with an error of 1 std dev
-    # print("Accuracy as a percentage: %0.1f (+/- %0.1f)" % (scores.mean(), scores.std()))
+    print("Accuracy as a percentage: %0.1f (+/- %0.1f)" % (scores.mean(), scores.std()))
 
     # In[8]:
 
@@ -143,7 +147,7 @@ df.to_csv('feat3BalancedAcc_UCLA.txt', index=False)
 
     # PCA
 
-    # af.showMePCAFig(DataSlice, targetCol)
+    af.showMePCAFig(DataSlice, targetCol)
 
     # In[10]:
 
@@ -156,7 +160,7 @@ df.to_csv('feat3BalancedAcc_UCLA.txt', index=False)
     # Plotting the number of regions with classification accuracies greater than 60%
 
     AvgROIAcc, AvgROIError = af.showMeROIAccPlot(maxROI, Orig_TS_path_names, tsData, targetCol, 0, indices2Keep)
-    # af.showMeROIAccPlot(maxROI, Orig_TS_path_names, tsData, targetCol, 1, indices2Keep)
+    af.showMeROIAccPlot(maxROI, Orig_TS_path_names, tsData, targetCol, 1, indices2Keep)
 
     print('Avg Reg Acc (%) = ' + str(AvgROIAcc))
 
@@ -165,19 +169,17 @@ df.to_csv('feat3BalancedAcc_UCLA.txt', index=False)
     # Plot feature accuracies
 
     AvgFeatAcc, AvgFeatError = af.showMeFeatAccPlot(featMat3D, targetCol, 0)
-    # af.showMeFeatAccPlot(featMat3D, targetCol, 1)
+    af.showMeFeatAccPlot(featMat3D, targetCol, 1)
 
     print('Avg Feat Acc (%) = ' + str(AvgFeatAcc))
     print('')
 
-    df = df.append({'fd': threshold_fd, 'SCZ': SCZ, 'Control': Control, 'Total': Total, 'SCZ:Control': SCZ2Ctrl,
-                    'AvgROIAcc': AvgROIAcc, 'AvgROIError': AvgROIError, 'AvgFeatAcc': AvgFeatAcc, 'AvgFeatError': AvgFeatError}, ignore_index=True)
+    # df = df.append({'fd': threshold_fd, 'SCZ': SCZ, 'Control': Control, 'Total': Total, 'SCZ:Control': SCZ2Ctrl,
+    #                 'AvgROIAcc': AvgROIAcc, 'AvgROIError': AvgROIError, 'AvgFeatAcc': AvgFeatAcc, 'AvgFeatError': AvgFeatError}, ignore_index=True)
+    #
+    # print(df)
 
-    print(df)
-
-df.to_csv('fdArray_COBRE.txt', index=False)
-'''
-'''
+# df.to_csv('fdArray_COBRE.txt', index=False)
 
 # In[13]:
 
@@ -185,7 +187,7 @@ df.to_csv('fdArray_COBRE.txt', index=False)
 # Plot the fd vs classification accuracy
 
 # Import and store the fdArray
-filePath = '/Users/AV/Desktop/FeatureMatrixData/fdArray.txt'
+filePath = '/Users/AV/Desktop/FeatureMatrixData/fdArray_COBRE.txt'
 fdArray = pd.read_csv(filePath);
 
 fig, ax1 = plt.subplots()
@@ -205,7 +207,7 @@ ax1.plot(fd, AvgROIAcc, 'r-')
 # ax1.errorbar(fd, AvgROIAcc, yerr=AvgROIError, fmt='-o', capsize=5)
 
 plt.xlim(max(fd)+0.02, min(fd)+0.02)
-ax1.set_xlabel('fd (mm)')
+ax1.set_xlabel('fd (cm)')
 ax1.set_ylabel('Balanced Acc (%)')
 
 ax2 = ax1.twinx()
@@ -214,21 +216,21 @@ ax2.set_ylabel('SCZ:Control', color='g')
 ax2.tick_params('y', colors='g')
 plt.grid(b=None)
 
-ax1.legend(['Avg Feat Acc','Avg ROI Acc'],loc=1)
+ax1.legend(['Avg Feat Acc','Avg ROI Acc'],loc=3)
 ax2.legend(['SCZ:Control'],loc=2)
 fig.tight_layout()
 plt.show()
 #-------------------------------------------------------------------------------
 # fd variation across subjects
 
-filePath = '/Users/AV/Dropbox/UCLA/movementData/fdAvgs.txt'
+filePath = '/Users/AV/Dropbox/COBRE/movementData/fdAvgs_COBRE.txt'
 fdAvgs = pd.read_csv(filePath,header=None, names=['FD Avgs']);
 
 fdAvgs.hist(column='FD Avgs')
 
 plt.xlim(max(fd), min(fd))
 plt.title('FD Distribution')
-plt.xlabel('FD Averages (mm)')
+plt.xlabel('FD Averages (cm)')
 plt.ylabel('No. of Subjects')
 plt.show()
 #-------------------------------------------------------------------------------
@@ -241,11 +243,11 @@ fdArray.plot.line(x='fd', y=['SCZ', 'Control'])
 
 plt.xlim(max(fd), min(fd))
 plt.title('FD vs Subjects Remaining')
-plt.xlabel('FD Averages (mm)')
+plt.xlabel('FD Averages (cm)')
 plt.ylabel('No. of Subjects')
 plt.show()
 #-------------------------------------------------------------------------------
-'''
+
 '''
 For reference ONLY:
 

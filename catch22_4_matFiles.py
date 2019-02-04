@@ -90,4 +90,4 @@ def giveMeBigFeatMat(element):
 x, element = giveMeBigFeatMat(1)
 
 # Save file
-np.savetxt('COBRE_element' + str(element) + '.txt',x,delimiter=',')
+np.savetxt('element1_COBRE' + str(element) + '.txt',x,delimiter=',')
