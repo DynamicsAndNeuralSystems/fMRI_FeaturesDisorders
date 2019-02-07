@@ -15,29 +15,22 @@ import seaborn as sns
 import sklearn
 import analysisFunctions as af
 
-# Run below code (commented out) in a for loop to generate the fdArray.txt file
-
-# df = pd.DataFrame({'fd': [], 'SCZ': [], 'Control': [], 'Total': [],
-# 'SCZ:Control': [], 'AvgROIAcc': [], 'AvgROIError': [], 'AvgFeatAcc': [], 'AvgFeatError': []})
-
-# df = pd.DataFrame({'fd': [], 'feat_BalancedAcc': [], 'stdDev': []})
+# Which dataset?
+print('Dataset: COBRE')
 
 # Make fd array
 filePath = '/Users/AV/Dropbox/COBRE/movementData/fdAvgs_COBRE.txt'
 fdAvgs = pd.read_csv(filePath,header=None);
 maxFd =  "%.2f" % fdAvgs.max()
 minFd = "%.2f" % fdAvgs.min()
-# print(maxFd)
-fdArray = [0.30] # np.linspace(0.72,0.18,19)
-print(fdArray)
+
+fdArray = [0.30]
+print('fd = ', str(fdArray))
+print('')
 
 for threshold_fd in fdArray:
 
-    # threshold_fd = 0.20 # Need to remove this if running the code above
-
     # Store the path of the folder containing the data
-    # Alternatively, could use user input -
-    # path = input('Enter the file path of the data: ')
     path = '/Users/AV/Dropbox/COBRE/cfgData/'
 
     # Need to alphabetise and store the filenames in the path
@@ -46,7 +39,8 @@ for threshold_fd in fdArray:
 
     # In[2]:
 
-    TS_path_names, indices2Keep = af.removePathNames(threshold_fd, TS_path_names)
+    filePath = '/Users/AV/Dropbox/COBRE/movementData/fdAvgs_COBRE.txt'
+    TS_path_names, indices2Keep = af.removePathNames(filePath, threshold_fd, TS_path_names)
     indices2Keep = indices2Keep.tolist()
 
     # In[3]:
@@ -59,23 +53,28 @@ for threshold_fd in fdArray:
 
     # In[4]:
 
-    # Creating the target column (UCLA)
+    # Select which dataset is being used
+    dataSet = 'COBRE'
 
-    # targetCol = af.getTargetCol(TS_path_names)
+    if dataSet == 'UCLA':
 
-    # Creating the target column (COBRE)
+        # Creating the target column
+        targetCol = af.getTargetCol(TS_path_names)
 
-    filePath = '/Users/AV/Dropbox/COBRE/participants.csv'
-    COBRE = pd.read_csv(filePath,header=None);
+    elif dataSet == 'COBRE':
 
-    targetCol = COBRE.iloc[1:,2]
-    targetCol = targetCol.tolist()
-    targetCol = pd.DataFrame(data=targetCol, columns=['target'])
-    targetCol = targetCol.iloc[indices2Keep,:]
-    targetCol = np.asarray(targetCol,dtype=np.int)
+        # Creating the target column
+        filePath = '/Users/AV/Dropbox/COBRE/participants.csv'
+        COBRE = pd.read_csv(filePath,header=None);
 
-    targetColModified = np.where(targetCol==1, 0, targetCol)
-    targetCol = np.where(targetCol==2, 1, targetColModified)
+        targetCol = COBRE.iloc[1:,2]
+        targetCol = targetCol.tolist()
+        targetCol = pd.DataFrame(data=targetCol, columns=['target'])
+        targetCol = targetCol.iloc[indices2Keep,:]
+        targetCol = np.asarray(targetCol,dtype=np.int)
+
+        targetColModified = np.where(targetCol==1, 0, targetCol)
+        targetCol = np.where(targetCol==2, 1, targetColModified)
 
     Control = (targetCol == 0).sum()
     print('Control = ' + str(Control))
@@ -110,7 +109,7 @@ for threshold_fd in fdArray:
 
     FeatSlice = pd.DataFrame(af.getFeatSlice(featMat3D,3))
 
-    DataSlice = FeatSlice # or ROISlice
+    DataSlice = FeatSlice # FeatSlice or ROISlice
     DataSlice_zscored = DataSlice.apply(zscore)
     X = DataSlice_zscored
 
@@ -121,22 +120,13 @@ for threshold_fd in fdArray:
     # Store the function's output as a variable
     scores = af.get10FoldCVScore(X,y)
 
-#     feat_BalancedAcc = af.get10FoldCVScore(X,y).mean()
-#     stdDev = af.get10FoldCVScore(X,y).std()
-#
-#     df = df.append({'fd': threshold_fd, 'feat_BalancedAcc': feat_BalancedAcc, 'stdDev': stdDev}, ignore_index=True)
-#
-#     print(df)
-#
-# df.to_csv('feat_BalancedAcc_UCLA.txt', index=False)
-
-
     # Print scores
     print('10-fold CV scores as a percentage: ' + str(scores))
     print('')
 
     # Mean 10-fold CV score with an error of 1 std dev
     print("Accuracy as a percentage: %0.1f (+/- %0.1f)" % (scores.mean(), scores.std()))
+    print('')
 
     # In[8]:
 
@@ -162,24 +152,21 @@ for threshold_fd in fdArray:
     AvgROIAcc, AvgROIError = af.showMeROIAccPlot(maxROI, Orig_TS_path_names, tsData, targetCol, 0, indices2Keep)
     af.showMeROIAccPlot(maxROI, Orig_TS_path_names, tsData, targetCol, 1, indices2Keep)
 
-    print('Avg Reg Acc (%) = ' + str(AvgROIAcc))
+    # print('Avg Reg Acc (%) = ' + str(AvgROIAcc))
+    # print('')
 
     # In[12]:
 
     # Plot feature accuracies
 
-    AvgFeatAcc, AvgFeatError = af.showMeFeatAccPlot(featMat3D, targetCol, 0)
+    AvgFeatAcc, AvgFeatError, df_sorted = af.showMeFeatAccPlot(featMat3D, targetCol, 0)
     af.showMeFeatAccPlot(featMat3D, targetCol, 1)
 
-    print('Avg Feat Acc (%) = ' + str(AvgFeatAcc))
-    print('')
+    # Save sorted feats at fd = 0.30
+    # df_sorted.to_csv('sortedFeats_COBRE.txt', index=False)
 
-    # df = df.append({'fd': threshold_fd, 'SCZ': SCZ, 'Control': Control, 'Total': Total, 'SCZ:Control': SCZ2Ctrl,
-    #                 'AvgROIAcc': AvgROIAcc, 'AvgROIError': AvgROIError, 'AvgFeatAcc': AvgFeatAcc, 'AvgFeatError': AvgFeatError}, ignore_index=True)
-    #
-    # print(df)
-
-# df.to_csv('fdArray_COBRE.txt', index=False)
+    # print('Avg Feat Acc (%) = ' + str(AvgFeatAcc))
+    # print('')
 
 # In[13]:
 
@@ -221,6 +208,8 @@ ax2.legend(['SCZ:Control'],loc=2)
 fig.tight_layout()
 plt.show()
 #-------------------------------------------------------------------------------
+'''
+#-------------------------------------------------------------------------------
 # fd variation across subjects
 
 filePath = '/Users/AV/Dropbox/COBRE/movementData/fdAvgs_COBRE.txt'
@@ -247,7 +236,57 @@ plt.xlabel('FD Averages (cm)')
 plt.ylabel('No. of Subjects')
 plt.show()
 #-------------------------------------------------------------------------------
+# Plot feat_BalancedAcc as it varies with fd
 
+# Import and store the fdArray
+filePath = '/Users/AV/Desktop/FeatureMatrixData/feat_BalancedAcc_COBRE.txt'
+df = pd.read_csv(filePath);
+
+# print(df)
+
+fig, ax1 = plt.subplots()
+
+fd = df.iloc[:,0]
+feat_Balanced = df.iloc[:,1]
+stdDev = df.iloc[:,2]
+
+ax1.plot(fd, feat_Balanced, 'r-')
+ax1.errorbar(fd, feat_Balanced, yerr=stdDev, fmt='-o', capsize=5)
+
+plt.title('COBRE Feature 3')
+plt.xlim(max(fd)+0.02, min(fd)+0.02)
+ax1.set_xlabel('fd (cm)')
+ax1.set_ylabel('Balanced Acc (%)')
+
+fig.tight_layout()
+plt.show()
+#-------------------------------------------------------------------------------
+# Plot ROI_BalancedAcc as it varies with fd
+
+# Import and store the fdArray
+filePath = '/Users/AV/Desktop/FeatureMatrixData/ROI_BalancedAcc_COBRE.txt'
+df = pd.read_csv(filePath);
+
+# print(df)
+
+fig, ax1 = plt.subplots()
+
+fd = df.iloc[:,0]
+ROI_Balanced = df.iloc[:,1]
+stdDev = df.iloc[:,2]
+
+ax1.plot(fd, ROI_Balanced, 'r-')
+ax1.errorbar(fd, ROI_Balanced, yerr=stdDev, fmt='-o', capsize=5)
+
+plt.title('COBRE ROI 319')
+plt.xlim(max(fd)+0.02, min(fd)+0.02)
+ax1.set_xlabel('fd (cm)')
+ax1.set_ylabel('Balanced Acc (%)')
+
+fig.tight_layout()
+plt.show()
+#-------------------------------------------------------------------------------
+'''
 '''
 For reference ONLY:
 

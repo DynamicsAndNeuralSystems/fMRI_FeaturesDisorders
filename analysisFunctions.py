@@ -13,11 +13,10 @@ import sklearn
 from scipy.stats import zscore
 
 #-------------------------------------------------------------------------------
-def removePathNames(threshold_fd, TS_path_names):
+def removePathNames(filePath, threshold_fd, TS_path_names):
     ''' This function modifies the entries within TS_path_names based on the
     threshold fd value '''
 
-    filePath = '/Users/AV/Dropbox/COBRE/movementData/fdAvgs_COBRE.txt'
     fdAvgs = pd.read_csv(filePath,header=None);
 
     indices2Del = np.where(fdAvgs > threshold_fd)[0]
@@ -407,5 +406,5 @@ def showMeFeatAccPlot(featMat3D, targetCol, boolean):
     elif boolean == 0:
         meanFeatAcc = '{0:.2f}'.format(df['% Accuracy'].mean())
         AvgFeatError = '{0:.2f}'.format(df['Feat Error'].mean())
-        return meanFeatAcc, AvgFeatError
+        return meanFeatAcc, AvgFeatError, df_sorted
 #-------------------------------------------------------------------------------
