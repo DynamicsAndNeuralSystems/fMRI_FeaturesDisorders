@@ -123,3 +123,4 @@ fdArray.plot.line(x='fd', y=['SCZ', 'Control'])
 # The variation of balanced accuracy with respect to threshold fd values
 
 ```
+Too much info
