@@ -28,6 +28,39 @@ def removePathNames(filePath, threshold_fd, TS_path_names):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
+def addIndices(element_txt,subPath,PyFeatList_txt):
+    ''' This function adds a multi-level index to the feature matrix data that
+        is read in as a text file, and returns the matrix
+        The function takes two other inputs: a .txt file of the feature names
+        as well as the subject file path for the given dataset '''
+
+    from numpy import genfromtxt
+    tsData = genfromtxt(element_txt, delimiter=',')
+    [rows, cols] = tsData.shape
+
+    # Store the number of subjects and ROIs
+
+    TS_path_names = sorted(glob.glob(subPath + '*.mat'))
+
+    subjects = len(TS_path_names)
+    ROIs = int(rows/subjects)
+    feats = cols
+
+    # Add the multi-level index to the data
+
+    ROI_index = list(range(1,ROIs+1))
+    sub_index = list(range(1,subjects+1))
+
+    iterables = [ROI_index, sub_index]
+    index = pd.MultiIndex.from_product(iterables, names=['ROI', 'Subject'])
+
+    featList = [lines.rstrip('\n') for lines in open(PyFeatList_txt)]
+    tsData = pd.DataFrame(data=tsData, index=index, columns=featList)
+
+    return tsData, ROIs, subjects, feats
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
 def getTargetCol(TS_path_names):
     ''' This function, when called, prompts the user to input a string
     which can be used to uniquely identify any SCZ data file
@@ -106,7 +139,7 @@ def get10FoldCVScore(X,y):
 
     # Import the support vector classifier and balance the classes
     from sklearn.svm import SVC
-    svclassifier = SVC(kernel='linear') # , class_weight = {0:(SCZ/Total),1:(Control/Total)})
+    svclassifier = SVC(kernel='linear')
 
     # Split the data into training and test sets
     from sklearn.model_selection import StratifiedKFold
@@ -153,43 +186,37 @@ def get10FoldCVScore(X,y):
 def getTPVals(targetCol, DataSlice):
     ''' This function computes the t-values (from a two-tail t-test) and
     the p-values
-    It stores these two values (t-value, then p-value) in each row,
-    22 in total for each feature
-    It returns a few outputs, signifTVals being the main one '''
+    It stores these two values (t-value, then p-value) in each row, one row per
+    each ROI or feature
+    It returns a few outputs, sigPValInds being the main one '''
 
     from scipy.stats import stats,ttest_ind
 
     # Initialise the array and assign its shape
-    tpValArray = np.zeros([22, 2])
-    [rows, cols] = tpValArray.shape
+    DataSlice = pd.DataFrame(data=DataSlice)
+    [rows, cols] = DataSlice.shape
+    tpValArray = np.zeros([cols, 2])
 
-    # Make a custom range of rows which can be used to distinguish the control data from the SCZ data
     # Find all instances of 0 in the target column (which would indicate control data)
     # and store the indices in an array
     a = np.where(targetCol == 0)[0]
-    aStart = a[0]
-    aEnd = a[-1] + 1
 
     # Find all instances of 1 in the target column (which would indicate SCZ data)
     # and store the indices in an array
     b = np.where(targetCol == 1)[0]
-    bStart = b[0]
-    bEnd = b[-1] + 1
 
-    # Convert data into a dataframe
-    DataSlice = pd.DataFrame(data=DataSlice)
+    # Loop through the array, calculate and store the t and p values
+    for i in range(cols):
 
-    # Loop through the array and store the t and p values
-    for i in range(rows):
+        # Calculate the t and p values by inputting the two 'halves' of every column in the DataSlice,
+        # into the ttest_ind function
+        controlFeatCol = DataSlice.iloc[a,i]
+        SCZFeatCol = DataSlice.iloc[b,i]
 
-        # Calculate the t and p values by inputting the two halves of each of the 22 columns
-        # of the normalised data into the ttest functions
         # Store the statistics in the variable, tpVal (which changes on each iteration of the outer loop)
-        controlFeatCol = DataSlice.iloc[aStart:aEnd,i]
-        SCZFeatCol = DataSlice.iloc[bStart:bEnd,i]
-        tpVal = stats.ttest_ind(controlFeatCol, SCZFeatCol)
+        tpVal = stats.ttest_ind(controlFeatCol, SCZFeatCol, equal_var=False)
 
-        for j in range(cols):
+        for j in range(2):
 
             # Store the values into each column
             tpValArray[i,j] = tpVal[j]
@@ -199,7 +226,8 @@ def getTPVals(targetCol, DataSlice):
 
     # Formatting the tpValArray
     tpValDf = pd.DataFrame(data=tpValArray, columns=['t-value', 'p-value'])
-    tpValDf.index.name = 'Feature i'
+    tpValDf.index.name = 'Feature / ROI'
+    tpValDf.index += 1 # Make the starting index 1
 
     # Sort the data (including the indices) in descending order by MAGNITUDE
     tpValDf_sorted = tpValDf.abs().sort_values(by='t-value',ascending=False)
@@ -207,9 +235,9 @@ def getTPVals(targetCol, DataSlice):
     # Store the first five indices of the sorted dataframe - will need to use these
     # indices to access the relevant feature columns in X, the feature matrix
     indexVals = tpValDf_sorted.index.values
-    signifTVals = indexVals[:5]
+    sigPValInds = indexVals[:5]
 
-    return tpValDf, tpValDf_sorted, signifTVals
+    return tpValDf, tpValDf_sorted, sigPValInds
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -222,26 +250,26 @@ def showMePCAFig(DataSlice, targetCol):
     x = StandardScaler().fit_transform(DataSlice)
 
     from sklearn.decomposition import PCA
+
     pca = PCA(n_components=2)
     principalComponents = pca.fit_transform(x)
-    principalDf = pd.DataFrame(data=principalComponents
-                 , columns=['PC1', 'PC2'])
+    principalDf = pd.DataFrame(data=principalComponents, columns=['PC1', 'PC2'])
 
-    targetCol_df = pd.DataFrame(data=targetCol, columns=['target'])
+    targetCol_df = pd.DataFrame(data=targetCol, columns=['Diagnosis'])
 
     finalDf = pd.concat([principalDf, targetCol_df], axis = 1)
 
     # Plotting the PCA scatterplot using Seaborn
     sns.set()
-    ax = sns.relplot(x='PC1',y='PC2',data=finalDf,hue='target',palette='Set1')
+    ax = sns.relplot(x='PC1',y='PC2',data=finalDf,hue='Diagnosis',palette='Set1')
     plt.show()
     return
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def showMeViolinPlts(targetCol, signifTVals, DataSlice, boolean, number):
+def showMeViolinPlts(targetCol, sigPValInds, DataSlice, boolean, number):
     ''' This function creates violin plots using 4 main variables:
-    targetCol, signifTVals, DataSlice, boolean
+    targetCol, sigPValInds, DataSlice, boolean
     # boolean == 0: when looking at FeatSlices
     # boolean == 1: when looking at ROISlices '''
 
@@ -250,28 +278,21 @@ def showMeViolinPlts(targetCol, signifTVals, DataSlice, boolean, number):
 
     # Create an index for the subplot
     n = 1;
-
     fig = plt.figure()
 
     # Copy pasted (code enables custom selection of rows)
     a = np.where(targetCol == 0)[0]
-    aStart = a[0]
-    aEnd = a[-1] + 1
-
     b = np.where(targetCol == 1)[0]
-    bStart = b[0]
-    bEnd = b[-1] + 1
-
-    DataSlice = pd.DataFrame(data=DataSlice)
 
     # Z-score the data
+    DataSlice = pd.DataFrame(data=DataSlice)
     DataSlice = DataSlice.apply(zscore)
 
-    for i in signifTVals:
+    for i in sigPValInds:
         # Obtain control feature i and SCZ feature i (all the rows)
         # from the ith column of the z-scored feature matrix
-        cf_i = DataSlice.iloc[aStart:aEnd,i]
-        sf_i = DataSlice.iloc[bStart:bEnd,i]
+        cf_i = DataSlice.iloc[a,i]
+        sf_i = DataSlice.iloc[b,i]
 
         # Convert into a dataframe
         df_feat_i = pd.DataFrame({'SCZ':sf_i,'Control':cf_i})
