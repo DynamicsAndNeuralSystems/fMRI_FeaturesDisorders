@@ -57,7 +57,7 @@ def addIndices(element_txt,subPath,PyFeatList_txt):
     featList = [lines.rstrip('\n') for lines in open(PyFeatList_txt)]
     tsData = pd.DataFrame(data=tsData, index=index, columns=featList)
 
-    return tsData, ROIs, subjects, feats
+    return tsData, ROIs, subjects, feats, featList
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -95,8 +95,6 @@ def getROISlice(Orig_TS_path_names, tsData, ROI, indices2Keep):
     ''' This function takes a ROI as an input and gets the relevant slice
     (or rows) from tsData '''
 
-#     ROI = input('Which ROI is being analysed?: ')
-
     # Initialise a boolean
     validROI = False
 
@@ -117,10 +115,6 @@ def getROISlice(Orig_TS_path_names, tsData, ROI, indices2Keep):
         if minROI <= int(ROI) <= maxROI:
             validROI == True
             return ROISlice, ROI, maxROI
-#         else:
-#             print('Error: Please select a ROI between ' + str(minROI) + ' and ' + str(maxROI))
-#             print('')
-#             ROI = input('Which ROI is being analysed?: ')
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -229,8 +223,8 @@ def getTPVals(targetCol, DataSlice):
     tpValDf.index.name = 'Feature / ROI'
     tpValDf.index += 1 # Make the starting index 1
 
-    # Sort the data (including the indices) in descending order by MAGNITUDE
-    tpValDf_sorted = tpValDf.abs().sort_values(by='t-value',ascending=False)
+    # Sort the data (including the indices) by p-value significance
+    tpValDf_sorted = tpValDf.abs().sort_values(by='p-value',ascending=True)
 
     # Store the first five indices of the sorted dataframe - will need to use these
     # indices to access the relevant feature columns in X, the feature matrix
@@ -291,8 +285,8 @@ def showMeViolinPlts(targetCol, sigPValInds, DataSlice, boolean, number):
     for i in sigPValInds:
         # Obtain control feature i and SCZ feature i (all the rows)
         # from the ith column of the z-scored feature matrix
-        cf_i = DataSlice.iloc[a,i]
-        sf_i = DataSlice.iloc[b,i]
+        cf_i = DataSlice.iloc[a,i-1]
+        sf_i = DataSlice.iloc[b,i-1]
 
         # Convert into a dataframe
         df_feat_i = pd.DataFrame({'SCZ':sf_i,'Control':cf_i})
