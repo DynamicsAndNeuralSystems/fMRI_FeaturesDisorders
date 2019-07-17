@@ -147,7 +147,7 @@ def get10FoldCVScore(X,y):
 #         print('y_pred = ', y_pred)
 #         print('')
 
-        scores[i] = '{0:.1f}'.format(balanced_accuracy_score(y_test, y_pred)*100)
+        scores[i] = '{0:.2f}'.format(balanced_accuracy_score(y_test, y_pred)*100)
 #         print('Acc % = ', scores[i])
 #         print('')
 
@@ -419,7 +419,7 @@ def showMeFeatAccPlot(ROIs, feats, featList, subjects, tsData, indices2KeepMat, 
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def Reg_by_Reg_Anal(ROI, tsData, targetCol, ROIs, indices2KeepMat, dispFigs):
+def Reg_by_Reg_Anal(ROI, tsData, targetCol, ROIs, indices2KeepMat, regAccOnly, dispFigs):
     ''' This function takes in several inputs that have been calculated and
     outputs several graphs pertaining to the analysis of the selected region -
     It provides a Region-by-Region analysis, and the graphs displayed can be
@@ -437,8 +437,23 @@ def Reg_by_Reg_Anal(ROI, tsData, targetCol, ROIs, indices2KeepMat, dispFigs):
 
     # Perform 10-fold CV
     scores = get10FoldCVScore(X,y)
+    avgScore = '{0:.2f}'.format(scores.mean())
+    avgSTD = '{0:.2f}'.format(scores.std())
+
+    if regAccOnly == True:
+        return avgScore, avgSTD
 
     if dispFigs == True:
+
+        # Print scores
+        print('Analysis of Region ' + str(ROI) + ':')
+        print('')
+
+        print('10-fold CV scores as a percentage: ' + str(scores))
+        print('')
+
+        # Mean 10-fold CV score with an error of 1 std dev
+        print("Accuracy as a percentage: " + avgScore + " +/- " + avgSTD)
 
         # Store the first five indices of the features with the most significant p-values (the third output)
         tpValDf, tpValDf_sorted, sigPValInds = getTPVals(targetCol, DataSlice)
@@ -456,5 +471,5 @@ def Reg_by_Reg_Anal(ROI, tsData, targetCol, ROIs, indices2KeepMat, dispFigs):
 
         meanROIAcc, meanROIError = showMeROIAccPlot(ROIs, tsData, indices2KeepMat, targetCol, dispFigs)
 
-        return scores, meanROIAcc, meanROIError
+        return avgScore, avgSTD, meanROIAcc, meanROIError
 #-------------------------------------------------------------------------------
