@@ -18,7 +18,6 @@ def removePathNames(filePath, threshold_fd, TS_path_names):
     threshold fd value '''
 
     fdAvgs = pd.read_csv(filePath,header=None);
-
     indices2Del = np.where(fdAvgs > threshold_fd)[0]
     indices2Keep = np.where(fdAvgs <= threshold_fd)[0]
 
@@ -28,7 +27,7 @@ def removePathNames(filePath, threshold_fd, TS_path_names):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def addIndices(element,subPath,PyFeatList):
+def addIndices(element, subPath, PyFeatList):
     ''' This function adds a multi-level index to the feature matrix data that
         is read in as a text file, and returns the matrix
         The function takes two other inputs: a .txt file of the feature names
@@ -39,7 +38,6 @@ def addIndices(element,subPath,PyFeatList):
     [rows, cols] = tsData.shape
 
     # Store the number of subjects and ROIs
-
     TS_path_names = sorted(glob.glob(subPath + '*.mat'))
 
     subjects = len(TS_path_names)
@@ -47,7 +45,6 @@ def addIndices(element,subPath,PyFeatList):
     feats = cols
 
     # Add the multi-level index to the data
-
     ROI_index = list(range(1,ROIs+1))
     sub_index = list(range(1,subjects+1))
 
@@ -56,7 +53,6 @@ def addIndices(element,subPath,PyFeatList):
 
     featList = [lines.rstrip('\n') for lines in open(PyFeatList)]
     tsData = pd.DataFrame(data=tsData, index=index, columns=featList)
-
     return tsData, ROIs, subjects, feats, featList
 #-------------------------------------------------------------------------------
 
@@ -66,8 +62,7 @@ def getTargetCol(TS_path_names):
     which can be used to uniquely identify any SCZ data file
     It returns a binary target column (0 = control, 1 = SCZ) '''
 
-    # string = input('Enter a string found in all filenames that only contain SCZ data: ')
-    # In this case '-5' should do
+    # Enter a string found in all filenames that only contain SCZ data
     string = '-5'
 
     # Initialise and format a target column of length TS_path_names
@@ -107,7 +102,7 @@ def giveMeSubjectNums(targetCol):
 # ROISlice = tsData.loc[ROI,indices2KeepMat,:] # The ROI needs to be chosen
 
 #-------------------------------------------------------------------------------
-def getFeatSlice(ROIs,subjects,tsData,featureName,indices2KeepMat):
+def getFeatSlice(ROIs, subjects, tsData, featureName, indices2KeepMat):
     ''' This function takes the tsData, feature name and the indices to be kept
     (based on the threshold fd) and returns the selected featSlice as a dataframe '''
 
@@ -119,7 +114,6 @@ def getFeatSlice(ROIs,subjects,tsData,featureName,indices2KeepMat):
     featSlice = pd.DataFrame(data=featSlice, index=sub_index, columns=ROI_index) # Add the index
     featSlice.index.name = 'Subject' # Name the index
     featSlice = featSlice.loc[indices2KeepMat,:] # Take a subsection of the featSlice
-
     return featSlice
 #-------------------------------------------------------------------------------
 
@@ -226,7 +220,6 @@ def getTPVals(targetCol, DataSlice):
     # indices to access the relevant feature columns in X, the feature matrix
     indexVals = tpValDf_sorted.index.values
     sigPValInds = indexVals[:5]
-
     return tpValDf, tpValDf_sorted, sigPValInds
 #-------------------------------------------------------------------------------
 
@@ -262,9 +255,6 @@ def showMeViolinPlts(targetCol, sigPValInds, DataSlice, boolean, number):
     targetCol, sigPValInds, DataSlice, boolean
     # boolean == 0: when looking at FeatSlices
     # boolean == 1: when looking at ROISlices '''
-
-    # boolean = int(input('Is DataSlice = FeatSlice or ROISlice? Enter 0 or 1 respectively: '))
-    # number = input('Which Feature / ROI is being analysed?: ')
 
     # Create an index for the subplot
     n = 1;
@@ -382,7 +372,7 @@ def showMeFeatAccPlot(element, subPath, PyFeatList, indices2KeepMat, targetCol, 
     If 0 is given as an input, this function suppresses any printed messages
     and plots but returns the mean feature accuracy and error '''
 
-    tsData, ROIs, subjects, feats, featList = addIndices(element,subPath,PyFeatList)
+    tsData, ROIs, subjects, feats, featList = addIndices(element, subPath, PyFeatList)
 
     # Initialise a few variables
     featNo = np.zeros([feats])
@@ -393,7 +383,7 @@ def showMeFeatAccPlot(element, subPath, PyFeatList, indices2KeepMat, targetCol, 
 
         # For each of the 1 to 22 features, show me how good all of the ROIs are at predicting
         # whether the subject has SCZ or not
-        tsDataSlice = getFeatSlice(ROIs,subjects,tsData,featList[n-1],indices2KeepMat)
+        tsDataSlice = getFeatSlice(ROIs, subjects, tsData, featList[n-1], indices2KeepMat)
         tsDataSlice_zscored = tsDataSlice.apply(zscore)
 
         # Assign the data to variables
@@ -482,13 +472,13 @@ def Reg_by_Reg_Anal(ROI, tsData, targetCol, ROIs, indices2KeepMat, regAccOnly, d
         # Show me the top five features as violin plots in the ROI being analysed
         showMeViolinPlts(targetCol, sigPValInds, DataSlice, 1, ROI)
 
+        # Show me the average classification accuracy of all the features in a
+        # given region, and then take the average of all the regions
         showMeROIAccPlot(ROIs, tsData, indices2KeepMat, targetCol, dispFigs)
         return
 
     elif dispFigs == False:
-
         meanROIAcc, meanROIError = showMeROIAccPlot(ROIs, tsData, indices2KeepMat, targetCol, dispFigs)
-
         return avgScore, avgSTD, meanROIAcc, meanROIError
 #-------------------------------------------------------------------------------
 
@@ -496,10 +486,10 @@ def Reg_by_Reg_Anal(ROI, tsData, targetCol, ROIs, indices2KeepMat, regAccOnly, d
 def Feat_by_Feat_Anal(feature, featureName, element, subPath, PyFeatList,
 indices2KeepMat, targetCol, featAccOnly, dispFigs):
 
-    tsData, ROIs, subjects, feats, featList = addIndices(element,subPath,PyFeatList)
+    tsData, ROIs, subjects, feats, featList = addIndices(element, subPath, PyFeatList)
 
     # Acquire feature slice
-    featSlice = getFeatSlice(ROIs,subjects,tsData,featureName,indices2KeepMat)
+    featSlice = getFeatSlice(ROIs, subjects, tsData, featureName, indices2KeepMat)
 
     # Assign the data to variables
     DataSlice = featSlice
@@ -537,13 +527,49 @@ indices2KeepMat, targetCol, featAccOnly, dispFigs):
         # Show me the top five ROIs as violin plots in the feature being analysed
         showMeViolinPlts(targetCol, sigPValInds, DataSlice, 0, feature)
 
+        # Show me the average classification accuracy of all the ROIs in a
+        # given feature, and then take the average of all the features
         showMeFeatAccPlot(element, subPath, PyFeatList, indices2KeepMat, targetCol, dispFigs)
         return
 
     elif dispFigs == False:
-
         meanFeatAcc, meanFeatError = showMeFeatAccPlot(element, subPath, PyFeatList,
         indices2KeepMat, targetCol, dispFigs)
-
         return avgScore, avgSTD, meanFeatAcc, meanFeatError
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+def giveMeFDvBalancedAcc(fdArray):
+
+    fig, ax1 = plt.subplots()
+
+    AvgROIError = fdArray.iloc[:,6]
+    AvgFeatError = fdArray.iloc[:,8]
+
+    fd = fdArray.iloc[:,0]
+    SCZ2Control = fdArray.iloc[:,4]
+    AvgROIAcc = fdArray.iloc[:,5]
+    AvgFeatAcc = fdArray.iloc[:,7]
+
+    ax1.plot(fd, AvgFeatAcc,'b-')
+    # ax1.errorbar(fd, AvgFeatAcc, yerr=AvgFeatError, fmt='-o', capsize=5)
+
+    ax1.plot(fd, AvgROIAcc, 'r-')
+    # ax1.errorbar(fd, AvgROIAcc, yerr=AvgROIError, fmt='-o', capsize=5)
+
+    plt.xlim(max(fd)+0.01, min(fd)-0.01)
+    ax1.set_xlabel('fd (cm)')
+    ax1.set_ylabel('Balanced Acc (%)')
+
+    ax2 = ax1.twinx()
+    ax2.plot(fd, SCZ2Control,'g-')
+    ax2.set_ylabel('SCZ:Control', color='g')
+    ax2.tick_params('y', colors='g')
+    plt.grid(b=None)
+
+    ax1.legend(['Avg Feat Acc','Avg ROI Acc'],loc=3)
+    ax2.legend(['SCZ:Control'],loc=2)
+    fig.tight_layout()
+    plt.show()
+    return
 #-------------------------------------------------------------------------------
