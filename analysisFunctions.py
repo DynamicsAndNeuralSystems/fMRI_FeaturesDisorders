@@ -473,3 +473,58 @@ def Reg_by_Reg_Anal(ROI, tsData, targetCol, ROIs, indices2KeepMat, regAccOnly, d
 
         return avgScore, avgSTD, meanROIAcc, meanROIError
 #-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+def Feat_by_Feat_Anal(feature, featureName, ROIs, feats, featList, subjects, tsData,
+indices2KeepMat, targetCol, featAccOnly, dispFigs):
+
+    # Acquire feature slice
+    featSlice = getFeatSlice(ROIs,subjects,tsData,featureName,indices2KeepMat)
+
+    # Assign the data to variables
+    DataSlice = featSlice
+    DataSlice_zscored = DataSlice.apply(zscore)
+
+    X = DataSlice_zscored
+    y = np.ravel(targetCol)
+
+    # Perform 10-fold CV
+    scores = get10FoldCVScore(X,y)
+    avgScore = '{0:.2f}'.format(scores.mean())
+    avgSTD = '{0:.2f}'.format(scores.std())
+
+    if featAccOnly == True:
+        return avgScore, avgSTD
+
+    if dispFigs == True:
+
+        # Print scores
+        print('Analysis of Feature ' + str(feature) + ':')
+        print('')
+
+        print('10-fold CV scores as a percentage: ' + str(scores))
+        print('')
+
+        # Mean 10-fold CV score with an error of 1 std dev
+        print("Accuracy as a percentage: " + avgScore + " +/- " + avgSTD)
+
+        # Store the first five indices of the ROIs with the most significant p-values (the third output)
+        tpValDf, tpValDf_sorted, sigPValInds = getTPVals(targetCol, DataSlice)
+
+        # Show me the PCA figure
+        showMePCAFig(DataSlice, targetCol)
+
+        # Show me the top five ROIs as violin plots in the feature being analysed
+        showMeViolinPlts(targetCol, sigPValInds, DataSlice, 0, feature)
+
+        showMeFeatAccPlot(ROIs, feats, featList, subjects, tsData,
+        indices2KeepMat, targetCol, dispFigs)
+        return
+
+    elif dispFigs == False:
+
+        meanFeatAcc, meanFeatError = showMeFeatAccPlot(ROIs, feats, featList,
+        subjects, tsData, indices2KeepMat, targetCol, dispFigs)
+
+        return avgScore, avgSTD, meanFeatAcc, meanFeatError
+#-------------------------------------------------------------------------------
