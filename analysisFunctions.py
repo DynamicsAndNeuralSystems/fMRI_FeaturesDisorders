@@ -91,40 +91,20 @@ def getTargetCol(TS_path_names):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def getROISlice(Orig_TS_path_names, tsData, ROI, indices2Keep):
-    ''' This function takes a ROI as an input and gets the relevant slice
-    (or rows) from tsData '''
+def getFeatSlice(ROIs,subjects,tsData,featureName,indices2KeepMat):
+    ''' This function takes the tsData, feature name and the indices to be kept
+    (based on the threshold fd) and returns the selected featSlice as a dataframe '''
 
-    # Initialise a boolean
-    validROI = False
+    ROI_index = list(range(1,ROIs+1))
+    sub_index = list(range(1,subjects+1))
 
-    while validROI == False:
+    featSlice = tsData.loc[:,featureName].values.reshape(ROIs,subjects).transpose() # Make the featSlice (no index)
 
-        # Rows per region of interest = len(TS_path_names)
-        rowsPerROI = len(Orig_TS_path_names)
-        [rows,cols] = tsData.shape
+    featSlice = pd.DataFrame(data=featSlice, index=sub_index, columns=ROI_index) # Add the index
+    featSlice.index.name = 'Subject' # Name the index
+    featSlice = featSlice.loc[indices2KeepMat,:] # Take a subsection of the featSlice
 
-        # Get the rows corresponding to the mth region of interest
-        ROISlice = tsData.iloc[((int(ROI)-1)*rowsPerROI):(int(ROI)*rowsPerROI),:]
-        ROISlice = ROISlice.iloc[indices2Keep,:]
-
-        # Assigning min and max values for input 'm'
-        minROI = 1
-        maxROI = int(rows/rowsPerROI)
-
-        if minROI <= int(ROI) <= maxROI:
-            validROI == True
-            return ROISlice, ROI, maxROI
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-def getFeatSlice(featMat3D, feature):
-    ''' This function returns a slice of all the data related to a particular
-    feature, which it receives as an integer input '''
-
-    if 0 < feature <= 22:
-        FeatSlice = featMat3D[:,feature-1,:]
-        return FeatSlice
+    return featSlice
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -315,26 +295,33 @@ def showMeViolinPlts(targetCol, sigPValInds, DataSlice, boolean, number):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def showMeROIAccPlot(maxROI, Orig_TS_path_names, tsData, targetCol, boolean, indices2Keep):
+def showMeROIAccPlot(ROIs, tsData, indices2KeepMat, targetCol, dispFigs):
     ''' This function displays the region accuracy plot and the top 5 regions
     having the highest accuracies
     If 0 is given as an input, this function suppresses any printed messages
-    and plots but returns the mean regional accuracy '''
+    and plots but returns the mean regional accuracy and error '''
 
     # Initialise a few variables
-    regions = np.zeros([maxROI])
-    region_acc = np.zeros([maxROI])
-    roiErr = np.zeros([maxROI])
+    regions = np.zeros([ROIs])
+    region_acc = np.zeros([ROIs])
+    roiErr = np.zeros([ROIs])
 
-    for n in range(1, maxROI+1):
+    for n in range(1, ROIs+1):
 
-        tsDataSlice = getROISlice(Orig_TS_path_names, tsData, n, indices2Keep)[0]
+        # For each of the 1 to n regions, show me how good all of the features are at predicting
+        # whether the subject has SCZ or not
+        tsDataSlice = tsData.loc[n,indices2KeepMat,:]
         tsDataSlice_zscored = tsDataSlice.apply(zscore)
+
+        ## Print the top 5 features for each region being analysed
+        # top5Feats = getTPVals(targetCol, tsDataSlice)[2]
+        # print(top5Feats)
 
         # Assign the data to variables
         X = tsDataSlice_zscored
         y = np.ravel(targetCol)
 
+        # Denotes how good all the features in a given region are at predicting if a subject has SCZ
         avgScore = get10FoldCVScore(X,y).mean()
         avgSTD = get10FoldCVScore(X,y).std()
         regions[n-1] = n
@@ -345,9 +332,11 @@ def showMeROIAccPlot(maxROI, Orig_TS_path_names, tsData, targetCol, boolean, ind
     df['Region'] = df.Region.astype(int)
 
     df_sorted = df.sort_values(by='% Accuracy',ascending=False)
+    df_sorted = df_sorted.set_index('Region')
 
-    if boolean == 1:
-        print(df_sorted[:5].to_string(index=False))
+    if dispFigs == 1:
+        print('')
+        print(df_sorted[:5].to_string())
         print('')
 
         print('Mean Accuracy (across all regions) = ' +
@@ -358,32 +347,35 @@ def showMeROIAccPlot(maxROI, Orig_TS_path_names, tsData, targetCol, boolean, ind
         "{0:.2f}".format(df['ROI Error'].mean()) + '%')
         print('')
 
-        plt.hist(region_acc, bins='auto')
+        sns.distplot(region_acc, bins='auto', kde=False)
         plt.xlabel('Classification Accuracy (%)')
         plt.ylabel('No. of Regions')
         plt.show()
         return
-    elif boolean == 0:
+
+    elif dispFigs == 0:
         meanROIAcc = '{0:.2f}'.format(df['% Accuracy'].mean())
-        AvgROIError = '{0:.2f}'.format(df['ROI Error'].mean())
-        return meanROIAcc, AvgROIError
+        meanROIError = '{0:.2f}'.format(df['ROI Error'].mean())
+        return meanROIAcc, meanROIError
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def showMeFeatAccPlot(featMat3D, targetCol, boolean):
+def showMeFeatAccPlot(ROIs, feats, featList, subjects, tsData, indices2KeepMat, targetCol, dispFigs):
     ''' This function displays the feature accuracy plot and the top 5 features
     having the highest accuracies
     If 0 is given as an input, this function suppresses any printed messages
-    and plots but returns the mean feature accuracy '''
+    and plots but returns the mean feature accuracy and error '''
 
     # Initialise a few variables
-    feats = np.zeros(22)
-    feat_acc = np.zeros(22)
-    featErr = np.zeros([22])
+    featNo = np.zeros([feats])
+    feat_acc = np.zeros([feats])
+    featErr = np.zeros([feats])
 
-    for n in range(1, 23):
+    for n in range(1, feats+1):
 
-        tsDataSlice = pd.DataFrame(getFeatSlice(featMat3D, n))
+        # For each of the 1 to 22 features, show me how good all of the ROIs are at predicting
+        # whether the subject has SCZ or not
+        tsDataSlice = getFeatSlice(ROIs,subjects,tsData,featList[n-1],indices2KeepMat)
         tsDataSlice_zscored = tsDataSlice.apply(zscore)
 
         # Assign the data to variables
@@ -392,17 +384,18 @@ def showMeFeatAccPlot(featMat3D, targetCol, boolean):
 
         avgScore = get10FoldCVScore(X,y).mean()
         avgSTD = get10FoldCVScore(X,y).std()
-        feats[n-1] = n
+        featNo[n-1] = n
         feat_acc[n-1] = avgScore
         featErr[n-1] = avgSTD
 
-    df = pd.DataFrame({'Feature':feats,'% Accuracy':feat_acc,'Feat Error':featErr})
+    df = pd.DataFrame({'Feature':featNo,'% Accuracy':feat_acc,'Feat Error':featErr})
     df['Feature'] = df.Feature.astype(int)
 
     df_sorted = df.sort_values(by='% Accuracy',ascending=False)
+    df_sorted = df_sorted.set_index('Feature')
 
-    if boolean == 1:
-        print(df_sorted[:5].to_string(index=False))
+    if dispFigs == 1:
+        print(df_sorted[:5].to_string())
         print('')
 
         print('Mean Accuracy (across all features) = ' +
@@ -413,13 +406,55 @@ def showMeFeatAccPlot(featMat3D, targetCol, boolean):
         "{0:.2f}".format(df['Feat Error'].mean()) + '%')
         print('')
 
-        plt.hist(feat_acc, bins='auto')
+        sns.distplot(feat_acc, bins='auto', kde=False)
         plt.xlabel('Classification Accuracy (%)')
         plt.ylabel('No. of Features')
         plt.show()
         return
-    elif boolean == 0:
+
+    elif dispFigs == 0:
         meanFeatAcc = '{0:.2f}'.format(df['% Accuracy'].mean())
-        AvgFeatError = '{0:.2f}'.format(df['Feat Error'].mean())
-        return meanFeatAcc, AvgFeatError, df_sorted
+        meanFeatError = '{0:.2f}'.format(df['Feat Error'].mean())
+        return meanFeatAcc, meanFeatError
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+def Reg_by_Reg_Anal(ROI, tsData, targetCol, ROIs, indices2KeepMat, dispFigs):
+    ''' This function takes in several inputs that have been calculated and
+    outputs several graphs pertaining to the analysis of the selected region -
+    It provides a Region-by-Region analysis, and the graphs displayed can be
+    suppressed by setting the variable 'dispFigs' as false '''
+
+    # Acquire ROI slice
+    ROISlice = tsData.loc[ROI,indices2KeepMat,:]
+
+    # Assign the data to variables
+    DataSlice = ROISlice
+    DataSlice_zscored = DataSlice.apply(zscore)
+
+    X = DataSlice_zscored
+    y = np.ravel(targetCol)
+
+    # Perform 10-fold CV
+    scores = get10FoldCVScore(X,y)
+
+    if dispFigs == True:
+
+        # Store the first five indices of the features with the most significant p-values (the third output)
+        tpValDf, tpValDf_sorted, sigPValInds = getTPVals(targetCol, DataSlice)
+
+        # Show me the PCA figure
+        showMePCAFig(DataSlice, targetCol)
+
+        # Show me the top five features as violin plots in the ROI being analysed
+        showMeViolinPlts(targetCol, sigPValInds, DataSlice, 1, ROI)
+
+        showMeROIAccPlot(ROIs, tsData, indices2KeepMat, targetCol, dispFigs)
+        return
+
+    elif dispFigs == False:
+
+        meanROIAcc, meanROIError = showMeROIAccPlot(ROIs, tsData, indices2KeepMat, targetCol, dispFigs)
+
+        return scores, meanROIAcc, meanROIError
 #-------------------------------------------------------------------------------
