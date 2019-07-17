@@ -28,14 +28,14 @@ def removePathNames(filePath, threshold_fd, TS_path_names):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def addIndices(element_txt,subPath,PyFeatList_txt):
+def addIndices(element,subPath,PyFeatList):
     ''' This function adds a multi-level index to the feature matrix data that
         is read in as a text file, and returns the matrix
         The function takes two other inputs: a .txt file of the feature names
         as well as the subject file path for the given dataset '''
 
     from numpy import genfromtxt
-    tsData = genfromtxt(element_txt, delimiter=',')
+    tsData = genfromtxt(element, delimiter=',')
     [rows, cols] = tsData.shape
 
     # Store the number of subjects and ROIs
@@ -54,7 +54,7 @@ def addIndices(element_txt,subPath,PyFeatList_txt):
     iterables = [ROI_index, sub_index]
     index = pd.MultiIndex.from_product(iterables, names=['ROI', 'Subject'])
 
-    featList = [lines.rstrip('\n') for lines in open(PyFeatList_txt)]
+    featList = [lines.rstrip('\n') for lines in open(PyFeatList)]
     tsData = pd.DataFrame(data=tsData, index=index, columns=featList)
 
     return tsData, ROIs, subjects, feats, featList
@@ -89,6 +89,22 @@ def getTargetCol(TS_path_names):
             i += 1
     return Diagnosis
 #-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+def giveMeSubjectNums(targetCol):
+    ''' This function takes the target column as an input and returns the number of control subjects &
+    SCZ subjects, the total number of subjects and the ratio of SCZ : control subjects (SCZ2Ctrl) '''
+
+    Control = (targetCol == 0).sum()
+    SCZ = (targetCol == 1).sum()
+    Total = int(SCZ + Control)
+    SCZ2Ctrl = '{0:.2f}'.format(SCZ/Control)
+    return Control, SCZ, Total, SCZ2Ctrl
+#-------------------------------------------------------------------------------
+
+''' Selecting a ROI slice is achieved by the one-liner below: '''
+
+# ROISlice = tsData.loc[ROI,indices2KeepMat,:] # The ROI needs to be chosen
 
 #-------------------------------------------------------------------------------
 def getFeatSlice(ROIs,subjects,tsData,featureName,indices2KeepMat):
@@ -360,11 +376,13 @@ def showMeROIAccPlot(ROIs, tsData, indices2KeepMat, targetCol, dispFigs):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def showMeFeatAccPlot(ROIs, feats, featList, subjects, tsData, indices2KeepMat, targetCol, dispFigs):
+def showMeFeatAccPlot(element, subPath, PyFeatList, indices2KeepMat, targetCol, dispFigs):
     ''' This function displays the feature accuracy plot and the top 5 features
     having the highest accuracies
     If 0 is given as an input, this function suppresses any printed messages
     and plots but returns the mean feature accuracy and error '''
+
+    tsData, ROIs, subjects, feats, featList = addIndices(element,subPath,PyFeatList)
 
     # Initialise a few variables
     featNo = np.zeros([feats])
@@ -475,8 +493,10 @@ def Reg_by_Reg_Anal(ROI, tsData, targetCol, ROIs, indices2KeepMat, regAccOnly, d
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def Feat_by_Feat_Anal(feature, featureName, ROIs, feats, featList, subjects, tsData,
+def Feat_by_Feat_Anal(feature, featureName, element, subPath, PyFeatList,
 indices2KeepMat, targetCol, featAccOnly, dispFigs):
+
+    tsData, ROIs, subjects, feats, featList = addIndices(element,subPath,PyFeatList)
 
     # Acquire feature slice
     featSlice = getFeatSlice(ROIs,subjects,tsData,featureName,indices2KeepMat)
@@ -517,14 +537,13 @@ indices2KeepMat, targetCol, featAccOnly, dispFigs):
         # Show me the top five ROIs as violin plots in the feature being analysed
         showMeViolinPlts(targetCol, sigPValInds, DataSlice, 0, feature)
 
-        showMeFeatAccPlot(ROIs, feats, featList, subjects, tsData,
-        indices2KeepMat, targetCol, dispFigs)
+        showMeFeatAccPlot(element, subPath, PyFeatList, indices2KeepMat, targetCol, dispFigs)
         return
 
     elif dispFigs == False:
 
-        meanFeatAcc, meanFeatError = showMeFeatAccPlot(ROIs, feats, featList,
-        subjects, tsData, indices2KeepMat, targetCol, dispFigs)
+        meanFeatAcc, meanFeatError = showMeFeatAccPlot(element, subPath, PyFeatList,
+        indices2KeepMat, targetCol, dispFigs)
 
         return avgScore, avgSTD, meanFeatAcc, meanFeatError
 #-------------------------------------------------------------------------------
