@@ -52,7 +52,7 @@ def addIndices(element, subPath, PyFeatList):
     index = pd.MultiIndex.from_product(iterables, names=['ROI', 'Subject'])
 
     featList = [lines.rstrip('\n') for lines in open(PyFeatList)]
-    tsData = pd.DataFrame(data=tsData, index=index, columns=featList)
+    tsData = pd.DataFrame(data=tsData, index=index, columns=featList).rename_axis('Feature', axis=1)
     return tsData, ROIs, subjects, feats, featList
 #-------------------------------------------------------------------------------
 
@@ -97,6 +97,67 @@ def giveMeSubjectNums(targetCol):
     return Control, SCZ, Total, SCZ2Ctrl
 #-------------------------------------------------------------------------------
 
+#-------------------------------------------------------------------------------
+def giveMeLowestThreshFD(filePath, subPath, dataset, k, threshold_fdArray):
+    ''' This function calculates the lowest threshold_fd that can be applied to still have meaningful k-folds '''
+
+    # Initialise an index
+    i = 0
+
+    for threshold_fd in threshold_fdArray:
+
+        # Read in and store the framewise displacement (fd) for the given dataset in a variable called fdAvgs,
+        # and create the TS_path_names and indices2Keep variables
+
+        # Store the fdAvgs
+        fdAvgs = pd.read_csv(filePath,header=None);
+
+        # Need to alphabetise and store the subject file names into a variable
+        TS_path_names = sorted(glob.glob(subPath + '*.mat'))
+
+        # Filter the subjects based on their fd, and retain the subjects that have an fd < threshold_fd
+        TS_path_names, indices2Keep = removePathNames(filePath, threshold_fd, TS_path_names)
+        indices2Keep = indices2Keep.tolist()
+
+        # Adding 1 to every element in the array to convert to MATLAB indexing
+        indices2KeepMat = list(np.asarray(indices2Keep) + 1)
+
+        # Create the target column - unique for each dataset
+        if dataset == 'UCLA':
+
+            # Creating the target column
+            targetCol = getTargetCol(TS_path_names)
+
+        elif dataset == 'COBRE':
+
+            # Creating the target column
+            csvPath = '/Users/AV/Dropbox/COBRE/participants.csv'
+            COBRE = pd.read_csv(csvPath,header=None);
+
+            targetCol = COBRE.iloc[1:,2]
+            targetCol = targetCol.tolist()
+            targetCol = pd.DataFrame(data=targetCol, columns=['target'])
+
+            targetCol = targetCol.iloc[indices2Keep,:]
+            targetCol = np.asarray(targetCol,dtype=np.int)
+
+            # A '0' indicates a control subject and a '1' indicates a subject with SCZ
+            targetColModified = np.where(targetCol==1, 0, targetCol) # First change the pre-existing 1s to 0s
+            targetCol = np.where(targetCol==2, 1, targetColModified) # Then change the 2s to 1s
+
+        # Store and print the subject numbers within the dataset
+        Control, SCZ, Total, SCZ2Ctrl = giveMeSubjectNums(targetCol)
+
+        if SCZ > k:
+            # print(i)
+            i = i+1
+        elif SCZ <= k:
+            lowestThreshFD = threshold_fdArray[i-1]
+            print('Dataset = ' + str(dataset))
+            print('Lowest Threshold FD for ' + str(k) + '-fold CV = ' + str('{0:.2f}'.format(lowestThreshFD)))
+            return
+#-------------------------------------------------------------------------------
+
 ''' Selecting a ROI slice is achieved by the one-liner below: '''
 
 # ROISlice = tsData.loc[ROI,indices2KeepMat,:] # The ROI needs to be chosen
@@ -111,7 +172,7 @@ def getFeatSlice(ROIs, subjects, tsData, featureName, indices2KeepMat):
 
     featSlice = tsData.loc[:,featureName].values.reshape(ROIs,subjects).transpose() # Make the featSlice (no index)
 
-    featSlice = pd.DataFrame(data=featSlice, index=sub_index, columns=ROI_index) # Add the index
+    featSlice = pd.DataFrame(data=featSlice, index=sub_index, columns=ROI_index).rename_axis('ROI', axis=1) # Add the index
     featSlice.index.name = 'Subject' # Name the index
     featSlice = featSlice.loc[indices2KeepMat,:] # Take a subsection of the featSlice
     return featSlice
@@ -123,7 +184,7 @@ def get10FoldCVScore(X,y):
 
     # Import the support vector classifier and balance the classes
     from sklearn.svm import SVC
-    svclassifier = SVC(kernel='linear')
+    svclassifier = SVC(kernel='linear', class_weight='balanced')
 
     # Split the data into training and test sets
     from sklearn.model_selection import StratifiedKFold
