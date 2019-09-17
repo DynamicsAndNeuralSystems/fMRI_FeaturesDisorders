@@ -11,6 +11,8 @@ def getPathNames(path):
     TS_path_names = sorted(glob.glob(path + '*.mat'))
     return TS_path_names
 #-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
 def gettsData(path,element):
     ''' This function extracts data from any element of 'roiTS' within the cfg
     structure in the .mat file '''
@@ -18,6 +20,8 @@ def gettsData(path,element):
     matFile = sio.loadmat(path)
     tsData = matFile['cfg'][0][0]['roiTS'][0][element]
     return tsData
+#-------------------------------------------------------------------------------
+
 #-------------------------------------------------------------------------------
 def giveMeFeatureVector(tsData):
     ''' This function returns a catch-22 feature vector from an input time-series
@@ -32,6 +36,8 @@ def giveMeFeatureVector(tsData):
         featureVector.append(featureFun(tsData))
 
     return featureVector
+#-------------------------------------------------------------------------------
+
 #-------------------------------------------------------------------------------
 def giveMeSmallFeatMat(path,element,roi):
     ''' This function takes any element of the 'roiTS' cell from each of the
@@ -49,11 +55,15 @@ def giveMeSmallFeatMat(path,element,roi):
 
         # Retrieve and store data in a temp variable
         tsData = gettsData(path,element)
+        [rows, cols] = gettsData(TS_path_names[0],element).shape
 
         # Need to initialise the smallFeatMat for the first iteration of the loop
         if i == 0:
 
             smallFeatMat = np.zeros(shape=(len(TS_path_names),22))
+            ''' Use the second line when only the TS data is required - without
+            feature extraction '''
+            # smallFeatMat = np.zeros(shape=(len(TS_path_names),rows))
 
         # Get a specific column from the ts x roi data matrix for all the files
         tsDataCol = tsData[:,roi]
@@ -61,11 +71,16 @@ def giveMeSmallFeatMat(path,element,roi):
         # To be recognised by the catch22 modules, the input array needs to be a list
         tsDataCol = tsDataCol.tolist()
         smallFeatMat[i,:] = giveMeFeatureVector(tsDataCol)
+        ''' Use the second line when only the TS data is required - without
+        feature extraction '''
+        # smallFeatMat[i,:] = tsDataCol
 
         # Increment index
         i += 1
 
     return smallFeatMat
+#-------------------------------------------------------------------------------
+
 #-------------------------------------------------------------------------------
 def giveMeBigFeatMat(path,element):
     ''' This function takes the index of an element in the cell 'roiTS' as an input

@@ -11,7 +11,7 @@ import seaborn as sns
 import sklearn
 
 from scipy.stats import zscore
-
+from scipy import stats
 #-------------------------------------------------------------------------------
 def removePathNames(filePath, threshold_fd, TS_path_names):
     ''' This function modifies the entries within TS_path_names based on the
@@ -158,9 +158,10 @@ def giveMeLowestThreshFD(filePath, subPath, dataset, k, threshold_fdArray):
             return
 #-------------------------------------------------------------------------------
 
+#-------------------------------------------------------------------------------
 ''' Selecting a ROI slice is achieved by the one-liner below: '''
-
-# ROISlice = tsData.loc[ROI,indices2KeepMat,:] # The ROI needs to be chosen
+# ROISlice = tsData.loc[ROI,indices2KeepMat,:] # where the ROI needs to be chosen
+#-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
 def getFeatSlice(ROIs, subjects, tsData, featureName, indices2KeepMat):
@@ -228,6 +229,25 @@ def get10FoldCVScore(X,y):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
+def giveMeSVMWeights(X,y):
+    ''' This function returns the feature weights when given X and y '''
+
+    # Import the support vector classifier and balance the classes
+    from sklearn.svm import SVC
+    svclassifier = SVC(kernel='linear', class_weight='balanced')#, C=1e-2)
+
+    # Import accuracy score
+    from sklearn.metrics import balanced_accuracy_score
+
+    svclassifier.fit(X, y)
+
+    svmWeights = svclassifier.coef_
+    # svmW_shape = svmWeights.shape
+
+    return svmWeights[0]
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
 def getTPVals(targetCol, DataSlice):
     ''' This function computes the t-values (from a two-tail t-test) and
     the p-values
@@ -282,6 +302,52 @@ def getTPVals(targetCol, DataSlice):
     indexVals = tpValDf_sorted.index.values
     sigPValInds = indexVals[:5]
     return tpValDf, tpValDf_sorted, sigPValInds
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+def showMeTValHistograms(element,subPath,PyFeatList,dataset,indices2KeepMat,targetCol):
+    ''' This function plots the t-distribution for each of the feature slices '''
+
+    tsData, ROIs, subjects, feats, featList = addIndices(element, subPath, PyFeatList)
+
+    # Set up the plot
+    fig, axes = plt.subplots(nrows=4,ncols=6,figsize=(15,10))
+    fig.subplots_adjust(hspace=0.4, wspace=0.3)
+    fig.suptitle(str(dataset), y=0.93)
+
+    for feature in range(1, feats+1):
+
+        featureName = featList[feature-1]
+
+        featSlice = getFeatSlice(ROIs,subjects,tsData,featureName,indices2KeepMat)
+
+        # Assign the data to variables
+        DataSlice = featSlice
+
+        tpValDf, tpValDf_sorted, sigPValInds = getTPVals(targetCol,DataSlice)
+
+        # iterate through all axes
+        if (feature % 6) == 0:
+            row = feature // 6 - 1
+            col = 6 - 1
+        else:
+            row = (feature // 6)
+            col = feature % 6 - 1
+
+        # Create current subplot location
+        ax_curr = axes[row, col]
+
+        feat_tvals = tpValDf['t-value']
+
+        # Plot the histograms
+        sns.distplot(feat_tvals, kde=False, fit=stats.norm, ax=ax_curr)
+        ax_curr.set_title('Feat. ' + str(feature), fontsize=10)
+        ax_curr.set_xlabel('')
+
+    fig.delaxes(axes[3][5])
+    fig.delaxes(axes[3][4])
+
+    plt.show()
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
@@ -546,6 +612,10 @@ def Reg_by_Reg_Anal(ROI, tsData, targetCol, ROIs, indices2KeepMat, regAccOnly, d
 #-------------------------------------------------------------------------------
 def Feat_by_Feat_Anal(feature, featureName, element, subPath, PyFeatList,
 indices2KeepMat, targetCol, featAccOnly, dispFigs):
+    ''' This function takes in several inputs that have been calculated and
+    outputs several graphs pertaining to the analysis of the selected feature -
+    It provides a Feature-by-Feature analysis, and the graphs displayed can be
+    suppressed by setting the variable 'dispFigs' as false '''
 
     tsData, ROIs, subjects, feats, featList = addIndices(element, subPath, PyFeatList)
 
@@ -600,8 +670,138 @@ indices2KeepMat, targetCol, featAccOnly, dispFigs):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def giveMeFDvBalancedAcc(fdArray):
+def giveMeSortedFeats(element, subPath, PyFeatList, indices2KeepMat, targetCol):
+    ''' This function returns the sorted feature accuracies for the given dataset '''
 
+    tsData, ROIs, subjects, feats, featList = addIndices(element, subPath, PyFeatList)
+
+    # Initialise a few variables
+    featNo = np.zeros([feats])
+    feat_acc = np.zeros([feats])
+    featErr = np.zeros([feats])
+
+    for n in range(1, feats+1):
+
+        # For each of the 1 to 22 features, show me how good all of the ROIs are at predicting
+        # whether the subject has SCZ or not
+        tsDataSlice = getFeatSlice(ROIs, subjects, tsData, featList[n-1], indices2KeepMat)
+        tsDataSlice_zscored = tsDataSlice.apply(zscore)
+
+        # Assign the data to variables
+        X = tsDataSlice_zscored
+        y = np.ravel(targetCol)
+
+        avgScore = get10FoldCVScore(X,y).mean()
+        avgSTD = get10FoldCVScore(X,y).std()
+        featNo[n-1] = n
+        feat_acc[n-1] = avgScore
+        featErr[n-1] = avgSTD
+
+    df = pd.DataFrame({'Feature':featNo,'% Accuracy':feat_acc,'Feat Error':featErr})
+    df['Feature'] = df.Feature.astype(int)
+
+    df_sorted = df.sort_values(by='% Accuracy',ascending=False)
+    df_sorted = df_sorted.set_index('Feature')
+    return df_sorted
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+def showMeJointPlot(filePath1,filePath2):
+    ''' This function plots the jointplot of the two datasets being compared,
+    namely UCLA and COBRE '''
+
+    df1 = pd.read_csv(filePath1);
+    df1 = df1.sort_values(by='Feature')
+    df1.columns = ['UCLA Feature', 'UCLA Feat Acc (%)', 'UCLA Feat Error (%)']
+    uclaFeats = df1.iloc[:,1]
+    uclaSDs = df1.iloc[:,2]
+    df1 = df1.set_index('UCLA Feature')
+
+    print(df1)
+    print('')
+
+    # uclaFeats.to_csv('UCLAFeats.txt', index=0)
+
+    df2 = pd.read_csv(filePath2);
+    df2 = df2.sort_values(by='Feature')
+    df2.columns = ['COBRE Feature', 'COBRE Feat Acc (%)', 'COBRE Feat Error (%)']
+    cobreFeats = df2.iloc[:,1]
+    cobreSDs = df2.iloc[:,2]
+    df2 = df2.set_index('COBRE Feature')
+
+    print(df2)
+
+    # cobreFeats.to_csv('COBREFeats.txt', index=0)
+
+    sns.jointplot(uclaFeats, cobreFeats, kind='reg')
+    plt.show()
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+def computeCombPVals(filePath1,filePath2,filePath3,filePath4,feats):
+    ''' This function stores, computes and prints the combined p-values for both datasets '''
+
+    # Initialise pval_UCLA and pval_COBRE 1x22 array of zeros
+    pvals_UCLA = np.zeros(22)
+    pvals_COBRE = np.zeros(22)
+    pvals_combined = np.zeros(22)
+
+    shuffData_UCLA = pd.read_csv(filePath3);
+    shuffData_COBRE = pd.read_csv(filePath4);
+
+    df1 = pd.read_csv(filePath1);
+    uclaFeats = df1.iloc[:,1]
+    uclaSDs = df1.iloc[:,2]
+
+    df2 = pd.read_csv(filePath2);
+    cobreFeats = df2.iloc[:,1]
+    cobreSDs = df2.iloc[:,2]
+
+    for feature in range(1, feats+1):
+
+        # Get the rows corresponding to each feature
+        shuffFeatSlice_UCLA = shuffData_UCLA.iloc[((int(feature)-1)*1000):(int(feature)*1000),:]
+        shuffFeatSlice_COBRE = shuffData_COBRE.iloc[((int(feature)-1)*1000):(int(feature)*1000),:]
+
+        feat_acc_UCLA = shuffFeatSlice_UCLA.iloc[:,2]
+        feat_acc_COBRE = shuffFeatSlice_COBRE.iloc[:,2]
+
+        arr_UCLA = np.asarray(feat_acc_UCLA)
+        arr_COBRE = np.asarray(feat_acc_COBRE)
+
+        uclaFeats = np.asarray(uclaFeats)
+        cobreFeats = np.asarray(cobreFeats)
+
+        uclaSDs = np.asarray(uclaSDs)
+        cobreSDs = np.asarray(cobreSDs)
+
+        # What is the likelihood that a randomly calculated classification
+        # accuracy will beat the mean feature accuracy that has been calculated?
+
+        pval1 = np.mean(arr_UCLA>=uclaFeats[int(feature)-1])
+        pval2 = np.mean(arr_COBRE>=cobreFeats[int(feature)-1])
+
+        pvals_UCLA[int(feature)-1] = pval1
+        pvals_COBRE[int(feature)-1] = pval2
+
+        pvalues = [pval1, pval2]
+        pvalues = np.asarray(pvalues)
+
+        pvals_combined[int(feature)-1] = "%.3f" % stats.combine_pvalues(pvalues, method='fisher')[1]
+
+    df = pd.DataFrame(data=pvals_combined, columns=['Combined P-Values'])
+    df.index.name = 'Feature'
+    df.index += 1
+    print(df)
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+def giveMeFDvBalancedAcc(filePathA):
+    ''' This function plots the balanced feature and ROI accuracies as they vary
+    with fd
+    filePathA = 'fdArray_DATASET_elementn.txt' '''
+
+    fdArray = pd.read_csv(filePathA);
     fig, ax1 = plt.subplots()
 
     AvgROIError = fdArray.iloc[:,6]
@@ -633,4 +833,38 @@ def giveMeFDvBalancedAcc(fdArray):
     fig.tight_layout()
     plt.show()
     return
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+def showMeFDAcrossSubs(filePathA,filePathB):
+    ''' This function does two things when looking at a given dataset:
+    1. It displays the fd variation across subjects
+    2. It displays the number of subjects left as they are filtered by fd
+    filePathB = 'fdAvgs_DATASET.txt' '''
+
+    # fd variation across subjects
+    fdArray = pd.read_csv(filePathA);
+    fdAvgs = pd.read_csv(filePathB, header=None, names=['FD Avgs']);
+
+    fd = fdArray.iloc[:,0]
+    fdAvgs.hist(column='FD Avgs', bins='auto')
+
+    plt.xlim(max(fd), min(fd))
+    plt.title('FD Distribution')
+    plt.xlabel('FD Averages (cm)')
+    plt.ylabel('No. of Subjects')
+    plt.show()
+
+    # No. of subjects left as fd decreases
+
+    SCZ = fdArray.iloc[:,1]
+    Control = fdArray.iloc[:,2]
+
+    fdArray.plot.line(x='fd', y=['SCZ', 'Control'])
+
+    plt.xlim(max(fd), min(fd))
+    plt.title('FD vs Subjects Remaining')
+    plt.xlabel('FD Averages (cm)')
+    plt.ylabel('No. of Subjects')
+    plt.show()
 #-------------------------------------------------------------------------------
