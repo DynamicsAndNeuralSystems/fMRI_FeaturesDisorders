@@ -131,7 +131,7 @@ def giveMeLowestThreshFD(filePath, subPath, dataset, k, threshold_fdArray):
         elif dataset == 'COBRE':
 
             # Creating the target column
-            csvPath = '/Users/AV/Dropbox/COBRE/participants.csv'
+            csvPath = '/Users/preethompal/Dropbox (Sydney Uni Student)/COBRE/participants.csv'
             COBRE = pd.read_csv(csvPath,header=None);
 
             targetCol = COBRE.iloc[1:,2]

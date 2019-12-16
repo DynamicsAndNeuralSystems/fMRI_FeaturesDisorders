@@ -1,5 +1,3 @@
-#!/usr/local/bin/python3
-
 # Import required modules
 import glob
 import scipy.io as sio
@@ -13,17 +11,22 @@ import analysisFunctions as af
 
 from scipy.stats import zscore
 from scipy import stats
+#-------------------------------------------------------------------------------
 
 # Read in and store the framewise displacement (fd) for the given dataset in a variable called fdAvgs,
 # and create the TS_path_names and indices2Keep variables
 
 # Store the fdAvgs and set a threshold fd
-filePath = '/Users/preethompal/Dropbox (Sydney Uni Student)/COBRE/movementData/fdAvgs_COBRE.txt'
+filePath = '/Users/AV/Dropbox/COBRE/movementData/fdAvgs_COBRE.txt'
 fdAvgs = pd.read_csv(filePath,header=None);
 threshold_fd = 0.5
 
+
+df3 = pd.DataFrame({'feature': [], 'featBalancedAcc': [], 'stdDev': [], 'svmWeights' : []})
+
+
 # Store the path of the folder containing the subject data for the given dataset
-subPath = '/Users/preethompal/Dropbox (Sydney Uni Student)/COBRE/cfgData/'
+subPath = '/Users/AV/Dropbox/COBRE/cfgData/'
 
 # Need to alphabetise and store the subject file names into a variable
 TS_path_names = sorted(glob.glob(subPath + '*.mat'))
@@ -35,6 +38,9 @@ indices2Keep = indices2Keep.tolist()
 # Adding 1 to every element in the array to convert to MATLAB indexing
 indices2KeepMat = list(np.asarray(indices2Keep) + 1)
 
+# print(indices2KeepMat)
+#-------------------------------------------------------------------------------
+
 # Add a multi-level index to the tsData and store some key variables
 
 element = 'element1_COBRE.txt' # Read in the feature matrix data from the saved .txt file
@@ -43,13 +49,7 @@ PyFeatList = 'PythonFeatureList.txt' # This text file contains the 22 feature na
 # Add a multi-level index to the feature matrix and save into the variable, tsData
 # Also store the number of ROIs and subjects in the data
 tsData, ROIs, subjects, feats, featList = af.addIndices(element,subPath,PyFeatList)
-
-# Choose which feature to analyse
-feature = 1
-featureName = featList[feature-1]
-
-# Choose which ROI to analyse
-ROI = 1
+#-------------------------------------------------------------------------------
 
 # Create the target column - unique for each dataset
 
@@ -64,7 +64,7 @@ if dataset == 'UCLA':
 elif dataset == 'COBRE':
 
     # Creating the target column
-    csvPath = '/Users/preethompal/Dropbox (Sydney Uni Student)/COBRE/participants.csv'
+    csvPath = '/Users/AV/Dropbox/COBRE/participants.csv'
     COBRE = pd.read_csv(csvPath,header=None);
 
     targetCol = COBRE.iloc[1:,2]
@@ -77,42 +77,52 @@ elif dataset == 'COBRE':
     # A '0' indicates a control subject and a '1' indicates a subject with SCZ
     targetColModified = np.where(targetCol==1, 0, targetCol) # First change the pre-existing 1s to 0s
     targetCol = np.where(targetCol==2, 1, targetColModified) # Then change the 2s to 1s
+#-------------------------------------------------------------------------------
 
-# Store and print the subject numbers within the dataset
-Control, SCZ, Total, SCZ2Ctrl = af.giveMeSubjectNums(targetCol)
+for feature in range(1, 23):
 
-# Initialise a few boolean variables which decide what the outputs are
-dispFigs = True
-regAccOnly = False
-featAccOnly = False
+    # Choose which feature to analyse
+    featureName = featList[feature-1]
+    featSlice = af.getFeatSlice(ROIs,subjects,tsData,featureName,indices2KeepMat)
+    DataSlice = featSlice
+    DataSlice_zscored = DataSlice.apply(zscore)
+    X = DataSlice_zscored
+    y = np.ravel(targetCol)
 
-# Region by Region Analysis
-af.Reg_by_Reg_Anal(ROI, tsData, targetCol, ROIs, indices2KeepMat, regAccOnly, dispFigs)
+    # Perform 10-Fold Cross Validation
 
-# Feature by Feature Analysis
-af.Feat_by_Feat_Anal(feature, featureName, element, subPath, PyFeatList,
-                     indices2KeepMat, targetCol, featAccOnly, dispFigs)
+    # Store the function's output as a variable
+    scores = af.get10FoldCVScore(X,y)
+    weights = giveMeSVMWeights(X,y)
 
-af.showMeTValHistograms(element,subPath,PyFeatList,dataset,indices2KeepMat,targetCol)
+    featBalancedAcc = scores.mean()
+    stdDev = scores.std()
 
-fp1 = '/Users/preethompal/Documents/Projects/Schiz Biomarkers/fMRIFeatureMatrix/sortedFeats_UCLA.txt'
-fp2 = '/Users/preethompal/Documents/Projects/Schiz Biomarkers/fMRIFeatureMatrix/sortedFeats_COBRE.txt'
+    df3 = df3.append({'feature': feature, 'featBalancedAcc': featBalancedAcc, 'stdDev': stdDev, 'svmWeights' : weights}, ignore_index=True)
+    df3_sorted = df3.sort_values(by='featBalancedAcc',ascending=False)
+    df3_sorted = df3_sorted.set_index('feature')
 
-af.showMeJointPlot(fp1,fp2)
+#     for i in range(1,1001):
 
-fp3 = '/Users/preethompal/Documents/Projects/Schiz Biomarkers/fMRIFeatureMatrix/featBalancedAcc_UCLA_shuff.txt'
-fp4 = '/Users/preethompal/Documents/Projects/Schiz Biomarkers/fMRIFeatureMatrix/featBalancedAcc_COBRE_shuff.txt'
+#         iteration = i
 
-af.computeCombPVals(fp1,fp2,fp3,fp4,feats)
+#         # Shuffled target column
+#         np.random.shuffle(targetCol)
+#         y = np.ravel(targetCol)
+#         #-------------------------------------------------------------------------------
 
-# Plot the fd vs balanced accuracy
+#         # Perform 10-Fold Cross Validation
 
-# Import and store the fdArray
-filePathA = '/Users/preethompal/Documents/Projects/Schiz Biomarkers/fMRIFeatureMatrix/fdArray_COBRE_E1.txt'
+#         # Store the function's output as a variable
+#         scores = af.get10FoldCVScore(X,y)
 
-af.giveMeFDvBalancedAcc(filePathA)
+#         featBalancedAcc = scores.mean()
+#         stdDev = scores.std()
 
-# Navigate to the 'fdAvgs_DATASET.txt' file
-filePathB = '/Users/preethompal/Dropbox (Sydney Uni Student)/COBRE/movementData/fdAvgs_COBRE.txt'
+#         df3 = df3.append({'feature': feature, 'iteration': iteration, 'featBalancedAcc': featBalancedAcc, 'stdDev': stdDev}, ignore_index=True)
 
-af.showMeFDAcrossSubs(filePathA,filePathB)
+#         print('Feature ', str(feature), ', Iteration ', str(iteration), '... Stored.')
+
+# outFileName = 'featBalancedAcc_' + str(dataset) + '_shuff.txt'
+
+# df3.to_csv(outFileName, index=False)
