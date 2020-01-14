@@ -1,16 +1,17 @@
 # _catch22_ for cfg.mat files
 
 This repository provides code that facilitates
-a) feature extraction using [_catch22_](https://github.com/chlubba/catch22) from time series stored in _cfg.mat_ files and
+
+a) feature extraction using [_catch22_](https://github.com/chlubba/catch22) from any time series stored in _cfg.mat_ files and
+
 b) subsequent statistical classification.
 
-The aim of analysis on the example fMRI dataset used was to classify schizophrenic vs healthy controls.
+The aim of analysis on the sample fMRI dataset used was to classify schizophrenic vs healthy controls.
 
 There are two Python files to be run:
 * `catch22_cfg_data.py`, which handles the catch22 analysis of _cfg.mat_ data files. Features extracted are stored in a _c22_roiTSx_DATASET.txt_ file.
 
 * `packagedCode`, which references analysis functions that process the feature data, and output useful numerical and graphical information
-s
 The code and figures below will correspond to the analysis of the COBRE dataset. Only change the variables referenced below (all other variables may remain as they are).
 
 ### 1. Generating the time series feature datafile
