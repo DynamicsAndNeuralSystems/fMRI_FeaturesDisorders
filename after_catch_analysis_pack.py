@@ -10,7 +10,7 @@ import math
 from sklearn.svm import SVC
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import RepeatedStratifiedKFold
-# from sklearn.metrics import balanced_accuracy_score
+from sklearn.metrics import balanced_accuracy_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from scipy.stats import zscore
@@ -248,7 +248,7 @@ def tenFoldCVScore(X,y):
             print("Error message:", e)
             exit()
         predictions = svclassifier.predict(X_test)
-        accuracy = sklearn.metrics.balanced_accuracy_score(y_test, predictions)
+        accuracy = balanced_accuracy_score(y_test, predictions)
         scores[i] = '{0:.2f}'.format(accuracy*100)
         i += 1
     return scores
