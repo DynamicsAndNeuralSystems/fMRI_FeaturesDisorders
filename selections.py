@@ -38,8 +38,10 @@ class Selections:
 
         #-----------------------DON'T CHANGE BELOW HERE-------------------------
         self.featNames = [lines.rstrip('\n') for lines in open(featureListFileName)]
-        self.participants = pd.read_csv(csvPath,header=0);
-        self.filePathsAll = sorted(glob.glob(folderPath + '*.mat'))
+        # self.participants = pd.read_csv(csvPath,header=0);
+
+        # self.filePathsAll = sorted(glob.glob(folderPath + '*.mat'))
+
         self.subjCount = len(self.filePathsAll) #total number of subjects
         c22DataNdArray = genfromtxt(c22DataFileName, delimiter=',')
         self.problemSubjectInds = []
@@ -50,4 +52,8 @@ class Selections:
         if 'procMeth' in self.dataOptionName:
             self.problemSubjectInds = acap.nanDistribution(self.c22Data, self.subjCount, self.roiCount, self.featCount, disp=False)
 
-        self.fdAvgs = pd.read_csv(fdAvgsPath,header=None, names=['Avgs']);
+        # self.fdAvgs = pd.read_csv(fdAvgsPath,header=None, names=['Avgs']);
+        # Rmb: These need to be non-zero if running on old COBRE/UCLA data:
+        self.participants = 0
+        self.filePathsAll = 0
+        self.fdAvgs = 0
