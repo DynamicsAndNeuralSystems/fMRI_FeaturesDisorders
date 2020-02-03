@@ -149,7 +149,7 @@ else:
 #Select which brain parcellation will be analysed. See 6 options of roiTS cells in cfgData files.
 # If using single mat file (e.g. new DiCER data), use this to select which noise
 # processing option is used. See shape of time_series (3 options)
-element = 3 #1 = first option/cell.
+element = 1 #1 = first option/cell.
 
 dataOptionName = 'roiTS'
 if isSingleMatFile:
