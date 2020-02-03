@@ -15,8 +15,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from scipy.stats import zscore
 from scipy import stats
-# from sm.stats import multitest
-import statsmodels as sm
+from statsmodels.stats import multitest
 #-------------------------------------------------------------------------------
 def removePathsAboveThresh(fdAvgs, threshold_fd, filePaths):
     ''' This function removes the entries within filePaths if those subjects had
@@ -806,7 +805,7 @@ def roiAccuracyPValsTriple(randomLearnData, roiAccsDataframes, roiCount):
 
     pValsCorrected = []
     for i in range(3):
-        pValsCorrected.append(sm.stats.multitest.multipletests(pVals[i], method='fdr_bh')[1])
+        pValsCorrected.append(multitest.multipletests(pVals[i], method='fdr_bh')[1])
 
     df = pd.DataFrame({'procMeth1':pVals[0], 'procMeth1 Corrected':pValsCorrected[0],
                         'procMeth2':pVals[1], 'procMeth2 Corrected':pValsCorrected[1],
@@ -857,7 +856,7 @@ def featureAccuracyPValsTriple(featAccDataframes, randomLearnData, featCount):
     # Multiple hypothesis test correction. Benjamini/Hochberg (non-negative)
     pValsCorrected = []
     for i in range(3):
-        pValsCorrected.append(sm.stats.multitest.multipletests(pVals[i], method='fdr_bh')[1])
+        pValsCorrected.append(multitest.multipletests(pVals[i], method='fdr_bh')[1])
 
     df = pd.DataFrame({'procMeth1':pVals[0], 'procMeth1 Corrected':pValsCorrected[0],
                         'procMeth2':pVals[1], 'procMeth2 Corrected':pValsCorrected[1],
@@ -874,7 +873,7 @@ def featureAccuracyPValsTriple(featAccDataframes, randomLearnData, featCount):
         pValsCombined.append(stats.combine_pvalues(pVals, method='fisher')[1])
 
     # Multiple hypothesis test correction. Benjamini/Hochberg (non-negative)
-    pValsCombinedCorrected = sm.stats.multitest.multipletests(pValsCombined, method='fdr_bh')[1]
+    pValsCombinedCorrected = multitest.multipletests(pValsCombined, method='fdr_bh')[1]
     df = pd.DataFrame({'Combined': pValsCombined, 'Corrected': pValsCombinedCorrected})
     df = df.round(3)
     df.index.name = 'Feature'
@@ -916,8 +915,8 @@ def featureAccuracyPVals(dfFeatAccsUCLA,dfFeatAccsCOBRE,randomLearnDataUCLA,rand
 
     # Multiple hypothesis test correction. Benjamini/Hochberg (non-negative)
     pValsUCLA = np.delete(pValsUCLA, 3)
-    pValsCorrectedUCLA = sm.stats.multitest.multipletests(pValsUCLA, method='fdr_bh')[1]
-    # pValsCorrectedCOBRE = sm.stats.multitest.multipletests(pValsCOBRE, method='fdr_bh')[1]
+    pValsCorrectedUCLA = multitest.multipletests(pValsUCLA, method='fdr_bh')[1]
+    # pValsCorrectedCOBRE = multitest.multipletests(pValsCOBRE, method='fdr_bh')[1]
     df = pd.DataFrame({'UCLA P Values':pValsCorrectedUCLA})
     df = df.round(3)
     idx = np.asarray([i for i in range(22)])
@@ -931,7 +930,7 @@ def featureAccuracyPVals(dfFeatAccsUCLA,dfFeatAccsCOBRE,randomLearnDataUCLA,rand
     # for pVals in pValuePairs:
     #     pValsCombined.append(stats.combine_pvalues(pVals, method='fisher')[1])
     # # Multiple hypothesis test correction. Benjamini/Hochberg (non-negative)
-    # pValsCombined = sm.stats.multitest.multipletests(pValsCombined, method='fdr_bh')[1]
+    # pValsCombined = multitest.multipletests(pValsCombined, method='fdr_bh')[1]
     # df = pd.DataFrame(data=pValsCombined, columns=['Combined P-Values'])
     # df = df.round(3)
     # df.index.name = 'Feature'
