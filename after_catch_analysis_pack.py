@@ -10,12 +10,12 @@ import math
 from sklearn.svm import SVC
 from sklearn.model_selection import StratifiedKFold
 from sklearn.model_selection import RepeatedStratifiedKFold
-from sklearn.metrics import balanced_accuracy_score
+# from sklearn.metrics import balanced_accuracy_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from scipy.stats import zscore
 from scipy import stats
-from statsmodels.stats import multitest
+# from statsmodels.stats import multitest
 #-------------------------------------------------------------------------------
 def removePathsAboveThresh(fdAvgs, threshold_fd, filePaths):
     ''' This function removes the entries within filePaths if those subjects had
@@ -248,7 +248,7 @@ def tenFoldCVScore(X,y):
             print("Error message:", e)
             exit()
         predictions = svclassifier.predict(X_test)
-        accuracy = balanced_accuracy_score(y_test, predictions)
+        accuracy = sklearn.metrics.balanced_accuracy_score(y_test, predictions)
         scores[i] = '{0:.2f}'.format(accuracy*100)
         i += 1
     return scores
@@ -805,7 +805,7 @@ def roiAccuracyPValsTriple(randomLearnData, roiAccsDataframes, roiCount):
 
     pValsCorrected = []
     for i in range(3):
-        pValsCorrected.append(multitest.multipletests(pVals[i], method='fdr_bh')[1])
+        pValsCorrected.append(statsmodels.stats.multitest.multipletests(pVals[i], method='fdr_bh')[1])
 
     df = pd.DataFrame({'procMeth1':pVals[0], 'procMeth1 Corrected':pValsCorrected[0],
                         'procMeth2':pVals[1], 'procMeth2 Corrected':pValsCorrected[1],
@@ -856,7 +856,7 @@ def featureAccuracyPValsTriple(featAccDataframes, randomLearnData, featCount):
     # Multiple hypothesis test correction. Benjamini/Hochberg (non-negative)
     pValsCorrected = []
     for i in range(3):
-        pValsCorrected.append(multitest.multipletests(pVals[i], method='fdr_bh')[1])
+        pValsCorrected.append(statsmodels.stats.multitest.multipletests(pVals[i], method='fdr_bh')[1])
 
     df = pd.DataFrame({'procMeth1':pVals[0], 'procMeth1 Corrected':pValsCorrected[0],
                         'procMeth2':pVals[1], 'procMeth2 Corrected':pValsCorrected[1],
@@ -873,7 +873,7 @@ def featureAccuracyPValsTriple(featAccDataframes, randomLearnData, featCount):
         pValsCombined.append(stats.combine_pvalues(pVals, method='fisher')[1])
 
     # Multiple hypothesis test correction. Benjamini/Hochberg (non-negative)
-    pValsCombinedCorrected = multitest.multipletests(pValsCombined, method='fdr_bh')[1]
+    pValsCombinedCorrected = statsmodels.stats.multitest.multipletests(pValsCombined, method='fdr_bh')[1]
     df = pd.DataFrame({'Combined': pValsCombined, 'Corrected': pValsCombinedCorrected})
     df = df.round(3)
     df.index.name = 'Feature'
@@ -915,8 +915,8 @@ def featureAccuracyPVals(dfFeatAccsUCLA,dfFeatAccsCOBRE,randomLearnDataUCLA,rand
 
     # Multiple hypothesis test correction. Benjamini/Hochberg (non-negative)
     pValsUCLA = np.delete(pValsUCLA, 3)
-    pValsCorrectedUCLA = multitest.multipletests(pValsUCLA, method='fdr_bh')[1]
-    # pValsCorrectedCOBRE = multitest.multipletests(pValsCOBRE, method='fdr_bh')[1]
+    pValsCorrectedUCLA = statsmodels.stats.multitest.multipletests(pValsUCLA, method='fdr_bh')[1]
+    # pValsCorrectedCOBRE = statsmodels.stats.multitest.multipletests(pValsCOBRE, method='fdr_bh')[1]
     df = pd.DataFrame({'UCLA P Values':pValsCorrectedUCLA})
     df = df.round(3)
     idx = np.asarray([i for i in range(22)])
@@ -930,7 +930,7 @@ def featureAccuracyPVals(dfFeatAccsUCLA,dfFeatAccsCOBRE,randomLearnDataUCLA,rand
     # for pVals in pValuePairs:
     #     pValsCombined.append(stats.combine_pvalues(pVals, method='fisher')[1])
     # # Multiple hypothesis test correction. Benjamini/Hochberg (non-negative)
-    # pValsCombined = multitest.multipletests(pValsCombined, method='fdr_bh')[1]
+    # pValsCombined = statsmodels.stats.multitest.multipletests(pValsCombined, method='fdr_bh')[1]
     # df = pd.DataFrame(data=pValsCombined, columns=['Combined P-Values'])
     # df = df.round(3)
     # df.index.name = 'Feature'
