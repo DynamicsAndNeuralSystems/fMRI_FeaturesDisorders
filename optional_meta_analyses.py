@@ -15,6 +15,8 @@ showJointPlot = False
 # Select true to show the estimated p values from both datasets' accuracies using permutation testing.
 showIndividualFeatureSignificance = False # NB: Expensive if getting random permutations first time.
 showIndividualRegionSignificance = True
+showJointFeatureSignificance = False
+showJointRegionSignificance = False
 
 useSavedRandomLearnData = False #Used saved permutation testing results. Set to true this after running above once.
 useSavedAccuracies = True
@@ -73,7 +75,7 @@ if showTValueHistograms:
 if showJointPlot:
     acap.featurePerformanceJointPlot(featAccs, featAccsAlt, alt.dataset)
 
-if showIndividualFeatureSignificance:
+if showIndividualFeatureSignificance or showJointFeatureSignificance:
     if not useSavedAccuracies:
         featAccs = acap.accuracyOfFeatures(c22Data, roiCount, subjCount, featNames, subjIndicesBelowThresh, labelColumn, dispFigs, returnDF=True)
         outFileName = 'featAccuracies_procMeth1_UCLA.txt'
@@ -93,21 +95,37 @@ if showIndividualFeatureSignificance:
         featAccsDicer3 = 0
 
 
-    if not useSavedRandomLearnData:
+    if not useSavedRandomLearnData and showIndividualFeatureSignificance:
         randomLearnData = acap.kiloLabelShufflesAndLearnsFeatures(labelColumnDicer3, dicer3.c22Data, subjIndicesBelowThreshDicer3, dicer3.roiCount, dicer3.subjCount, featNames)
-        outFileName = "randomLearnData_procMeth3_UCLA.txt"
+        outFileName = "randomLearnData_individualFeatures_procMeth3_UCLA.txt"
         randomLearnData.to_csv(outFileName, index=False, header=True)
         print("Your file "+outFileName+" has been saved in the current directory.")
         randomLearnData = 0
 
-    randomLearnDataDicerUCLA = pd.read_csv("randomLearnData_individualFeatures_procMeth3_UCLA.txt")
+    if not useSavedRandomLearnData and showJointFeatureSignificance:
+        randomLearnData = acap.kiloLabelShufflesAndLearnsFeaturesJoint(labelColumnDicer3, dicer3.c22Data, subjIndicesBelowThreshDicer3, dicer3.roiCount, dicer3.subjCount, featNames)
+        outFileName = "randomLearnData_jointFeatures_procMeth3_UCLA.txt"
+        randomLearnData.to_csv(outFileName, index=False, header=True)
+        print("Your file "+outFileName+" has been saved in the current directory.")
+        randomLearnData = 0
+
     featAccs = pd.read_csv('featAccuracies_procMeth1_UCLA.txt')
     featAccsDicer2 = pd.read_csv('featAccuracies_procMeth2_UCLA.txt')
     featAccsDicer3 = pd.read_csv('featAccuracies_procMeth3_UCLA.txt')
-    acap.featAccNullDistributionsPlotTriple(randomLearnDataDicerUCLA, [featAccs, featAccsDicer2, featAccsDicer3], featCount)
-    acap.featureAccuracyPValsTriple([featAccs, featAccsDicer2, featAccsDicer3], randomLearnDataDicerUCLA, featCount)
 
-if showIndividualRegionSignificance:
+    if showIndividualFeatureSignificance:
+        randomLearnDataDicerUCLA = pd.read_csv("randomLearnData_individualFeatures_procMeth3_UCLA.txt")
+        acap.featAccNullDistributionsPlotTriple(randomLearnDataDicerUCLA, [featAccs, featAccsDicer2, featAccsDicer3], featCount)
+        acap.featureAccuracyPValsTriple([featAccs, featAccsDicer2, featAccsDicer3], randomLearnDataDicerUCLA, featCount)
+
+    if showJointFeatureSignificance:
+        randomLearnDataDicerUCLA = pd.read_csv("randomLearnData_jointFeatures_procMeth3_UCLA.txt")
+        meanFeatAcc = np.mean(np.asarray(featAccs['% Accuracy']))
+        meanFeatAccDicer2 = np.mean(np.asarray(featAccsDicer2['% Accuracy']))
+        meanFeatAccDicer3 = np.mean(np.asarray(featAccsDicer3['% Accuracy']))
+        acap.jointAccNullDistributionPlot([meanFeatAcc, meanFeatAccDicer2, meanFeatAccDicer3], randomLearnDataDicerUCLA, 'Features')
+
+if showIndividualRegionSignificance or showJointRegionSignificance:
     if not useSavedAccuracies:
         roiAccs = acap.accuracyOfRegions(roiCount, c22Data, subjIndicesBelowThresh, labelColumn, dispFigs=False, returnDF=True)
         outFileName = 'roiAccuracies_procMeth1_UCLA.txt'
@@ -124,9 +142,16 @@ if showIndividualRegionSignificance:
         roiAccsDicer3.to_csv(outFileName, index=False, header=True)
         roiAccsDicer3 = 0
 
-    if not useSavedRandomLearnData:
+    if not useSavedRandomLearnData and showIndividualRegionSignificance:
         randomLearnData = acap.kiloLabelShufflesAndLearnsRegions(labelColumnDicer3, dicer3.c22Data, dicer3.roiCount)
         outFileName = "randomLearnData_individualRegions_procMeth3_UCLA.txt"
+        randomLearnData.to_csv(outFileName, mode='a', index=False, header=False)
+        print("Your file "+outFileName+" has been saved in the current directory.")
+        randomLearnData = 0
+
+    if not useSavedRandomLearnData and showJointRegionSignificance:
+        randomLearnData = acap.kiloLabelShufflesAndLearnsRegionsJoint(labelColumnDicer3, dicer3.c22Data, dicer3.roiCount)
+        outFileName = 'randomLearnData_jointRegions_procMeth3_UCLA.txt'
         randomLearnData.to_csv(outFileName, mode='a', index=False, header=False)
         print("Your file "+outFileName+" has been saved in the current directory.")
         randomLearnData = 0
@@ -135,6 +160,14 @@ if showIndividualRegionSignificance:
     roiAccsDicer2 = pd.read_csv('roiAccuracies_procMeth2_UCLA.txt')
     roiAccsDicer3 = pd.read_csv('roiAccuracies_procMeth3_UCLA.txt')
 
-    randomLearnDataDicerUCLA = pd.read_csv("randomLearnData_individualRegions_procMeth3_UCLA.txt")
-    acap.roiAccNullDistributionsPlotTriple(randomLearnDataDicerUCLA, [roiAccs, roiAccsDicer2, roiAccsDicer3], roiCount)
-    acap.roiAccuracyPValsTriple(randomLearnDataDicerUCLA, [roiAccs, roiAccsDicer2, roiAccsDicer3], roiCount)
+    if showIndividualRegionSignificance:
+        randomLearnDataDicerUCLA = pd.read_csv("randomLearnData_individualRegions_procMeth3_UCLA.txt")
+        acap.roiAccNullDistributionsPlotTriple(randomLearnDataDicerUCLA, [roiAccs, roiAccsDicer2, roiAccsDicer3], roiCount)
+        acap.roiAccuracyPValsTriple(randomLearnDataDicerUCLA, [roiAccs, roiAccsDicer2, roiAccsDicer3], roiCount)
+
+    if showJointRegionSignificance:
+        randomLearnDataDicerUCLA = pd.read_csv("randomLearnData_jointRegions_procMeth3_UCLA.txt")
+        meanRoiAcc = np.mean(np.asarray(roiAccs['% Accuracy']))
+        meanRoiAccDicer2 = np.mean(np.asarray(roiAccsDicer2['% Accuracy']))
+        meanRoiAccDicer3 = np.mean(np.asarray(roiAccsDicer3['% Accuracy']))
+        acap.jointAccNullDistributionPlot([meanRoiAcc, meanRoiAccDicer2, meanRoiAccDicer3], randomLearnDataDicerUCLA, 'Regions')

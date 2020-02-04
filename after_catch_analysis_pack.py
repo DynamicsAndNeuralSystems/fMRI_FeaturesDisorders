@@ -699,11 +699,45 @@ def featurePerformanceJointPlot(sortedFeats,sortedFeatsAlt, altName):
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-def jointAccNullDistributionPlot(accuracies, dataframe):
+def jointAccNullDistributionPlot(accuracies, dataframe, option):
+    colours = ['r','b','g']
+    randomAccs = np.asarray(dataframe['Average Accuracy'])
+    plt.hist(randomAccs, bins=50)
+    plt.xlabel('Joint Accuracies: '+option)
+    plt.ylabel('Frequency')
+    for j in range(3):
+        accuracy = accuracies[j]:
+        plt.axis.axvline(x=accuracy, color=colours[j], linestyle='dashed', label=('procMeth'+str(j+1)))
 
-    pass
+    handles, labels = plt.axis.get_legend_handles_labels()
+    plt.figure.legend(handles, labels)
+
+    plt.show()
+    return
 #-------------------------------------------------------------------------------
+def kiloLabelShufflesAndLearnsFeaturesJoint(labelColumn, c22Data, subjIndicesBelowThresh, roiCount, subjCount, featNames, featCount=22):
+    df = pd.DataFrame({'Iteration':[], 'Average Accuracy': []})
+    for i in range(1000):
+        individualAccuracies = np.zeros(roiCount)
+        for feat in range(featCount):
+            featureName = featNames[feat]
+            featSlice = featureSlice(roiCount, subjCount, c22Data, featureName, subjIndicesBelowThresh)
+            featSliceZScored = featSlice.apply(zscore)
+            for roiNum, roiCol in featSliceZScored.iteritems():
+                if roiCol.isnull().values.any():
+                    print('Removing region '+str(regNum)+' for cross validation during feature '+str(feat) +" due to presence of NaNs in this region's z-scores.")
+                    print("Presence of NaNs: ", str(np.mean(roiCol.isnull().values)*100)+'%')
+                    featSliceZScored.drop(regNum, inplace=True, axis='columns')
 
+            X = featSliceZScored
+            np.random.shuffle(labelColumn)
+            y = np.ravel(labelColumn)
+            sliceTenFoldScore = tenFoldCVScore(X,y)
+            meanScore = sliceTenFoldScore.mean()
+            individualAccuracies[roi] = meanScore
+        df = df.append({'Iteration':i,'Average Accuracy': individualAccuracies.mean()},ignore_index=True)
+
+    return df
 #-------------------------------------------------------------------------------
 
 
@@ -783,8 +817,22 @@ def kiloLabelShufflesAndLearnsFeatures(labelColumn, c22Data, subjIndicesBelowThr
     return df
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-def jointROIAccuracyPValTriple(accuracies, randomLearnData, roiCount):
-    pass
+def jointAccuracyPValTriple(accuracies, randomLearnData, roiCount):
+    pVals = np.zeros(3)
+    randomAccs = randomLearnData['Average Accuracy']
+    for i in range(3):
+        pVals[i] = np.mean(randomAccs>=accuracies[i])
+
+    pValsCorrected = []
+    for in in range(3):
+        pValsCorrected.append(multitest.multipletests(pVals[i], method='fdr_bh')[1])
+
+    df = pd.DataFrame({'procMeth1':pVals[0], 'procMeth1 Corrected':pValsCorrected[0],
+                        'procMeth2':pVals[1], 'procMeth2 Corrected':pValsCorrected[1],
+                        'procMeth3':pVals[2], 'procMeth3 Corrected':pValsCorrected[2]})
+    df = df.round(3)
+    pd.options.display.width = 0
+    print(df)
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
 def roiAccuracyPValsTriple(randomLearnData, roiAccsDataframes, roiCount):
@@ -828,10 +876,7 @@ def roiAccuracyPValsTriple(randomLearnData, roiAccsDataframes, roiCount):
     print(df)
 
 #-------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------
-def jointFeatureAccuracyPValTriple(accuracies, randomLearnData, featCount):
-    pass
-#-------------------------------------------------------------------------------
+
 #-------------------------------------------------------------------------------
 def featureAccuracyPValsTriple(featAccDataframes, randomLearnData, featCount):
     ''' Prints the combined p-values (probability of randomly calculated accuracy
