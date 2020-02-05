@@ -824,7 +824,7 @@ def jointAccuracyPValTriple(accuracies, randomLearnData, roiCount):
         pVals[i] = np.mean(randomAccs>=accuracies[i])
 
     pValsCorrected = []
-    for in in range(3):
+    for i in range(3):
         pValsCorrected.append(multitest.multipletests(pVals[i], method='fdr_bh')[1])
 
     df = pd.DataFrame({'procMeth1':pVals[0], 'procMeth1 Corrected':pValsCorrected[0],
