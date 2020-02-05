@@ -14,9 +14,9 @@ showTValueHistograms = False
 showJointPlot = False
 # Select true to show the estimated p values from both datasets' accuracies using permutation testing.
 showIndividualFeatureSignificance = False # NB: Expensive if getting random permutations first time.
-showIndividualRegionSignificance = True
+showIndividualRegionSignificance = False
 showJointFeatureSignificance = False
-showJointRegionSignificance = False
+showJointRegionSignificance = True
 
 useSavedRandomLearnData = False #Used saved permutation testing results. Set to true this after running above once.
 useSavedAccuracies = True
