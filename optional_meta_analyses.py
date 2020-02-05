@@ -15,8 +15,8 @@ showJointPlot = False
 # Select true to show the estimated p values from both datasets' accuracies using permutation testing.
 showIndividualFeatureSignificance = False # NB: Expensive if getting random permutations first time.
 showIndividualRegionSignificance = False
-showJointFeatureSignificance = False
-showJointRegionSignificance = True
+showJointFeatureSignificance = True
+showJointRegionSignificance = False
 
 useSavedRandomLearnData = False #Used saved permutation testing results. Set to true this after running above once.
 useSavedAccuracies = True
@@ -124,6 +124,7 @@ if showIndividualFeatureSignificance or showJointFeatureSignificance:
         meanFeatAccDicer2 = np.mean(np.asarray(featAccsDicer2['% Accuracy']))
         meanFeatAccDicer3 = np.mean(np.asarray(featAccsDicer3['% Accuracy']))
         acap.jointAccNullDistributionPlot([meanFeatAcc, meanFeatAccDicer2, meanFeatAccDicer3], randomLearnDataDicerUCLA, 'Features')
+        acap.jointAccuracyPValTriple([meanFeatAcc, meanFeatAccDicer2, meanFeatAccDicer3], randomLearnDataDicerUCLA)
 
 if showIndividualRegionSignificance or showJointRegionSignificance:
     if not useSavedAccuracies:
@@ -171,3 +172,4 @@ if showIndividualRegionSignificance or showJointRegionSignificance:
         meanRoiAccDicer2 = np.mean(np.asarray(roiAccsDicer2['% Accuracy']))
         meanRoiAccDicer3 = np.mean(np.asarray(roiAccsDicer3['% Accuracy']))
         acap.jointAccNullDistributionPlot([meanRoiAcc, meanRoiAccDicer2, meanRoiAccDicer3], randomLearnDataDicerUCLA, 'Regions')
+        acap.jointAccuracyPValTriple([meanRoiAcc, meanRoiAccDicer2, meanRoiAccDicer3], randomLearnDataDicerUCLA)

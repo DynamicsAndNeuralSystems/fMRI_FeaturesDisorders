@@ -718,23 +718,23 @@ def jointAccNullDistributionPlot(accuracies, dataframe, option):
 def kiloLabelShufflesAndLearnsFeaturesJoint(labelColumn, c22Data, subjIndicesBelowThresh, roiCount, subjCount, featNames, featCount=22):
     df = pd.DataFrame({'Iteration':[], 'Average Accuracy': []})
     for i in range(1000):
-        individualAccuracies = np.zeros(roiCount)
+        individualAccuracies = np.zeros(featCount)
         for feat in range(featCount):
             featureName = featNames[feat]
             featSlice = featureSlice(roiCount, subjCount, c22Data, featureName, subjIndicesBelowThresh)
             featSliceZScored = featSlice.apply(zscore)
             for roiNum, roiCol in featSliceZScored.iteritems():
                 if roiCol.isnull().values.any():
-                    print('Removing region '+str(regNum)+' for cross validation during feature '+str(feat) +" due to presence of NaNs in this region's z-scores.")
+                    print('Removing region '+str(roiNum)+' for cross validation during feature '+str(feat) +" due to presence of NaNs in this region's z-scores.")
                     print("Presence of NaNs: ", str(np.mean(roiCol.isnull().values)*100)+'%')
-                    featSliceZScored.drop(regNum, inplace=True, axis='columns')
+                    featSliceZScored.drop(roiNum, inplace=True, axis='columns')
 
             X = featSliceZScored
             np.random.shuffle(labelColumn)
             y = np.ravel(labelColumn)
             sliceTenFoldScore = tenFoldCVScore(X,y)
             meanScore = sliceTenFoldScore.mean()
-            individualAccuracies[roi] = meanScore
+            individualAccuracies[feat] = meanScore
         df = df.append({'Iteration':i,'Average Accuracy': individualAccuracies.mean()},ignore_index=True)
 
     return df
@@ -817,7 +817,7 @@ def kiloLabelShufflesAndLearnsFeatures(labelColumn, c22Data, subjIndicesBelowThr
     return df
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-def jointAccuracyPValTriple(accuracies, randomLearnData, roiCount):
+def jointAccuracyPValTriple(accuracies, randomLearnData):
     pVals = np.zeros(3)
     randomAccs = randomLearnData['Average Accuracy']
     for i in range(3):
