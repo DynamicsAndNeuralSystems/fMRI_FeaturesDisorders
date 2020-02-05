@@ -706,7 +706,7 @@ def jointAccNullDistributionPlot(accuracies, dataframe, option):
     plt.xlabel('Joint Accuracies: '+option)
     plt.ylabel('Frequency')
     for j in range(3):
-        accuracy = accuracies[j]:
+        accuracy = accuracies[j]
         plt.axis.axvline(x=accuracy, color=colours[j], linestyle='dashed', label=('procMeth'+str(j+1)))
 
     handles, labels = plt.axis.get_legend_handles_labels()

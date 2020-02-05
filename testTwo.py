@@ -178,5 +178,12 @@ def numpyShuffleTest():
     ls = list(a)
     print(a.mean())
 
+def ifnotTest():
+    x = True
+    y = False
+    if not y and x:
+        print('works')
 
-numpyShuffleTest()
+
+
+ifnotTest()
