@@ -14,8 +14,8 @@ showTValueHistograms = False
 showJointPlot = False
 # Select true to show the estimated p values from both datasets' accuracies using permutation testing.
 showIndividualFeatureSignificance = False # NB: Expensive if getting random permutations first time.
-showIndividualRegionSignificance = False
-showJointFeatureSignificance = True
+showIndividualRegionSignificance = True
+showJointFeatureSignificance = False
 showJointRegionSignificance = False
 
 useSavedRandomLearnData = False #Used saved permutation testing results. Set to true this after running above once.
@@ -123,7 +123,7 @@ if showIndividualFeatureSignificance or showJointFeatureSignificance:
         meanFeatAcc = np.mean(np.asarray(featAccs['% Accuracy']))
         meanFeatAccDicer2 = np.mean(np.asarray(featAccsDicer2['% Accuracy']))
         meanFeatAccDicer3 = np.mean(np.asarray(featAccsDicer3['% Accuracy']))
-        acap.jointAccNullDistributionPlot([meanFeatAcc, meanFeatAccDicer2, meanFeatAccDicer3], randomLearnDataDicerUCLA, 'Features')
+        # acap.jointAccNullDistributionPlot([meanFeatAcc, meanFeatAccDicer2, meanFeatAccDicer3], randomLearnDataDicerUCLA, 'Features')
         acap.jointAccuracyPValTriple([meanFeatAcc, meanFeatAccDicer2, meanFeatAccDicer3], randomLearnDataDicerUCLA)
 
 if showIndividualRegionSignificance or showJointRegionSignificance:
@@ -163,7 +163,7 @@ if showIndividualRegionSignificance or showJointRegionSignificance:
 
     if showIndividualRegionSignificance:
         randomLearnDataDicerUCLA = pd.read_csv("randomLearnData_individualRegions_procMeth3_UCLA.txt")
-        acap.roiAccNullDistributionsPlotTriple(randomLearnDataDicerUCLA, [roiAccs, roiAccsDicer2, roiAccsDicer3], roiCount)
+        # acap.roiAccNullDistributionsPlotTriple(randomLearnDataDicerUCLA, [roiAccs, roiAccsDicer2, roiAccsDicer3], roiCount)
         acap.roiAccuracyPValsTriple(randomLearnDataDicerUCLA, [roiAccs, roiAccsDicer2, roiAccsDicer3], roiCount)
 
     if showJointRegionSignificance:
@@ -171,5 +171,5 @@ if showIndividualRegionSignificance or showJointRegionSignificance:
         meanRoiAcc = np.mean(np.asarray(roiAccs['% Accuracy']))
         meanRoiAccDicer2 = np.mean(np.asarray(roiAccsDicer2['% Accuracy']))
         meanRoiAccDicer3 = np.mean(np.asarray(roiAccsDicer3['% Accuracy']))
-        acap.jointAccNullDistributionPlot([meanRoiAcc, meanRoiAccDicer2, meanRoiAccDicer3], randomLearnDataDicerUCLA, 'Regions')
+        # acap.jointAccNullDistributionPlot([meanRoiAcc, meanRoiAccDicer2, meanRoiAccDicer3], randomLearnDataDicerUCLA, 'Regions')
         acap.jointAccuracyPValTriple([meanRoiAcc, meanRoiAccDicer2, meanRoiAccDicer3], randomLearnDataDicerUCLA)
