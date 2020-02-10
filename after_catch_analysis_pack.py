@@ -707,17 +707,18 @@ def jointAccNullDistributionPlot(accuracies, dataframe, option):
     plt.ylabel('Frequency')
     for j in range(3):
         accuracy = accuracies[j]
-        plt.axis.axvline(x=accuracy, color=colours[j], linestyle='dashed', label=('procMeth'+str(j+1)))
+        plt.axvline(x=accuracy, color=colours[j], linestyle='dashed', label=('procMeth'+str(j+1)))
 
-    handles, labels = plt.axis.get_legend_handles_labels()
-    plt.figure.legend(handles, labels)
+    # ax = plt.axes.Axes()
+    # handles, labels = ax.get_legend_handles_labels()
+    # plt.legend(handles, labels)
 
     plt.show()
     return
 #-------------------------------------------------------------------------------
 def kiloLabelShufflesAndLearnsFeaturesJoint(labelColumn, c22Data, subjIndicesBelowThresh, roiCount, subjCount, featNames, featCount=22):
     df = pd.DataFrame({'Iteration':[], 'Average Accuracy': []})
-    for i in range(1000):
+    for i in range(10):
         individualAccuracies = np.zeros(featCount)
         for feat in range(featCount):
             featureName = featNames[feat]
@@ -830,7 +831,8 @@ def jointAccuracyPValTriple(accuracies, randomLearnData):
     df = pd.DataFrame({'procMeth1':pVals[0], 'procMeth1 Corrected':pValsCorrected[0],
                         'procMeth2':pVals[1], 'procMeth2 Corrected':pValsCorrected[1],
                         'procMeth3':pVals[2], 'procMeth3 Corrected':pValsCorrected[2]})
-    df = df.round(3)
+    # df = df.round(3)
+    df.index.name = 'All Regions and Features'
     pd.options.display.width = 0
     print(df)
 #-------------------------------------------------------------------------------
