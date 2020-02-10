@@ -14,9 +14,9 @@ showTValueHistograms = False
 showJointPlot = False
 # Select true to show the estimated p values from both datasets' accuracies using permutation testing.
 showIndividualFeatureSignificance = False # NB: Expensive if getting random permutations first time.
-showIndividualRegionSignificance = False
+showIndividualRegionSignificance = True
 showJointFeatureSignificance = False
-showJointRegionSignificance = True
+showJointRegionSignificance = False
 
 useSavedRandomLearnData = False #Used saved permutation testing results. Set to true this after running above once.
 useSavedAccuracies = True
@@ -123,7 +123,8 @@ if showIndividualFeatureSignificance or showJointFeatureSignificance:
         meanFeatAcc = np.mean(np.asarray(featAccs['% Accuracy']))
         meanFeatAccDicer2 = np.mean(np.asarray(featAccsDicer2['% Accuracy']))
         meanFeatAccDicer3 = np.mean(np.asarray(featAccsDicer3['% Accuracy']))
-        # acap.jointAccNullDistributionPlot([meanFeatAcc, meanFeatAccDicer2, meanFeatAccDicer3], randomLearnDataDicerUCLA, 'Features')
+        acap.jointAccNullDistributionPlot([meanFeatAcc, meanFeatAccDicer2, meanFeatAccDicer3], randomLearnDataDicerUCLA, 'Features')
+        print(meanFeatAcc, meanFeatAccDicer2, meanFeatAccDicer3)
         acap.jointAccuracyPValTriple([meanFeatAcc, meanFeatAccDicer2, meanFeatAccDicer3], randomLearnDataDicerUCLA)
 
 if showIndividualRegionSignificance or showJointRegionSignificance:
@@ -153,7 +154,7 @@ if showIndividualRegionSignificance or showJointRegionSignificance:
     if not useSavedRandomLearnData and showJointRegionSignificance:
         randomLearnData = acap.kiloLabelShufflesAndLearnsRegionsJoint(labelColumnDicer3, dicer3.c22Data, dicer3.roiCount)
         outFileName = 'randomLearnData_jointRegions_procMeth3_UCLA.txt'
-        randomLearnData.to_csv(outFileName, mode='a', index=False, header=False)
+        randomLearnData.to_csv(outFileName, index=False, header=True)
         print("Your file "+outFileName+" has been saved in the current directory.")
         randomLearnData = 0
 
