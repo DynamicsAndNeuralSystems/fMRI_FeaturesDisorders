@@ -173,7 +173,7 @@ if showIndividualRegionSignificance or showJointRegionSignificance:
         meanRoiAcc = np.mean(np.asarray(roiAccs['% Accuracy']))
         meanRoiAccDicer2 = np.mean(np.asarray(roiAccsDicer2['% Accuracy']))
         meanRoiAccDicer3 = np.mean(np.asarray(roiAccsDicer3['% Accuracy']))
-        # acap.jointAccNullDistributionPlot([meanRoiAcc, meanRoiAccDicer2, meanRoiAccDicer3], randomLearnDataDicerUCLA, 'Regions')
+        acap.jointAccNullDistributionPlot([meanRoiAcc, meanRoiAccDicer2, meanRoiAccDicer3], randomLearnDataDicerUCLA, 'Regions')
         acap.jointAccuracyPValTriple([meanRoiAcc, meanRoiAccDicer2, meanRoiAccDicer3], randomLearnDataDicerUCLA)
 
 if showJointFeaturesAndRegionsSignificance:

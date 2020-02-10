@@ -732,7 +732,7 @@ def kiloLabelShufflesAndLearnsRegionsAndFeatures(c22Data, labelColumn, roiCount,
     # features x regions. subjects stacked on top of eachother.
     regionsAndFeaturesMatrixZScored = regionsAndFeaturesMatrix.apply(zscore)
 
-    for i in 1000:
+    for i in range(1000):
         for featureRegion, featCol in regionsAndFeaturesMatrixZScored.iteritems():
             if featCol.isnull().values.any():
                 print('Removing featureRegion '+str(featureRegion)+" for cross validation due to presence of NaNs in this feature's z-scores.")
@@ -746,8 +746,8 @@ def kiloLabelShufflesAndLearnsRegionsAndFeatures(c22Data, labelColumn, roiCount,
         tenFoldScore = tenFoldCVScore(X, y)
         accuracy = tenFoldScore.mean()
         error = tenFoldScore.std()
-
-        df.append({'Iteration':i, 'Average Accuracy': accuracy},ignore_index=True)
+        print(i)
+        df = df.append({'Iteration':i, 'Average Accuracy': accuracy},ignore_index=True)
 
     return df
 
