@@ -435,7 +435,7 @@ def displayViolinPlots(labelColumn, bestPValInds, slice, selection, selectionNum
     return
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
-def accuracyOfRegionsAndFeatures(c22Data, labelColumn, roiCount, subjCount, featCount):
+def accuracyOfRegionsAndFeatures(c22Data, labelColumn, roiCount, subjCount, featCount, returnAcc=False):
     regionsAndFeaturesMatrix = np.zeros((subjCount, featCount*roiCount))
     for subj in range(subjCount):
         for roi in range(roiCount):
@@ -444,8 +444,6 @@ def accuracyOfRegionsAndFeatures(c22Data, labelColumn, roiCount, subjCount, feat
     regionsAndFeaturesMatrix = pd.DataFrame(data=regionsAndFeaturesMatrix, index=range(subjCount))
     regionsAndFeaturesMatrix.rename_axis('Subjects',inplace=True)
     regionsAndFeaturesMatrix.rename_axis('RegionsFeatures', axis='columns',inplace=True)
-    print(regionsAndFeaturesMatrix)
-    # not applying zcore.
     # features x regions. subjects stacked on top of eachother.
 
     regionsAndFeaturesMatrixZScored = regionsAndFeaturesMatrix.apply(zscore)
@@ -465,6 +463,9 @@ def accuracyOfRegionsAndFeatures(c22Data, labelColumn, roiCount, subjCount, feat
 
     print('Mean Accuracy (across all regions and features at once) = ' +
     "{0:.2f}".format(accuracy) + '% +/- ' + "{0:.2f}".format(error))
+
+    if returnAcc:
+        return accuracy
 
 #-------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------
@@ -716,6 +717,44 @@ def jointAccNullDistributionPlot(accuracies, dataframe, option):
     plt.show()
     return
 #-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+def kiloLabelShufflesAndLearnsRegionsAndFeatures(c22Data, labelColumn, roiCount, subjCount, featCount):
+    df = pd.DataFrame({'Iteration':[],'Average Accuracy': []})
+
+    regionsAndFeaturesMatrix = np.zeros((subjCount, featCount*roiCount))
+    for subj in range(subjCount):
+        for roi in range(roiCount):
+            regionsAndFeaturesMatrix[subj,roi*featCount:(roi+1)*featCount] = c22Data.loc[roi, subj]
+
+    regionsAndFeaturesMatrix = pd.DataFrame(data=regionsAndFeaturesMatrix, index=range(subjCount))
+    regionsAndFeaturesMatrix.rename_axis('Subjects',inplace=True)
+    regionsAndFeaturesMatrix.rename_axis('RegionsFeatures', axis='columns',inplace=True)
+    # features x regions. subjects stacked on top of eachother.
+    regionsAndFeaturesMatrixZScored = regionsAndFeaturesMatrix.apply(zscore)
+
+    for i in 1000:
+        for featureRegion, featCol in regionsAndFeaturesMatrixZScored.iteritems():
+            if featCol.isnull().values.any():
+                print('Removing featureRegion '+str(featureRegion)+" for cross validation due to presence of NaNs in this feature's z-scores.")
+                print("Presence of NaNs: ", str(np.mean(featCol.isnull().values)*100)+'%')
+                regionsAndFeaturesMatrixZScored.drop(featureRegion, axis='columns', inplace=True)
+
+        X = regionsAndFeaturesMatrixZScored
+        np.random.shuffle(labelColumn)
+        y = np.ravel(labelColumn)
+
+        tenFoldScore = tenFoldCVScore(X, y)
+        accuracy = tenFoldScore.mean()
+        error = tenFoldScore.std()
+
+        df.append({'Iteration':i, 'Average Accuracy': accuracy},ignore_index=True)
+
+    return df
+
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+
 def kiloLabelShufflesAndLearnsFeaturesJoint(labelColumn, c22Data, subjIndicesBelowThresh, roiCount, subjCount, featNames, featCount=22):
     df = pd.DataFrame({'Iteration':[], 'Average Accuracy': []})
     for i in range(10):

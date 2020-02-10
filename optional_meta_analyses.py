@@ -16,7 +16,8 @@ showJointPlot = False
 showIndividualFeatureSignificance = False # NB: Expensive if getting random permutations first time.
 showIndividualRegionSignificance = False
 showJointFeatureSignificance = False
-showJointRegionSignificance = True
+showJointRegionSignificance = False
+showJointFeaturesAndRegionsSignificance = True
 
 useSavedRandomLearnData = False #Used saved permutation testing results. Set to true this after running above once.
 useSavedAccuracies = True
@@ -164,7 +165,7 @@ if showIndividualRegionSignificance or showJointRegionSignificance:
 
     if showIndividualRegionSignificance:
         randomLearnDataDicerUCLA = pd.read_csv("randomLearnData_individualRegions_procMeth3_UCLA.txt")
-        # acap.roiAccNullDistributionsPlotTriple(randomLearnDataDicerUCLA, [roiAccs, roiAccsDicer2, roiAccsDicer3], roiCount)
+        acap.roiAccNullDistributionsPlotTriple(randomLearnDataDicerUCLA, [roiAccs, roiAccsDicer2, roiAccsDicer3], roiCount)
         acap.roiAccuracyPValsTriple(randomLearnDataDicerUCLA, [roiAccs, roiAccsDicer2, roiAccsDicer3], roiCount)
 
     if showJointRegionSignificance:
@@ -174,3 +175,21 @@ if showIndividualRegionSignificance or showJointRegionSignificance:
         meanRoiAccDicer3 = np.mean(np.asarray(roiAccsDicer3['% Accuracy']))
         # acap.jointAccNullDistributionPlot([meanRoiAcc, meanRoiAccDicer2, meanRoiAccDicer3], randomLearnDataDicerUCLA, 'Regions')
         acap.jointAccuracyPValTriple([meanRoiAcc, meanRoiAccDicer2, meanRoiAccDicer3], randomLearnDataDicerUCLA)
+
+if showJointFeaturesAndRegionsSignificance:
+    jointRegionsFeaturesAcc = acap.accuracyOfRegionsAndFeatures(c22Data, labelColumn, roiCount, subjCount, featCount, returnAcc=True)
+    jointRegionsFeaturesAccDicer2 = acap.accuracyOfRegionsAndFeatures(dicer2.c22Data, labelColumnDicer2, dicer2.roiCount, dicer2.subjCount, dicer2.featCount, returnAcc=True)
+    jointRegionsFeaturesAccDicer3 = acap.accuracyOfRegionsAndFeatures(dicer3.c22Data, labelColumnDicer3, dicer3.roiCount, dicer3.subjCount, dicer3.featCount, returnAcc=True)
+
+    if not useSavedRandomLearnData:
+        randomLearnData = acap.kiloLabelShufflesAndLearnsRegionsAndFeatures(dicer3.c22Data, labelColumnDicer3, dicer3.roiCount, dicer3.subjCount, dicer3.featCount)
+        outFileName = 'randomLearnData_FeaturesAndRegions_procMeth3_UCLA.txt'
+        randomLearnData.to_csv(outFileName, index=False,header=True)
+        print("Your file "+outFileName+" has been saved in the current directory.")
+        randomLearnData = 0
+
+    randomLearnDataDicerUCLA = pd.read_csv('randomLearnData_FeaturesAndRegions_procMeth3_UCLA.txt')
+
+    print(jointRegionsFeaturesAcc,jointRegionsFeaturesAccDicer2,jointRegionsFeaturesAccDicer3)
+    # acap.jointAccNullDistributionPlot([jointRegionsFeaturesAcc,jointRegionsFeaturesAccDicer2,jointRegionsFeaturesAccDicer3], randomLearnDataDicerUCLA, 'Regions and Features')
+    acap.jointAccuracyPValTriple([jointRegionsFeaturesAcc,jointRegionsFeaturesAccDicer2,jointRegionsFeaturesAccDicer3], randomLearnDataDicerUCLA)

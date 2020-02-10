@@ -109,6 +109,10 @@ if doAll:
     roiAccsDicer2 = pd.read_csv('roiAccuracies_procMeth2_UCLA.txt')
     roiAccsDicer3 = pd.read_csv('roiAccuracies_procMeth3_UCLA.txt')
 
+    # print(roiAccs.sort_values(by='% Accuracy',ascending=False).iloc[:7])
+    # print(roiAccsDicer2.sort_values(by='% Accuracy',ascending=False).iloc[:7])
+    # print(roiAccsDicer3.sort_values(by='% Accuracy',ascending=False).iloc[:7])
+
     acap.distributionsOverlayPlot([roiAccs, roiAccsDicer2, roiAccsDicer3], '% Accuracy', 'Regions')
     acap.distributionsOverlayPlot([featAccs, featAccsDicer2, featAccsDicer3], '% Accuracy', 'Features')
 
