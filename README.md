@@ -1,16 +1,22 @@
 # _catch22_ for cfg.mat files
 
-This repository provides code that facilitates feature extraction and dataset analysis using [_catch22_](https://github.com/chlubba/catch22).
+This repository provides code that facilitates
 
-There are two main Python files:
-* `catch22_4_matFiles`, which reads in a _cfg.mat_ datafile and outputs an _elementn_DATASET.txt_ file, that stores the time series features
+a) feature extraction using [_catch22_](https://github.com/chlubba/catch22) from any time series stored in _cfg.mat_ files and
+
+b) subsequent statistical classification.
+
+The aim of analysis on the sample fMRI dataset used was to classify schizophrenic vs healthy controls.
+
+There are two Python files to be run:
+* `catch22_cfg_data.py`, which handles the catch22 analysis of _cfg.mat_ data files. Features extracted are stored in a _c22_roiTSx_DATASET.txt_ file.
+
 * `packagedCode`, which references analysis functions that process the feature data, and output useful numerical and graphical information
-
 The code and figures below will correspond to the analysis of the COBRE dataset. Only change the variables referenced below (all other variables may remain as they are).
 
 ### 1. Generating the time series feature datafile
-Open `catch22_4_matFiles.py`. Initialise the path for the dataset being analysed, name the dataset (COBRE) and select the 'roiTS' to be analysed (1). Run the file.
-Yields `element1_COBRE.txt`.
+Open `catch22_cfg_data.py`. At the bottom of the file, choose a dataset, the path to the folder containing the dataset and select which brain parcellation (i.e. roiTS) will to be analysed before running.
+Yields `c22_roiTS1_COBRE.txt`.
 
 ### 2. Variable assignment and data processing required prior to running '_packagedCode.py_'
 Variables that need to be assigned:
