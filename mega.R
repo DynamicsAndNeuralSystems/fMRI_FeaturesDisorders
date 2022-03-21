@@ -25,8 +25,11 @@ setwd(getSrcDirectory()[1])
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 source("feature_calculation/catch22_all_regions.R")
 source("feature_analysis/region_by_region_analysis.R")
+source("visualization/plot_feature_acc_across_ROIs.R")
+source("visualization/violin_plots.R")
 source("prep_data/load_mat_data.R")
 source("prep_data/get_dx_breakdown.R")
+source("prep_data/compile_movement_data.R")
 set.seed(127)
 
 #-------------------------------------------------------------------------------
@@ -37,8 +40,8 @@ parser <- ArgumentParser(description='Read in matlab time-series data and conver
 parser$add_argument("--mat_file", help=".mat file containing the time-series data and other metadata.")
 parser$add_argument("--label_metadata", help="CSV file containing sample metadata info.",
                     default="D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/participants.csv")
-parser$add_argument("--rdata_path", help="File path to store resulting Rdata objects.",
-                    default="D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/Rdata/")
+parser$add_argument("--data_path", help="File path to store resulting Rdata objects.",
+                    default="D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/")
 parser$add_argument("--plot_path", help="File path to store plot images.",
                     default="D:/Virtual_Machines/Shared_Folder/PhD_work/plots/")
 parser$add_argument("--overwrite", help="Should the Rdata object be overwritten if it already exists? Default is F.",
@@ -48,17 +51,23 @@ parser$add_argument("--overwrite", help="Should the Rdata object be overwritten 
 args <- parser$parse_args()
 mat_file <- args$mat_file
 label_metadata <- args$label_metadata
-rdata_path <- args$rdata_path
+data_path <- args$data_path
 plot_path <- args$plot_path
 overwrite <- args$overwrite
-
+rdata_path <- paste0(data_path, "Rdata/")
 
 # DEBUG ONLY
+# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/"
+# rdata_path <- paste0(data_path, "Rdata/")
 # mat_file <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/new/UCLA_time_series_four_groups.mat"
 # label_metadata <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/participants.csv"
-# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/Rdata/"
+# subject_csv <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/participants.csv"
 # plot_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/plots/"
 # overwrite <- T
+# UCLA_AROMA_2P_catch22_ROIwise_t_test <- readRDS(paste0(rdata_path, "UCLA_AROMA_2P_catch22_ROIwise_t_test.Rds"))
+# UCLA_AROMA_2P_catch22 <- readRDS(paste0(rdata_path, "UCLA_AROMA_2P_catch22.Rds"))
+# 
+# 
 
 #-------------------------------------------------------------------------------
 
@@ -75,47 +84,126 @@ load_mat_data(mat_file = mat_file,
 # Run catch22 on time-series data for each noise processing method
 for (noise_proc in c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")) {
   noise_label <- gsub("\\+", "_", noise_proc)
-  TS_df <- readRDS(paste0(rdata_path, sprintf("UCLA_%s.Rds", noise_label)))
   if (!file.exists(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
                                               noise_label)))) {
+    TS_df <- readRDS(paste0(rdata_path, sprintf("UCLA_%s.Rds", noise_label)))
     cat("\nNow running catch22 for UCLA", noise_proc, "data.\n")
     TS_catch22 <- catch22_all_regions(TS_df=TS_df)
     saveRDS(TS_catch22, file=paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
                                                         noise_label)))
+    remove(TS_df)
   }
   # clean up memory
   gc()
-  remove(TS_df)
 }
+
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Quality control
+na_data <- UCLA_AROMA_2P_catch22 %>%
+  filter(is.na(values))
+
+UCLA_AROMA_2P %>%
+  filter(Subject_ID=="sub-10227") %>%
+  ggplot(data=., mapping=aes(x=timepoint, y=value, color=Brain_Region, group=Brain_Region)) +
+  geom_line() +
+  theme(legend.position="none")
 
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
 # Run univariate classification on each brain region separately
-region_wise_univ_class_res_list <- list()
-for (region in unique(UCLA_AROMA_2P_catch22$Brain_Region)) {
-  region_res <- region_by_region_analysis(ROI=region,
-                                          test_method="t-test",
-                                          feature_matrix=UCLA_AROMA_2P_catch22,
-                                          display_figures = F,
-                                          return_restable = T)
-  region_res$Brain_Region <- region
-  region_wise_univ_class_res_list[[region]] <- region_res
+test_methods <- c("t-test", "svmLinear")
+for (test_method in test_methods) {
+  for (noise_proc in c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")) { 
+    
+    # Clean up names
+    test_label <- gsub("-", "_", test_method)
+    noise_label <- gsub("\\+", "_", noise_proc)
+    
+    # Only run if RDS file doesn't yet exist
+    if (!file.exists(paste0(rdata_path, "UCLA_",
+                            noise_label, "_catch22_ROIwise_",
+                            test_label, ".Rds"))) {
+      
+      # Load catch22 feature matrix
+      feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
+                                                           noise_label)))
+      
+      # Run ROI-by-ROI analysis
+      run_region_by_region_analysis(feature_matrix=feature_matrix, 
+                                    test_method=test_method, 
+                                    rdata_path=rdata_path, 
+                                    noise_proc=noise_proc)
+    }
+    # clean up memory
+    gc()
+  }
+  
 }
-region_wise_univ_class_res <- do.call(plyr::rbind.fill, region_wise_univ_class_res_list)
 
-# TO-DO: histogram of accuracies across all regions a la Figure 1C in old readme
-theme_set(cowplot::theme_cowplot())
-region_wise_univ_class_res %>%
-  # filter(feature %in% unique(region_wise_univ_class_res$feature)[1:2]) %>%
-  mutate(feature = str_replace_all(feature, "_", " ")) %>%
-  mutate(feature = str_replace_all(feature, "catch22 ", "")) %>%
-  ggplot(data=., mapping=aes(x=statistic_value)) +
-  geom_histogram(fill="lightsteelblue") +
-  geom_vline(xintercept=0, linetype=2) +
-  xlab("T statistic") +
-  ylab("Number of ROIs") +
-  facet_wrap(feature ~ ., scales="free", nrow=4,
-             labeller = labeller(feature = label_wrap_gen(26)))
-ggsave(paste0(plot_path, "catch22_T_score_histograms.png"),
-       width=15, height=10, units="in", dpi=300)
+# Plot PC1 vs PC2 for example ROI
+this_ROI <- "ctx-lh-bankssts"
+feature_matrix <- UCLA_AROMA_2P_catch22
+class_res <- UCLA_AROMA_2P_catch22_ROIwise_t_test
+num_feature <- 8
+PCA_dimplot_for_ROI(feature_matrix = feature_matrix,
+                    class_res = class_res,
+                    this_ROI = this_ROI)
+ggsave(paste0(plot_path, "PC1_PC2_left_bankssts.png"),
+       width = 6, height = 5, units="in", dpi=300)
+
+# Plot top 8 features for an example ROI
+violin_plot_for_ROI(feature_matrix = feature_matrix,
+                        class_res = class_res,
+                        this_ROI = this_ROI,
+                        num_feature = num_feature)
+
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Plot the distribution of t-scores across features by noise processing method
+for (noise_proc in c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")) { 
+  
+  # Clean up names
+  noise_label <- gsub("\\+", "_", noise_proc)# Load catch22 feature matrix
+  
+  class_res <- readRDS(paste0(rdata_path, "UCLA_", 
+                              noise_label, "_catch22_ROIwise_",  
+                              test_label, ".Rds"))
+  
+  plot_ROI_acc_by_feature(region_wise_univ_class_res = class_res,
+                          xlab = "T statistic",
+                          noise_proc = noise_label,
+                          plot_path = plot_path)
+}
+
+
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Feature-by-feature analysis
+this_feature <- "DN_HistogramMode_5"
+feature_matrix <- UCLA_AROMA_2P_catch22
+class_res <- UCLA_AROMA_2P_catch22_ROIwise_t_test
+num_ROI <- 8
+
+PCA_dimplot_for_ROI(feature_matrix = feature_matrix,
+                    class_res = class_res,
+                    this_ROI = this_ROI)
+ggsave(paste0(plot_path, "PC1_PC2_left_bankssts.png"),
+       width = 6, height = 5, units="in", dpi=300)
+
+violin_plot_for_feature(feature_matrix = feature_matrix,
+                        class_res = class_res,
+                        this_feature = this_feature,
+                        num_ROI = num_ROI)
+
+
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Compile movement (fractional displacement) data
+compile_movement_data(fd_path=paste0(data_path, "UCLA/movementData/"),
+                      subject_csv = paste0(data_path, "UCLA/participants.csv"))

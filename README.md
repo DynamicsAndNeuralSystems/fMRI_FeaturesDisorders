@@ -1,28 +1,15 @@
 # Feature extraction and classification for schizophrenia neuroimaging
 
-This repository provides code that facilitates:
+This repository provides R code that facilitates time-series feature extraction from functional magnetic resonance imaging (fMRI) data using [_catch22_](https://github.com/chlubba/catch22) from a Matlab .mat file. These 22 features are then used as inputs to univariate and multivariate classifiers to delineate schizophrenia patients from cognitively normal controls. 
 
-a) feature extraction using [_catch22_](https://github.com/chlubba/catch22) from a Matlab .mat file containing time-series data
+The repo is organized into five components:
 
+1. Data preparation
 
-### 1. Generating the time-series catch22 feature matrix
+2. Quality control
 
-First run `prepare_TS_feature_data.R`
+3. ROI-based classification analysis
 
-e.g. `Rscript prepare_TS_feature_data.R --mat_file D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/new/UCLA_time_series_four_groups.mat --label_metadata D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/participants.csv --rdata_path D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/Rdata/`
+4. Feature-based classification analysis
 
-Include the --overwrite flag if you want to overwrite the time series .rds objects if they already exist.
-
-
-To calculate the total number of controls and patients (SCZ), use the below code:
-
-`get_dx_breakdown(path_to_subject_csv_file)`
-
-
-### 2. Analysis functions and their outputs
-
-#### a) Region-by-Region Analysis
-
-To look at the classification accuracy for e.g. the left entorhinal cortex, you could run:
-
-`region_by_region_analysis(ROI="ctx-lh-entorhinal", feature_matrix = feature_matrix, display_figures = T, return_restable=F)`
+5. Combined ROI- and feature-based classification analysis
