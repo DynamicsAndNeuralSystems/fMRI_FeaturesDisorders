@@ -69,18 +69,6 @@ rdata_path <- paste0(data_path, "Rdata/")
 # 
 # 
 
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-# Quality control
-na_data <- UCLA_AROMA_2P_catch22 %>%
-  filter(is.na(values))
-
-UCLA_AROMA_2P %>%
-  filter(Subject_ID=="sub-10227") %>%
-  ggplot(data=., mapping=aes(x=timepoint, y=value, color=Brain_Region, group=Brain_Region)) +
-  geom_line() +
-  theme(legend.position="none")
 
 #-------------------------------------------------------------------------------
 
@@ -172,10 +160,3 @@ violin_plot_for_feature(feature_matrix = feature_matrix,
                         this_feature = this_feature,
                         num_ROI = num_ROI)
 
-
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-# Compile movement (fractional displacement) data
-compile_movement_data(fd_path=paste0(data_path, "UCLA/movementData/"),
-                      subject_csv = paste0(data_path, "UCLA/participants.csv"))
