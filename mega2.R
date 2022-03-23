@@ -72,34 +72,6 @@ rdata_path <- paste0(data_path, "Rdata/")
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
-# Load data from matlab into R
-load_mat_data(mat_file = mat_file,
-              label_metadata = label_metadata,
-              rdata_path = rdata_path,
-              overwrite = F)
-
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-# Run catch22 on time-series data for each noise processing method
-for (noise_proc in c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")) {
-  noise_label <- gsub("\\+", "_", noise_proc)
-  if (!file.exists(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
-                                              noise_label)))) {
-    TS_df <- readRDS(paste0(rdata_path, sprintf("UCLA_%s.Rds", noise_label)))
-    cat("\nNow running catch22 for UCLA", noise_proc, "data.\n")
-    TS_catch22 <- catch22_all_regions(TS_df=TS_df)
-    saveRDS(TS_catch22, file=paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
-                                                        noise_label)))
-    remove(TS_df)
-  }
-  # clean up memory
-  gc()
-}
-
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
 # Quality control
 na_data <- UCLA_AROMA_2P_catch22 %>%
   filter(is.na(values))

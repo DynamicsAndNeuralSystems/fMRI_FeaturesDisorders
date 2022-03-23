@@ -11,9 +11,41 @@
 
 require(plyr)
 library(tidyverse)
-library(rmatio)
 library(R.matlab)
-library(rlist)
+library(argparse)
+
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Parse command-line arguments
+parser <- ArgumentParser(description='Read in matlab time-series data and convert to an R data object.')
+parser$add_argument("--mat_file", help=".mat file containing the time-series data and other metadata.")
+parser$add_argument("--label_metadata", help="CSV file containing sample metadata info.",
+                    default="D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/participants.csv")
+parser$add_argument("--data_path", help="File path to store resulting Rdata objects.",
+                    default="D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/")
+parser$add_argument("--overwrite", help="Should the Rds object be overwritten if it already exists? Default is F.",
+                    action="store_true", default=FALSE)
+
+# Parse arguments
+args <- parser$parse_args()
+mat_file <- args$mat_file
+label_metadata <- args$label_metadata
+data_path <- args$data_path
+overwrite <- args$overwrite
+rdata_path <- paste0(data_path, "Rdata/")
+
+# Create Rdata directory within data_path if it doesn't already exist
+if (!dir.exists(rdata_path)) {
+  dir.create(rdata_path, showWarnings = FALSE)
+}
+
+# DEBUG ONLY
+# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/"
+# rdata_path <- paste0(data_path, "Rdata/")
+# mat_file <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/new/UCLA_time_series_four_groups.mat"
+# label_metadata <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/participants.csv"
+# overwrite <- T
 
 #-------------------------------------------------------------------------------
 
@@ -65,7 +97,7 @@ load_mat_data <- function(mat_file, label_metadata, rdata_path, overwrite=F) {
   # Retrieve labels and clean up diagnosis names
   labels <- read.csv(label_metadata) %>%
     dplyr::rename(Subject_ID = 1) %>%
-    distinct(Subject_ID, diagnosis) %>%
+    distinct(Subject_ID, diagnosis, age, gender) %>%
     semi_join(., ids) %>%
     mutate(diagnosis = str_to_title(diagnosis)) %>%
     mutate(diagnosis = ifelse(diagnosis == "Adhd", "ADHD", diagnosis)) 
@@ -121,3 +153,12 @@ load_mat_data <- function(mat_file, label_metadata, rdata_path, overwrite=F) {
     }
   }
 }
+
+#-------------------------------------------------------------------------------
+
+#-------------------------------------------------------------------------------
+# Call function using command-line inputs
+load_mat_data(mat_file=mat_file, 
+              label_metadata=label_metadata, 
+              rdata_path=rdata_path, 
+              overwrite=overwrite)

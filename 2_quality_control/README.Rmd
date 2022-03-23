@@ -1,0 +1,62 @@
+---
+title: "Quality Control"
+output: 
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.show = 'hold')
+```
+
+### Source functions
+```{r}
+source("QC_functions.R")
+```
+
+
+### NA values
+
+One thing to look at is how many features showed up as NA across each subject by noise processing method.
+
+```{r}
+theme_set(cowplot::theme_cowplot())
+data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/"
+rdata_path <- paste0(data_path, "Rdata/")
+
+NA_subjects_data <- find_catch22_na(rdata_path = rdata_path)
+NA_subjects_data
+```
+
+This shows that there are six subjects for whom catch22 returned NA values for all ROIs (82) and 19 out of the 22 features for a total of 1,558 NAs per subject. We can load in the raw time-series datasets and view the raw values for these subjects.
+
+```{r}
+plot_catch22_na_ts(rdata_path=rdata_path, 
+                   subject_IDs=NA_subjects_data$Subject_ID)
+ggsave("plots/Raw_fMRI_Signal_NA_Subjects.png",
+       width=7, height=6, units="in", dpi=300)
+```
+
+### Movement -- fractional displacement
+
+We can compile the subjects' average fractional displacement (FD) in the scanner into a dataframe:
+```{r}
+movement_data <- compile_movement_data(fd_path=paste0(data_path, "movementData/"),
+                                       subject_csv = paste0(data_path, "participants.csv"))
+
+head(movement_data)
+```
+Visualize the average FD by diagnosis in a boxplot:
+```{r}
+plot_FD_vs_diagnosis(movement_data = movement_data)
+ggsave("plots/Subject_FD_by_Diagnosis.png",
+       width=4, height=4, units="in", dpi=300)
+```
+
+Plot the number of subjects retained at each FD threshold:
+```{r}
+plot_subjects_per_fd_threshold(movement_data)
+ggsave("plots/Subjects_Retained_by_FD_Threshold.png",
+       width=5, height=4, units="in", dpi=300)
+```
+
