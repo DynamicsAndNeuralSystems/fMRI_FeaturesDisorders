@@ -1,8 +1,6 @@
 ---
 title: "Quality Control"
-output: 
-  html_document:
-    keep_md: true
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
@@ -33,9 +31,12 @@ This shows that there are six subjects for whom catch22 returned NA values for a
 ```{r}
 plot_catch22_na_ts(rdata_path=rdata_path, 
                    subject_IDs=NA_subjects_data$Subject_ID)
+```
+```{r, echo=F, eval=F}
 ggsave("plots/Raw_fMRI_Signal_NA_Subjects.png",
        width=7, height=6, units="in", dpi=300)
 ```
+
 
 ### Movement -- fractional displacement
 
@@ -49,6 +50,8 @@ head(movement_data)
 Visualize the average FD by diagnosis in a boxplot:
 ```{r}
 plot_FD_vs_diagnosis(movement_data = movement_data)
+```
+```{r, echo=F, eval=F}
 ggsave("plots/Subject_FD_by_Diagnosis.png",
        width=4, height=4, units="in", dpi=300)
 ```
@@ -56,7 +59,8 @@ ggsave("plots/Subject_FD_by_Diagnosis.png",
 Plot the number of subjects retained at each FD threshold:
 ```{r}
 plot_subjects_per_fd_threshold(movement_data)
+```
+```{r, echo=F, eval=F}
 ggsave("plots/Subjects_Retained_by_FD_Threshold.png",
        width=5, height=4, units="in", dpi=300)
 ```
-

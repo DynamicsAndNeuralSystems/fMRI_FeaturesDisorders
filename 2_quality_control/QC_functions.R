@@ -132,7 +132,7 @@ plot_subjects_per_fd_threshold <- function(movement_data) {
                  names_to="Group",
                  values_to="n") %>%
     ggplot(data=., mapping=aes(x=FD_Threshold, y=n, color=Group, group=Group)) +
-    geom_line() +
+    geom_line(size=2) +
     ylab("# Subjects") +
     xlab("FD Threshold") +
     scale_x_reverse() +
