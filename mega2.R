@@ -70,50 +70,6 @@ rdata_path <- paste0(data_path, "Rdata/")
 # 
 
 
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-# Run univariate classification on each brain region separately
-test_methods <- c("t-test", "svmLinear")
-for (test_method in test_methods) {
-  for (noise_proc in c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")) { 
-    
-    # Clean up names
-    test_label <- gsub("-", "_", test_method)
-    noise_label <- gsub("\\+", "_", noise_proc)
-    
-    # Only run if RDS file doesn't yet exist
-    if (!file.exists(paste0(rdata_path, "UCLA_",
-                            noise_label, "_catch22_ROIwise_",
-                            test_label, ".Rds"))) {
-      
-      # Load catch22 feature matrix
-      feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
-                                                           noise_label)))
-      
-      # Run ROI-by-ROI analysis
-      run_region_by_region_analysis(feature_matrix=feature_matrix, 
-                                    test_method=test_method, 
-                                    rdata_path=rdata_path, 
-                                    noise_proc=noise_proc)
-    }
-    # clean up memory
-    gc()
-  }
-  
-}
-
-# Plot PC1 vs PC2 for example ROI
-this_ROI <- "ctx-lh-bankssts"
-feature_matrix <- UCLA_AROMA_2P_catch22
-class_res <- UCLA_AROMA_2P_catch22_ROIwise_t_test
-num_feature <- 8
-PCA_dimplot_for_ROI(feature_matrix = feature_matrix,
-                    class_res = class_res,
-                    this_ROI = this_ROI)
-ggsave(paste0(plot_path, "PC1_PC2_left_bankssts.png"),
-       width = 6, height = 5, units="in", dpi=300)
-
 # Plot top 8 features for an example ROI
 violin_plot_for_ROI(feature_matrix = feature_matrix,
                         class_res = class_res,
