@@ -1,5 +1,5 @@
 ---
-title: "Region-Wise Classification Analysis"
+title: "Step 3: ROI-Wise catch22 Feature Analysis"
 output: github_document
 ---
 
@@ -10,194 +10,154 @@ knitr::opts_chunk$set(echo = TRUE, warning=F, message=F)
 ### Source functions
 ```{r}
 source("../helper_functions/visualization_functions.R")
-source("region_by_region_analysis.R")
+source("ROI_wise_analysis_functions.R")
+theme_set(theme_cowplot())
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 ```
 
-We can visualize PC1 vs. PC2 for an example ROI across the three different noise processing methods, like the left isthmus cingulate:
-```{r, fig.height=8, fig.width=8}
-# Set an example ROI
-this_ROI = "ctx-lh-isthmuscingulate"
-ROI_label = "Left_isthmus_cingulate"
+### Run multivariable classifier
 
-# Plot PC1 vs PC2 for the left entorhinal cortex as an example
-PCA_dimplot_for_ROI(this_ROI = this_ROI,
-                    rdata_path = rdata_path)
-```
-```{r, eval=F, echo=F}
-# Save plot
-ggsave(sprintf("plots/PC1_PC2_%s.png", ROI_label),
-       width = 8, height = 8, units="in", dpi=300)
-```
+We will use the multivariable classifier included in `theft` to evaluate how the catch22 feature set collectively performs at distinguishing control vs. schizophrenia subjects at each brain region. We will use z-score normalisation and a linear support vector machine (SVM) with caret. 
 
-We can also visualize the violin plots for the raw data and the two normalisation methods:
-```{r, message=F, warning=F, fig.width=16, fig.height=12}
-# Set an example ROI
-this_ROI = "ctx-lh-isthmuscingulate"
+The below code chunk calls `run_theft_multivar_classifier`, which is a wrapper for `fit_multivariable_classifier` from `theft`. Behind the scenes, we opt to use 10-fold cross validation (`use_k_fold = TRUE`, `num_folds = 10`) with empirical null model fitting (`use_empirical_null=TRUE`, `null_testing_method = "null model fits"`) and gaussian p-value calculation with 10 permutations (`p_value_method = "gaussian"`, `num_permutations = 10`).
 
-# Just use AROMA+2P for example
-noise_proc = "AROMA+2P"
-noise_label <- gsub("\\+", "_", noise_proc)
-noise_label <- gsub("\\+", "_", noise_proc)
-violin_plots_for_ROI(this_ROI = this_ROI,
-                     rdata_path = rdata_path,
-                     noise_proc = noise_proc)
-```
 
-```{r, echo=F, eval=F}
-ggsave(sprintf("plots/Violin_Plot_%s_%s.png",
-               this_ROI, noise_label), width=16, height=12, units="in", dpi=300)
-```
+```{r, warning=F, message=F}
+# Use z-score normalisation
+norm_method = "z-score"
 
-### Manual t-test
+# Use linear support vector machine (SVM) classification algorithm
+test_method <- "svmLinear"
 
-Let's start with a very simple t-test for catch22 feature values in control vs schizophrenia subjects by brain region:
-```{r, fig.width=16, fig.height=10}
-t_test_res <- t_test_by_region(rdata_path=rdata_path) %>%
-  dplyr::rename("statistic_value"="estimate",
-                "feature"="names") 
+# Retain balanced accuracy in addition to raw accuracy for each ROI
+use_balanced_accuracy <- TRUE
 
-# Just use AROMA+2P for example
-noise_proc = "AROMA+2P"
-noise_label <- gsub("\\+", "_", noise_proc)
-
-t_stat_histograms(t_test_res=t_test_res,
-                  noise_proc = noise_proc)
-```
-```{r, echo=F, eval=F}
-ggsave(sprintf("plots/In_Sample_T_Test_Res_%s.png",
-               noise_label), width=16, height=10, units="in", dpi=300)
-```
-
-Let's take a birds-eye view of the T-test classification metrics in with each of the noise-processing datasets.
-```{r, fig.width=12, fig.height=7}
-statistic = "T statistic"
-test_method = "t_test"
-
-norm_methods <- c("non-normalised", "z-score", "RobustSigmoid")
-
-min_t <- min(t_test_res$statistic_value, na.rm=T)
-max_t <- max(t_test_res$statistic_value, na.rm=T)
-
-if (abs(min_t) > max_t) {
-  min_val = min_t
-  max_val = abs(min_t)
+# Run theft's multivariable classifier on each ROI and save to an RDS object
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear.Rds"))) {
+  
+  ROI_wise_class_res_list <- list()
+  
+  for (noise_proc in noise_procs) {
+    ROI_wise_class_res <- run_theft_multivar_classifier(rdata_path,
+                                                           norm_method = norm_method,
+                                                           test_method = test_method,
+                                                           noise_proc = noise_proc,
+                                                           use_balanced_accuracy = use_balanced_accuracy)
+    
+    ROI_wise_class_res_list <- rlist::list.append(ROI_wise_class_res_list, ROI_wise_class_res)
+  }
+  
+  ROI_wise_class_res_df <- do.call(plyr::rbind.fill, ROI_wise_class_res_list)
+  saveRDS(ROI_wise_class_res_df, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear.Rds"))
 } else {
-  min_val = -1*max_t
-  max_val = max_t
-}
-
-# Just use AROMA+2P for this example
-noise_proc <- "AROMA+2P"
-noise_label <- gsub("\\+", "_", noise_proc)
-
-for (norm_method in norm_methods) {
-  classification_results <- t_test_res %>%
-    filter(Noise_Proc == noise_proc,
-           Norm_Method == norm_method)
-  
-  # Heatmap
-  plot_class_stat_heatmap(classification_results = classification_results,
-                          statistic = statistic,
-                          noise_proc = noise_proc,
-                          norm_method = norm_method,
-                          min_val = min_val,
-                          max_val = max_val)
-}
-```
-```{r, echo=F, eval=F}
-for (norm_method in norm_methods) {
-  classification_results <- t_test_res %>%
-    filter(Noise_Proc == noise_proc,
-           Norm_Method == norm_method)
-  
-  # Heatmap
-  png(sprintf("plots/UCLA_%s_catch22_ROIwise_%s_%s.png",
-              noise_label, test_method, norm_method), width=12, height=7, units="in", res=300)
-  plot_class_stat_heatmap(classification_results = classification_results,
-                          statistic = statistic,
-                          noise_proc = noise_proc,
-                          norm_method = norm_method,
-                          min_val = min_val,
-                          max_val = max_val)
-  dev.off()
+  ROI_wise_class_res_df <- readRDS(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear.Rds"))
 }
 ```
 
+We can plot the distribution of accuracy and balanced accuracy values across the 82 ROIs for each noise processing method:
 
-### Theft
+```{r, fig.width=7, fig.height=6}
+# Our three noise-processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+plot_class_acc_w_props(class_res = ROI_wise_class_res_df,
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs)
+```
 
-Run univariate classification on each brain region separately, using both t-test and linear SVM:
+This highlights the need for inverse probability weighting so the linear SVM doesn't just classify every subject as a control subject to automatically hit ~70% accuracy.
+
+
+### In-sample inverse probability weighted SVM with e1071::svm
+
 ```{r}
-# Run univariate classification on each brain region separately
-test_methods <- c("t-test", "svmLinear")
-norm_methods <- c("z-score", "RobustSigmoid")
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
+# Use linear SVM
+svm_kernel = "linear"
 
-for (norm_method in norm_methods) {
-  for (test_method in test_methods) {
-    for (noise_proc in c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")) { 
-      
-      # Clean up names
-      test_label <- gsub("-", "_", test_method)
-      noise_label <- gsub("\\+", "_", noise_proc)
-      
-      # Only run if RDS file doesn't yet exist
-      if (!file.exists(paste0(rdata_path, "UCLA_", 
-                              noise_label, "_catch22_ROIwise_",  
-                              norm_method, "_",
-                              test_label, ".Rds"))) {
-        
-        # Load catch22 feature matrix
-        feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
-                                                             noise_label)))
-        
-        # Run ROI-by-ROI analysis
-        run_region_by_region_analysis(feature_matrix = feature_matrix, 
-                                      test_method = test_method, 
-                                      norm_method = norm_method,
-                                      rdata_path = rdata_path, 
-                                      noise_proc = noise_proc)
-      }
-      # clean up memory
-      gc()
-    }
-    
-  }
+# Run theft's multivariable classifier on each ROI and save to an RDS object
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "UCLA_e1071_linear_SVM_AROMA_2P.Rds"))) {
+  region_wise_SVM_e1071 <- run_e1071_SVM_by_region(rdata_path = rdata_path,
+                                                   svm_kernel = svm_kernel,
+                                                   noise_procs = noise_procs)
+  saveRDS(region_wise_SVM_e1071, file=paste0(rdata_path, "UCLA_e1071_linear_SVM_AROMA_2P.Rds"))
+} else {
+  region_wise_SVM_e1071 <- readRDS(paste0(rdata_path, "UCLA_e1071_linear_SVM_AROMA_2P.Rds"))
 }
 ```
 
-Let's take a birds-eye view of the T-test classification metrics in with each of the noise-processing datasets.
-```{r, eval=F}
-test_statistic = "T statistic"
-test_method = "t_test"
+```{r, fig.width=7, fig.height=6}
+# Plot accuracy + balanced accuracy in histograms
+# Control subject proportion is highlighted for accuracy, 0.5 is highlighted for balanced accuracy
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+plot_class_acc_w_props(class_res = region_wise_SVM_e1071,
+                       cv = FALSE,
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs)
+```
 
-norm_methods <- c("z-score", "RobustSigmoid")
+This in-sample inverse probability-weighted SVM with the `e1071` package performs much better. The distribution of raw accuracies is no longer largely centered around the control subject proportion point, and the balanced accuracies are now much higher than 0.5, suggesting that the classifier is actually attempting to separate schizophrenia vs control patients. 
 
-class_res_list <- list()
-for (noise_proc in c("AROMA+2P",
-                     "AROMA+2P+GMR",
-                     "AROMA+2P+DiCER")) {
-  noise_label <- gsub("\\+", "_", noise_proc)
+
+### 10-fold CV inverse probability weighted SVM with e1071 and caret
+
+```{r}
+# Try three different noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Retain balanced accuracy in addition to raw accuracy for each ROI
+use_balanced_accuracy <- TRUE
+
+# Implement inverse probability weighting
+use_inv_prob_weighting = TRUE
+
+# Run theft's multivariable classifier on each ROI and save to an RDS object
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_inv_prob.Rds"))) {
   
-  for (norm_method in norm_methods) {
-    classification_results <- readRDS(paste0(rdata_path, 
-                                             sprintf("UCLA_%s_catch22_ROIwise_%s_%s.Rds",
-                                                     noise_label,
-                                                     norm_method,
-                                                     test_method)))
-    
-    # Heatmap
-    png(sprintf("plots/UCLA_%s_catch22_ROIwise_%s_%s.png",
-                noise_label, test_method, norm), width=12, height=7, units="in", res=300)
-    plot_class_stat_heatmap(classification_results = classification_results,
-                            statistic = test_statistic,
-                            noise_proc = noise_proc,
-                            norm_method = norm)
-    dev.off()
-  }
+   region_wise_SVM_caret_inv_prob_df <- run_caret_e1071_SVM_by_region(rdata_path = rdata_path,
+                                            use_inv_prob_weighting = TRUE,
+                                            noise_procs = noise_procs)
+  saveRDS(region_wise_SVM_caret_inv_prob_df, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_inv_prob.Rds"))
+} else {
+  region_wise_SVM_caret_inv_prob_df <- readRDS(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_inv_prob.Rds"))
 }
-
 ```
 
+```{r, fig.width=7, fig.height=6}
+plot_class_acc_w_props(class_res = region_wise_SVM_caret_inv_prob_df,
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs)
+```
 
+As expected with cross-validation, the raw and balanced accuracies are all shifted lower.
+
+### Null permutations
+
+```{r}
+set.seed(127)
+
+# Try three different noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Retain balanced accuracy in addition to raw accuracy for each ROI
+use_balanced_accuracy <- TRUE
+
+# Implement inverse probability weighting
+use_inv_prob_weighting = TRUE
+
+# Run theft's multivariable classifier on each ROI and save to an RDS object
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_inv_prob_nulls.Rds"))) {
+  
+   region_wise_SVM_caret_inv_prob_nulls <- run_caret_e1071_SVM_by_region_reshuffle(rdata_path = rdata_path,
+                                            use_inv_prob_weighting = TRUE,
+                                            num_shuffles = 1000,
+                                            noise_procs = noise_procs)
+  saveRDS(region_wise_SVM_caret_inv_prob_nulls, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_inv_prob_nulls.Rds"))
+} else {
+  region_wise_SVM_caret_inv_prob_nulls <- readRDS(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_inv_prob_nulls.Rds"))
+}
+```

@@ -203,7 +203,7 @@ violin_plots_for_ROI <- function(this_ROI,
   # Non-normalized data
   feature_matrix <- readRDS(paste0(rdata_path, "UCLA_", 
                                    noise_label, "_catch22.Rds")) %>%
-    mutate(group = factor(group, levels=c("Control", "Schz")))
+    mutate(group = factor(group, levels=c("Schz", "Control")))
   
   
   feature_lookup <- data.frame(names = unique(feature_matrix$names)) %>%
@@ -258,9 +258,9 @@ violin_plots_for_ROI <- function(this_ROI,
       ) %>% 
       unnest(tidied) %>%
       dplyr::select(-data, -test) %>%
-      dplyr::select(names, Noise_Proc, Norm_Method, estimate) %>%
-      mutate(estimate = round(estimate, 3)) %>%
-      dplyr::rename("t_stat" = "estimate") %>%
+      dplyr::select(names, Noise_Proc, Norm_Method, statistic) %>%
+      mutate(statistic = round(statistic, 3)) %>%
+      dplyr::rename("t_stat" = "statistic") %>%
       left_join(., ROI_data_full) %>%
       group_by(names, Norm_Method) %>%
       mutate(max_value = max(values, na.rm=T)) %>%
@@ -343,7 +343,8 @@ t_stat_histograms <- function(t_test_res,
   theme_set(cowplot::theme_cowplot())
   outer_plot_list <- list()
   
-  t_stat_np <- subset(t_test_res, Noise_Proc==noise_proc)
+  t_stat_np <- subset(t_test_res, Noise_Proc==noise_proc) %>%
+    mutate(feature = fct_reorder(feature, statistic_value, .fun=mean, .desc=T))
   
   t_stat_limits <- c(min(t_stat_np$statistic_value, na.rm=T),
                      max(t_stat_np$statistic_value, na.rm=T))
@@ -352,10 +353,10 @@ t_stat_histograms <- function(t_test_res,
     
     if (group==1) {
       t_stat_group <- t_stat_np %>%
-        filter(feature %in% unique(t_stat_np$feature)[1:11])  
+        filter(feature %in% levels(t_stat_np$feature)[1:11])  
     } else {
       t_stat_group <- t_stat_np %>%
-        filter(feature %in% unique(t_stat_np$feature)[12:22])  
+        filter(feature %in% levels(t_stat_np$feature)[12:22])  
     }
     
     # Iterate over each normalisation method
@@ -367,6 +368,7 @@ t_stat_histograms <- function(t_test_res,
       # Create base plot
       p <- t_stat_subset %>%
         mutate(feature = str_replace_all(feature, "_", " ")) %>%
+        mutate(feature = fct_reorder(feature, statistic_value, .fun=mean, .desc=T)) %>%
         ggplot(data=., mapping=aes(x=statistic_value)) +
         geom_histogram(fill="lightsteelblue") +
         geom_vline(xintercept=0, linetype=2) +
@@ -469,27 +471,23 @@ plot_class_stat_heatmap <- function(classification_results,
   classification_results_wide <- classification_results %>%
     mutate(Brain_Region = gsub("ctx-lh-", "Left ", Brain_Region)) %>%
     mutate(Brain_Region = gsub("ctx-rh-", "Right ", Brain_Region)) %>%
-    pivot_wider(id_cols=c("feature"),
-                names_from = "Brain_Region",
+    pivot_wider(id_cols=c("Brain_Region"),
+                names_from = "feature",
                 values_from = "statistic_value")
   classification_mat <- classification_results_wide %>%
-    mutate(feature = gsub("catch22_", "", feature)) %>%
-    column_to_rownames("feature") %>%
+    column_to_rownames("Brain_Region") %>%
     as.matrix()
   
   col_func = circlize::colorRamp2(seq(min_val, max_val, length = 3), c("blue", "#EEEEEE", "red"))
   
   htmp <- ComplexHeatmap::Heatmap(classification_mat, 
                                   col = col_func,
-                                  column_title = sprintf("Classification metrics for UCLA %s %s Data",
+                                  column_title = sprintf("Classification metrics for UCLA\n%s %s Data",
                                                          noise_proc, norm_method),
-                                  heatmap_legend_param = list(title=statistic,
-                                                              title_position = "leftcenter",
-                                                              legend_width = unit(5, "cm"),
-                                                              legend_direction="horizontal"),
+                                  heatmap_legend_param = list(title=statistic),
                                   row_names_gp = gpar(fontsize = 10),
                                   column_names_gp = gpar(fontsize = 10))
   
-  draw(htmp, heatmap_legend_side="bottom")
+  draw(htmp)
 }
 

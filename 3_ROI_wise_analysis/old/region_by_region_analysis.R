@@ -32,7 +32,8 @@ t_test_by_region <- function(rdata_path,
     
     # Load catch22 feature matrix
     feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
-                                                         noise_label)))
+                                                         noise_label))) %>%
+      mutate(group = factor(group, levels = c("Schz", "Control")))
 
     
     # Define non-normalised data
@@ -41,7 +42,6 @@ t_test_by_region <- function(rdata_path,
     
     # Calculate t statistics for non-normalised data
     t_stat_res <- non_norm_data %>%
-      mutate(group = factor(group, levels=c("Control", "Schz"))) %>%
       group_by(Brain_Region, Norm_Method, names) %>%
       nest() %>%
       mutate(
@@ -65,7 +65,6 @@ t_test_by_region <- function(rdata_path,
       
       # Calculate t statisics
       t_stat_res <- normed %>%
-        mutate(group = factor(group, levels=c("Control", "Schz"))) %>%
         group_by(Brain_Region, names) %>%
         nest() %>%
         mutate(
