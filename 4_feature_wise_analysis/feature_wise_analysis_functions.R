@@ -19,17 +19,46 @@ library(broom)
 # Calculate balanced accuracy in caret
 #-------------------------------------------------------------------------------
 calculate_balanced_accuracy <- function(data, lev = NULL, model = NULL) {
-  # calculate accuracy
-  accuracy <- sum(data$pred == data$obs)/length(data$obs)
   
-  # Calculate balanced accuracy
-  data_cm <- as.data.frame(t(caret::confusionMatrix(data$pred, data$obs)$byClass))
-  balanced_accuracy <- mean(data_cm$`Balanced Accuracy`, na.rm=T)
+  # Calculate balanced accuracy from confusion matrix as the average of class recalls as per https://arxiv.org/pdf/2008.05756.pdf
+  
+  cm <- as.matrix(caret::confusionMatrix(data$pred, data$obs)$table)
+  
+  recall <- 1:nrow(cm) %>%
+    purrr::map(~ calculate_recall(cm, x = .x)) %>%
+    unlist()
+  
+  balanced_accuracy <- sum(recall) / length(recall)
+  
+  # Calculate accuracy
+  
+  accuracy <- sum(diag(cm)) / sum(cm)
+  
+  # Return results
   
   out <- c(accuracy, balanced_accuracy)
   names(out) <- c("Accuracy", "Balanced_Accuracy")
   return(out)
 }
+
+calculate_in_sample_balanced_accuracy <- function(cm) {
+  recall <- 1:nrow(cm) %>%
+    purrr::map(~ calculate_recall(cm, x = .x)) %>%
+    unlist()
+  
+  balanced_accuracy <- sum(recall) / length(recall)
+  
+  # Calculate accuracy
+  
+  accuracy <- sum(diag(cm)) / sum(cm)
+  
+  # Return results
+  
+  out <- c(accuracy, balanced_accuracy)
+  names(out) <- c("Accuracy", "Balanced_Accuracy")
+  return(out)
+}
+
 
 #-------------------------------------------------------------------------------
 # Run theft's multivariate classifier for a given catch22 feature
@@ -59,7 +88,7 @@ run_theft_multivar_classifier_by_feature <- function(rdata_path,
     
     cat("\nRunning theft multivariable classifier for", this_feature, noise_proc, "\n")
     
-    multi_classifier_outputs <- fit_multivariable_classifier(feature_matrix_feature,
+    multi_classifier_outputs <- fit_multi_feature_classifier(feature_matrix_feature,
                                                              id_var = "Subject_ID",
                                                              group_var = "group",
                                                              by_set = F,
@@ -68,9 +97,9 @@ run_theft_multivar_classifier_by_feature <- function(rdata_path,
                                                              use_k_fold = T,
                                                              num_folds = 10,
                                                              use_empirical_null = T,
-                                                             null_testing_method = "null model fits",
+                                                             null_testing_method = "model free shuffles",
                                                              p_value_method = "gaussian",
-                                                             num_permutations = 10)
+                                                             num_permutations = 10000)
     
     # Compile results
     test_stat <- multi_classifier_outputs$TestStatistics %>%
@@ -135,6 +164,7 @@ plot_class_acc_w_props <- function(class_res,
                  values_to = "Value") %>%
     mutate(Metric = gsub("_", " ", Metric),
            ctrl_prop = ifelse(Metric == "Balanced Accuracy", 0.5, ctrl_prop)) %>%
+    mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
     ggplot(data=., mapping=aes(x=Value)) +
     geom_histogram(fill="lightsteelblue", bins=50) +
     geom_vline(aes(xintercept = ctrl_prop), linetype=2, color="gray30") +
@@ -146,9 +176,10 @@ plot_class_acc_w_props <- function(class_res,
 }
 
 #-------------------------------------------------------------------------------
-# Run simple e1071 in-sample SVM by catch22 feature
+# Run simple e1071 in-sample SVM by catch22 feature 
+# with inverse probability weighting
 #-------------------------------------------------------------------------------
-run_e1071_SVM_by_feature <- function(rdata_path,
+run_in_sample_e1071_SVM_by_feature <- function(rdata_path,
                                     svm_kernel = "linear",
                                     noise_procs = c("AROMA+2P", 
                                                     "AROMA+2P+GMR", 
@@ -202,7 +233,8 @@ run_e1071_SVM_by_feature <- function(rdata_path,
       
       # Calculate accuracy and balanced accuracy
       accuracy <- sum(pred == feature_data$group)/length(pred)
-      balanced_accuracy <- caret::confusionMatrix(pred, feature_data$group)$byClass[["Balanced Accuracy"]]
+      cm <- as.matrix(caret::confusionMatrix(pred, feature_data$group)$table)
+      balanced_accuracy <- calculate_in_sample_balanced_accuracy(cm = cm)
       
       # Compile results into a dataframe
       region_df_res <- data.frame(catch22_Feature = this_feature,
@@ -224,9 +256,9 @@ run_e1071_SVM_by_feature <- function(rdata_path,
 
 
 #-------------------------------------------------------------------------------
-# Run linear SVM in caret with e1071 per catch22 feature
+# Run linear multi-ROI SVM in caret with e1071 per catch22 feature
 #-------------------------------------------------------------------------------
-run_caret_e1071_SVM_by_feature <- function(rdata_path,
+run_caret_multi_SVM_by_feature_inv_prop <- function(rdata_path,
                                           use_inv_prob_weighting = TRUE,
                                           noise_procs = c("AROMA+2P", 
                                                           "AROMA+2P+GMR", 
@@ -275,9 +307,6 @@ run_caret_e1071_SVM_by_feature <- function(rdata_path,
                               1/sample_props$control_prop,
                               1/sample_props$schz_prop)
       
-      # Create tune grid
-      e1071_grid <- expand.grid(cost = 1)
-      
       # Train SVM model
       fitControl <- caret::trainControl(method = "cv",
                                         number = 10,
@@ -288,12 +317,10 @@ run_caret_e1071_SVM_by_feature <- function(rdata_path,
       # Run e1071 SVM with caret
       mod <- caret::train(group ~ .,
                           data = data_for_svm,
-                          method = "svmLinear2",
                           trControl = fitControl,
                           metric = "Balanced_Accuracy",
                           maximize = T,
                           weights = model_weights,
-                          tuneGrid = e1071_grid,
                           preProcess = c("center", "scale", "nzv"))
       
       # Generate predictions

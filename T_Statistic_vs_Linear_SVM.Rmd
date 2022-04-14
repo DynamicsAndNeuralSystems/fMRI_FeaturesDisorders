@@ -1,0 +1,286 @@
+---
+title: "T Statistic vs SVM"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Source functions
+```{r}
+source("helper_functions/visualization_functions.R")
+source("5_ROI_and_feature_wise_analysis/analysis_functions.R")
+source("t_test_analysis_functions.R")
+rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+```
+
+### Manual t-test
+
+Let's start with a very simple t-test for catch22 feature values in control vs schizophrenia subjects by brain region, looking first at AROMA+2P noise-processing and three different normalisation methods: none, z-score, and RobustSigmoid:
+```{r}
+if (!file.exists(paste0(rdata_path, "Feature_and_ROI_Wise_T_Test.Rds"))) {
+  t_test_res <- t_test_by_region(rdata_path=rdata_path) %>%
+  dplyr::rename("statistic_value"="statistic",
+                "feature"="names") 
+  
+  saveRDS(t_test_res, file = paste0(rdata_path, "Feature_and_ROI_Wise_T_Test.Rds"))
+} else {
+  t_test_res <- readRDS(paste0(rdata_path, "Feature_and_ROI_Wise_T_Test.Rds"))
+}
+```
+
+
+
+```{r, fig.width=16, fig.height=10}
+# Just use AROMA+2P for example
+noise_proc = "AROMA+2P"
+noise_label <- gsub("\\+", "_", noise_proc)
+
+t_stat_histograms_by_norm(t_test_res=t_test_res,
+                          noise_proc = noise_proc)
+```
+
+```{r, eval=F, echo=F}
+# Save figure
+ggsave(sprintf("plots/In_Sample_T_Test_Res_%s_by_Normalisation.png",
+               noise_label), width=16, height=10, units="in", dpi=300)
+```
+
+We can create the same type of visualisation with all three noise-processing methods and just one normalisation method (z-score):
+```{r, fig.width=17, fig.height=10}
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+norm_method <- "z-score"
+t_stat_histograms_by_noise_proc(t_test_res = t_test_res,
+                                noise_procs = noise_procs,
+                                norm_method = norm_method)
+```
+```{r, eval=F, echo=F}
+# Save figure
+ggsave(sprintf("plots/In_Sample_T_Test_Res_%s_by_Noise_Proc.png",
+               norm_method), width=17, height=10, units="in", dpi=300)
+```
+
+```{r, echo=F, eval=F}
+ggsave(sprintf("plots/In_Sample_T_Test_Res_%s.png",
+               noise_label), width=16, height=10, units="in", dpi=300)
+```
+
+Let's look at the top positive feature (SB_MotifThree_quantile_hh) and negative feature (CO_Embed2_Dist_tau_d_expfit_meandiff) in the top five regions per feature -- looking at each noise-processing method separately.
+
+```{r}
+# Use AROMA + 2P + DiCER data
+noise_proc <- "AROMA+2P+DiCER"  
+noise_label <- gsub("\\+", "_", noise_proc)
+
+# Load the feature matrix
+feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
+                                                     noise_label))) %>%
+  mutate(group = factor(group, levels = c("Schz", "Control")))
+
+# Z-score normalise the features
+feature_matrix_norm <- normalise_feature_frame(feature_matrix,
+                                               names_var = "names",
+                                               values_var = "values",
+                                               method = "z-score") %>%
+  dplyr::rename("feature"="names")
+
+# Find top two features across all noise processing methods, 
+# and then the top five brain regions based on absolute t-statistic 
+# given AROMA+2P+DiCER data
+feature_and_ROI_combos <- t_test_res %>% 
+  filter(Norm_Method == "z-score") %>%
+  group_by(feature) %>%
+  mutate(mean_t = mean(statistic_value, na.rm=T)) %>%
+  ungroup() %>%
+  filter(Noise_Proc == "AROMA+2P+DiCER") %>%
+  group_by(Brain_Region) %>%
+  top_n(2, abs(mean_t)) %>%
+  ungroup() %>%
+  group_by(feature) %>%
+  top_n(5, abs(statistic_value)) %>%
+  dplyr::select(-method) %>%
+  left_join(., feature_matrix_norm) %>%
+  group_by(Brain_Region, feature, statistic_value) %>%
+  dplyr::summarise(height_position = 1.2*max(values, na.rm=T)) %>%
+  dplyr::mutate(Brain_Region = gsub("ctx-lh-", "Left\n", Brain_Region),
+         Brain_Region = gsub("ctx-rh-", "Right\n", Brain_Region),
+         feature = str_replace_all(feature, "_", " "))
+
+# Plot the two features separately
+feature1 <- unique(feature_and_ROI_combos$feature)[1]
+feature2 <- unique(feature_and_ROI_combos$feature)[2]
+
+# Subset normalised feature matrix to only those features and brain regions
+# identified above
+base_df <- feature_matrix_norm  %>%
+  mutate(Brain_Region = gsub("ctx-lh-", "Left\n", Brain_Region),
+         Brain_Region = gsub("ctx-rh-", "Right\n", Brain_Region)) %>%
+  dplyr::select(-method) %>%
+  mutate(Noise_Proc = noise_proc,
+         feature = str_replace_all(feature, "_", " ")) %>%
+  semi_join(., feature_and_ROI_combos, 
+            by = c("feature", "Brain_Region"))
+
+# Feature1 plot
+feature_plot_1 <- base_df %>%
+  filter(feature == feature1) %>%
+  ggplot(data=., mapping=aes(x=group, y=values)) +
+  geom_violin(aes(fill = group)) + 
+  geom_boxplot(width=0.2, fill=NA) +
+  geom_text(data = subset(feature_and_ROI_combos, feature==feature1),
+            aes(x = 1.5, y = height_position, 
+                label = paste0("T = ", round(statistic_value, 3)))) +
+  scale_y_continuous(expand=c(0,0,0.15,0)) +
+  facet_grid(Brain_Region ~ feature, switch="y", scales="free",
+             labeller = labeller(feature = label_wrap_gen(20))) +
+  ylab("Z-Score Value") +
+  theme(legend.position = "bottom",
+        strip.text.y.left = element_text(angle=0),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.x = element_blank())
+
+# Feature2 plot
+feature_plot_2 <- base_df %>%
+  filter(feature == feature2) %>%
+  mutate(feature = str_replace_all(feature, "_", " ")) %>%
+  ggplot(data=., mapping=aes(x=group, y=values)) +
+  geom_violin(aes(fill = group)) + 
+  geom_boxplot(width=0.2, fill=NA) +
+  geom_text(data = subset(feature_and_ROI_combos, feature==feature2),
+            aes(x = 1.5, y = height_position, 
+                label = paste0("T = ", round(statistic_value, 3)))) +
+  scale_y_continuous(expand=c(0,0,0.15,0)) +
+  facet_grid(Brain_Region ~ feature, switch="y", scales="free",
+             labeller = labeller(feature = label_wrap_gen(20))) +
+  theme(legend.position = "bottom",
+        strip.text.y.left = element_text(angle=0),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title = element_blank())
+  
+# Combine the two plots
+feature_plot_1 + feature_plot_2 + 
+  plot_layout(guides = "collect") & 
+  theme(legend.position = 'bottom')
+
+# Save the figure
+ggsave("plots/Top_T_Stats_and_ROI_Violin_Plots_AROMA_2P_DiCER.png",
+       width=10, height=6, units="in", dpi=300)
+```
+
+### Feature-wise linear SVM vs t-statistic comparison
+
+#### In-sample
+```{r}
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+region_wise_uni_feature_SVM_e1071 <- readRDS(paste0(rdata_path, "UCLA_uni_feature_in_sample_e1071_linear_SVM.Rds"))
+
+in_sample_svm_res <- region_wise_uni_feature_SVM_e1071 %>%
+  dplyr::select(Brain_Region, Feature, Noise_Proc, Accuracy, Balanced_Accuracy) %>%
+  dplyr::rename("SVM_Accuracy" = "Accuracy",
+                "SVM_Balanced_Accuracy" = "Balanced_Accuracy")
+```
+
+Accuracy:
+```{r}
+t_test_res %>%
+  dplyr::filter(Norm_Method == "z-score") %>%
+  dplyr::select(Brain_Region, feature, Noise_Proc, statistic_value) %>%
+  dplyr::rename("Feature" = "feature",
+                "T_Statistic" = "statistic_value") %>%
+  left_join(., in_sample_svm_res) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  ggplot(data=., mapping=aes(x=abs(T_Statistic), y=SVM_Accuracy)) +
+  geom_point(alpha=0.4) +
+  ylab("Im-Sample Linear SVM Accuracy") +
+  xlab("Absolute T-statistic value") +
+  facet_grid(. ~ Noise_Proc, scales="free_y") +
+  ggtitle("Single-Feature Linear SVM Accuracy vs. T-Statistic") +
+  theme(plot.title = element_text(hjust=0.5))
+
+# Save the figure
+ggsave("plots/Single_Feature_T_Stat_vs_In_Sample_Linear_SVM_Acc.png",
+       width=8, height=5, units="in", dpi=300)
+```
+
+
+Balanced accuracy:
+```{r}
+t_test_res %>%
+  dplyr::filter(Norm_Method == "z-score") %>%
+  dplyr::select(Brain_Region, feature, Noise_Proc, statistic_value) %>%
+  dplyr::rename("Feature" = "feature",
+                "T_Statistic" = "statistic_value") %>%
+  left_join(., in_sample_svm_res) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  ggplot(data=., mapping=aes(x=abs(T_Statistic), y=SVM_Balanced_Accuracy)) +
+  geom_point(alpha=0.4) +
+  ylab("In-Sample Linear SVM Balanced Accuracy") +
+  xlab("Absolute T-statistic value") +
+  facet_grid(. ~ Noise_Proc, scales="free_y") +
+  ggtitle("Single-Feature Linear SVM\nBalanced Accuracy vs. T-Statistic") +
+  theme(plot.title = element_text(hjust=0.5))
+
+# Save the figure
+ggsave("plots/Single_Feature_T_Stat_vs_In_Sample_Linear_SVM_Bal_Acc.png",
+       width=8, height=5, units="in", dpi=300)
+```
+
+#### 10-fold CV
+
+We can plot the t-statistic vs. linear SVM accuracy for each ROI/feature combo in a scatterplot:
+```{r}
+region_wise_uni_feat_SVM_caret_inv_prob_df <- readRDS(paste0(rdata_path, "UCLA_univar_ROI_res_svmLinear_inv_prob.Rds"))
+
+cv_svm_res <- region_wise_uni_feat_SVM_caret_inv_prob_df %>%
+  dplyr::select(Brain_Region, Feature, Noise_Proc, Accuracy, Balanced_Accuracy) %>%
+  dplyr::rename("SVM_Accuracy" = "Accuracy",
+                "SVM_Balanced_Accuracy" = "Balanced_Accuracy")
+```
+
+Accuracy:
+```{r}
+t_test_res %>%
+  dplyr::filter(Norm_Method == "z-score") %>%
+  dplyr::select(Brain_Region, feature, Noise_Proc, statistic_value) %>%
+  dplyr::rename("Feature" = "feature",
+                "T_Statistic" = "statistic_value") %>%
+  left_join(., cv_svm_res) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  ggplot(data=., mapping=aes(x=abs(T_Statistic), y=SVM_Accuracy)) +
+  geom_point(alpha=0.4) +
+  ylab("10-fold CV Linear SVM Accuracy") +
+  xlab("Absolute T-statistic value") +
+  facet_grid(. ~ Noise_Proc, scales="free_y") +
+  ggtitle("Single-Feature Linear SVM Accuracy vs. T-Statistic") +
+  theme(plot.title = element_text(hjust=0.5))
+
+# Save the figure
+ggsave("plots/Single_Feature_T_Stat_vs_CV_Linear_SVM_Acc.png",
+       width=8, height=5, units="in", dpi=300)
+```
+
+
+Balanced accuracy:
+```{r}
+t_test_res %>%
+  dplyr::filter(Norm_Method == "z-score") %>%
+  dplyr::select(Brain_Region, feature, Noise_Proc, statistic_value) %>%
+  dplyr::rename("Feature" = "feature",
+                "T_Statistic" = "statistic_value") %>%
+  left_join(., cv_svm_res) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  ggplot(data=., mapping=aes(x=abs(T_Statistic), y=SVM_Balanced_Accuracy)) +
+  geom_point(alpha=0.4) +
+  ylab("10-fold CV Linear SVM Balanced Accuracy") +
+  xlab("Absolute T-statistic value") +
+  facet_grid(. ~ Noise_Proc, scales="free_y") +
+  ggtitle("Single-Feature Linear SVM\nBalanced Accuracy vs. T-Statistic") +
+  theme(plot.title = element_text(hjust=0.5))
+
+# Save the figure
+ggsave("plots/Single_Feature_T_Stat_vs_CV_Linear_SVM_Bal_Acc.png",
+       width=8, height=5, units="in", dpi=300)
+```

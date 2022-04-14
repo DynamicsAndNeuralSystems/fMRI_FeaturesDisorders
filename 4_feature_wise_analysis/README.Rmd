@@ -63,9 +63,21 @@ plot_class_acc_w_props(class_res = feature_wise_class_res_df,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
 ```
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Acc_BalAcc_caret_SVM_no_reweighting.png", width=7, 
+       height=6, units="in", dpi=300)
+```
 
+The above figure shows the results from running theft's multivariable classifier using all 82 brain regions per catch22 feature with linearSVM (kernlab) in caret.
 
-### In-sample inverse probability weighted SVM with e1071::svm
+The dashed line shows the proportion of control subjects in the population (for Accuracy) and is fixed at 0.5 for Balanced Accuracy.
+
+While the classification algorithm is not as biased toward universally selecting the majority class as with region-based classification, there is still a raw accuracy peak of around 0.7 and balanced accuracy peak around 0.5, suggesting we still need to implement sample reweighting to account for the schizophrenia vs. control class imbalances.
+
+### In-sample linear SVM with inverse probability weighting
+
+We can run linear SVM with the `e1071` package to directly test sample reweighting with in-sample accuracy and balanced accuracy. 
 
 ```{r}
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
@@ -76,12 +88,12 @@ svm_kernel = "linear"
 # Run theft's multivariable classifier on each catch22 feature and save to an RDS object
 # If the RDS object doesn't already exist, otherwise load it in
 if (!file.exists(paste0(rdata_path, "UCLA_e1071_linear_SVM_by_feature_AROMA_2P.Rds"))) {
-  feature_wise_SVM_e1071 <- run_e1071_SVM_by_feature(rdata_path = rdata_path,
+  feature_wise_in_sample_SVM_reweighted <- run_in_sample_e1071_SVM_by_feature(rdata_path = rdata_path,
                                                    svm_kernel = svm_kernel,
                                                    noise_procs = noise_procs)
-  saveRDS(feature_wise_SVM_e1071, file=paste0(rdata_path, "UCLA_e1071_linear_SVM_by_feature_AROMA_2P.Rds"))
+  saveRDS(feature_wise_in_sample_SVM_reweighted, file=paste0(rdata_path, "UCLA_e1071_linear_SVM_by_feature_AROMA_2P.Rds"))
 } else {
-  feature_wise_SVM_e1071 <- readRDS(paste0(rdata_path, "UCLA_e1071_linear_SVM_by_feature_AROMA_2P.Rds"))
+  feature_wise_in_sample_SVM_reweighted <- readRDS(paste0(rdata_path, "UCLA_e1071_linear_SVM_by_feature_AROMA_2P.Rds"))
 }
 ```
 
@@ -90,17 +102,27 @@ if (!file.exists(paste0(rdata_path, "UCLA_e1071_linear_SVM_by_feature_AROMA_2P.R
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy, 0.5 is highlighted for balanced accuracy
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = feature_wise_SVM_e1071,
+plot_class_acc_w_props(class_res = feature_wise_in_sample_SVM_reweighted,
                        cv = FALSE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
 ```
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/In_Sample_Region_Wise_SVM_All_ROIs_Reweighting.png",
+       width=7, height=6, units="in", dpi=300)
+```
 
-This in-sample inverse probability-weighted SVM with the `e1071` package performs much better. The distribution of raw accuracies is no longer largely centered around the control subject proportion point, and the balanced accuracies are now much higher than 0.5, suggesting that the classifier is actually attempting to separate schizophrenia vs control patients. 
+By assigning each subject a weight equivalent to the inverse proportion of that subject's diagnosis, the linear SVM places a higher cost on incorrectly classifying schizophrenia subjects as controls. 
+
+In-sample linear SVM with inverse probability weighting yields accuracies and balanced accuracies ranging between 0.9 to 1.
+
+This indicates that inverse probability reweighting mitigates the class imbalance issue and can be carried forward into 10-fold cross-validation linear SVM.
 
 
-### 10-fold CV inverse probability weighted SVM with e1071 and caret
+### 10-fold cross-validated linear SVM with inverse probability weighting
 
+We can implement 10-fold cross-validation (CV) with the `caret` package.
 
 ```{r}
 # Try three different noise processing methods
@@ -116,7 +138,7 @@ use_inv_prob_weighting = TRUE
 # If the RDS object doesn't already exist, otherwise load it in
 if (!file.exists(paste0(rdata_path, "UCLA_multivar_feature_res_svmLinear_inv_prob.Rds"))) {
   
-   feature_wise_SVM_caret_inv_prob_df <- run_caret_e1071_SVM_by_feature(rdata_path = rdata_path,
+   feature_wise_SVM_caret_inv_prob_df <- run_caret_multi_SVM_by_feature_inv_prop(rdata_path = rdata_path,
                                             use_inv_prob_weighting = TRUE,
                                             noise_procs = noise_procs)
   saveRDS(feature_wise_SVM_caret_inv_prob_df, file=paste0(rdata_path, "UCLA_multivar_feature_res_svmLinear_inv_prob.Rds"))
@@ -130,3 +152,188 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_caret_inv_prob_df,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
 ```
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Caret_10CV_Feature_Wise_SVM_Multi_ROI_Reweighting.png",
+       width=7, height=6, units="in", dpi=300)
+```
+
+
+After implementing sample reweighting with 10-fold cross-validation for SVM using caret, the mean accuracy drops down to around 0.6 and the balanced accuracy has a mean of around 0.53. 
+
+To understand the significance of these values, we can generate a null distribution of classification accuracies and balanced accuracies using a model-free shuffle technique, modified from Trent's theft package.
+
+
+### Generating null distributions from model-free shuffles
+
+```{r}
+# Try three different noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+if (!file.exists(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds"))) {
+  set.seed(127)
+  model_free_shuffle_null_res <- run_model_free_n_shuffles(num_shuffles = 10000,
+                                                    rdata_path = rdata_path,
+                                                    noise_procs = noise_procs)
+  saveRDS(model_free_shuffle_null_res, file = paste0(rdata_path, "Null_Model_Free_Shuffles.Rds"))
+} else {
+  model_free_shuffle_null_res <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds"))
+}
+```
+
+```{r, fig.width=7, fig.height=6}
+feature_wise_SVM_caret_inv_prob_df %>%
+  dplyr::select(catch22_Feature, Noise_Proc, Accuracy, Balanced_Accuracy) %>%
+  mutate(Type = "main") %>%
+  plyr::rbind.fill(., model_free_shuffle_null_res) %>%
+  pivot_longer(cols=c(Accuracy, Balanced_Accuracy),
+               names_to = "Metric",
+               values_to = "Values") %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
+                                                    "AROMA+2P+GMR",
+                                                    "AROMA+2P+DiCER"))) %>%
+  ggplot(data=., mapping=aes(x=Values)) +
+  geom_histogram(aes(fill = Type, y=0.5*..density..), alpha=0.6, 
+                 position="identity", bins=50) +
+  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
+  xlab("Value from n=10,000 Model-Free Shuffles") +
+  ylab("Scaled Density") +
+  labs(fill = "Distribution") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal") 
+```
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Main_vs_Null_Acc_BAcc_Caret_10FCV_Linear_SVM_Feature_Wise.png",
+       width=7, height=6, units="in", dpi=300)
+```
+
+The model-free shuffles method is borrowed from Trent's implementation in theft. With this method, the input class labels (Schz or Control) are randomly shuffled N times, and for each iteration, the classification accuracy and balanced accuracy is calculated. This yields a null distribution of accuracies and balanced accuracies, circumventing the need for running any classification algorithms across iterations.
+
+Here, I've run 10,000 iterations of the model-free shuffle, generating 10,000 null values for Accuracy and Balanced Accuracy, respectively. Since this method is independent of brain region, the same null distribution can be used to compare with each brain region separately.
+
+I've plotted the distribution of null accuracies (coral) alongside the actual accuracies (teal) for the 22 catch22 features on the left. While most of the distributions overlap, the real metric values are right-shifted such that a few features are beyond the null distribution for accuracy and null accuracy.
+
+We can empirically derive p-values for both metrics to see if the classification accuracy/balanced accuracy is significantly greater than that in the null distribution.
+
+
+### Deriving p-values using model-free shuffle null distributions
+
+```{r}
+merged_list <- list()
+main_res <- feature_wise_SVM_caret_inv_prob_df %>%
+    dplyr::select(catch22_Feature, Noise_Proc, Accuracy, Balanced_Accuracy) %>%
+    mutate(Type = "main",
+           Iteration = 0)
+
+for (feature in unique(feature_wise_SVM_caret_inv_prob_df$catch22_Feature)) {
+  feature_null <- model_free_shuffle_null_res %>% mutate(catch22_Feature = feature)
+  feature_main <- subset(main_res, catch22_Feature == feature)
+  
+  feature_merged <- plyr::rbind.fill(feature_main,
+                                    feature_null)
+  
+  merged_list <- rlist::list.append(merged_list, feature_merged)
+}
+main_and_null_res <- do.call(plyr::rbind.fill, merged_list)
+
+main_p_values <- main_and_null_res  %>%
+  group_by(catch22_Feature, Noise_Proc) %>%
+  summarise(Acc_p = 1 - (sum(Accuracy[Type=="main"] > Accuracy[Type=="null"], na.rm=T)/n()),
+            Bal_Acc_p = 1 - (sum(Balanced_Accuracy[Type=="main"] > Balanced_Accuracy[Type=="null"])/n())) %>%
+  ungroup() %>%
+  mutate(Acc_p_adj = p.adjust(Acc_p, method="BH"),
+         Bal_Acc_p_adj = p.adjust(Bal_Acc_p, method="BH")) 
+
+main_p_labs <- main_p_values %>%
+  mutate(Acc_p = scales::scientific(Acc_p, digits = 3),
+         Bal_Acc_p = scales::scientific(Bal_Acc_p, digits = 3),
+         Acc_p_adj = scales::scientific(Acc_p_adj, digits = 3),
+         Bal_Acc_p_adj = scales::scientific(Bal_Acc_p_adj, digits = 3))
+```
+
+Let's zoom in on AROMA+2P+DiCER and pick the five features with the highest cross-validated accuracy:
+```{r, fig.width=11, fig.height=7}
+top_features <- feature_wise_SVM_caret_inv_prob_df %>%
+  filter(Noise_Proc == "AROMA+2P+DiCER") %>%
+  arrange(desc(Accuracy)) %>%
+  top_n(5, Accuracy) %>%
+  pull(catch22_Feature)
+top_features
+
+acc_sorted <- main_and_null_res %>%
+  filter(catch22_Feature %in% top_features, Noise_Proc == "AROMA+2P+DiCER") %>%
+  mutate(catch22_Feature = factor(catch22_Feature, levels=top_features)) 
+
+labs_sorted <- main_p_labs %>%
+  filter(catch22_Feature %in% top_features, Noise_Proc == "AROMA+2P+DiCER") %>%
+  mutate(catch22_Feature = factor(catch22_Feature, levels=top_features)) 
+
+acc_sorted %>%
+  ggplot(data = ., mapping=aes(x=Accuracy)) +
+  geom_histogram(data = subset(acc_sorted, Type == "null"),
+                 fill = "gray70", bins=50) +
+  ggtitle("Main and Model-Free Shuffle Null Accuracy\nfor top AROMA+2P+DiCER catch22 Features") +
+  facet_wrap(catch22_Feature ~ ., scales="free_y", nrow = 2) +
+  geom_vline(data = subset(acc_sorted, Type=="main"),
+             aes(xintercept = Accuracy), color="red") +
+  geom_text(data = labs_sorted,
+            aes(label = paste0("P = ", Acc_p, "\nBH-FDR = ", Acc_p_adj)), 
+            x = 0.66, y = 1400) +
+  theme(plot.title = element_text(hjust=0.5))
+```
+```{r, echo=F, eval=F}
+ggsave("plots/Main_vs_Null_Acc_AROMA_2P_DiCER_Top5_Features.png", width=11, 
+       height=7, units="in", dpi=300)
+```
+
+We can do the same with balanced accuracy:
+
+```{r, fig.width=11, fig.height=7}
+top_features <- feature_wise_SVM_caret_inv_prob_df %>%
+  filter(Noise_Proc == "AROMA+2P+DiCER") %>%
+  arrange(desc(Balanced_Accuracy)) %>%
+  top_n(5, Balanced_Accuracy) %>%
+  pull(catch22_Feature)
+top_features
+
+acc_sorted <- main_and_null_res %>%
+  filter(catch22_Feature %in% top_features, Noise_Proc == "AROMA+2P+DiCER") %>%
+  mutate(catch22_Feature = factor(catch22_Feature, levels=top_features)) 
+
+labs_sorted <- main_p_labs %>%
+  filter(catch22_Feature %in% top_features, Noise_Proc == "AROMA+2P+DiCER") %>%
+  mutate(catch22_Feature = factor(catch22_Feature, levels=top_features)) 
+
+acc_sorted %>%
+  ggplot(data = ., mapping=aes(x=Balanced_Accuracy)) +
+  geom_histogram(data = subset(acc_sorted, Type == "null"),
+                 fill = "gray70", bins=50) +
+  ggtitle("Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P+DiCER catch22 Features") +
+  facet_wrap(catch22_Feature ~ ., scales="free_y", nrow = 2) +
+  geom_vline(data = subset(acc_sorted, Type=="main"),
+             aes(xintercept = Balanced_Accuracy), color="red") +
+  geom_text(data = labs_sorted,
+            aes(label = paste0("P = ", Bal_Acc_p, "\nBH-FDR = ", Bal_Acc_p_adj)), 
+            x = 0.58, y = 1400) +
+  theme(plot.title = element_text(hjust=0.5))
+```
+```{r, echo=F, eval=F}
+ggsave("plots/Main_vs_Null_Bal_Acc_AROMA_2P_DiCER_Top5_Features.png", width=11, 
+       height=7, units="in", dpi=300)
+```
+
+```{r}
+main_p_values %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  group_by(Noise_Proc) %>%
+  summarise(num_sig_acc = sum(Acc_p < 0.05),
+            num_sig_acc_fdr = sum(Acc_p_adj < 0.05),
+            num_sig_bacc = sum(Bal_Acc_p < 0.05),
+            num_sig_bacc_fdr = sum(Bal_Acc_p_adj < 0.05))
+```
+
+This table summarises the number of features for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.  
+
