@@ -5,7 +5,7 @@
 #------------------------------------
 
 #--------------------------------------
-# Author: Annie Bryant, 31 March 2022
+# Author: Annie Bryant, 14 April 2022
 #--------------------------------------
 
 require(rlist)
@@ -13,6 +13,8 @@ library(tidyverse)
 library(theft)
 library(caret)
 library(broom)
+library(kernlab)
+library(yardstick)
 
 
 #-------------------------------------------------------------------------------
@@ -59,6 +61,120 @@ calculate_in_sample_balanced_accuracy <- function(cm) {
   return(out)
 }
 
+#-------------------------------------------------------------------------------
+# Run simple in-sample multi-feature kernlab linear SVM by brain region
+#-------------------------------------------------------------------------------
+run_in_sample_ksvm_by_region <- function(rdata_path,
+                                         svm_kernel = "linear",
+                                         noise_procs = c("AROMA+2P", 
+                                                         "AROMA+2P+GMR", 
+                                                         "AROMA+2P+DiCER"),
+                                         use_inv_prob_weighting = FALSE,
+                                         upsample_minority = FALSE) {
+  
+  ROI_wise_class_res_list <- list()
+  for (noise_proc in noise_procs) {
+    # Clean up names
+    noise_label <- gsub("\\+", "_", noise_proc)
+    
+    # Load catch22 data for current noise processing method
+    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
+                                                         noise_label)))      
+    
+    
+    if (use_inv_prob_weighting) {
+      # Get control/schz proportions
+      sample_props <- feature_matrix %>%
+        dplyr::group_by(Subject_ID, Brain_Region) %>%
+        dplyr::filter(!any(is.na(values))) %>%
+        dplyr::ungroup() %>%
+        dplyr::distinct(Subject_ID, group) %>%
+        dplyr::summarise(control_prop = sum(group=="Control") / n(),
+                         schz_prop = sum(group=="Schz")/n())
+      
+      # Convert to sample weights based on inverse of probability
+      sample_wts <- list("Control" = 1/sample_props$control_prop,
+                         "Schz" = 1/sample_props$schz_prop)
+    }
+    
+    if (upsample_minority) {
+      ctrl_subjects <- subset(feature_matrix, group=="Control") %>% 
+        distinct(Subject_ID) %>% 
+        pull(Subject_ID)
+      
+      schz_subjects_upsampled <- subset(feature_matrix, group=="Schz") %>%
+        distinct(Subject_ID) %>%
+        pull(Subject_ID) %>%
+        sample(., length(ctrl_subjects), replace=T)
+      
+      upsampled_data <- data.frame(Subject_ID = c(ctrl_subjects, 
+                                                  schz_subjects_upsampled)) %>%
+        mutate(Unique_ID = make.unique(Subject_ID))
+    }
+    
+    # Iterate over each brain region (ROI) for e1071 SVM
+    for (this_ROI in unique(feature_matrix$Brain_Region)) {
+      
+      if (upsample_minority) {
+        # Subset region data and convert to wide format
+        data_for_svm <- upsampled_data %>%
+          left_join(., feature_matrix) %>%
+          filter(Brain_Region == this_ROI) %>%
+          dplyr::group_by(Unique_ID, Brain_Region) %>%
+          dplyr::filter(!any(is.na(values))) %>%
+          dplyr::ungroup() %>%
+          dplyr::select(Unique_ID, group, names, values) %>%
+          tidyr::pivot_wider(id_cols = c(Unique_ID, group),
+                             names_from = names,
+                             values_from 
+                             = values) %>%
+          dplyr::select(-Unique_ID)
+      } else {
+        data_for_svm <- subset(feature_matrix, Brain_Region==this_ROI) %>%
+          dplyr::group_by(Subject_ID, Brain_Region) %>%
+          dplyr::filter(!any(is.na(values))) %>%
+          dplyr::ungroup() %>%
+          dplyr::select(Subject_ID, group, names, values) %>%
+          tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                             names_from = names,
+                             values_from 
+                             = values) %>%
+          dplyr::select(-Subject_ID)
+      }
+      
+      # Run SVM with supplied kernel type
+      svmModel <- kernlab::ksvm(factor(group) ~ .,
+                                type = "C-svc",
+                                kernel = "vanilladot",
+                                data = data_for_svm,
+                                prob.model=F)
+      
+      # Generate in-sample predictions based on SVM model
+      pred <- predict(svmModel, data_for_svm)
+      data_for_svm$group <- factor(data_for_svm$group, levels = levels(pred))
+      
+      # Calculate accuracy and balanced accuracy
+      accuracy <- sum(pred == data_for_svm$group)/length(pred)
+      cm <- as.matrix(caret::confusionMatrix(pred, data_for_svm$group)$table)
+      balanced_accuracy <- calculate_in_sample_balanced_accuracy(cm = cm)
+      
+      # Compile results into a dataframe
+      region_df_res <- data.frame(Brain_Region = this_ROI,
+                                  Accuracy = accuracy,
+                                  Balanced_Accuracy = balanced_accuracy,
+                                  Noise_Proc = noise_proc)
+      
+      # Append results to list
+      ROI_wise_class_res_list <- rlist::list.append(ROI_wise_class_res_list,
+                                                    region_df_res)
+    }
+  }
+  # Combine results from all regions into a dataframe
+  ROI_wise_class_res_df <- do.call(plyr::rbind.fill, ROI_wise_class_res_list)
+  
+  # Return dataframe
+  return(ROI_wise_class_res_df)
+}
 
 #-------------------------------------------------------------------------------
 # Run theft's multivariate classifier for a given catch22 feature

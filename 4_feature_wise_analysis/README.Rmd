@@ -11,8 +11,36 @@ knitr::opts_chunk$set(echo = TRUE, warning=F, message=F)
 ```{r}
 source("../helper_functions/visualization_functions.R")
 source("feature_wise_analysis_functions.R")
+source("D:/Virtual_Machines/Shared_Folder/github/theft-trent/R/fit_multi_feature_classifier.R")
 theme_set(theme_cowplot())
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+```
+
+## In-sample SVM classification
+
+### Simple in-sample linear SVM
+
+We will start with a simple linear SVM classifier using all 22 features.
+
+```{r}
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use linear SVM
+svm_kernel = "linear"
+
+# Run theft's multivariable classifier on each ROI and save to an RDS object
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample.Rds"))) {
+  region_wise_SVM_in_sample <- run_in_sample_ksvm_by_region(rdata_path = rdata_path,
+                                                                         svm_kernel = svm_kernel,
+                                                                         noise_procs = noise_procs) %>%
+    dplyr::rename("accuracy" = "Accuracy",
+                  "balanced_accuracy" = "Balanced_Accuracy")
+  saveRDS(region_wise_SVM_in_sample, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample.Rds"))
+} else {
+  region_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample.Rds"))
+}
 ```
 
 ### Run multivariable classifier

@@ -5,7 +5,7 @@
 #------------------------------------
 
 #--------------------------------------
-# Author: Annie Bryant, 29 March 2022
+# Author: Annie Bryant, 14 April 2022
 #--------------------------------------
 
 require(rlist)
@@ -244,12 +244,13 @@ calc_empirical_nulls <- function(class_res,
 # Run simple in-sample multi-feature kernlab linear SVM by brain region
 #-------------------------------------------------------------------------------
 run_in_sample_ksvm_by_region <- function(rdata_path,
-                                              svm_kernel = "linear",
-                                              noise_procs = c("AROMA+2P", 
-                                                              "AROMA+2P+GMR", 
-                                                              "AROMA+2P+DiCER"),
+                                         svm_kernel = "linear",
+                                         noise_procs = c("AROMA+2P", 
+                                                         "AROMA+2P+GMR", 
+                                                         "AROMA+2P+DiCER"),
                                          use_inv_prob_weighting = FALSE,
-                                         upsample_minority = FALSE) {
+                                         upsample_minority = FALSE,
+                                         downsample_majority = FALSE) {
   
   ROI_wise_class_res_list <- list()
   for (noise_proc in noise_procs) {
@@ -276,6 +277,7 @@ run_in_sample_ksvm_by_region <- function(rdata_path,
                          "Schz" = 1/sample_props$schz_prop)
     }
     
+    # Case when we upsample the minority class
     if (upsample_minority) {
       ctrl_subjects <- subset(feature_matrix, group=="Control") %>% 
         distinct(Subject_ID) %>% 
@@ -286,17 +288,33 @@ run_in_sample_ksvm_by_region <- function(rdata_path,
         pull(Subject_ID) %>%
         sample(., length(ctrl_subjects), replace=T)
       
-      upsampled_data <- data.frame(Subject_ID = c(ctrl_subjects, 
+      resampled_data <- data.frame(Subject_ID = c(ctrl_subjects, 
                                                   schz_subjects_upsampled)) %>%
+        mutate(Unique_ID = make.unique(Subject_ID))
+    }
+    
+    # Case when we downsample the majority class
+    if (downsample_majority) {
+      schz_subjects <- subset(feature_matrix, group=="Schz") %>%
+        distinct(Subject_ID) %>%
+        pull(Subject_ID)
+      
+      ctrl_subjects_downsampled <- subset(feature_matrix, group=="Control") %>% 
+        distinct(Subject_ID) %>% 
+        pull(Subject_ID) %>%
+        sample(., length(schz_subjects), replace=F)
+      
+      resampled_data <- data.frame(Subject_ID = c(schz_subjects, 
+                                                  ctrl_subjects_downsampled)) %>%
         mutate(Unique_ID = make.unique(Subject_ID))
     }
     
     # Iterate over each brain region (ROI) for e1071 SVM
     for (this_ROI in unique(feature_matrix$Brain_Region)) {
       
-      if (upsample_minority) {
+      if (upsample_minority | downsample_majority) {
         # Subset region data and convert to wide format
-        data_for_svm <- upsampled_data %>%
+        data_for_svm <- resampled_data %>%
           left_join(., feature_matrix) %>%
           filter(Brain_Region == this_ROI) %>%
           dplyr::group_by(Unique_ID, Brain_Region) %>%
@@ -423,6 +441,7 @@ run_theft_multivar_classifier <- function(rdata_path,
 run_caret_multi_SVM_by_region <- function(rdata_path,
                                           use_inv_prob_weighting = FALSE,
                                           upsample_minority = FALSE,
+                                          downsample_majority = FALSE,
                                           noise_procs = c("AROMA+2P", 
                                                           "AROMA+2P+GMR", 
                                                           "AROMA+2P+DiCER")) {
@@ -453,6 +472,7 @@ run_caret_multi_SVM_by_region <- function(rdata_path,
                               (1/sample_props$schz_prop)*0.5)
     }
     
+    # Case when we upsample the minority class
     if (upsample_minority) {
       ctrl_subjects <- subset(feature_matrix, group=="Control") %>% 
         distinct(Subject_ID) %>% 
@@ -463,17 +483,33 @@ run_caret_multi_SVM_by_region <- function(rdata_path,
         pull(Subject_ID) %>%
         sample(., length(ctrl_subjects), replace=T)
       
-      upsampled_data <- data.frame(Subject_ID = c(ctrl_subjects, 
+      resampled_data <- data.frame(Subject_ID = c(ctrl_subjects, 
                                                   schz_subjects_upsampled)) %>%
+        mutate(Unique_ID = make.unique(Subject_ID))
+    }
+    
+    # Case when we downsample the majority class
+    if (downsample_majority) {
+      schz_subjects <- subset(feature_matrix, group=="Schz") %>%
+        distinct(Subject_ID) %>%
+        pull(Subject_ID)
+      
+      ctrl_subjects_downsampled <- subset(feature_matrix, group=="Control") %>% 
+        distinct(Subject_ID) %>% 
+        pull(Subject_ID) %>%
+        sample(., length(schz_subjects), replace=F)
+      
+      resampled_data <- data.frame(Subject_ID = c(schz_subjects, 
+                                                  ctrl_subjects_downsampled)) %>%
         mutate(Unique_ID = make.unique(Subject_ID))
     }
     
     for (this_ROI in unique(feature_matrix$Brain_Region)) {
       cat("\nNow running linear SVM for", this_ROI, noise_label, "\n")
       
-      if (upsample_minority) {
+      if (upsample_minority | downsample_majority) {
         # Subset region data and convert to wide format
-        data_for_svm <- upsampled_data %>%
+        data_for_svm <- resampled_data %>%
           left_join(., feature_matrix) %>%
           filter(Brain_Region == this_ROI) %>%
           dplyr::group_by(Unique_ID, Brain_Region) %>%

@@ -15,6 +15,7 @@ source("D:/Virtual_Machines/Shared_Folder/github/theft-trent/R/fit_multi_feature
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 ```
 
+
 ## In-sample SVM classification
 
 ### Simple in-sample linear SVM
@@ -33,7 +34,10 @@ svm_kernel = "linear"
 if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample.Rds"))) {
   region_wise_SVM_in_sample <- run_in_sample_ksvm_by_region(rdata_path = rdata_path,
                                                                          svm_kernel = svm_kernel,
-                                                                         noise_procs = noise_procs) %>%
+                                                                         noise_procs = noise_procs,
+                                                            use_inv_prob_weighting = FALSE,
+                                                            upsample_minority = FALSE,
+                                                            downsample_majority = FALSE) %>%
     dplyr::rename("accuracy" = "Accuracy",
                   "balanced_accuracy" = "Balanced_Accuracy")
   saveRDS(region_wise_SVM_in_sample, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample.Rds"))
@@ -132,7 +136,8 @@ if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample_u
                                                                          svm_kernel = svm_kernel,
                                                                          noise_procs = noise_procs,
                                                                       use_inv_prob_weighting = FALSE,
-                                                                      upsample_minority = TRUE) %>%
+                                                                      upsample_minority = TRUE,
+                                                                      downsample_majority = FALSE) %>%
     dplyr::rename("accuracy" = "Accuracy",
                   "balanced_accuracy" = "Balanced_Accuracy")
   saveRDS(region_wise_SVM_in_sample_upsampled, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample_upsampled.Rds"))
@@ -161,6 +166,55 @@ Alternatively, we can implement upsampling for the minority class (schizophrenia
 This takes away the classifier's bias toward the majority class. The mean accuracy is right around 0.72, and the balanced accuracy is much higher -- with a mean of around 0.72 as well.
 
 This indicates that minority class upsampling also mitigates the class imbalance issue and can be carried forward into 10-fold cross-validation linear SVM.
+
+### In-sample linear SVM with majority class downsampling
+
+```{r}
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use linear SVM
+svm_kernel = "linear"
+
+# Run theft's multivariable classifier on each ROI and save to an RDS object
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample_downsampled.Rds"))) {
+  set.seed(127)
+  region_wise_SVM_in_sample_downsampled <- run_in_sample_ksvm_by_region(rdata_path = rdata_path,
+                                                                        svm_kernel = svm_kernel,
+                                                                        noise_procs = noise_procs,
+                                                                        use_inv_prob_weighting = FALSE,
+                                                                        upsample_minority = FALSE,
+                                                                        downsample_majority = TRUE) %>%
+    dplyr::rename("accuracy" = "Accuracy",
+                  "balanced_accuracy" = "Balanced_Accuracy")
+  saveRDS(region_wise_SVM_in_sample_downsampled, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample_downsampled.Rds"))
+} else {
+  region_wise_SVM_in_sample_downsampled <- readRDS(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample_downsampled.Rds"))
+}
+```
+
+```{r, fig.width=7, fig.height=6}
+# Plot accuracy + balanced accuracy in histograms
+# Control subject proportion is highlighted for accuracy
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+plot_class_acc_w_props(class_res = region_wise_SVM_in_sample_downsampled,
+                       cv = FALSE,
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs)
+```
+```{r, echo=F, eval=F}
+# Save plot
+ggsave("plots/In_Sample_Region_Wise_SVM_Multi_Feature_Downsampled.png",
+       width=7, height=6, units="in", dpi=300)
+```
+
+Alternatively, we can implement upsampling for the minority class (schizophrenia) such that the classes are perfectly balanced. This involves randomly sampling the schizophrenia subjects with replacement N times, where N is the number of control subjects (i.e. majority class).
+
+This takes away the classifier's bias toward the majority class. The mean accuracy is right around 0.72, and the balanced accuracy is much higher -- with a mean of around 0.72 as well.
+
+This indicates that minority class upsampling also mitigates the class imbalance issue and can be carried forward into 10-fold cross-validation linear SVM.
+
 
 ## Cross-validated SVM classification
 
@@ -224,6 +278,7 @@ use_balanced_accuracy <- TRUE
 # Implement inverse probability weighting
 use_inv_prob_weighting = TRUE
 upsample_minority = FALSE
+downsample_majority = FALSE
 
 # Run theft's multivariable classifier on each ROI and save to an RDS object
 # If the RDS object doesn't already exist, otherwise load it in
@@ -232,6 +287,7 @@ if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_inv_prob.Rd
    region_wise_SVM_caret_inv_prob_df <- run_caret_multi_SVM_by_region(rdata_path = rdata_path,
                                             use_inv_prob_weighting = use_inv_prob_weighting,
                                             upsample_minority = upsample_minority,
+                                            downsample_majority = downsample_majority,
                                             noise_procs = noise_procs)  %>%
     dplyr::rename("accuracy" = "Accuracy",
                   "balanced_accuracy" = "Balanced_Accuracy")
@@ -268,6 +324,7 @@ use_balanced_accuracy <- TRUE
 # Implement inverse probability weighting
 use_inv_prob_weighting = FALSE
 upsample_minority = TRUE
+downsample_majority = FALSE
 
 # Run theft's multivariable classifier on each ROI and save to an RDS object
 # If the RDS object doesn't already exist, otherwise load it in
@@ -276,6 +333,7 @@ if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_upsample.Rd
    region_wise_SVM_caret_upsampled <- run_caret_multi_SVM_by_region(rdata_path = rdata_path,
                                             use_inv_prob_weighting = use_inv_prob_weighting,
                                             upsample_minority = upsample_minority,
+                                            downsample_majority = downsample_majority,
                                             noise_procs = noise_procs)  %>%
     dplyr::rename("accuracy" = "Accuracy",
                   "balanced_accuracy" = "Balanced_Accuracy")
@@ -300,6 +358,55 @@ ggsave("plots/Caret_10CV_Region_Wise_SVM_Multi_Feature_Upsampled.png",
 After implementing sample reweighting with 10-fold cross-validation for SVM using caret, we see that the raw accuracy still has a mean of approximately 0.68 across all ROIs, although the balanced accuracy has a mean between 0.5-0.55.
 
 To understand the significance of these values, we can generate a null distribution of classification accuracies and balanced accuracies using a model-free shuffle technique, modified from Trent's theft package.
+
+
+### 10-fold cross-validated linear SVM with majority class downsampling
+
+```{r}
+# Try three different noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Retain balanced accuracy in addition to raw accuracy for each ROI
+use_balanced_accuracy <- TRUE
+
+# Implement inverse probability weighting
+use_inv_prob_weighting = FALSE
+upsample_minority = FALSE
+downsample_majority = TRUE
+
+# Run theft's multivariable classifier on each ROI and save to an RDS object
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_downsampled.Rds"))) {
+  
+   region_wise_SVM_caret_downsampled <- run_caret_multi_SVM_by_region(rdata_path = rdata_path,
+                                            use_inv_prob_weighting = use_inv_prob_weighting,
+                                            upsample_minority = upsample_minority,
+                                            downsample_majority = downsample_majority,
+                                            noise_procs = noise_procs)  %>%
+    dplyr::rename("accuracy" = "Accuracy",
+                  "balanced_accuracy" = "Balanced_Accuracy")
+   
+  saveRDS(region_wise_SVM_caret_downsampled, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_downsampled.Rds"))
+} else {
+  region_wise_SVM_caret_downsampled <- readRDS(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_downsampled.Rds"))
+}
+```
+
+```{r, fig.width=7, fig.height=6}
+plot_class_acc_w_props(class_res = region_wise_SVM_caret_downsampled,
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs)
+```
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Caret_10CV_Region_Wise_SVM_Multi_Feature_Downsampled.png",
+       width=7, height=6, units="in", dpi=300)
+```
+
+After implementing sample reweighting with 10-fold cross-validation for SVM using caret, we see that the raw accuracy still has a mean of approximately 0.68 across all ROIs, although the balanced accuracy has a mean between 0.5-0.55.
+
+To understand the significance of these values, we can generate a null distribution of classification accuracies and balanced accuracies using a model-free shuffle technique, modified from Trent's theft package.
+
 
 ### Generating null distributions from model-free shuffles
 

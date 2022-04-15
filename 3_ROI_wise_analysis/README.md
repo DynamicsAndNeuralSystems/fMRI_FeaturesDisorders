@@ -28,7 +28,10 @@ svm_kernel = "linear"
 if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample.Rds"))) {
   region_wise_SVM_in_sample <- run_in_sample_ksvm_by_region(rdata_path = rdata_path,
                                                                          svm_kernel = svm_kernel,
-                                                                         noise_procs = noise_procs) %>%
+                                                                         noise_procs = noise_procs,
+                                                            use_inv_prob_weighting = FALSE,
+                                                            upsample_minority = FALSE,
+                                                            downsample_majority = FALSE) %>%
     dplyr::rename("accuracy" = "Accuracy",
                   "balanced_accuracy" = "Balanced_Accuracy")
   saveRDS(region_wise_SVM_in_sample, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample.Rds"))
@@ -131,7 +134,8 @@ if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample_u
                                                                          svm_kernel = svm_kernel,
                                                                          noise_procs = noise_procs,
                                                                       use_inv_prob_weighting = FALSE,
-                                                                      upsample_minority = TRUE) %>%
+                                                                      upsample_minority = TRUE,
+                                                                      downsample_majority = FALSE) %>%
     dplyr::rename("accuracy" = "Accuracy",
                   "balanced_accuracy" = "Balanced_Accuracy")
   saveRDS(region_wise_SVM_in_sample_upsampled, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample_upsampled.Rds"))
@@ -151,6 +155,58 @@ plot_class_acc_w_props(class_res = region_wise_SVM_in_sample_upsampled,
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+Alternatively, we can implement upsampling for the minority class
+(schizophrenia) such that the classes are perfectly balanced. This
+involves randomly sampling the schizophrenia subjects with replacement N
+times, where N is the number of control subjects (i.e. majority class).
+
+This takes away the classifier’s bias toward the majority class. The
+mean accuracy is right around 0.72, and the balanced accuracy is much
+higher – with a mean of around 0.72 as well.
+
+This indicates that minority class upsampling also mitigates the class
+imbalance issue and can be carried forward into 10-fold cross-validation
+linear SVM.
+
+### In-sample linear SVM with majority class downsampling
+
+``` r
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use linear SVM
+svm_kernel = "linear"
+
+# Run theft's multivariable classifier on each ROI and save to an RDS object
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample_downsampled.Rds"))) {
+  set.seed(127)
+  region_wise_SVM_in_sample_downsampled <- run_in_sample_ksvm_by_region(rdata_path = rdata_path,
+                                                                        svm_kernel = svm_kernel,
+                                                                        noise_procs = noise_procs,
+                                                                        use_inv_prob_weighting = FALSE,
+                                                                        upsample_minority = FALSE,
+                                                                        downsample_majority = TRUE) %>%
+    dplyr::rename("accuracy" = "Accuracy",
+                  "balanced_accuracy" = "Balanced_Accuracy")
+  saveRDS(region_wise_SVM_in_sample_downsampled, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample_downsampled.Rds"))
+} else {
+  region_wise_SVM_in_sample_downsampled <- readRDS(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_in_sample_downsampled.Rds"))
+}
+```
+
+``` r
+# Plot accuracy + balanced accuracy in histograms
+# Control subject proportion is highlighted for accuracy
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+plot_class_acc_w_props(class_res = region_wise_SVM_in_sample_downsampled,
+                       cv = FALSE,
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 Alternatively, we can implement upsampling for the minority class
 (schizophrenia) such that the classes are perfectly balanced. This
@@ -208,7 +264,7 @@ plot_class_acc_w_props(class_res = region_wise_SVM_caret,
                        noise_procs = noise_procs)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 As with in-sample SVM, the unweighted input samples are virtually all
 classified as control subjects across all 82 ROIs using the 10-fold
@@ -226,6 +282,7 @@ use_balanced_accuracy <- TRUE
 # Implement inverse probability weighting
 use_inv_prob_weighting = TRUE
 upsample_minority = FALSE
+downsample_majority = FALSE
 
 # Run theft's multivariable classifier on each ROI and save to an RDS object
 # If the RDS object doesn't already exist, otherwise load it in
@@ -234,6 +291,7 @@ if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_inv_prob.Rd
    region_wise_SVM_caret_inv_prob_df <- run_caret_multi_SVM_by_region(rdata_path = rdata_path,
                                             use_inv_prob_weighting = use_inv_prob_weighting,
                                             upsample_minority = upsample_minority,
+                                            downsample_majority = downsample_majority,
                                             noise_procs = noise_procs)  %>%
     dplyr::rename("accuracy" = "Accuracy",
                   "balanced_accuracy" = "Balanced_Accuracy")
@@ -250,7 +308,7 @@ plot_class_acc_w_props(class_res = region_wise_SVM_caret_inv_prob_df,
                        noise_procs = noise_procs)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 Surprisingly, incorporating inverse probability weighting has minimal
 impact when it comes to the ten-fold cross-validated SVM. Of note, the
@@ -269,6 +327,7 @@ use_balanced_accuracy <- TRUE
 # Implement inverse probability weighting
 use_inv_prob_weighting = FALSE
 upsample_minority = TRUE
+downsample_majority = FALSE
 
 # Run theft's multivariable classifier on each ROI and save to an RDS object
 # If the RDS object doesn't already exist, otherwise load it in
@@ -277,6 +336,7 @@ if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_upsample.Rd
    region_wise_SVM_caret_upsampled <- run_caret_multi_SVM_by_region(rdata_path = rdata_path,
                                             use_inv_prob_weighting = use_inv_prob_weighting,
                                             upsample_minority = upsample_minority,
+                                            downsample_majority = downsample_majority,
                                             noise_procs = noise_procs)  %>%
     dplyr::rename("accuracy" = "Accuracy",
                   "balanced_accuracy" = "Balanced_Accuracy")
@@ -293,7 +353,56 @@ plot_class_acc_w_props(class_res = region_wise_SVM_caret_upsampled,
                        noise_procs = noise_procs)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+
+After implementing sample reweighting with 10-fold cross-validation for
+SVM using caret, we see that the raw accuracy still has a mean of
+approximately 0.68 across all ROIs, although the balanced accuracy has a
+mean between 0.5-0.55.
+
+To understand the significance of these values, we can generate a null
+distribution of classification accuracies and balanced accuracies using
+a model-free shuffle technique, modified from Trent’s theft package.
+
+### 10-fold cross-validated linear SVM with majority class downsampling
+
+``` r
+# Try three different noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Retain balanced accuracy in addition to raw accuracy for each ROI
+use_balanced_accuracy <- TRUE
+
+# Implement inverse probability weighting
+use_inv_prob_weighting = FALSE
+upsample_minority = FALSE
+downsample_majority = TRUE
+
+# Run theft's multivariable classifier on each ROI and save to an RDS object
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_downsampled.Rds"))) {
+  
+   region_wise_SVM_caret_downsampled <- run_caret_multi_SVM_by_region(rdata_path = rdata_path,
+                                            use_inv_prob_weighting = use_inv_prob_weighting,
+                                            upsample_minority = upsample_minority,
+                                            downsample_majority = downsample_majority,
+                                            noise_procs = noise_procs)  %>%
+    dplyr::rename("accuracy" = "Accuracy",
+                  "balanced_accuracy" = "Balanced_Accuracy")
+   
+  saveRDS(region_wise_SVM_caret_downsampled, file=paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_downsampled.Rds"))
+} else {
+  region_wise_SVM_caret_downsampled <- readRDS(paste0(rdata_path, "UCLA_multivar_ROI_res_svmLinear_downsampled.Rds"))
+}
+```
+
+``` r
+plot_class_acc_w_props(class_res = region_wise_SVM_caret_downsampled,
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 After implementing sample reweighting with 10-fold cross-validation for
 SVM using caret, we see that the raw accuracy still has a mean of
@@ -360,7 +469,7 @@ region_wise_SVM_caret_upsampled %>%
         legend.direction = "horizontal") 
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 The model-free shuffles method is borrowed from Trent’s implementation
 in theft. With this method, the input class labels (Schz or Control) are
@@ -438,7 +547,7 @@ region_wise_SVM_caret_upsampled_pvals %>%
   theme(plot.title = element_text(hjust=0.5))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
 This panel panel shows the five brain regions with the highest raw
 accuracy from multi-feature 10-fold CV linear SVM. The red bar indicates
@@ -486,7 +595,7 @@ region_wise_SVM_caret_upsampled_pvals %>%
   theme(plot.title = element_text(hjust=0.5))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ``` r
 ggsave("plots/Main_vs_Null_BalAcc_AROMA_2P_DiCER_Top5.png", width=10, 
@@ -563,7 +672,7 @@ plot_class_acc_w_props(class_res = region_wise_uni_feature_SVM_resampled,
                        ylab = "Number of ROI+Feature Combos")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
 
 ``` r
 # Save plot
@@ -611,7 +720,7 @@ plot_class_acc_w_props(class_res = region_wise_uni_feat_SVM_CV_resampled,
                        ylab = "Number of ROI+Feature Combos")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
 These panels show the results from in-sample (upper) and 10-fold CV
 (lower) linear SVM using each catch22 feature separately
@@ -652,7 +761,7 @@ region_wise_uni_feature_SVM_resampled %>%
         legend.direction = "horizontal") 
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
 
 As well as with the 10-fold CV single-feature SVM:
 
@@ -682,7 +791,7 @@ region_wise_uni_feat_SVM_CV_resampled %>%
         legend.direction = "horizontal") 
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->
 
 ``` r
 if (!file.exists(paste0(rdata_path, "UCLA_region_wise_single_feat_SVM_caret_upsampled_pvals.Rds"))) {
