@@ -5,7 +5,7 @@
 #------------------------------------
 
 #--------------------------------------
-# Author: Annie Bryant, 23 March 2022
+# Author: Annie Bryant, 15 April 2022
 #--------------------------------------
 
 require(rlist)
@@ -13,31 +13,62 @@ library(tidyverse)
 library(theft)
 library(caret)
 library(broom)
+library(kernlab)
+library(yardstick)
 
 #-------------------------------------------------------------------------------
-# Calculate balanced accuracy in caret
+# Plot distribution of classifier accuracies across features 
+# along with control vs schz proportions
 #-------------------------------------------------------------------------------
-calculate_balanced_accuracy <- function(data, lev = NULL, model = NULL) {
+plot_class_acc_w_props <- function(class_res,
+                                   cv = FALSE,
+                                   rdata_path,
+                                   noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"),
+                                   ylab = "Number of Feature + ROI Combos") {
   
-  # Calculate balanced accuracy from confusion matrix as the average of class recalls as per https://arxiv.org/pdf/2008.05756.pdf
+  # Calculate the proportion of control subjects after omitting NAs for each method
+  ctrl_prop_list <- list()
+  for (noise_proc in noise_procs) {
+    # Clean up names
+    noise_label <- gsub("\\+", "_", noise_proc)
+    
+    # Load corresponding feature matrix
+    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
+                                                         noise_label)))
+    
+    # Calculate proportion of controls after dropping NA
+    ctrl_proportion <- feature_matrix %>%
+      group_by(Subject_ID) %>%
+      filter(!any(is.na(values))) %>%
+      ungroup() %>%
+      distinct(Subject_ID, group) %>%
+      summarise(ctrl_prop = sum(group=="Control") / n()) %>%
+      mutate(Noise_Proc = noise_proc)
+    
+    ctrl_prop_list <- rlist::list.append(ctrl_prop_list, ctrl_proportion)
+  }
+  ctrl_prop <- do.call(plyr::rbind.fill, ctrl_prop_list)
   
-  cm <- as.matrix(caret::confusionMatrix(data$pred, data$obs)$table)
+  # Define x-axis label
+  xlab <- ifelse(cv, "Mean statistic over 10-fold CV", "In-sample statistic")
   
-  recall <- 1:nrow(cm) %>%
-    purrr::map(~ calculate_recall(cm, x = .x)) %>%
-    unlist()
-  
-  balanced_accuracy <- sum(recall) / length(recall)
-  
-  # Calculate accuracy
-  
-  accuracy <- sum(diag(cm)) / sum(cm)
-  
-  # Return results
-  
-  out <- c(accuracy, balanced_accuracy)
-  names(out) <- c("Accuracy", "Balanced_Accuracy")
-  return(out)
+  # Plot accuracy + balanced accuracy in histograms
+  # Control subject proportion is highlighted for accuracy, 0.5 is highlighted for balanced accuracy
+  class_res %>%
+    left_join(., ctrl_prop) %>%
+    pivot_longer(cols=c(accuracy, balanced_accuracy),
+                 names_to = "Metric",
+                 values_to = "Value") %>%
+    mutate(Metric = gsub("_", " ", Metric)) %>%
+    mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+    ggplot(data=., mapping=aes(x=1, y=Value)) +
+    geom_bar(stat="identity",fill="lightsteelblue", bins=50) +
+    geom_hline(aes(yintercept = ctrl_prop), linetype=2, color="gray30") +
+    facet_grid(Metric ~ Noise_Proc, scales="free", switch="y") +
+    xlab(xlab) +
+    ylab(ylab) +
+    theme(strip.placement = "outside",
+          strip.text.y.left = element_text(angle=0))
 }
 
 calculate_in_sample_balanced_accuracy <- function(cm) {
@@ -47,72 +78,26 @@ calculate_in_sample_balanced_accuracy <- function(cm) {
   
   balanced_accuracy <- sum(recall) / length(recall)
   
-  # Calculate accuracy
-  
-  accuracy <- sum(diag(cm)) / sum(cm)
-  
   # Return results
   
-  out <- c(accuracy, balanced_accuracy)
-  names(out) <- c("Accuracy", "Balanced_Accuracy")
+  out <- c(balanced_accuracy)
+  names(out) <- c("Balanced_Accuracy")
   return(out)
 }
 
-
 #-------------------------------------------------------------------------------
-# Run theft's multivariate classifier
+# Run simple in-sample multi-region kernlab linear SVM by catch22 feature + ROI
 #-------------------------------------------------------------------------------
-run_theft_multivar_classifier_ROI_feature <- function(rdata_path,
-                                                      test_method = "svmLinear",
-                                                      noise_proc = "AROMA+2P",
-                                                      use_balanced_accuracy = FALSE) {
+run_in_sample_ksvm_by_feature_and_ROI <- function(rdata_path,
+                                                  svm_kernel = "linear",
+                                                  noise_procs = c("AROMA+2P", 
+                                                                  "AROMA+2P+GMR", 
+                                                                  "AROMA+2P+DiCER"),
+                                                  use_inv_prob_weighting = FALSE,
+                                                  upsample_minority = FALSE,
+                                                  downsample_majority = FALSE) {
   
-  # Clean up names
-  test_label <- gsub("-|\\.", "_", test_method)
-  noise_label <- gsub("\\+", "_", noise_proc)
-  
-  # Load corresponding feature matrix
-  feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
-                                                       noise_label)))
-  
-  # Prepare feature matrix for theft such that each feature + ROI combo
-  # is treated as a feature
-  feature_matrix_prepped <- feature_matrix %>%
-    tidyr::unite("names", c("names", "Brain_Region"), remove=T)
-  
-  # Run theft's multivariable classifier
-  multi_classifier_outputs <- fit_multi_feature_classifier(feature_matrix_prepped,
-                                                           id_var = "Subject_ID",
-                                                           group_var = "group",
-                                                           by_set = F,
-                                                           test_method = test_method,
-                                                           use_balanced_accuracy = TRUE,
-                                                           use_k_fold = T,
-                                                           num_folds = 10,
-                                                           use_empirical_null = T,
-                                                           null_testing_method = "model free shuffles",
-                                                           p_value_method = "gaussian",
-                                                           num_permutations = 10000)
-  
-  # Compile results
-  res_df <- multi_classifier_outputs$TestStatistics %>%
-    dplyr::mutate(Noise_Proc = noise_proc,
-                  Test_Method = test_method,
-                  Norm_Method = norm_method)
-    
-  # Return dataframe
-  return(res_df)
-}
-
-#-------------------------------------------------------------------------------
-# Run simple e1071 in-sample multi-feature SVM
-#-------------------------------------------------------------------------------
-run_in_sample_e1071_SVM_by_all_feature_region <- function(rdata_path,
-                                                          svm_kernel = "linear",
-                                                          noise_procs = c("AROMA+2P", 
-                                                                          "AROMA+2P+GMR", 
-                                                                          "AROMA+2P+DiCER")) {
-  noise_proc_res_list <- list()
+  feature_ROI_wise_class_res_list <- list()
   for (noise_proc in noise_procs) {
     # Clean up names
     noise_label <- gsub("\\+", "_", noise_proc)
@@ -120,120 +105,233 @@ run_in_sample_e1071_SVM_by_all_feature_region <- function(rdata_path,
     # Load catch22 data for current noise processing method
     feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
                                                          noise_label)))      
-    # Get control/schz proportions
-    sample_props <- feature_matrix %>%
-      dplyr::group_by(Subject_ID, Brain_Region) %>%
-      dplyr::filter(!any(is.na(values))) %>%
-      dplyr::ungroup() %>%
-      dplyr::distinct(Subject_ID, group) %>%
-      dplyr::summarise(control_prop = sum(group=="Control") / n(),
-                       schz_prop = sum(group=="Schz")/n())
     
-    # Convert to sample weights based on inverse of probability
-    sample_wts <- list("Control" = 1/sample_props$control_prop,
-                       "Schz" = 1/sample_props$schz_prop)
     
-      
-      # Combine feature + ROI and convert data to wide format
-      data_for_svm <- feature_matrix %>%
+    if (use_inv_prob_weighting) {
+      # Get control/schz proportions
+      sample_props <- feature_matrix %>%
         dplyr::group_by(Subject_ID, Brain_Region) %>%
         dplyr::filter(!any(is.na(values))) %>%
         dplyr::ungroup() %>%
-        tidyr::unite("names", c(names, Brain_Region), sep="_") %>%
-        dplyr::select(Subject_ID, group, names, values) %>%
+        dplyr::distinct(Subject_ID, group) %>%
+        dplyr::summarise(control_prop = sum(group=="Control") / n(),
+                         schz_prop = sum(group=="Schz")/n())
+      
+      # Convert to sample weights based on inverse of probability
+      sample_wts <- list("Control" = 1/sample_props$control_prop,
+                         "Schz" = 1/sample_props$schz_prop)
+    }
+    
+    # Case when we upsample the minority class
+    if (upsample_minority) {
+      ctrl_subjects <- subset(feature_matrix, group=="Control") %>% 
+        distinct(Subject_ID) %>% 
+        pull(Subject_ID)
+      
+      schz_subjects_upsampled <- subset(feature_matrix, group=="Schz") %>%
+        distinct(Subject_ID) %>%
+        pull(Subject_ID) %>%
+        sample(., length(ctrl_subjects), replace=T)
+      
+      resampled_data <- data.frame(Subject_ID = c(ctrl_subjects, 
+                                                  schz_subjects_upsampled)) %>%
+        mutate(Unique_ID = make.unique(Subject_ID))
+    }
+    
+    # Case when we downsample the majority class
+    if (downsample_majority) {
+      schz_subjects <- subset(feature_matrix, group=="Schz") %>%
+        distinct(Subject_ID) %>%
+        pull(Subject_ID)
+      
+      ctrl_subjects_downsampled <- subset(feature_matrix, group=="Control") %>% 
+        distinct(Subject_ID) %>% 
+        pull(Subject_ID) %>%
+        sample(., length(schz_subjects), replace=F)
+      
+      resampled_data <- data.frame(Subject_ID = c(schz_subjects, 
+                                                  ctrl_subjects_downsampled)) %>%
+        mutate(Unique_ID = make.unique(Subject_ID))
+    }
+    
+    if (upsample_minority | downsample_majority) {
+      # Subset region data and convert to wide format
+      data_for_svm <- resampled_data %>%
+        left_join(., feature_matrix) %>%
+        dplyr::group_by(Unique_ID) %>%
+        dplyr::filter(!any(is.na(values))) %>%
+        dplyr::ungroup() %>%
+        tidyr::unite("SVM_Feature", names, Brain_Region, sep="_") %>%
+        dplyr::select(Unique_ID, group, SVM_Feature, values) %>%
+        tidyr::pivot_wider(id_cols = c(Unique_ID, group),
+                           names_from = SVM_Feature,
+                           values_from 
+                           = values) %>%
+        dplyr::select(-Unique_ID)
+    } else {
+      data_for_svm <- feature_matrix %>%
+        dplyr::group_by(Subject_ID) %>%
+        dplyr::filter(!any(is.na(values))) %>%
+        dplyr::ungroup() %>%
+        tidyr::unite("SVM_Feature", names, Brain_Region, sep="_") %>%
+        dplyr::select(Subject_ID, group, SVM_Feature, values) %>%
         tidyr::pivot_wider(id_cols = c(Subject_ID, group),
-                           names_from = names,
+                           names_from = SVM_Feature,
                            values_from 
                            = values) %>%
         dplyr::select(-Subject_ID)
-      
-      # Run SVM with supplied kernel type
-      svmModel <- e1071::svm(factor(group) ~ .,
-                             kernel = svm_kernel,
-                             data = data_for_svm, 
-                             class.weights = sample_wts)
-      
-      # Generate in-sample predictions based on SVM model
-      pred <- stats::predict(svmModel)
-      data_for_svm$group <- factor(data_for_svm$group, levels = levels(pred))
-      
-      # Calculate accuracy and balanced accuracy
-      accuracy <- sum(pred == data_for_svm$group)/length(pred)
-      cm <- as.matrix(caret::confusionMatrix(pred, data_for_svm$group)$table)
-      balanced_accuracy <- calculate_in_sample_balanced_accuracy(cm = cm)
-      
-      # Compile results into a dataframe
-      class_res <- data.frame(Accuracy = accuracy,
-                                  Balanced_Accuracy = balanced_accuracy,
-                                  Noise_Proc = noise_proc)
-      
-      # Append results to list
-      noise_proc_res_list <- rlist::list.append(noise_proc_res_list,
-                                                class_res)
     }
-  # Combine results into a dataframe
-  res_df <- do.call(plyr::rbind.fill, noise_proc_res_list)
+    
+    if (use_inv_prob_weighting) {
+      # Run SVM with supplied kernel type
+      svmModel <- kernlab::ksvm(factor(group) ~ .,
+                                type = "C-svc",
+                                kernel = "vanilladot",
+                                data = data_for_svm,
+                                class.weights = sample_wts,
+                                prob.model=F)
+    } else {
+      # Run SVM with supplied kernel type
+      svmModel <- kernlab::ksvm(factor(group) ~ .,
+                                type = "C-svc",
+                                kernel = "vanilladot",
+                                data = data_for_svm,
+                                prob.model=F)
+    }
+
+    
+    # Generate in-sample predictions based on SVM model
+    pred <- predict(svmModel, data_for_svm)
+    data_for_svm$group <- factor(data_for_svm$group, levels = levels(pred))
+    
+    # Calculate accuracy and balanced accuracy
+    accuracy <- sum(pred == data_for_svm$group)/length(pred)
+    cm <- as.matrix(caret::confusionMatrix(pred, data_for_svm$group)$table)
+    balanced_accuracy <- calculate_in_sample_balanced_accuracy(cm = cm)
+    
+    # Compile results into a dataframe
+    feature_ROI_df_res <- data.frame(Accuracy = accuracy,
+                                 Balanced_Accuracy = balanced_accuracy,
+                                 Noise_Proc = noise_proc)
+    
+    # Append results to list
+    feature_ROI_wise_class_res_list <- rlist::list.append(feature_ROI_wise_class_res_list,
+                                                          feature_ROI_df_res)
+  }
+  # Combine results from all regions into a dataframe
+  feature_ROI_wise_class_res_df <- do.call(plyr::rbind.fill, feature_ROI_wise_class_res_list)
   
   # Return dataframe
-  return(res_df)
+  return(feature_ROI_wise_class_res_df)
 }
 
 #-------------------------------------------------------------------------------
-# Run linear multi-feature SVM in caret with e1071 per brain region and feature
+# Run linear multi-ROI SVM in caret with kernlab per catch22 feature + ROI
 #-------------------------------------------------------------------------------
-run_caret_multi_SVM_by_region_feature_inv_prop <- function(rdata_path,
-                                                   use_inv_prob_weighting = TRUE,
+run_caret_multi_SVM_by_feature_and_ROI <- function(rdata_path,
+                                                   use_inv_prob_weighting = FALSE,
+                                                   upsample_minority = FALSE,
+                                                   downsample_majority = FALSE,
                                                    noise_procs = c("AROMA+2P", 
                                                                    "AROMA+2P+GMR", 
                                                                    "AROMA+2P+DiCER")) {
   
-  noise_proc_res_list <- list()
+  feature_ROI_wise_class_res_list <- list()
   for (noise_proc in noise_procs) {
     # Clean up names
     noise_label <- gsub("\\+", "_", noise_proc)
     
     # Load catch22 data for current noise processing method
     feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
-                                                         noise_label)))   
-    # Get control/schz proportions
-    sample_props <- feature_matrix %>%
+                                                         noise_label)))   %>%
       dplyr::group_by(Subject_ID, Brain_Region) %>%
       dplyr::filter(!any(is.na(values))) %>%
-      dplyr::ungroup() %>%
-      dplyr::distinct(Subject_ID, group) %>%
-      dplyr::summarise(control_prop = sum(group=="Control") / n(),
-                       schz_prop = sum(group=="Schz")/n())
+      dplyr::ungroup()
     
-      # Prep catch22 feature data for SVM
+    if (use_inv_prob_weighting) { 
+      # Get control/schz proportions
+      subj_groups <- feature_matrix %>%
+        dplyr::distinct(Subject_ID, group) 
+      
+      sample_props <- subj_groups %>%
+        dplyr::summarise(control_prop = sum(group=="Control"),
+                         schz_prop = sum(group=="Schz"))
+      
+      model_weights <- ifelse(subj_groups$group=="Control", 
+                              (1/sample_props$control_prop)*0.5,
+                              (1/sample_props$schz_prop)*0.5)
+    }
+    
+    # Case when we upsample the minority class
+    if (upsample_minority) {
+      ctrl_subjects <- subset(feature_matrix, group=="Control") %>% 
+        distinct(Subject_ID) %>% 
+        pull(Subject_ID)
+      
+      schz_subjects_upsampled <- subset(feature_matrix, group=="Schz") %>%
+        distinct(Subject_ID) %>%
+        pull(Subject_ID) %>%
+        sample(., length(ctrl_subjects), replace=T)
+      
+      resampled_data <- data.frame(Subject_ID = c(ctrl_subjects, 
+                                                  schz_subjects_upsampled)) %>%
+        mutate(Unique_ID = make.unique(Subject_ID))
+    }
+    
+    # Case when we downsample the majority class
+    if (downsample_majority) {
+      schz_subjects <- subset(feature_matrix, group=="Schz") %>%
+        distinct(Subject_ID) %>%
+        pull(Subject_ID)
+      
+      ctrl_subjects_downsampled <- subset(feature_matrix, group=="Control") %>% 
+        distinct(Subject_ID) %>% 
+        pull(Subject_ID) %>%
+        sample(., length(schz_subjects), replace=F)
+      
+      resampled_data <- data.frame(Subject_ID = c(schz_subjects, 
+                                                  ctrl_subjects_downsampled)) %>%
+        mutate(Unique_ID = make.unique(Subject_ID))
+    }
+    
+    if (upsample_minority | downsample_majority) {
+      # Subset region data and convert to wide format
+      data_for_svm <- resampled_data %>%
+        left_join(., feature_matrix) %>%
+        dplyr::group_by(Unique_ID) %>%
+        dplyr::filter(!any(is.na(values))) %>%
+        dplyr::ungroup() %>%
+        tidyr::unite("SVM_Feature", names, Brain_Region, sep="_") %>%
+        dplyr::select(Unique_ID, group, SVM_Feature, values) %>%
+        tidyr::pivot_wider(id_cols = c(Unique_ID, group),
+                           names_from = SVM_Feature,
+                           values_from 
+                           = values) %>%
+        dplyr::select(-Unique_ID)
+    } else {
       data_for_svm <- feature_matrix %>%
-        dplyr::rename("id" = "Subject_ID") %>%
-        tidyr::unite("names", c(names, Brain_Region), sep="_") %>%
-        dplyr::select(id, group, names, values) %>%
-        tidyr::pivot_wider(id_cols = c("id", "group"), names_from = "names", values_from = "values") %>%
-        dplyr::select_if(~sum(!is.na(.)) > 0) %>%
-        dplyr::select(where(~dplyr::n_distinct(.) > 1))  %>%
-        tidyr::drop_na() %>%
-        janitor::clean_names() %>%
-        tidyr::pivot_longer(cols = 3:ncol(.), names_to = "names", values_to = "values") %>%
-        dplyr::mutate(method = gsub("_.*", "\\1", names)) %>%
-        dplyr::mutate(group = make.names(group),
-                      group = as.factor(group))  %>%
-        tidyr::pivot_wider(id_cols = c("id", "group"), names_from = "names", values_from = "values") %>%
-        dplyr::select(-c(id))
+        dplyr::group_by(Subject_ID) %>%
+        dplyr::filter(!any(is.na(values))) %>%
+        dplyr::ungroup() %>%
+        tidyr::unite("SVM_Feature", names, Brain_Region, sep="_") %>%
+        dplyr::select(Subject_ID, group, SVM_Feature, values) %>%
+        tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                           names_from = SVM_Feature,
+                           values_from 
+                           = values) %>%
+        dplyr::select(-Subject_ID)
+    }
+    
+    # Train SVM model
+    fitControl <- caret::trainControl(method = "cv",
+                                      number = 10,
+                                      savePredictions = "all",
+                                      summaryFunction = calculate_balanced_accuracy,
+                                      classProbs = TRUE)
+    
+    if (use_inv_prob_weighting) {
       
-      # Calculate model weights as inverse probability
-      model_weights <- ifelse(data_for_svm$group == "Control", 
-                              1/sample_props$control_prop,
-                              1/sample_props$schz_prop)
-      
-      # Train SVM model
-      fitControl <- caret::trainControl(method = "cv",
-                                        number = 10,
-                                        savePredictions = "all",
-                                        summaryFunction = calculate_balanced_accuracy,
-                                        classProbs = TRUE)
-      
-      # Run e1071 SVM with caret
+      # Run kernlab linear SVM with caret
       mod <- caret::train(group ~ .,
                           data = data_for_svm,
                           method = "svmLinear",
@@ -242,26 +340,73 @@ run_caret_multi_SVM_by_region_feature_inv_prop <- function(rdata_path,
                           maximize = T,
                           weights = model_weights,
                           preProcess = c("center", "scale", "nzv"))
-      
-      # Generate predictions
-      preds <- mod$pred
-      data_for_svm$group <- factor(data_for_svm$group, levels = levels(preds$pred))
-      cm <- list(caret::confusionMatrix(preds$pred, data_for_svm$group)$table)
-      
-      # Get accuracy + balanced accuracy results
-      mod_res <- mod$results %>%
-        mutate(Test_Method = "linear_SVM",
-               Noise_Proc = noise_proc,
-               Confusion_Matrix = I(cm))
-      
-      # Append results to list
-      noise_proc_res_list <- rlist::list.append(noise_proc_res_list,
-                                                mod_res)
+    } else {
+      mod <- caret::train(group ~ .,
+                          data = data_for_svm,
+                          method = "svmLinear",
+                          trControl = fitControl,
+                          metric = "Balanced_Accuracy",
+                          maximize = T,
+                          preProcess = c("center", "scale", "nzv"))
+    }
     
+    # Generate predictions
+    preds <- mod$pred
+    data_for_svm$group <- factor(data_for_svm$group, levels = levels(preds$pred))
+    cm <- list(caret::confusionMatrix(preds$pred, data_for_svm$group)$table)
+    
+    # Get accuracy + balanced accuracy results
+    feature_ROI_res <- mod$results %>%
+      mutate(Test_Method = "linear_SVM",
+             Noise_Proc = noise_proc,
+             Confusion_Matrix = I(cm))
+    
+    # Append results to list
+    feature_ROI_wise_class_res_list <- rlist::list.append(feature_ROI_wise_class_res_list,
+                                                          feature_ROI_res)
   }
-  # Combine results into a dataframe
-  class_res_df <- do.call(plyr::rbind.fill, noise_proc_res_list)
+  
+  
+  # Combine results from all regions into a dataframe
+  feature_ROI_wise_class_res_df <- do.call(plyr::rbind.fill, feature_ROI_wise_class_res_list)
   
   # Return dataframe
-  return(class_res_df)
+  return(feature_ROI_wise_class_res_df)
+}
+
+#-------------------------------------------------------------------------------
+# Calculate empirical p-values per feature+ROI combo based on null distribution
+#-------------------------------------------------------------------------------
+
+calc_empirical_nulls <- function(class_res,
+                                 null_data) {
+  
+  main_p_vals <- class_res %>%
+    dplyr::select(Noise_Proc, accuracy, balanced_accuracy) %>%
+    
+    # Set main accuracy name
+    mutate(Type = "main") %>%
+    
+    # Merge with null data
+    plyr::rbind.fill(., null_data) %>%
+    
+    # Group by noise-processing method
+    group_by(Noise_Proc) %>%
+    
+    # Calculate accuracy + balanced accuracy for real result, 
+    # Along with empirical p-values based on rank relative to null distribution
+    dplyr::summarise(main_accuracy = unique(accuracy[Type=="main"]),
+                     main_balanced_accuracy = unique(balanced_accuracy[Type=="main"]),
+                     acc_p = 1 - (sum(main_accuracy > accuracy[Type=="null"], 
+                                      na.rm=T)/n()),
+                     bal_acc_p = 1 - (sum(main_balanced_accuracy >
+                                            balanced_accuracy[Type=="null"])/n())) %>%
+    ungroup() %>%
+    distinct() %>%
+    dplyr::rename("accuracy" = "main_accuracy",
+                  "balanced_accuracy" = "main_balanced_accuracy") %>%
+    mutate(acc_p_adj = stats::p.adjust(acc_p, method="BH"),
+           bal_acc_p_adj = stats::p.adjust(bal_acc_p, method="BH"))
+  
+  return(main_p_vals)
 }

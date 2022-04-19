@@ -339,12 +339,22 @@ run_in_sample_ksvm_by_region <- function(rdata_path,
           dplyr::select(-Subject_ID)
       }
       
-      # Run SVM with supplied kernel type
-      svmModel <- kernlab::ksvm(factor(group) ~ .,
-                                type = "C-svc",
-                                kernel = "vanilladot",
-                                data = data_for_svm,
-                                prob.model=F)
+      if (use_inv_prob_weighting) {
+        # Run SVM with supplied kernel type
+        svmModel <- kernlab::ksvm(factor(group) ~ .,
+                                  type = "C-svc",
+                                  kernel = "vanilladot",
+                                  data = data_for_svm,
+                                  class.weights = sample_wts,
+                                  prob.model=F)
+      } else {
+        # Run SVM with supplied kernel type
+        svmModel <- kernlab::ksvm(factor(group) ~ .,
+                                  type = "C-svc",
+                                  kernel = "vanilladot",
+                                  data = data_for_svm,
+                                  prob.model=F)
+      }
       
       # Generate in-sample predictions based on SVM model
       pred <- predict(svmModel, data_for_svm)
@@ -442,6 +452,7 @@ run_caret_multi_SVM_by_region <- function(rdata_path,
                                           use_inv_prob_weighting = FALSE,
                                           upsample_minority = FALSE,
                                           downsample_majority = FALSE,
+                                          test_package = "e1071",
                                           noise_procs = c("AROMA+2P", 
                                                           "AROMA+2P+GMR", 
                                                           "AROMA+2P+DiCER")) {
@@ -467,9 +478,14 @@ run_caret_multi_SVM_by_region <- function(rdata_path,
         dplyr::summarise(control_prop = sum(group=="Control"),
                          schz_prop = sum(group=="Schz"))
       
-      model_weights <- ifelse(subj_groups$group=="Control", 
-                              (1/sample_props$control_prop)*0.5,
-                              (1/sample_props$schz_prop)*0.5)
+      # model_weights <- ifelse(subj_groups$group=="Control", 
+      #                         (1/sample_props$control_prop)*0.5,
+      #                         (1/sample_props$schz_prop)*0.5)
+      
+      model_weights <- ifelse(subj_groups$group == "Control", 
+                              1/sample_props$control_prop,
+                              1/sample_props$schz_prop)
+      
     }
     
     # Case when we upsample the minority class
@@ -546,24 +562,35 @@ run_caret_multi_SVM_by_region <- function(rdata_path,
                                         summaryFunction = calculate_balanced_accuracy,
                                         classProbs = TRUE)
       
+      # Define tuning grid
+      if (test_package == "e1071") {
+        test_method <- "svmLinear2"
+        grid <- expand.grid(cost = 1)
+      } else {
+        test_method <- "svmLinear"
+        grid <- expand.grid(C = 1)
+      }
+      
       if (use_inv_prob_weighting) {
         
         # Run kernlab linear SVM with caret
         mod <- caret::train(group ~ .,
                             data = data_for_svm,
-                            method = "svmLinear",
+                            method = test_method,
                             trControl = fitControl,
                             metric = "Balanced_Accuracy",
                             maximize = T,
                             weights = model_weights,
+                            tuneGrid = grid,
                             preProcess = c("center", "scale", "nzv"))
       } else {
         mod <- caret::train(group ~ .,
                             data = data_for_svm,
-                            method = "svmLinear",
+                            method = test_method,
                             trControl = fitControl,
                             metric = "Balanced_Accuracy",
                             maximize = T,
+                            tuneGrid = grid,
                             preProcess = c("center", "scale", "nzv"))
       }
 
@@ -576,7 +603,7 @@ run_caret_multi_SVM_by_region <- function(rdata_path,
       # Get accuracy + balanced accuracy results
       ROI_res <- mod$results %>%
         mutate(Brain_Region = this_ROI,
-               Test_Method = "linear_SVM",
+               Test_Method = paste0(test_package, "_linear_SVM"),
                Noise_Proc = noise_proc,
                Confusion_Matrix = I(cm))
       
