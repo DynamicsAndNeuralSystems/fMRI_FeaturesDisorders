@@ -347,14 +347,14 @@ if (!file.exists(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds"))) {
 ### Deriving p-values using model-free shuffle null distributions
 
 ```{r}
-if (!file.exists(paste0(rdata_path, "UCLA_combo_wise_SVM_caret_upsampled_pvals.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_pvals.Rds"))) {
   e1071_combo_wise_SVM_CV_pvals <- calc_empirical_nulls(class_res = e1071_combo_wise_SVM_CV,
                                                         null_data = model_free_shuffle_null_res,
                                                         grouping_var = "All")
-  saveRDS(e1071_combo_wise_SVM_CV_pvals, file=paste0(rdata_path, "UCLA_combo_wise_SVM_caret_upsampled_pvals.Rds"))
+  saveRDS(e1071_combo_wise_SVM_CV_pvals, file=paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
   
 } else {
-  e1071_combo_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "UCLA_combo_wise_SVM_caret_upsampled_pvals.Rds"))
+  e1071_combo_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
 }
 
 e1071_combo_wise_SVM_CV_plabs <- e1071_combo_wise_SVM_CV_pvals %>%
@@ -422,4 +422,196 @@ e1071_combo_wise_SVM_CV_plabs %>%
 ```
 
 
+
+
+
+### Deriving p-values using model-free shuffle null distributions -- inv prob
+
+```{r}
+if (!file.exists(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))) {
+  e1071_combo_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = e1071_combo_wise_SVM_CV_inv_prob,
+                                                        null_data = model_free_shuffle_null_res,
+                                                        grouping_var = "All")
+  saveRDS(e1071_combo_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+  
+} else {
+  e1071_combo_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+}
+
+e1071_combo_wise_SVM_CV_inv_prob_plabs <- e1071_combo_wise_SVM_CV_inv_prob_pvals %>%
+  mutate(acc_p = scales::scientific(acc_p, digits = 3),
+         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
+         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
+         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+```
+
+Accuracy:
+```{r, fig.width=7, fig.height=6}
+e1071_combo_wise_SVM_CV_inv_prob_pvals %>%
+  ggplot(data=.) +
+  geom_histogram(data = subset(model_free_shuffle_null_res, Type=="null"),
+                 aes(x = accuracy, y=0.5*..density..), 
+                 bins = 50,
+                 alpha=0.6, position="identity",
+                 fill = "gray70") +
+  geom_vline(mapping=aes(xintercept = accuracy, color = Noise_Proc), size=1.2) +
+  xlab("Accuracy from n=1,000,000 Model-Free Shuffles") +
+  ylab("Scaled Density") +
+  labs(color = "Noise Processing") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal")
+```
+
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Main_vs_Null_Acc_10FCV_Linear_SVM_inv_prob_combo_wise.png",
+       width=8, height=5, units="in", dpi=300)
+```
+
+Balanced accuracy:
+```{r, fig.width=7, fig.height=6}
+e1071_combo_wise_SVM_CV_inv_prob_pvals %>%
+  ggplot(data=.) +
+  geom_histogram(data = subset(model_free_shuffle_null_res, Type=="null"),
+                 aes(x = balanced_accuracy, y=0.5*..density..), 
+                 bins = 50,
+                 alpha=0.6, position="identity",
+                 fill = "gray70") +
+  geom_vline(mapping=aes(xintercept = balanced_accuracy, color = Noise_Proc), size=1.2) +
+  xlab("Balanced Accuracy from n=1,000,000 Model-Free Shuffles") +
+  ylab("Scaled Density") +
+  labs(color = "Noise Processing") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal")
+```
+
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Main_vs_Null_BAcc_10FCV_Linear_SVM_inv_prob_combo_wise.png",
+       width=8, height=5, units="in", dpi=300)
+```
+
+Summary statistics:
+```{r}
+e1071_combo_wise_SVM_CV_plabs %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  arrange(Noise_Proc)
+```
+
+
+
+
+
+
+## Null model for overall accuracy
+
+### AROMA+2P
+Take the average of 1804 random accuracy values from the null distribution 10,000x and compare with the mean from AROMA+2P:
+
+```{r}
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))) {
+  random_acc_list <- list()
+  for (i in 1:10000) {
+    random_acc <- model_free_shuffle_null_res %>%
+      sample_n(1804) %>%
+      summarise(mean_accuracy = mean(accuracy, na.rm=T),
+                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+      mutate(Type="null")
+    random_acc_list <- rlist::list.append(random_acc_list, random_acc)
+  }
+  random_1804_acc <- do.call(plyr::rbind.fill, random_acc_list)
+  saveRDS(random_1804_acc, file=paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))
+} else {
+  random_1804_acc <- readRDS(paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))
+}
+
+real_1804_acc <- e1071_combo_wise_SVM_CV %>%
+  filter(Noise_Proc=="AROMA+2P") %>%
+  summarise(mean_accuracy = mean(accuracy, na.rm=T),
+            mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+  mutate(Type="main")
+
+# Plot the accuracy
+acc_p <- ggplot() +
+  geom_histogram(data = random_1804_acc, mapping=aes(x=mean_accuracy), 
+                 fill="gray70", bins=500) +
+  geom_vline(data = real_1804_acc, mapping=aes(xintercept = mean_accuracy), color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Accuracy") +
+  ggtitle("Mean Accuracy in AROMA+2P Combo-Based Data") +
+  theme(plot.title=element_text(hjust=0.5))
+
+# Plot the balanced accuracy
+bal_acc_p <- ggplot() +
+  geom_histogram(data = random_1804_acc, mapping=aes(x=mean_balanced_accuracy), 
+                 fill="gray70", bins=500) +
+  geom_vline(data = real_1804_acc, mapping=aes(xintercept = mean_balanced_accuracy), color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Balanced Accuracy") +
+  ggtitle("Mean Balanced Accuracy in AROMA+2P Combo-Based Data") +
+  theme(plot.title=element_text(hjust=0.5))
+
+acc_p / bal_acc_p
+ggsave("plots/Meta_Null_AROMA_2P_Combo_wise.png", width=7, height=8, units="in", dpi=300)
+```
+
+### AROMA+2P with inverse probability weighting 
+Take the average of 22 random accuracy values from the null distribution 10,000x and compare with the mean from AROMA+2P with inverse probability weighting:
+
+```{r}
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))) {
+  random_acc_list <- list()
+  for (i in 1:10000) {
+    random_acc <- model_free_shuffle_null_res %>%
+      sample_n(1804) %>%
+      summarise(mean_accuracy = mean(accuracy, na.rm=T),
+                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+      mutate(Type="null")
+    random_acc_list <- rlist::list.append(random_acc_list, random_acc)
+  }
+  random_1804_acc <- do.call(plyr::rbind.fill, random_acc_list)
+  saveRDS(random_1804_acc, file=paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))
+} else {
+  random_1804_acc <- readRDS(paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))
+}
+
+real_1804_acc <- e1071_combo_wise_SVM_CV_inv_prob %>%
+  filter(Noise_Proc=="AROMA+2P") %>%
+  summarise(mean_accuracy = mean(accuracy, na.rm=T),
+            mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+  mutate(Type="main")
+
+# Plot the accuracy
+acc_p <- ggplot() +
+  geom_histogram(data = random_1804_acc, mapping=aes(x=mean_accuracy), 
+                 fill="gray70", bins=500) +
+  geom_vline(data = real_1804_acc, mapping=aes(xintercept = mean_accuracy), 
+             color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Accuracy") +
+  ggtitle("Mean Accuracy in AROMA+2P Combo-Based Data\nwith Inverse Probability Sample Weighting") +
+  theme(plot.title=element_text(hjust=0.5))
+
+# Plot the balanced accuracy
+bal_acc_p <- ggplot() +
+  geom_histogram(data = random_1804_acc, mapping=aes(x=mean_balanced_accuracy), 
+                 fill="gray70", bins=500) +
+  geom_vline(data = real_1804_acc, mapping=aes(xintercept = mean_balanced_accuracy),
+             color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Balanced Accuracy") +
+  ggtitle("Mean Balanced Accuracy in AROMA+2P Combo-Based Data\nwith Inverse Probability Sample Weighting") +
+  theme(plot.title=element_text(hjust=0.5))
+
+acc_p / bal_acc_p
+ggsave("plots/Meta_Null_AROMA_2P_Combo_wise_inv_prob.png", width=7, height=8, units="in", dpi=300)
+```
 

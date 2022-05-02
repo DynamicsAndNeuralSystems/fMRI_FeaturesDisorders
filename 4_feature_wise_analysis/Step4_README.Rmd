@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=F, message=F)
 source("../helper_functions/in_sample_SVM_code.R")
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 set.seed(127)
+library(patchwork)
 ```
 
 ## In-sample SVM classification
@@ -654,3 +655,108 @@ e1071_feature_wise_SVM_CV_inv_prob_pvals %>%
 ```
 
 This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the upsampled model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.  
+
+## Null model for overall accuracy
+
+### AROMA+2P
+Take the average of 22 random accuracy values from the null distribution 10,000x and compare with the mean from AROMA+2P:
+
+```{r}
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))) {
+  random_acc_list <- list()
+  for (i in 1:10000) {
+    random_acc <- model_free_shuffle_null_res %>%
+      sample_n(22) %>%
+      summarise(mean_accuracy = mean(accuracy, na.rm=T),
+                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+      mutate(Type="null")
+    random_acc_list <- rlist::list.append(random_acc_list, random_acc)
+  }
+  random_22_acc <- do.call(plyr::rbind.fill, random_acc_list)
+  saveRDS(random_22_acc, file=paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+} else {
+  random_22_acc <- readRDS(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+}
+
+real_22_acc <- e1071_feature_wise_SVM_CV %>%
+  filter(Noise_Proc=="AROMA+2P") %>%
+  summarise(mean_accuracy = mean(accuracy, na.rm=T),
+            mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+  mutate(Type="main")
+
+# Plot the accuracy
+acc_p <- ggplot() +
+  geom_histogram(data = random_22_acc, mapping=aes(x=mean_accuracy), fill="gray70") +
+  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_accuracy), color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Accuracy") +
+  ggtitle("Mean Accuracy in AROMA+2P Feature-Based Data") +
+  theme(plot.title=element_text(hjust=0.5))
+
+# Plot the balanced accuracy
+bal_acc_p <- ggplot() +
+  geom_histogram(data = random_22_acc, mapping=aes(x=mean_balanced_accuracy), fill="gray70") +
+  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_balanced_accuracy), color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Balanced Accuracy") +
+  ggtitle("Mean Balanced Accuracy in AROMA+2P Feature-Based Data") +
+  theme(plot.title=element_text(hjust=0.5))
+
+acc_p / bal_acc_p
+ggsave("plots/Meta_Null_AROMA_2P_Feature_wise.png", width=7, height=8, units="in", dpi=300)
+```
+
+
+
+### AROMA+2P with inverse probability weighting 
+Take the average of 22 random accuracy values from the null distribution 10,000x and compare with the mean from AROMA+2P with inverse probability weighting:
+
+```{r}
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))) {
+  random_acc_list <- list()
+  for (i in 1:10000) {
+    random_acc <- model_free_shuffle_null_res %>%
+      sample_n(22) %>%
+      summarise(mean_accuracy = mean(accuracy, na.rm=T),
+                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+      mutate(Type="null")
+    random_acc_list <- rlist::list.append(random_acc_list, random_acc)
+  }
+  random_22_acc <- do.call(plyr::rbind.fill, random_acc_list)
+  saveRDS(random_22_acc, file=paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+} else {
+  random_22_acc <- readRDS(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+}
+
+real_22_acc <- e1071_feature_wise_SVM_CV_inv_prob %>%
+  filter(Noise_Proc=="AROMA+2P") %>%
+  summarise(mean_accuracy = mean(accuracy, na.rm=T),
+            mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+  mutate(Type="main")
+
+# Plot the accuracy
+acc_p <- ggplot() +
+  geom_histogram(data = random_22_acc, mapping=aes(x=mean_accuracy), fill="gray70") +
+  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_accuracy), color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Accuracy") +
+  ggtitle("Mean Accuracy in AROMA+2P Feature-Based Data\nwith Inverse Probability Sample Weighting") +
+  theme(plot.title=element_text(hjust=0.5))
+
+# Plot the balanced accuracy
+bal_acc_p <- ggplot() +
+  geom_histogram(data = random_22_acc, mapping=aes(x=mean_balanced_accuracy), fill="gray70") +
+  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_balanced_accuracy), color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Balanced Accuracy") +
+  ggtitle("Mean Balanced Accuracy in AROMA+2P Feature-Based Data\nwith Inverse Probability Sample Weighting") +
+  theme(plot.title=element_text(hjust=0.5))
+
+acc_p / bal_acc_p
+ggsave("plots/Meta_Null_AROMA_2P_Feature_wise_inv_prob.png", width=7, height=8, units="in", dpi=300)
+```
+
