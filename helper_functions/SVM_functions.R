@@ -213,8 +213,8 @@ run_in_sample_svm_by_input_var <- function(rdata_path,
       
       # Compile results into a dataframe
       df_res <- data.frame(grouping_var = group_var,
-                           Accuracy = accuracy,
-                           Balanced_Accuracy = balanced_accuracy,
+                           accuracy = accuracy,
+                           balanced_accuracy = balanced_accuracy,
                            Noise_Proc = noise_proc,
                            SVM_Package = test_package)
       
@@ -397,7 +397,7 @@ run_cv_svm_by_input_var <- function(rdata_path,
 }
 
 #-------------------------------------------------------------------------------
-# Run model-free shuffles for a given distribution of schizophrenia vs controls
+# Generate null distribution for a given distribution of schizophrenia vs controls
 #-------------------------------------------------------------------------------
 
 # Helper function to calculate accuracy + balanced accuracy per shuffle
@@ -451,6 +451,284 @@ run_model_free_n_shuffles <- function(rdata_path,
       mutate(Noise_Proc = noise_proc)
     
     null_list <- rlist::list.append(null_list, output)
+  }
+  null_res <- do.call(plyr::rbind.fill, null_list) %>%
+    dplyr::mutate(Type = "null")
+  
+  return(null_res)
+  
+}
+
+
+# Run given number of model-based permutations and calculate in-sample accuracy
+run_null_model_n_permutations <- function(rdata_path,
+                                          noise_procs = c("AROMA+2P", 
+                                                          "AROMA+2P+GMR", 
+                                                          "AROMA+2P+DiCER"),
+                                          grouping_var = "Brain_Region",
+                                          svm_feature_var = "Feature",
+                                          svm_kernel = "linear",
+                                          num_permutations = 100,
+                                          use_inv_prob_weighting = FALSE) {
+  
+  set.seed(127)
+  
+  # Initialize empty list
+  null_list <- list()
+  
+  # Iterate over each noise-processing method
+  for (noise_proc in noise_procs) {
+    # Clean up names
+    noise_label <- gsub("\\+", "_", noise_proc)
+    
+    # Load catch22 data for current noise processing method
+    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
+                                                         noise_label)))
+    
+    if (svm_feature_var == "Feature") {
+      svm_feature_var_name = "names"
+      grouping_var_name = "Brain_Region"
+      grouping_var_vector <- unique(feature_matrix$Brain_Region)
+      
+    } else if (svm_feature_var == "Brain_Region") {
+      svm_feature_var_name = svm_feature_var
+      grouping_var_name = "names"
+      grouping_var_vector <- unique(feature_matrix$names)
+    } else {
+      svm_feature_var_name = "Combo"
+      grouping_var_name = "Group_Var"
+      
+      feature_matrix <- feature_matrix %>%
+        unite("Combo", c("Brain_Region", "names"), sep="_", remove=FALSE)
+      
+      grouping_var_vector <- c("All")
+    }
+    
+    if (use_inv_prob_weighting) {
+      # Get control/schz proportions
+      sample_props <- feature_matrix %>%
+        dplyr::group_by(Subject_ID, Brain_Region) %>%
+        dplyr::filter(!any(is.na(values))) %>%
+        dplyr::ungroup() %>%
+        dplyr::distinct(Subject_ID, group) %>%
+        dplyr::summarise(control_prop = sum(group=="Control") / n(),
+                         schz_prop = sum(group=="Schz")/n())
+      
+      # Convert to sample weights based on inverse of probability
+      sample_wts <- list("Control" = 1/sample_props$control_prop,
+                         "Schz" = 1/sample_props$schz_prop)
+    } else {
+      sample_wts <- list("Control" = 1,
+                         "Schz" = 1)
+    }
+    
+    for (group_var in grouping_var_vector) {
+      cat("\nNow running linear SVM for", group_var, noise_proc, "\n")
+      if (grouping_var == "Combo") {
+        data_for_SVM <- feature_matrix %>%
+          dplyr::group_by(Subject_ID) %>%
+          dplyr::filter(!any(is.na(values))) %>%
+          dplyr::ungroup() %>%
+          dplyr::select(Subject_ID, group, Combo, values) %>%
+          tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                             names_from = Combo,
+                             values_from 
+                             = values) %>%
+          dplyr::select(-Subject_ID)
+        
+      } else {
+        # Otherwise iterate over each separate group
+        data_for_SVM <- subset(feature_matrix, get(grouping_var_name) == group_var) %>%
+          dplyr::group_by(Subject_ID, get(grouping_var_name)) %>%
+          dplyr::filter(!any(is.na(values))) %>%
+          dplyr::ungroup() %>%
+          dplyr::select(Subject_ID, group, svm_feature_var_name, values) %>%
+          tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                             names_from = svm_feature_var_name,
+                             values_from 
+                             = values) %>%
+          dplyr::select(-Subject_ID)
+      }
+      
+      for (i in 1:num_permutations) {
+        data_for_SVM_iteration <- transform(data_for_SVM, group = sample(group) )
+        svmModel <- e1071::svm(factor(group) ~ .,
+                               kernel = svm_kernel,
+                               cost = 1,
+                               data = data_for_SVM_iteration,
+                               class.weights = sample_wts)
+        
+        # Generate in-sample predictions based on SVM model
+        pred <- predict(svmModel, data_for_SVM_iteration)
+        data_for_SVM_iteration$group <- factor(data_for_SVM_iteration$group, levels = levels(pred))
+        
+        # Calculate accuracy and balanced accuracy
+        accuracy <- sum(pred == data_for_SVM_iteration$group)/length(pred)
+        balanced_accuracy <- caret::confusionMatrix(data=pred, 
+                                                    reference=data_for_SVM_iteration$group)$byClass[["Balanced Accuracy"]]
+        balanced_accuracy <- ifelse(is.na(balanced_accuracy), 0.5, balanced_accuracy)
+        
+        
+        # Compile results into a dataframe
+        df_res <- data.frame(grouping_var = group_var,
+                             accuracy = accuracy,
+                             balanced_Accuracy = balanced_accuracy,
+                             Noise_Proc = noise_proc)
+        null_list <- rlist::list.append(null_list, df_res)
+      }
+      
+    }
+  }
+  null_res <- do.call(plyr::rbind.fill, null_list) %>%
+    dplyr::mutate(Type = "null")
+  
+  return(null_res)
+  
+}
+
+# Run given number of model-based permutations and calculate 10-fold CV accuracy
+run_null_model_n_permutations_CV <- function(rdata_path,
+                                          noise_procs = c("AROMA+2P", 
+                                                          "AROMA+2P+GMR", 
+                                                          "AROMA+2P+DiCER"),
+                                          grouping_var = "Brain_Region",
+                                          svm_feature_var = "Feature",
+                                          svm_kernel = "linear",
+                                          num_permutations = 100,
+                                          seed = 127,
+                                          use_inv_prob_weighting = FALSE) {
+  
+  set.seed(127)
+  
+  # Initialize empty list
+  null_list <- list()
+  
+  # Iterate over each noise-processing method
+  for (noise_proc in noise_procs) {
+    # Clean up names
+    noise_label <- gsub("\\+", "_", noise_proc)
+    
+    # Load catch22 data for current noise processing method
+    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
+                                                         noise_label)))
+    
+    if (svm_feature_var == "Feature") {
+      svm_feature_var_name = "names"
+      grouping_var_name = "Brain_Region"
+      grouping_var_vector <- unique(feature_matrix$Brain_Region)
+      
+    } else if (svm_feature_var == "Brain_Region") {
+      svm_feature_var_name = svm_feature_var
+      grouping_var_name = "names"
+      grouping_var_vector <- unique(feature_matrix$names)
+    } else {
+      svm_feature_var_name = "Combo"
+      grouping_var_name = "Group_Var"
+      
+      feature_matrix <- feature_matrix %>%
+        unite("Combo", c("Brain_Region", "names"), sep="_", remove=FALSE)
+      
+      grouping_var_vector <- c("All")
+    }
+    
+    if (use_inv_prob_weighting) {
+      # Get control/schz proportions
+      sample_props <- feature_matrix %>%
+        dplyr::group_by(Subject_ID, Brain_Region) %>%
+        dplyr::filter(!any(is.na(values))) %>%
+        dplyr::ungroup() %>%
+        dplyr::distinct(Subject_ID, group) %>%
+        dplyr::summarise(control_prop = sum(group=="Control") / n(),
+                         schz_prop = sum(group=="Schz")/n())
+      
+      # Convert to sample weights based on inverse of probability
+      sample_wts <- list("Control" = 1/sample_props$control_prop,
+                         "Schz" = 1/sample_props$schz_prop)
+    } else {
+      sample_wts <- list("Control" = 1,
+                         "Schz" = 1)
+    }
+    
+    for (group_var in grouping_var_vector) {
+      cat("\nNow running linear SVM for", group_var, noise_proc, "\n")
+      if (grouping_var == "Combo") {
+        data_for_SVM <- feature_matrix %>%
+          dplyr::group_by(Subject_ID) %>%
+          dplyr::filter(!any(is.na(values))) %>%
+          dplyr::ungroup() %>%
+          dplyr::select(Subject_ID, group, Combo, values) %>%
+          tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                             names_from = Combo,
+                             values_from 
+                             = values) %>%
+          dplyr::select(-Subject_ID)
+        
+      } else {
+        # Otherwise iterate over each separate group
+        data_for_SVM <- subset(feature_matrix, get(grouping_var_name) == group_var) %>%
+          dplyr::group_by(Subject_ID, get(grouping_var_name)) %>%
+          dplyr::filter(!any(is.na(values))) %>%
+          dplyr::ungroup() %>%
+          dplyr::select(Subject_ID, group, svm_feature_var_name, values) %>%
+          tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                             names_from = svm_feature_var_name,
+                             values_from 
+                             = values) %>%
+          dplyr::select(-Subject_ID)
+      }
+      
+      for (i in 1:num_permutations) {
+        data_for_SVM_iteration <- transform(data_for_SVM, group = sample(group) )
+        
+        set.seed(seed)
+        flds <- createFolds(data_for_SVM_iteration$group, k = 10, list = TRUE, returnTrain = FALSE)
+        
+        accuracy_list <- list()
+        balanced_accuracy_list <- list()
+        
+        for (i in 1:length(flds)) {
+          test_i <- flds[[i]]
+          train_i <- setdiff(1:nrow(data_for_SVM_iteration), test_i)
+          
+          test_data <- data_for_SVM_iteration[test_i, ]
+          train_data <- data_for_SVM_iteration[train_i, ]
+          
+            # Run SVM with supplied kernel type
+            svmModel <- e1071::svm(factor(group) ~ .,
+                                   kernel = svm_kernel,
+                                   cost = 1,
+                                   data = train_data,
+                                   class.weights = sample_wts)
+          
+          # Generate out-of-sample predictions based on SVM model
+          pred <- predict(svmModel, test_data)
+          test_data$group <- factor(test_data$group, levels = levels(pred))
+          
+          # Calculate accuracy and balanced accuracy
+          accuracy <- sum(pred == test_data$group)/length(pred)
+          balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
+                                                      data=pred)$byClass[["Balanced Accuracy"]]
+          
+          accuracy_list[[i]] <- accuracy
+          balanced_accuracy_list[[i]] <- balanced_accuracy
+        } 
+        
+        accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
+        accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
+        balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
+        balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
+        
+        
+        # Compile results into a dataframe
+        df_res <- data.frame(grouping_var = group_var,
+                             accuracy = accuracy_avg,
+                             accuracy_sd = accuracy_sd,
+                             balanced_accuracy = balanced_accuracy,
+                             balanced_accuracy_sd = balanced_accuracy_sd,
+                             Noise_Proc = noise_proc)
+        null_list <- rlist::list.append(null_list, df_res)
+      }
+    }
   }
   null_res <- do.call(plyr::rbind.fill, null_list) %>%
     dplyr::mutate(Type = "null")

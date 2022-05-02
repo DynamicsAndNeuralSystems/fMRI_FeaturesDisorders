@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=F, message=F)
 
 ### Source functions
 ```{r}
-source("../helper_functions/in_sample_SVM_code.R")
+source("../helper_functions/SVM_functions.R")
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 set.seed(127)
 library(patchwork)
@@ -563,48 +563,143 @@ This table summarises the number of ROIs for which raw accuracy or balanced accu
 
 #### In-sample
 
+Run null model permutation function:
 ```{r}
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 noise_proc = "AROMA+2P"
 noise_label = "AROMA_2P"
 svm_kernel <- "linear"
 set.seed(127)
 
-# Load catch22 data for current noise processing method
-feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
-                                                     noise_label)))  
-grouping_var_name <- "Brain_Region"
-svm_feature_var_name <- "names"
-brain_regions <- unique(feature_matrix$Brain_Region)
-group_var = brain_regions[1]
-
-data_for_SVM <- subset(feature_matrix, get(grouping_var_name) == group_var) %>%
-  dplyr::group_by(Subject_ID, get(grouping_var_name)) %>%
-  dplyr::filter(!any(is.na(values))) %>%
-  dplyr::ungroup() %>%
-  dplyr::select(Subject_ID, group, svm_feature_var_name, values) %>%
-  tidyr::pivot_wider(id_cols = c(Subject_ID, group),
-                     names_from = svm_feature_var_name,
-                     values_from 
-                     = values) %>%
-  dplyr::select(-Subject_ID)
-
-# Without reweighting first
-sample_wts <- list("Control" = 1, "Schz" = 1)
-
-for (i in 1:10) {
-  data_for_SVM_iteration <- transform( data_for_SVM, group = sample(group) )
-  svmModel <- e1071::svm(factor(group) ~ .,
-                               kernel = svm_kernel,
-                               cost = 1,
-                               data = data_for_SVM_iteration,
-                               class.weights = sample_wts)
+if (!file.exists(paste0(rdata_path, "Model_Permutation_Null_In_Sample.Rds"))) {
+  model_permutation_null_in_sample <- run_null_model_n_permutations(rdata_path,
+                                                                    noise_procs = c("AROMA+2P", 
+                                                                                    "AROMA+2P+GMR", 
+                                                                                    "AROMA+2P+DiCER"),
+                                                                    grouping_var = "Brain_Region",
+                                                                    svm_feature_var = "Feature",
+                                                                    num_permutations = 100,
+                                                                    use_inv_prob_weighting = FALSE)
+  
+  saveRDS(model_permutation_null_in_sample, file=paste0(rdata_path, "Model_Permutation_Null_In_Sample.Rds"))
+} else {
+  model_permutation_null_in_sample <- paste0(rdata_path, "Model_Permutation_Null_In_Sample.Rds")
 }
+```
 
+Plot null accuracy and balanced accuracy compared with real metrics:
+```{r, fig.width=7, fig.height=6}
+e1071_region_wise_SVM_in_sample %>%
+  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
+  mutate(Type = "main") %>%
+  plyr::rbind.fill(., model_permutation_null_in_sample) %>%
+  pivot_longer(cols=c(accuracy, balanced_accuracy),
+               names_to = "Metric",
+               values_to = "Values") %>%
+  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
+                                                    "AROMA+2P+GMR",
+                                                    "AROMA+2P+DiCER"))) %>%
+  ggplot(data=., mapping=aes(x=Values)) +
+  geom_histogram(aes(fill = Type, y=0.5*..density..), 
+                 bins = 50,
+                 alpha=0.6, position="identity") +
+  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
+  xlab("Value from n=8,200 Pooled Null Iterations") +
+  ylab("Scaled Density") +
+  labs(fill = "Distribution") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal") 
+```
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Main_vs_Pooled_Permutation_Null_Acc_BAcc_In_Sample_ROI_Wise_Linear_SVM.png",
+       width=7, height=6, units="in", dpi=300)
 ```
 
 #### In-sample with inverse probability weighting
 
+Run null model permutation function:
+```{r}
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+noise_proc = "AROMA+2P"
+noise_label = "AROMA_2P"
+svm_kernel <- "linear"
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "Model_Permutation_Null_In_Sample_Inv_Prob.Rds"))) {
+  model_permutation_null_in_sample_inv_prob <- run_null_model_n_permutations(rdata_path,
+                                                                    noise_procs = c("AROMA+2P", 
+                                                                                    "AROMA+2P+GMR", 
+                                                                                    "AROMA+2P+DiCER"),
+                                                                    grouping_var = "Brain_Region",
+                                                                    svm_feature_var = "Feature",
+                                                                    num_permutations = 100,
+                                                                    use_inv_prob_weighting = TRUE)
+  
+  saveRDS(model_permutation_null_in_sample_inv_prob, file=paste0(rdata_path, "Model_Permutation_Null_In_Sample_Inv_Prob.Rds"))
+} else {
+  model_permutation_null_in_sample_inv_prob <- paste0(rdata_path, "Model_Permutation_Null_In_Sample_Inv_Prob.Rds")
+}
+```
+
+Plot null accuracy and balanced accuracy compared with real metrics:
+```{r, fig.width=7, fig.height=6}
+e1071_region_wise_SVM_in_sample_inv_prob %>%
+  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
+  mutate(Type = "main") %>%
+  plyr::rbind.fill(., model_permutation_null_in_sample_inv_prob) %>%
+  pivot_longer(cols=c(accuracy, balanced_accuracy),
+               names_to = "Metric",
+               values_to = "Values") %>%
+  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
+                                                    "AROMA+2P+GMR",
+                                                    "AROMA+2P+DiCER"))) %>%
+  ggplot(data=., mapping=aes(x=Values)) +
+  geom_histogram(aes(fill = Type, y=0.5*..density..), 
+                 bins = 50,
+                 alpha=0.6, position="identity") +
+  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
+  xlab("Value from n=8,200 Pooled Null Iterations") +
+  ylab("Scaled Density") +
+  labs(fill = "Distribution") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal") 
+```
+
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Main_vs_Pooled_Permutation_Null_Acc_BAcc_In_Sample_ROI_Wise_Linear_SVM_Inv_Prob.png",
+       width=7, height=6, units="in", dpi=300)
+```
+
 #### Cross-validated
+
+Run null model permutation function:
+```{r}
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+svm_kernel <- "linear"
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "Model_Permutation_Null_CV.Rds"))) {
+  model_permutation_null_CV <- run_null_model_n_permutations_CV(rdata_path,
+                                                                noise_procs = noise_procs,
+                                                                grouping_var = "Brain_Region",
+                                                                svm_feature_var = "Feature",
+                                                                num_permutations = 100,
+                                                                seed = 127,
+                                                                use_inv_prob_weighting = FALSE)
+  
+  saveRDS(model_permutation_null_CV, file=paste0(rdata_path, "Model_Permutation_Null_CV.Rds"))
+} else {
+  model_permutation_null_CV <- paste0(rdata_path, "Model_Permutation_Null_CV.Rds")
+}
+```
 
 #### Cross-validated with inverse probability weighting
 
