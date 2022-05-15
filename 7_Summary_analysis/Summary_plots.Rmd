@@ -23,29 +23,29 @@ theme_set(theme_cowplot())
 ### Load data
 
 ```{r}
-step3_in_sample <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_e1071.Rds")) %>%
+step3_in_sample <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_e1071.Rds")) %>%
   mutate(Type = "main",
          Classifier = "In-sample")
-step3_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_inv_prob_e1071.Rds")) %>%
+step3_in_sample_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_inv_prob_e1071.Rds")) %>%
   mutate(Type = "main",
          Classifier = "In-sample inv prob")
-step3_in_sample_SMOTE <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_SMOTE_e1071.Rds")) %>%
+step3_in_sample_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_SMOTE_e1071.Rds")) %>%
   mutate(Type = "main",
          Classifier = "In-sample SMOTE")
-step3_CV <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_e1071.Rds")) %>%
+step3_CV <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071.Rds")) %>%
   mutate(Type = "main",
          Classifier = "CV")
-step3_CV_inv_prob <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_e1071_inv_prob.Rds")) %>%
+step3_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_inv_prob.Rds")) %>%
   mutate(Type = "main",
          Classifier = "CV inv prob")
-step3_CV_SMOTE <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_e1071_SMOTE.Rds")) %>%
+step3_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_SMOTE.Rds")) %>%
   mutate(Type = "main",
          Classifier = "CV SMOTE")
 step3_model_free_shuffle_null <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
   mutate(Classifier = "Model-free shuffle")
-step3_null_model_inv_prob <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
+step3_null_model_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_inv_prob.Rds")) %>%
   mutate(Classifier = "Null model fit inv prob")
-step3_null_model_SMOTE <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
+step3_null_model_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_SMOTE.Rds")) %>%
   mutate(Classifier = "Null model fit SMOTE")
 ```
 
@@ -82,7 +82,7 @@ step3_data %>%
   xlab("Balanced Accuracy") +
   theme(legend.position = "none",
         plot.title = element_text(hjust=0.5))
-ggsave("plots/Step3_Balanced_Accuracy.png",
+ggsave("plots/Step3_Balanced_Accuracy_Summary.png",
        width=8, height=6, units="in", dpi=300)
 ```
 
@@ -93,22 +93,22 @@ ggsave("plots/Step3_Balanced_Accuracy.png",
 ### Load data
 
 ```{r}
-step4_in_sample <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071.Rds")) %>%
+step4_in_sample <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071.Rds")) %>%
   mutate(Type = "main",
          Classifier = "In-sample")
-step4_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071_inv_prob.Rds")) %>%
+step4_in_sample_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071_inv_prob.Rds")) %>%
   mutate(Type = "main",
          Classifier = "In-sample inv prob")
-step4_in_sample_SMOTE <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071_SMOTE.Rds")) %>%
+step4_in_sample_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071_SMOTE.Rds")) %>%
   mutate(Type = "main",
          Classifier = "In-sample SMOTE")
-step4_CV <- readRDS(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_e1071.Rds")) %>%
+step4_CV <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071.Rds")) %>%
   mutate(Type = "main",
          Classifier = "CV")
-step4_CV_inv_prob <- readRDS(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_e1071_inv_prob.Rds")) %>%
+step4_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds")) %>%
   mutate(Type = "main",
          Classifier = "CV inv prob")
-step4_CV_SMOTE <- readRDS(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_e1071_SMOTE.Rds")) %>%
+step4_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds")) %>%
   mutate(Type = "main",
          Classifier = "CV SMOTE")
 step4_model_free_shuffle_null <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
@@ -152,7 +152,7 @@ step4_data %>%
   xlab("Balanced Accuracy") +
   theme(legend.position = "none",
         plot.title = element_text(hjust=0.5))
-ggsave("plots/step4_Balanced_Accuracy.png",
+ggsave("plots/Step4_Balanced_Accuracy_Summary.png",
        width=8, height=6, units="in", dpi=300)
 ```
 
