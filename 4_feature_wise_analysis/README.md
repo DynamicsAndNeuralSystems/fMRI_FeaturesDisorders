@@ -3,142 +3,536 @@ Step 4: Feature-wise catch22 ROI Analysis
 
 ### Source functions
 
-``` r
-source("../helper_functions/visualization_functions.R")
-source("feature_wise_analysis_functions.R")
-theme_set(theme_cowplot())
-rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
-```
+## Feature-wise t-tests
 
-### Run multivariable classifier
+### Full panel histogram visualization
 
-We will use the multivariable classifier included in `theft` to evaluate
-how each catch22 feature performs at distinguishing control
-vs. schizophrenia subjects using all 82 brain regions collectively. We
-will use z-score normalisation and a linear support vector machine (SVM)
-with caret.
+Let’s start with a very simple t-test for catch22 feature values in
+control vs schizophrenia subjects by brain region:
+![](Step4_README_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
-The below code chunk calls `run_theft_multivar_classifier`, which is a
-wrapper for `fit_multivariable_classifier` from `theft`. Behind the
-scenes, we opt to use 10-fold cross validation (`use_k_fold = TRUE`,
-`num_folds = 10`) with empirical null model fitting
-(`use_empirical_null=TRUE`, `null_testing_method = "null model fits"`)
-and gaussian p-value calculation with 10 permutations
-(`p_value_method = "gaussian"`, `num_permutations = 10`).
+### Top positive and negative feature violin plots
 
-``` r
-# Use z-score normalisation
-norm_method = "z-score"
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+names
+</th>
+<th style="text-align:left;">
+Brain_Region
+</th>
+<th style="text-align:right;">
+statistic
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+CO_Embed2_Dist_tau_d\_expfit_meandiff
+</td>
+<td style="text-align:left;">
+ctx-lh-cuneus
+</td>
+<td style="text-align:right;">
+4.641928
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CO_Embed2_Dist_tau_d\_expfit_meandiff
+</td>
+<td style="text-align:left;">
+ctx-rh-cuneus
+</td>
+<td style="text-align:right;">
+4.167876
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CO_Embed2_Dist_tau_d\_expfit_meandiff
+</td>
+<td style="text-align:left;">
+ctx-rh-parstriangularis
+</td>
+<td style="text-align:right;">
+4.126321
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CO_Embed2_Dist_tau_d\_expfit_meandiff
+</td>
+<td style="text-align:left;">
+ctx-rh-middletemporal
+</td>
+<td style="text-align:right;">
+4.059799
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+CO_Embed2_Dist_tau_d\_expfit_meandiff
+</td>
+<td style="text-align:left;">
+ctx-lh-medialorbitofrontal
+</td>
+<td style="text-align:right;">
+3.994229
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SB_MotifThree_quantile_hh
+</td>
+<td style="text-align:left;">
+ctx-rh-caudalanteriorcingulate
+</td>
+<td style="text-align:right;">
+-5.071440
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SB_MotifThree_quantile_hh
+</td>
+<td style="text-align:left;">
+ctx-lh-cuneus
+</td>
+<td style="text-align:right;">
+-4.658858
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SB_MotifThree_quantile_hh
+</td>
+<td style="text-align:left;">
+ctx-rh-cuneus
+</td>
+<td style="text-align:right;">
+-4.288679
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SB_MotifThree_quantile_hh
+</td>
+<td style="text-align:left;">
+ctx-rh-lateralorbitofrontal
+</td>
+<td style="text-align:right;">
+-4.054438
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+SB_MotifThree_quantile_hh
+</td>
+<td style="text-align:left;">
+ctx-lh-rostralanteriorcingulate
+</td>
+<td style="text-align:right;">
+-4.004898
+</td>
+</tr>
+</tbody>
+</table>
 
-# Use linear support vector machine (SVM) classification algorithm
-test_method <- "svmLinear"
+![](Step4_README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
-# Retain balanced accuracy in addition to raw accuracy for each ROI
-use_balanced_accuracy <- TRUE
+## In-sample SVM classification
 
-# Run theft's multivariable classifier on each ROI and save to an RDS object
-if (!file.exists(paste0(rdata_path, "UCLA_multivar_feature_res_svmLinear.Rds"))) {
-  
-  feature_wise_class_res_list <- list()
-  
-  for (noise_proc in noise_procs) {
-    feature_wise_class_res <- run_theft_multivar_classifier_by_feature(rdata_path,
-                                                                       norm_method = norm_method,
-                                                                       test_method = test_method,
-                                                                       noise_proc = noise_proc,
-                                                                       use_balanced_accuracy = use_balanced_accuracy)
-    
-    feature_wise_class_res_list <- rlist::list.append(feature_wise_class_res_list, feature_wise_class_res)
-  }
-  
-  feature_wise_class_res_df <- do.call(plyr::rbind.fill, feature_wise_class_res_list)
-  saveRDS(feature_wise_class_res_df, file=paste0(rdata_path, "UCLA_multivar_feature_res_svmLinear.Rds"))
-} else {
-  feature_wise_class_res_df <- readRDS(paste0(rdata_path, "UCLA_multivar_feature_res_svmLinear.Rds"))
-}
-```
+### Simple in-sample linear SVM
 
-We can plot the distribution of accuracy and balanced accuracy values
-across the 22 features for each noise processing method:
+We will start with a simple linear SVM classifier using all 22 features.
 
-``` r
-# Our three noise-processing methods
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = feature_wise_class_res_df,
-                       rdata_path = rdata_path,
-                       noise_procs = noise_procs)
-```
+![](Step4_README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
-![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+### In-sample linear SVM with inverse probability weighting
 
-### In-sample inverse probability weighted SVM with e1071::svm
+We can run linear SVM with the `e1071` package to directly test sample
+reweighting with in-sample accuracy and balanced accuracy.
 
-``` r
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+![](Step4_README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
-# Use linear SVM
-svm_kernel = "linear"
+By assigning each subject a weight equivalent to the inverse proportion
+of that subject’s diagnosis, the linear SVM places a higher cost on
+incorrectly classifying schizophrenia subjects as controls.
 
-# Run theft's multivariable classifier on each catch22 feature and save to an RDS object
-# If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "UCLA_e1071_linear_SVM_by_feature_AROMA_2P.Rds"))) {
-  feature_wise_SVM_e1071 <- run_e1071_SVM_by_feature(rdata_path = rdata_path,
-                                                   svm_kernel = svm_kernel,
-                                                   noise_procs = noise_procs)
-  saveRDS(feature_wise_SVM_e1071, file=paste0(rdata_path, "UCLA_e1071_linear_SVM_by_feature_AROMA_2P.Rds"))
-} else {
-  feature_wise_SVM_e1071 <- readRDS(paste0(rdata_path, "UCLA_e1071_linear_SVM_by_feature_AROMA_2P.Rds"))
-}
-```
+This shifts the raw accuracy down to a mean of around 0.68 across the
+three noise-processing methods, but the balanced accuracy increases to
+have an average of around 0.68 also – compared with almost exclusively
+values of 0.35 previously.
 
-``` r
-# Plot accuracy + balanced accuracy in histograms
-# Control subject proportion is highlighted for accuracy, 0.5 is highlighted for balanced accuracy
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = feature_wise_SVM_e1071,
-                       cv = FALSE,
-                       rdata_path = rdata_path,
-                       noise_procs = noise_procs)
-```
+This indicates that inverse probability reweighting mitigates the class
+imbalance issue and can be carried forward into 10-fold cross-validation
+linear SVM.
 
-![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+### In-sample linear SVM with SMOTE
 
-This in-sample inverse probability-weighted SVM with the `e1071` package
-performs much better. The distribution of raw accuracies is no longer
-largely centered around the control subject proportion point, and the
-balanced accuracies are now much higher than 0.5, suggesting that the
-classifier is actually attempting to separate schizophrenia vs control
-patients.
+We can run linear SVM with the `e1071` package to directly test sample
+reweighting with in-sample accuracy and balanced accuracy.
 
-### 10-fold CV inverse probability weighted SVM with e1071 and caret
+![](Step4_README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
-``` r
-# Try three different noise processing methods
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+By assigning each subject a weight equivalent to the inverse proportion
+of that subject’s diagnosis, the linear SVM places a higher cost on
+incorrectly classifying schizophrenia subjects as controls.
 
-# Retain balanced accuracy in addition to raw accuracy for each ROI
-use_balanced_accuracy <- TRUE
+This shifts the raw accuracy down to a mean of around 0.68 across the
+three noise-processing methods, but the balanced accuracy increases to
+have an average of around 0.68 also – compared with almost exclusively
+values of 0.35 previously.
 
-# Implement inverse probability weighting
-use_inv_prob_weighting = TRUE
+This indicates that inverse probability reweighting mitigates the class
+imbalance issue and can be carried forward into 10-fold cross-validation
+linear SVM.
 
-# Run theft's multivariable classifier on each ROI and save to an RDS object
-# If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "UCLA_multivar_feature_res_svmLinear_inv_prob.Rds"))) {
-  
-   feature_wise_SVM_caret_inv_prob_df <- run_caret_e1071_SVM_by_feature(rdata_path = rdata_path,
-                                            use_inv_prob_weighting = TRUE,
-                                            noise_procs = noise_procs)
-  saveRDS(feature_wise_SVM_caret_inv_prob_df, file=paste0(rdata_path, "UCLA_multivar_feature_res_svmLinear_inv_prob.Rds"))
-} else {
-  feature_wise_SVM_caret_inv_prob_df <- readRDS(paste0(rdata_path, "UCLA_multivar_feature_res_svmLinear_inv_prob.Rds"))
-}
-```
+## Cross-validated SVM classification
 
-``` r
-plot_class_acc_w_props(class_res = feature_wise_SVM_caret_inv_prob_df,
-                       rdata_path = rdata_path,
-                       noise_procs = noise_procs)
-```
+### 10-fold cross-validated linear SVM
 
-![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+We can implement 10-fold cross-validation (CV) with the `caret` package.
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+As with in-sample SVM, the unweighted input samples are virtually all
+classified as control subjects across all 82 ROIs using the 10-fold
+cross-validation linear SVM with caret.
+
+### 10-fold cross-validated linear SVM with inverse probability weighting
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
+Surprisingly, incorporating inverse probability weighting has minimal
+impact when it comes to the ten-fold cross-validated SVM. Of note, the
+in-sample and cross-validated SVM were both run with kernlab::ksvm using
+default parameters.
+
+### 10-fold cross-validated linear SVM with SMOTE
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+Surprisingly, incorporating inverse probability weighting has minimal
+impact when it comes to the ten-fold cross-validated SVM. Of note, the
+in-sample and cross-validated SVM were both run with kernlab::ksvm using
+default parameters.
+
+## Model-free shuffle null distribution
+
+### Generating null distributions from model-free shuffles
+
+This first model-free shuffles method is borrowed from Trent’s
+implementation in theft. With this method, the input class labels (Schz
+or Control) are randomly shuffled N times, and for each iteration, the
+classification accuracy and balanced accuracy are calculated. This
+yields a null distribution of accuracies and balanced accuracies,
+circumventing the need for running any classification algorithms across
+iterations.
+
+Here, I’ve run 1,000,000 iterations of the model-free shuffle,
+generating 1,000,000 null values for Accuracy and Balanced Accuracy,
+respectively. Since this method is independent of brain region, the same
+null distribution can be used to compare with each brain region
+separately.
+
+### CV linear SVM
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+
+I’ve plotted the distribution of null accuracies (teal) alongside the
+actual accuracies (pink) for the 82 ROIs on the left. Let’s zoom in on
+AROMA+2P and pick the five catch22 features with the highest
+cross-validated balanced accuracy:
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Noise_Proc
+</th>
+<th style="text-align:right;">
+num_sig_acc
+</th>
+<th style="text-align:right;">
+num_sig_acc_fdr
+</th>
+<th style="text-align:right;">
+num_sig_bacc
+</th>
+<th style="text-align:right;">
+num_sig_bacc_fdr
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+AROMA+2P
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+9
+</td>
+<td style="text-align:right;">
+4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+</tbody>
+</table>
+
+This table summarises the number of ROIs for which raw accuracy or
+balanced accuracy is significantly greater than the model-free shuffle
+null distribution, both before and after adjusting for multiple
+comparisons with BH-FDR.
+
+### CV linear SVM – inv prob
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+
+I’ve plotted the distribution of null accuracies (teal) alongside the
+actual accuracies (pink) for the 22 catch22 features on the left. Let’s
+zoom in on AROMA+2P and pick the five features with the highest
+cross-validated balanced accuracy:
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Noise_Proc
+</th>
+<th style="text-align:right;">
+num_sig_acc
+</th>
+<th style="text-align:right;">
+num_sig_acc_fdr
+</th>
+<th style="text-align:right;">
+num_sig_bacc
+</th>
+<th style="text-align:right;">
+num_sig_bacc_fdr
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+AROMA+2P
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+</tbody>
+</table>
+
+This table summarises the number of ROIs for which raw accuracy or
+balanced accuracy is significantly greater than the model-free shuffle
+null distribution, both before and after adjusting for multiple
+comparisons with BH-FDR.
+
+### CV linear SVM – SMOTE
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+
+I’ve plotted the distribution of null accuracies (teal) alongside the
+actual accuracies (pink) for the 22 catch22 Features on the left. Let’s
+zoom in on AROMA+2P and pick the five brain regions with the highest
+cross-validated balanced accuracy:
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
+
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Noise_Proc
+</th>
+<th style="text-align:right;">
+num_sig_acc
+</th>
+<th style="text-align:right;">
+num_sig_acc_fdr
+</th>
+<th style="text-align:right;">
+num_sig_bacc
+</th>
+<th style="text-align:right;">
+num_sig_bacc_fdr
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+AROMA+2P
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+1
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+4
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+</tbody>
+</table>
+
+This table summarises the number of catch22 features for which raw
+accuracy or balanced accuracy is significantly greater than the
+model-free shuffle null distribution, both before and after adjusting
+for multiple comparisons with BH-FDR.
+
+## Null model for overall accuracy
+
+### AROMA+2P
+
+Take the average of 22 random accuracy values from the null distribution
+10,000x and compare with the mean from AROMA+2P:
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->
+
+### AROMA+2P with inverse probability weighting
+
+Take the average of 22 random accuracy values from the null distribution
+10,000x and compare with the mean from AROMA+2P with inverse probability
+weighting:
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+
+### AROMA+2P with SMOTE
+
+Take the average of 22 random accuracy values from the null distribution
+10,000x and compare with the mean from AROMA+2P with inverse probability
+weighting:
+
+![](Step4_README_files/figure-gfm/unnamed-chunk-45-1.png)<!-- -->

@@ -1,6 +1,8 @@
 ---
 title: "Step 4: Feature-wise catch22 ROI Analysis"
-output: github_document
+output: 
+  github_document
+always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
@@ -10,10 +12,114 @@ knitr::opts_chunk$set(echo = F, warning=F, message=F)
 ### Source functions
 ```{r}
 source("../helper_functions/SVM_functions.R")
+source("../helper_functions/t_test_functions.R")
+source("../helper_functions/visualization_functions.R")
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 set.seed(127)
 library(patchwork)
+library(kableExtra)
 ```
+
+
+## Feature-wise t-tests
+
+### Full panel histogram visualization
+Let's start with a very simple t-test for catch22 feature values in control vs schizophrenia subjects by brain region:
+```{r, fig.width=16, fig.height=10}
+if (!file.exists(paste0(rdata_path, "Feature_wise_T_Test_res.Rds"))) {
+  t_test_res <- t_test_by_region(rdata_path=rdata_path) %>%
+    dplyr::rename("feature"="names") 
+  saveRDS(t_test_res, file=paste0(rdata_path, "Feature_wise_T_Test_res.Rds"))
+} else {
+  t_test_res <- readRDS(paste0(rdata_path, "Feature_wise_T_Test_res.Rds"))
+}
+
+# Just use AROMA+2P for example
+noise_proc = "AROMA+2P"
+noise_label <- gsub("\\+", "_", noise_proc)
+t_stat_histograms(t_test_res=t_test_res,
+                  noise_proc = noise_proc)
+```
+```{r, echo=F, eval=F}
+ggsave("plots/Feature_Wise_In_Sample_T_Test_Res_AROMA_2P.png", width=16, height=10, units="in", dpi=300)
+```
+### Top positive and negative feature violin plots
+```{r}
+# Load AROMA+2P feature matrix
+feature_matrix <- readRDS(paste0(rdata_path, "UCLA_AROMA_2P_catch22.Rds"))
+feature_matrix_znorm <- normalise_feature_frame(feature_matrix, method="z-score")
+
+# Find the top five brain regions for the largest positive and negative T-stat features
+# Positive = SB_MotifThree_quantile_hh
+# Negative = CO_Embed2_Dist_tau_d_expfit_meandiff
+regions_for_features <- t_test_res %>% 
+  filter(Norm_Method == "z-score",
+         Noise_Proc == "AROMA+2P", 
+         feature %in% c("SB_MotifThree_quantile_hh", 
+                        "CO_Embed2_Dist_tau_d_expfit_meandiff")) %>%
+  dplyr::select(Brain_Region, feature, statistic) %>%
+  distinct() %>%
+  dplyr::rename("names"="feature") %>%
+  group_by(names) %>%
+  mutate(abs_stat = abs(statistic)) %>%
+  arrange(desc(abs_stat)) %>%
+  slice_max(order_by = abs_stat, n = 5) %>%
+  dplyr::select(names, Brain_Region, statistic)
+
+regions_for_features %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
+```
+
+
+```{r}
+# First feature
+feature1 <- "SB_MotifThree_quantile_hh"
+p1 <- feature_matrix_znorm %>%
+  filter(names == feature1) %>%
+  semi_join(., regions_for_features) %>%
+  mutate(group = factor(group, levels = c("Schz", "Control"))) %>%
+  mutate(Brain_Region = gsub("ctx-lh-|Left-", "Left\n", Brain_Region)) %>%
+  mutate(Brain_Region = gsub("ctx-rh-|Right-", "Right\n", Brain_Region)) %>%
+  ggplot(data=., mapping = aes(x = group, y = values)) +
+  geom_violin(aes(fill = group)) +
+  geom_boxplot(width=0.1, fill=NA) +
+  ggtitle(feature1) +
+  ylab("Z-score value") +
+  facet_grid(Brain_Region ~ ., scale="free", switch="both") +
+  theme(legend.position="bottom",
+        plot.title = element_text(hjust=0.5, size=9),
+        strip.text.y.left = element_text(angle=0),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank())
+
+# Second feature
+feature2 <- "CO_Embed2_Dist_tau_d_expfit_meandiff"
+p2 <- feature_matrix_znorm %>%
+  filter(names == feature2) %>%
+  semi_join(., regions_for_features) %>%
+  mutate(group = factor(group, levels = c("Schz", "Control"))) %>%
+  mutate(Brain_Region = gsub("ctx-lh-|Left-", "Left\n", Brain_Region)) %>%
+  mutate(Brain_Region = gsub("ctx-rh-|Right-", "Right\n", Brain_Region)) %>%
+  ggplot(data=., mapping = aes(x = group, y = values)) +
+  geom_violin(aes(fill = group)) +
+  geom_boxplot(width=0.1, fill=NA) +
+  ggtitle(feature2) +
+  facet_grid(Brain_Region ~ ., scale="free", switch="both") +
+  theme(legend.position="bottom",
+        plot.title = element_text(hjust=0.5, size=9),
+        strip.text.y.left = element_text(angle=0),
+        axis.text.x = element_blank(),
+        axis.title = element_blank())
+
+# Combine the plots
+p1 + p2 + 
+  plot_layout(guides = "collect") & 
+  theme(legend.position = 'bottom')
+ggsave("plots/Feature_Wise_In_Sample_T_Test_Res_AROMA_2P_Top_ROIs.png",
+       width=9, height=6, units="in", dpi=300)
+```
+
 
 ## In-sample SVM classification
 
@@ -31,7 +137,7 @@ kernel = "linear"
   
 # Run in-sample SVM using given package + kernel
 # If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, ".Rds"))) {
+if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071.Rds"))) {
   feature_wise_SVM_in_sample <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
                                                                svm_kernel = kernel,
                                                                test_package = test_package,
@@ -40,7 +146,7 @@ if (!file.exists(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_",
                                                                noise_procs = noise_procs,
                                                                use_inv_prob_weighting = FALSE,
                                                                use_SMOTE = FALSE)
-  saveRDS(feature_wise_SVM_in_sample, file=paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, ".Rds"))
+  saveRDS(feature_wise_SVM_in_sample, file=paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071.Rds"))
 } 
 ```
 
@@ -49,7 +155,7 @@ if (!file.exists(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_",
 ```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-feature_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071.Rds"))
+feature_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample,
@@ -68,7 +174,7 @@ ggsave("plots/In_Sample_Feature_Wise_linear_SVM_Multivar_e1071.png",
 
 ### In-sample linear SVM with inverse probability weighting
 
-We can run linear SVM with the `kernlab` package to directly test sample reweighting with in-sample accuracy and balanced accuracy. 
+We can run linear SVM with the `e1071` package to directly test sample reweighting with in-sample accuracy and balanced accuracy. 
 
 ```{r}
 # Compare all three noise processing methods
@@ -78,25 +184,26 @@ noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 test_package = "e1071"
 kernel = "linear"
   
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, "_inv_prob.Rds"))) {
-    feature_wise_SVM_in_sample_inv_prob <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
-                                                               svm_kernel = kernel,
-                                                               test_package = test_package,
-                                                               svm_feature_var = "Brain_Region",
-                                                               grouping_var = "Feature",
-                                                               noise_procs = noise_procs,
-                                                               use_inv_prob_weighting = TRUE)
-    saveRDS(feature_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, "_inv_prob.Rds"))
-  } 
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071_inv_prob.Rds"))) {
+  feature_wise_SVM_in_sample_inv_prob <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
+                                                                        svm_kernel = kernel,
+                                                                        test_package = test_package,
+                                                                        svm_feature_var = "Brain_Region",
+                                                                        grouping_var = "Feature",
+                                                                        noise_procs = noise_procs,
+                                                                        use_inv_prob_weighting = TRUE,
+                                                                        use_SMOTE = FALSE)
+  saveRDS(feature_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071_inv_prob.Rds"))
+} 
 
 ```
 
 ```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-feature_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071_inv_prob.Rds"))
+feature_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071_inv_prob.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample_inv_prob,
@@ -130,27 +237,27 @@ noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # Use e1071 SVM with a linear kernel
 test_package = "e1071"
 kernel = "linear"
-  
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, "_SMOTE.Rds"))) {
-    feature_wise_SVM_in_sample_SMOTE <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
-                                                               svm_kernel = kernel,
-                                                               test_package = test_package,
-                                                               svm_feature_var = "Brain_Region",
-                                                               grouping_var = "Feature",
-                                                               noise_procs = noise_procs,
-                                                               use_inv_prob_weighting = FALSE,
-                                                               use_SMOTE = TRUE) 
-    saveRDS(feature_wise_SVM_in_sample_SMOTE, file=paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, "_SMOTE.Rds"))
-  } 
+
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071_SMOTE.Rds"))) {
+  feature_wise_SVM_in_sample_SMOTE <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
+                                                                     svm_kernel = kernel,
+                                                                     test_package = test_package,
+                                                                     svm_feature_var = "Brain_Region",
+                                                                     grouping_var = "Feature",
+                                                                     noise_procs = noise_procs,
+                                                                     use_inv_prob_weighting = FALSE,
+                                                                     use_SMOTE = TRUE) 
+  saveRDS(feature_wise_SVM_in_sample_SMOTE, file=paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071_SMOTE.Rds"))
+} 
 
 ```
 
 ```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-feature_wise_SVM_in_sample_SMOTE <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071_SMOTE.Rds"))
+feature_wise_SVM_in_sample_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071_SMOTE.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample_SMOTE,
@@ -189,7 +296,7 @@ kernel = "linear"
   
 # Run in-sample SVM using given package + kernel
 # If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, ".Rds"))) {
+if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071.Rds"))) {
   feature_wise_SVM_CV <- run_cv_svm_by_input_var(rdata_path = rdata_path,
                                                  test_package = test_package,
                                                  svm_kernel = kernel,
@@ -198,7 +305,7 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package,
                                                  use_inv_prob_weighting = FALSE,
                                                  use_SMOTE = FALSE,
                                                  noise_procs = noise_procs)
-  saveRDS(feature_wise_SVM_CV, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, ".Rds"))
+  saveRDS(feature_wise_SVM_CV, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071.Rds"))
 }
 
 ```
@@ -238,8 +345,8 @@ kernel = "linear"
 
 # Run in-sample SVM using given package + kernel
 # If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, "_inv_prob.Rds"))) {
-  feature_wise_SVM_in_sample_inv_prob <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))) {
+  feature_wise_SVM_CV_inv_prob <- run_cv_svm_by_input_var(rdata_path = rdata_path,
                                                                  test_package = test_package,
                                                                  svm_kernel = kernel,
                                                                  grouping_var = "Feature",
@@ -247,17 +354,17 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package,
                                                                  use_inv_prob_weighting = TRUE,
                                                                  use_SMOTE = FALSE,
                                                                  noise_procs = noise_procs)
-  saveRDS(feature_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, "_inv_prob.Rds"))
+  saveRDS(feature_wise_SVM_CV_inv_prob, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
 }
 ```
 
 ```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-feature_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
+feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample_inv_prob,
+plot_class_acc_w_props(class_res = feature_wise_SVM_CV_inv_prob,
                        group_var = "Feature",
                        cv = TRUE,
                        rdata_path = rdata_path,
@@ -286,7 +393,7 @@ kernel = "linear"
 
 # Run in-sample SVM using given package + kernel
 # If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, "_SMOTE.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds"))) {
   feature_wise_SVM_CV_SMOTE <- run_cv_svm_by_input_var(rdata_path = rdata_path,
                                                                  test_package = test_package,
                                                                  svm_kernel = kernel,
@@ -295,7 +402,7 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package,
                                                                  use_inv_prob_weighting = FALSE,
                                                                  use_SMOTE = TRUE,
                                                                  noise_procs = noise_procs)
-  saveRDS(feature_wise_SVM_CV_SMOTE, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, "_SMOTE.Rds"))
+  saveRDS(feature_wise_SVM_CV_SMOTE, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
 }
 ```
 
@@ -322,10 +429,13 @@ ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_e1071_SMOTE.png",
 Surprisingly, incorporating inverse probability weighting has minimal impact when it comes to the ten-fold cross-validated SVM. Of note, the in-sample and cross-validated SVM were both run with kernlab::ksvm using default parameters.
 
 
-
-## Null distribution
+## Model-free shuffle null distribution
 
 ### Generating null distributions from model-free shuffles
+
+This first model-free shuffles method is borrowed from Trent's implementation in theft. With this method, the input class labels (Schz or Control) are randomly shuffled N times, and for each iteration, the classification accuracy and balanced accuracy are calculated. This yields a null distribution of accuracies and balanced accuracies, circumventing the need for running any classification algorithms across iterations.
+
+Here, I've run 1,000,000 iterations of the model-free shuffle, generating 1,000,000 null values for Accuracy and Balanced Accuracy, respectively. Since this method is independent of brain region, the same null distribution can be used to compare with each brain region separately.
 
 ```{r}
 # Try three different noise processing methods
@@ -341,11 +451,13 @@ if (!file.exists(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds"))) {
 } else {
   model_free_shuffle_null_res <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds"))
 }
-
 ```
 
+### CV linear SVM
 ```{r, fig.width=7, fig.height=5}
-e1071_feature_wise_SVM_CV %>%
+feature_wise_SVM_CV <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071.Rds"))
+
+feature_wise_SVM_CV %>%
   dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
   mutate(Type = "main") %>%
   plyr::rbind.fill(., model_free_shuffle_null_res) %>%
@@ -372,68 +484,26 @@ e1071_feature_wise_SVM_CV %>%
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/Main_vs_Null_Acc_BAcc_10FCV_Feature_Wise_Linear_SVM.png",
-       width=7,height=5, units="in", dpi=300)
-```
-
-The model-free shuffles method is borrowed from Trent's implementation in theft. With this method, the input class labels (Schz or Control) are randomly shuffled N times, and for each iteration, the classification accuracy and balanced accuracy is calculated. This yields a null distribution of accuracies and balanced accuracies, circumventing the need for running any classification algorithms across iterations.
-
-Here, I've run 1,000,000 iterations of the model-free shuffle, generating 1,000,000 null values for Accuracy and Balanced Accuracy, respectively. Since this method is independent of brain region, the same null distribution can be used to compare with each brain region separately.
-
-I've plotted the distribution of null accuracies (coral) alongside the actual accuracies (teal) for the 82 ROIs on the left. 
-
-We can do the same for inverse probability:
-
-```{r, fig.width=7, fig.height=5}
-e1071_feature_wise_SVM_CV_inv_prob %>%
-  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
-  mutate(Type = "main") %>%
-  plyr::rbind.fill(., model_free_shuffle_null_res) %>%
-  pivot_longer(cols=c(accuracy, balanced_accuracy),
-               names_to = "Metric",
-               values_to = "Values") %>%
-  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
-  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
-                                                    "AROMA+2P+GMR",
-                                                    "AROMA+2P+DiCER"))) %>%
-  ggplot(data=., mapping=aes(x=Values)) +
-  geom_histogram(aes(fill = Type, y=0.5*..density..), 
-                 bins = 50,
-                 alpha=0.6, position="identity") +
-  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
-  xlab("Value from n=1,000,000 Model-Free Shuffles") +
-  ylab("Scaled Density") +
-  labs(fill = "Distribution") +
-  theme(strip.text.y.left = element_text(angle=0),
-        strip.placement = "outside",
-        legend.position = "bottom",
-        legend.direction = "horizontal") 
-```
-
-```{r, eval=F, echo=F}
-# Save plot
-ggsave("plots/Main_vs_Null_Acc_BAcc_10FCV_Feature_Wise_Linear_SVM_inv_prob.png",
-       width=7,height=5, units="in", dpi=300)
+ggsave("plots/Feature_Wise_CV_Null_vs_Real_Model_Free_Shuffle.png",
+       width=7, height=5, units="in", dpi=300)
 ```
 
 
-
-We can empirically derive p-values for both metrics to see if the classification accuracy/balanced accuracy is significantly greater than that in the null distribution.
-
-### Deriving p-values using model-free shuffle null distributions
+I've plotted the distribution of null accuracies (teal) alongside the actual accuracies (pink) for the 82 ROIs on the left. Let's zoom in on AROMA+2P and pick the five catch22 features with the highest cross-validated balanced accuracy:
 
 ```{r}
-if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_pvals.Rds"))) {
-  e1071_feature_wise_SVM_CV_pvals <- calc_empirical_nulls(class_res = e1071_feature_wise_SVM_CV,
-                                                                   null_data = model_free_shuffle_null_res,
-                                                                   grouping_var = "Feature")
-  saveRDS(e1071_feature_wise_SVM_CV_pvals, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_pvals.Rds"))
-  
+# Calculate p values from model-free shuffle null distribution
+feature_wise_SVM_CV <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071.Rds"))
+if (!file.exists(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_pvals.Rds"))) {
+  feature_wise_SVM_CV_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_CV,
+                                                   null_data = model_free_shuffle_null_res,
+                                                   grouping_var = "Feature")
+  saveRDS(feature_wise_SVM_CV_pvals, file=paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
 } else {
-  e1071_feature_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_pvals.Rds"))
+  feature_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
 }
 
-e1071_feature_wise_SVM_CV_plabs <- e1071_feature_wise_SVM_CV_pvals %>%
+feature_wise_SVM_CV_plabs <- feature_wise_SVM_CV_pvals %>%
   mutate(acc_p = scales::scientific(acc_p, digits = 3),
          bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
          acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
@@ -441,108 +511,106 @@ e1071_feature_wise_SVM_CV_plabs <- e1071_feature_wise_SVM_CV_pvals %>%
 ```
 
 
-Let's zoom in on AROMA+2P and pick the five brain regions with the highest cross-validated accuracy:
-```{r, fig.width=10, fig.height=8}
-top_features <- e1071_feature_wise_SVM_CV %>%
-  filter(Noise_Proc == "AROMA+2P") %>%
-  arrange(desc(accuracy)) %>%
-  top_n(5, accuracy) %>%
-  pull(grouping_var)
-
-e1071_feature_wise_SVM_CV_pvals %>%
-  filter(Noise_Proc == "AROMA+2P",
-         grouping_var %in% top_features) %>%
-  mutate(grouping_var = factor(grouping_var, levels = top_features)) %>%
-  ggplot(data=.) +
-  geom_histogram(data = model_free_shuffle_null_res %>% 
-                   dplyr::filter(Noise_Proc == "AROMA+2P"),
-                 aes(x=accuracy, y=0.5*..density..),
-                 fill = "gray70", bins=50) +
-  ggtitle("Main and Model-Free Shuffle Null Accuracy\nfor top AROMA+2P catch22 Features") +
-  geom_vline(aes(xintercept = accuracy), color = "red") +
-  facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
-  ylab("Scaled Density of Null Iterations") +
-  geom_text(data = e1071_feature_wise_SVM_CV_plabs %>%
-              filter(Noise_Proc == "AROMA+2P", grouping_var %in% top_features) %>%
-              mutate(grouping_var = factor(grouping_var, levels = top_features)),
-            aes(label = paste0("P = ", acc_p, "\nBH-FDR = ", acc_p_adj)), 
-            x = 0.67, y = 10.5) +
-  theme(plot.title = element_text(hjust=0.5))
-```
-
-```{r, echo=F, eval=F}
-ggsave("plots/Main_vs_Null_Acc_AROMA_2P_Top5_catch22_Features.png", width=10, 
-       height=6, units="in", dpi=300)
-```
-
-This panel panel shows the five brain regions with the highest raw accuracy from multi-feature 10-fold CV linear SVM. The red bar indicates the real accuracy while the gray bars depict the null distribution (derived from model-free shuffles as shown above). 
-
-Even after adjusting for multiple comparisons (82 ROIs x 3 Noise-processing methods) using Benjamini-Hochberg False Discovery Rate (BH-FDR), the accuracy values for these five regions are still significant (p < 1.00e-06, FDR < 1.00e-05).
-
-We can do the same for balanced accuracy:
 ```{r, fig.width=10, fig.height=5}
-top_features <- e1071_feature_wise_SVM_CV %>%
+features <- feature_wise_SVM_CV_plabs %>%
   filter(Noise_Proc == "AROMA+2P") %>%
   arrange(desc(balanced_accuracy)) %>%
   top_n(5, balanced_accuracy) %>%
   pull(grouping_var)
 
-e1071_feature_wise_SVM_CV_pvals %>%
+feature_wise_SVM_CV_plabs %>%
   filter(Noise_Proc == "AROMA+2P",
-         grouping_var %in% top_features) %>%
-  mutate(grouping_var = factor(grouping_var, levels = top_features)) %>%
+         grouping_var %in% features) %>%
+  mutate(grouping_var = factor(grouping_var, levels = features)) %>%
   ggplot(data=.) +
   geom_histogram(data = model_free_shuffle_null_res %>% 
                    dplyr::filter(Noise_Proc == "AROMA+2P"),
                  aes(x=balanced_accuracy, y=0.5*..density..),
                  fill = "gray70", bins=50) +
   ggtitle("Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P catch22 Features") +
-  geom_vline(aes(xintercept = accuracy), color = "red") +
+  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
   facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
   ylab("Scaled Density of Null Iterations") +
-  geom_text(data = e1071_feature_wise_SVM_CV_plabs %>%
-              filter(Noise_Proc == "AROMA+2P", grouping_var %in% top_features) %>%
-              mutate(grouping_var = factor(grouping_var, levels = top_features)),
+  xlab("Balanced Accuracy") +
+  geom_text(data = feature_wise_SVM_CV_plabs %>%
+              filter(Noise_Proc == "AROMA+2P", grouping_var %in% features) %>%
+              mutate(grouping_var = factor(grouping_var, levels = features)),
             aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
             x = 0.6, y = 8.5) +
   theme(plot.title = element_text(hjust=0.5))
 ```
 ```{r, echo=F, eval=F}
-ggsave("plots/Main_vs_Null_Bal_Acc_AROMA_2P_Top5_catch22_Features.png", width=10, 
-       height=6, units="in", dpi=300)
+ggsave("plots/Feature_Wise_Model_Free_Shuffle_Top5_Features_CV_SVM_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
 ```
 
-This panel panel shows the five brain regions with the highest balanced accuracy from multi-feature 10-fold CV linear SVM. The red bar indicates the real accuracy while the gray bars depict the null distribution (derived from model-free shuffles as shown above). 
-
-Even after adjusting for multiple comparisons (82 ROIs x 3 Noise-processing methods) using Benjamini-Hochberg False Discovery Rate (BH-FDR), the accuracy values for these five regions are still significant (p = 0, BH-FDR = 0).
-
 ```{r}
-e1071_feature_wise_SVM_CV_pvals %>%
+feature_wise_SVM_CV_pvals %>%
   mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
   group_by(Noise_Proc) %>%
   summarise(num_sig_acc = sum(acc_p < 0.05),
             num_sig_acc_fdr = sum(acc_p_adj < 0.05),
             num_sig_bacc = sum(bal_acc_p < 0.05),
-            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05))
+            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
 ```
 
-This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the upsampled model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.  
+This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
 
 
-### Deriving p-values using model-free shuffle null distributions -- inv prob
+
+### CV linear SVM -- inv prob
+```{r, fig.width=7, fig.height=5}
+feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
+
+feature_wise_SVM_CV_inv_prob %>%
+  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
+  mutate(Type = "main") %>%
+  plyr::rbind.fill(., model_free_shuffle_null_res) %>%
+  pivot_longer(cols=c(accuracy, balanced_accuracy),
+               names_to = "Metric",
+               values_to = "Values") %>%
+  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
+                                                    "AROMA+2P+GMR",
+                                                    "AROMA+2P+DiCER"))) %>%
+  ggplot(data=., mapping=aes(x=Values)) +
+  geom_histogram(aes(fill = Type, y=0.5*..density..), 
+                 bins = 50,
+                 alpha=0.6, position="identity") +
+  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
+  xlab("Value from n=1,000,000 Model-Free Shuffles") +
+  ylab("Scaled Density") +
+  labs(fill = "Distribution") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal") 
+```
+
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Feature_Wise_CV_Null_vs_Real_Model_Free_Shuffle_inv_prob.png",
+       width=7, height=5, units="in", dpi=300)
+```
+
+
+I've plotted the distribution of null accuracies (teal) alongside the actual accuracies (pink) for the 22 catch22 features on the left. Let's zoom in on AROMA+2P and pick the five features with the highest cross-validated balanced accuracy:
 
 ```{r}
-if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob_pvals.Rds"))) {
-  e1071_feature_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = e1071_feature_wise_SVM_CV_inv_prob,
-                                                                   null_data = model_free_shuffle_null_res,
-                                                                   grouping_var = "Feature")
-  saveRDS(e1071_feature_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob_pvals.Rds"))
-  
+# Calculate p values from model-free shuffle null distribution
+feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
+if (!file.exists(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))) {
+  feature_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_CV_inv_prob,
+                                                   null_data = model_free_shuffle_null_res,
+                                                   grouping_var = "Feature")
+  saveRDS(feature_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
 } else {
-  e1071_feature_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob_pvals.Rds"))
+  feature_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
 }
 
-e1071_feature_wise_SVM_CV_inv_prob_plabs <- e1071_feature_wise_SVM_CV_inv_prob_pvals %>%
+feature_wise_SVM_CV_inv_prob_plabs <- feature_wise_SVM_CV_inv_prob_pvals %>%
   mutate(acc_p = scales::scientific(acc_p, digits = 3),
          bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
          acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
@@ -550,92 +618,158 @@ e1071_feature_wise_SVM_CV_inv_prob_plabs <- e1071_feature_wise_SVM_CV_inv_prob_p
 ```
 
 
-Let's zoom in on AROMA+2P and pick the five brain regions with the highest cross-validated accuracy:
 ```{r, fig.width=10, fig.height=5}
-top_features <- e1071_feature_wise_SVM_CV_inv_prob %>%
-  filter(Noise_Proc == "AROMA+2P") %>%
-  arrange(desc(accuracy)) %>%
-  top_n(5, accuracy) %>%
-  pull(grouping_var)
-
-e1071_feature_wise_SVM_CV_inv_prob_pvals %>%
-  filter(Noise_Proc == "AROMA+2P",
-         grouping_var %in% top_features) %>%
-  mutate(grouping_var = factor(grouping_var, levels = top_features)) %>%
-  ggplot(data=.) +
-  geom_histogram(data = model_free_shuffle_null_res %>% 
-                   dplyr::filter(Noise_Proc == "AROMA+2P"),
-                 aes(x=accuracy, y=0.5*..density..),
-                 fill = "gray70", bins=50) +
-  ggtitle("Main and Model-Free Shuffle Null Accuracy\nfor top AROMA+2P catch22 Features") +
-  geom_vline(aes(xintercept = accuracy), color = "red") +
-  facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
-  ylab("Scaled Density of Null Iterations") +
-  geom_text(data = e1071_feature_wise_SVM_CV_inv_prob_plabs %>%
-              filter(Noise_Proc == "AROMA+2P", grouping_var %in% top_features) %>%
-              mutate(grouping_var = factor(grouping_var, levels = top_features)),
-            aes(label = paste0("P = ", acc_p, "\nBH-FDR = ", acc_p_adj)), 
-            x = 0.67, y = 10.5) +
-  theme(plot.title = element_text(hjust=0.5))
-```
-
-```{r, echo=F, eval=F}
-ggsave("plots/Main_vs_Null_Acc_AROMA_2P_Top5_catch22_Features_inv_prob.png", width=10, 
-       height=6, units="in", dpi=300)
-```
-
-This panel panel shows the five brain regions with the highest raw accuracy from multi-feature 10-fold CV linear SVM. The red bar indicates the real accuracy while the gray bars depict the null distribution (derived from model-free shuffles as shown above). 
-
-Even after adjusting for multiple comparisons (82 ROIs x 3 Noise-processing methods) using Benjamini-Hochberg False Discovery Rate (BH-FDR), the accuracy values for these five regions are still significant (p < 1.00e-06, FDR < 1.00e-05).
-
-We can do the same for balanced accuracy:
-```{r, fig.width=10, fig.height=5}
-top_features <- e1071_feature_wise_SVM_CV_inv_prob %>%
+features <- feature_wise_SVM_CV_inv_prob_plabs %>%
   filter(Noise_Proc == "AROMA+2P") %>%
   arrange(desc(balanced_accuracy)) %>%
   top_n(5, balanced_accuracy) %>%
   pull(grouping_var)
 
-e1071_feature_wise_SVM_CV_inv_prob_pvals %>%
+feature_wise_SVM_CV_inv_prob_plabs %>%
   filter(Noise_Proc == "AROMA+2P",
-         grouping_var %in% top_features) %>%
-  mutate(grouping_var = factor(grouping_var, levels = top_features)) %>%
+         grouping_var %in% features) %>%
+  mutate(grouping_var = factor(grouping_var, levels = features)) %>%
   ggplot(data=.) +
   geom_histogram(data = model_free_shuffle_null_res %>% 
                    dplyr::filter(Noise_Proc == "AROMA+2P"),
                  aes(x=balanced_accuracy, y=0.5*..density..),
                  fill = "gray70", bins=50) +
-  ggtitle("Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P catch22 Features") +
-  geom_vline(aes(xintercept = accuracy), color = "red") +
+  ggtitle("Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P catch22 Features, Inverse Probability") +
+  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
   facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
   ylab("Scaled Density of Null Iterations") +
-  geom_text(data = e1071_feature_wise_SVM_CV_inv_prob_plabs %>%
-              filter(Noise_Proc == "AROMA+2P", grouping_var %in% top_features) %>%
-              mutate(grouping_var = factor(grouping_var, levels = top_features)),
+  xlab("Balanced Accuracy") +
+  geom_text(data = feature_wise_SVM_CV_inv_prob_plabs %>%
+              filter(Noise_Proc == "AROMA+2P", grouping_var %in% features) %>%
+              mutate(grouping_var = factor(grouping_var, levels = features)),
             aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
-            x = 0.6, y = 9) +
+            x = 0.6, y = 8.5) +
   theme(plot.title = element_text(hjust=0.5))
 ```
 ```{r, echo=F, eval=F}
-ggsave("plots/Main_vs_Null_Bal_Acc_AROMA_2P_Top5_catch22_Features_inv_prob.png", width=10, 
-       height=6, units="in", dpi=300)
+ggsave("plots/Feature_Wise_Model_Free_Shuffle_Top5_Features_CV_SVM_Balanced_Accuracy_Inv_Prob.png", width=10, 
+       height=5, units="in", dpi=300)
 ```
 
-This panel panel shows the five brain regions with the highest balanced accuracy from multi-feature 10-fold CV linear SVM. The red bar indicates the real accuracy while the gray bars depict the null distribution (derived from model-free shuffles as shown above). 
-
-Even after adjusting for multiple comparisons (82 ROIs x 3 Noise-processing methods) using Benjamini-Hochberg False Discovery Rate (BH-FDR), the accuracy values for these five regions are still significant (p = 0, BH-FDR = 0).
-
 ```{r}
-e1071_feature_wise_SVM_CV_inv_prob_pvals %>%
+feature_wise_SVM_CV_inv_prob_pvals %>%
   mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
   group_by(Noise_Proc) %>%
   summarise(num_sig_acc = sum(acc_p < 0.05),
             num_sig_acc_fdr = sum(acc_p_adj < 0.05),
             num_sig_bacc = sum(bal_acc_p < 0.05),
-            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05))
+            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
 ```
 
-This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the upsampled model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.  
+This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
+
+
+### CV linear SVM -- SMOTE
+```{r, fig.width=7, fig.height=5}
+feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
+
+feature_wise_SVM_CV_SMOTE %>%
+  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
+  mutate(Type = "main") %>%
+  plyr::rbind.fill(., model_free_shuffle_null_res) %>%
+  pivot_longer(cols=c(accuracy, balanced_accuracy),
+               names_to = "Metric",
+               values_to = "Values") %>%
+  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
+                                                    "AROMA+2P+GMR",
+                                                    "AROMA+2P+DiCER"))) %>%
+  ggplot(data=., mapping=aes(x=Values)) +
+  geom_histogram(aes(fill = Type, y=0.5*..density..), 
+                 bins = 50,
+                 alpha=0.6, position="identity") +
+  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
+  xlab("Value from n=1,000,000 Model-Free Shuffles") +
+  ylab("Scaled Density") +
+  labs(fill = "Distribution") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal") 
+```
+
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Feature_Wise_CV_Null_vs_Real_Model_Free_Shuffle_SMOTE.png",
+       width=7, height=5, units="in", dpi=300)
+```
+
+
+I've plotted the distribution of null accuracies (teal) alongside the actual accuracies (pink) for the 22 catch22 Features on the left. Let's zoom in on AROMA+2P and pick the five brain regions with the highest cross-validated balanced accuracy:
+
+```{r}
+# Calculate p values from model-free shuffle null distribution
+feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
+if (!file.exists(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))) {
+  feature_wise_SVM_CV_SMOTE_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_CV_SMOTE,
+                                                   null_data = model_free_shuffle_null_res,
+                                                   grouping_var = "Brain_Region")
+  saveRDS(feature_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))
+} else {
+  feature_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))
+}
+
+feature_wise_SVM_CV_SMOTE_plabs <- feature_wise_SVM_CV_SMOTE_pvals %>%
+  mutate(acc_p = scales::scientific(acc_p, digits = 3),
+         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
+         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
+         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+```
+
+
+```{r, fig.width=10, fig.height=5}
+features <- feature_wise_SVM_CV_SMOTE_plabs %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  arrange(desc(balanced_accuracy)) %>%
+  top_n(5, balanced_accuracy) %>%
+  pull(grouping_var)
+
+feature_wise_SVM_CV_SMOTE_plabs %>%
+  filter(Noise_Proc == "AROMA+2P",
+         grouping_var %in% features) %>%
+  mutate(grouping_var = factor(grouping_var, levels = features)) %>%
+  ggplot(data=.) +
+  geom_histogram(data = model_free_shuffle_null_res %>% 
+                   dplyr::filter(Noise_Proc == "AROMA+2P"),
+                 aes(x=balanced_accuracy, y=0.5*..density..),
+                 fill = "gray70", bins=50) +
+  ggtitle("Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P Features, SMOTE") +
+  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
+  facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
+  ylab("Scaled Density of Null Iterations") +
+  xlab("Balanced Accuracy") +
+  geom_text(data = feature_wise_SVM_CV_SMOTE_plabs %>%
+              filter(Noise_Proc == "AROMA+2P", grouping_var %in% features) %>%
+              mutate(grouping_var = factor(grouping_var, levels = features)),
+            aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
+            x = 0.6, y = 8.5) +
+  theme(plot.title = element_text(hjust=0.5))
+```
+```{r, echo=F, eval=F}
+ggsave("plots/Feature_Wise_Model_Free_Shuffle_Top5_Features_CV_SVM_Balanced_Accuracy_SMOTE.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+feature_wise_SVM_CV_SMOTE_pvals %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  group_by(Noise_Proc) %>%
+  summarise(num_sig_acc = sum(acc_p < 0.05),
+            num_sig_acc_fdr = sum(acc_p_adj < 0.05),
+            num_sig_bacc = sum(bal_acc_p < 0.05),
+            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
+```
+
+This table summarises the number of catch22 features for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
 
 ## Null model for overall accuracy
 
@@ -661,7 +795,8 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds")))
   random_22_acc <- readRDS(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
 }
 
-real_22_acc <- e1071_feature_wise_SVM_CV %>%
+feature_wise_SVM_CV <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071.Rds"))
+real_22_acc <- feature_wise_SVM_CV %>%
   filter(Noise_Proc=="AROMA+2P") %>%
   summarise(mean_accuracy = mean(accuracy, na.rm=T),
             mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
@@ -713,7 +848,8 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds")))
   random_22_acc <- readRDS(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
 }
 
-real_22_acc <- e1071_feature_wise_SVM_CV_inv_prob %>%
+feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
+real_22_acc <- feature_wise_SVM_CV_inv_prob %>%
   filter(Noise_Proc=="AROMA+2P") %>%
   summarise(mean_accuracy = mean(accuracy, na.rm=T),
             mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
@@ -765,6 +901,7 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds")))
   random_22_acc <- readRDS(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
 }
 
+feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
 real_22_acc <- feature_wise_SVM_CV_SMOTE %>%
   filter(Noise_Proc=="AROMA+2P") %>%
   summarise(mean_accuracy = mean(accuracy, na.rm=T),

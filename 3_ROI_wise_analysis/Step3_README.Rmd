@@ -43,7 +43,8 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_", test_packa
                                                               grouping_var = "Brain_Region",
                                                               svm_feature_var = "Feature",
                                                               noise_procs = noise_procs,
-                                                              use_inv_prob_weighting = FALSE)
+                                                              use_inv_prob_weighting = FALSE,
+                                                               use_SMOTE = FALSE)
   saveRDS(region_wise_SVM_in_sample, file=paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_", test_package, ".Rds"))
 } else {
   region_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_", test_package, ".Rds"))

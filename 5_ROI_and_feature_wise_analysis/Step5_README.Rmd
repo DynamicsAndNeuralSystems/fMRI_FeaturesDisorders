@@ -30,7 +30,7 @@ kernel = "linear"
   
 # Run in-sample SVM using given package + kernel
 # If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, ".Rds"))) {
+if (!file.exists(paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071.Rds"))) {
   combo_wise_SVM_in_sample <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
                                                              svm_kernel = kernel,
                                                              test_package = test_package,
@@ -39,14 +39,14 @@ if (!file.exists(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", t
                                                              grouping_var = "Combo",
                                                              use_inv_prob_weighting = FALSE,
                                                              use_SMOTE = FALSE)
-  saveRDS(combo_wise_SVM_in_sample, file=paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, ".Rds"))
+  saveRDS(combo_wise_SVM_in_sample, file=paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071.Rds"))
 } 
 ```
 
 ```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-combo_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_e1071.Rds"))
+combo_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 plot_class_acc_w_props(class_res = combo_wise_SVM_in_sample,
@@ -57,7 +57,7 @@ plot_class_acc_w_props(class_res = combo_wise_SVM_in_sample,
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/In_Sample_Combo_Wise_linear_SVM_Multivar_e1071.png",
+ggsave("plots/Combo_Wise_In_Sample_linear_SVM_Multivar_e1071.png",
        width=7, height=5, units="in", dpi=300)
 ```
 
@@ -75,7 +75,7 @@ kernel = "linear"
 
 # Run in-sample SVM using given package + kernel
 # If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, "_inv_prob.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071_inv_prob.Rds"))) {
   combo_wise_SVM_in_sample_inv_prob <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
                                                                       svm_kernel = kernel,
                                                                       test_package = test_package,
@@ -84,14 +84,14 @@ if (!file.exists(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", t
                                                                       grouping_var = "Combo",
                                                                       use_inv_prob_weighting = TRUE,
                                                                       use_SMOTE = FALSE) 
-  saveRDS(combo_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, "_inv_prob.Rds"))
+  saveRDS(combo_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071_inv_prob.Rds"))
 } 
 ```
 
 ```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-combo_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_e1071_inv_prob.Rds"))
+combo_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071_inv_prob.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 plot_class_acc_w_props(class_res = combo_wise_SVM_in_sample_inv_prob,
@@ -102,7 +102,7 @@ plot_class_acc_w_props(class_res = combo_wise_SVM_in_sample_inv_prob,
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/In_Sample_combo_wise_linear_SVM_Multivar_e1071_inv_prob.png",
+ggsave("plots/Combo_Wise_In_Sample_linear_SVM_Multivar_e1071_inv_prob.png",
        width=7, height=5, units="in", dpi=300)
 ```
 
