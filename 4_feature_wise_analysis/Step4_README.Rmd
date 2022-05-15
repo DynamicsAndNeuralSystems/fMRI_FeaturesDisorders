@@ -4,12 +4,12 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=F, message=F)
+knitr::opts_chunk$set(echo = F, warning=F, message=F)
 ```
 
 ### Source functions
 ```{r}
-source("../helper_functions/in_sample_SVM_code.R")
+source("../helper_functions/SVM_functions.R")
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 set.seed(127)
 library(patchwork)
@@ -25,44 +25,34 @@ We will start with a simple linear SVM classifier using all 22 features.
 # Compare all three noise processing methods
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
-
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
   
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, ".Rds"))) {
-    feature_wise_SVM_in_sample <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, ".Rds"))) {
+  feature_wise_SVM_in_sample <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
                                                                svm_kernel = kernel,
                                                                test_package = test_package,
                                                                svm_feature_var = "Brain_Region",
                                                                grouping_var = "Feature",
                                                                noise_procs = noise_procs,
-                                                               use_inv_prob_weighting = FALSE) %>%
-      dplyr::rename("accuracy" = "Accuracy",
-                    "balanced_accuracy" = "Balanced_Accuracy")
-    saveRDS(feature_wise_SVM_in_sample, file=paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, ".Rds"))
-  } 
-}
+                                                               use_inv_prob_weighting = FALSE,
+                                                               use_SMOTE = FALSE)
+  saveRDS(feature_wise_SVM_in_sample, file=paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, ".Rds"))
+} 
 ```
 
 
-Let's compare e1071 with kernlab. 
 
-e1071:
-
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-e1071_feature_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071.Rds"))
+feature_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = e1071_feature_wise_SVM_in_sample,
+plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample,
                        group_var = "Feature",
                        cv = FALSE,
                        rdata_path = rdata_path,
@@ -72,28 +62,7 @@ plot_class_acc_w_props(class_res = e1071_feature_wise_SVM_in_sample,
 ```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/In_Sample_Feature_Wise_linear_SVM_Multivar_e1071.png",
-       width=7, height=6, units="in", dpi=300)
-```
-
-kernlab:
-
-```{r, fig.width=7, fig.height=6}
-# Plot accuracy + balanced accuracy in histograms
-# Control subject proportion is highlighted for accuracy
-kernlab_feature_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_kernlab.Rds"))
-
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = kernlab_feature_wise_SVM_in_sample,
-                       group_var = "Feature",
-                       cv = FALSE,
-                       rdata_path = rdata_path,
-                       noise_procs = noise_procs)
-```
-
-```{r, eval=F, echo=F}
-# Save plot
-ggsave("plots/In_Sample_Feature_Wise_linear_SVM_Multivar_kernlab.png",
-       width=7, height=6, units="in", dpi=300)
+       width=7,height=5, units="in", dpi=300)
 ```
 
 
@@ -105,14 +74,9 @@ We can run linear SVM with the `kernlab` package to directly test sample reweigh
 # Compare all three noise processing methods
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
-
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
   
   # Run in-sample SVM using given package + kernel
   # If the RDS object doesn't already exist, otherwise load it in
@@ -123,25 +87,19 @@ for (i in 1:nrow(svm_df)) {
                                                                svm_feature_var = "Brain_Region",
                                                                grouping_var = "Feature",
                                                                noise_procs = noise_procs,
-                                                               use_inv_prob_weighting = TRUE) %>%
-      dplyr::rename("accuracy" = "Accuracy",
-                    "balanced_accuracy" = "Balanced_Accuracy")
+                                                               use_inv_prob_weighting = TRUE)
     saveRDS(feature_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, "_inv_prob.Rds"))
   } 
-}
+
 ```
 
-Let's compare e1071 with kernlab. 
-
-e1071:
-
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-e1071_feature_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071_inv_prob.Rds"))
+feature_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071_inv_prob.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = e1071_feature_wise_SVM_in_sample_inv_prob,
+plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample_inv_prob,
                        group_var = "Feature",
                        cv = FALSE,
                        rdata_path = rdata_path,
@@ -151,18 +109,51 @@ plot_class_acc_w_props(class_res = e1071_feature_wise_SVM_in_sample_inv_prob,
 ```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/In_Sample_Feature_Wise_linear_SVM_Multivar_e1071_inv_prob.png",
-       width=7, height=6, units="in", dpi=300)
+       width=7,height=5, units="in", dpi=300)
 ```
 
-kernlab:
+By assigning each subject a weight equivalent to the inverse proportion of that subject's diagnosis, the linear SVM places a higher cost on incorrectly classifying schizophrenia subjects as controls. 
 
-```{r, fig.width=7, fig.height=6}
+This shifts the raw accuracy down to a mean of around 0.68 across the three noise-processing methods, but the balanced accuracy increases to have an average of around 0.68 also -- compared with almost exclusively values of 0.35 previously.
+
+This indicates that inverse probability reweighting mitigates the class imbalance issue and can be carried forward into 10-fold cross-validation linear SVM.
+
+
+### In-sample linear SVM with SMOTE
+
+We can run linear SVM with the `e1071` package to directly test sample reweighting with in-sample accuracy and balanced accuracy. 
+
+```{r}
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
+  
+  # Run in-sample SVM using given package + kernel
+  # If the RDS object doesn't already exist, otherwise load it in
+  if (!file.exists(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, "_SMOTE.Rds"))) {
+    feature_wise_SVM_in_sample_SMOTE <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
+                                                               svm_kernel = kernel,
+                                                               test_package = test_package,
+                                                               svm_feature_var = "Brain_Region",
+                                                               grouping_var = "Feature",
+                                                               noise_procs = noise_procs,
+                                                               use_inv_prob_weighting = FALSE,
+                                                               use_SMOTE = TRUE) 
+    saveRDS(feature_wise_SVM_in_sample_SMOTE, file=paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_", test_package, "_SMOTE.Rds"))
+  } 
+
+```
+
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-kernlab_feature_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_kernlab_inv_prob.Rds"))
+feature_wise_SVM_in_sample_SMOTE <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071_SMOTE.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = kernlab_feature_wise_SVM_in_sample_inv_prob,
+plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample_SMOTE,
                        group_var = "Feature",
                        cv = FALSE,
                        rdata_path = rdata_path,
@@ -171,16 +162,16 @@ plot_class_acc_w_props(class_res = kernlab_feature_wise_SVM_in_sample_inv_prob,
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/In_Sample_Feature_Wise_linear_SVM_Multivar_kernlab_inv_prob.png",
-       width=7, height=6, units="in", dpi=300)
+ggsave("plots/In_Sample_Feature_Wise_linear_SVM_Multivar_e1071_SMOTE.png",
+       width=7,height=5, units="in", dpi=300)
 ```
-
 
 By assigning each subject a weight equivalent to the inverse proportion of that subject's diagnosis, the linear SVM places a higher cost on incorrectly classifying schizophrenia subjects as controls. 
 
 This shifts the raw accuracy down to a mean of around 0.68 across the three noise-processing methods, but the balanced accuracy increases to have an average of around 0.68 also -- compared with almost exclusively values of 0.35 previously.
 
 This indicates that inverse probability reweighting mitigates the class imbalance issue and can be carried forward into 10-fold cross-validation linear SVM.
+
 
 ## Cross-validated SVM classification
 
@@ -192,43 +183,34 @@ We can implement 10-fold cross-validation (CV) with the `caret` package.
 # Noise processing methods
 noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
-
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
   
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_", test_package, ".Rds"))) {
-    feature_wise_SVM_CV <- run_cv_svm_by_input_var(rdata_path = rdata_path,
-                                                          test_package = test_package,
-                                                          svm_kernel = kernel,
-                                                          grouping_var = "Feature",
-                                                          svm_feature_var = "Brain_Region",
-                                                          use_inv_prob_weighting = FALSE,
-                                                          noise_procs = noise_procs) %>%
-      dplyr::rename("accuracy" = "Accuracy",
-                    "balanced_accuracy" = "Balanced_Accuracy")
-    saveRDS(feature_wise_SVM_CV, file=paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_", test_package, ".Rds"))
-  }
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, ".Rds"))) {
+  feature_wise_SVM_CV <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                 test_package = test_package,
+                                                 svm_kernel = kernel,
+                                                 grouping_var = "Feature",
+                                                 svm_feature_var = "Brain_Region",
+                                                 use_inv_prob_weighting = FALSE,
+                                                 use_SMOTE = FALSE,
+                                                 noise_procs = noise_procs)
+  saveRDS(feature_wise_SVM_CV, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, ".Rds"))
 }
+
 ```
 
-Let's compare e1071 with kernlab. 
 
-e1071:
-
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-e1071_feature_wise_SVM_CV <- readRDS(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_e1071.Rds"))
+feature_wise_SVM_CV <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = e1071_feature_wise_SVM_CV,
+plot_class_acc_w_props(class_res = feature_wise_SVM_CV,
                        cv = TRUE,
                        group_var = "Feature",
                        rdata_path = rdata_path,
@@ -238,28 +220,7 @@ plot_class_acc_w_props(class_res = e1071_feature_wise_SVM_CV,
 ```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_e1071.png",
-       width=7, height=6, units="in", dpi=300)
-```
-
-kernlab:
-
-```{r, fig.width=7, fig.height=6}
-# Plot accuracy + balanced accuracy in histograms
-# Control subject proportion is highlighted for accuracy
-kernlab_feature_wise_SVM_CV <- readRDS(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_kernlab.Rds"))
-
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = kernlab_feature_wise_SVM_CV,
-                       group_var = "Feature",
-                       cv = TRUE,
-                       rdata_path = rdata_path,
-                       noise_procs = noise_procs)
-```
-
-```{r, eval=F, echo=F}
-# Save plot
-ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_kernlab.png",
-       width=7, height=6, units="in", dpi=300)
+       width=7,height=5, units="in", dpi=300)
 ```
 
 
@@ -270,43 +231,33 @@ As with in-sample SVM, the unweighted input samples are virtually all classified
 ```{r}
 # Noise processing methods
 noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
 
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
-  
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_", test_package, "_inv_prob.Rds"))) {
-    feature_wise_SVM_in_sample_inv_prob <- run_cv_svm_by_input_var(rdata_path = rdata_path,
-                                                          test_package = test_package,
-                                                          svm_kernel = kernel,
-                                                          grouping_var = "Feature",
-                                                          svm_feature_var = "Brain_Region",
-                                                          use_inv_prob_weighting = TRUE,
-                                                          noise_procs = noise_procs) %>%
-      dplyr::rename("accuracy" = "Accuracy",
-                    "balanced_accuracy" = "Balanced_Accuracy")
-    saveRDS(feature_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_", test_package, "_inv_prob.Rds"))
-  }
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
+
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, "_inv_prob.Rds"))) {
+  feature_wise_SVM_in_sample_inv_prob <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                                 test_package = test_package,
+                                                                 svm_kernel = kernel,
+                                                                 grouping_var = "Feature",
+                                                                 svm_feature_var = "Brain_Region",
+                                                                 use_inv_prob_weighting = TRUE,
+                                                                 use_SMOTE = FALSE,
+                                                                 noise_procs = noise_procs)
+  saveRDS(feature_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, "_inv_prob.Rds"))
 }
 ```
 
-Let's compare e1071 with kernlab. 
-
-e1071:
-
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-e1071_feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_e1071_inv_prob.Rds"))
+feature_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = e1071_feature_wise_SVM_CV_inv_prob,
+plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample_inv_prob,
                        group_var = "Feature",
                        cv = TRUE,
                        rdata_path = rdata_path,
@@ -316,18 +267,45 @@ plot_class_acc_w_props(class_res = e1071_feature_wise_SVM_CV_inv_prob,
 ```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_e1071_inv_prob.png",
-       width=7, height=6, units="in", dpi=300)
+       width=7,height=5, units="in", dpi=300)
 ```
 
-kernlab:
 
-```{r, fig.width=7, fig.height=6}
+Surprisingly, incorporating inverse probability weighting has minimal impact when it comes to the ten-fold cross-validated SVM. Of note, the in-sample and cross-validated SVM were both run with kernlab::ksvm using default parameters.
+
+
+### 10-fold cross-validated linear SVM with SMOTE
+
+```{r}
+# Noise processing methods
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
+
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, "_SMOTE.Rds"))) {
+  feature_wise_SVM_CV_SMOTE <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                                 test_package = test_package,
+                                                                 svm_kernel = kernel,
+                                                                 grouping_var = "Feature",
+                                                                 svm_feature_var = "Brain_Region",
+                                                                 use_inv_prob_weighting = FALSE,
+                                                                 use_SMOTE = TRUE,
+                                                                 noise_procs = noise_procs)
+  saveRDS(feature_wise_SVM_CV_SMOTE, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_", test_package, "_SMOTE.Rds"))
+}
+```
+
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-kernlab_feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_kernlab_inv_prob.Rds"))
+feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = kernlab_feature_wise_SVM_CV_inv_prob,
+plot_class_acc_w_props(class_res = feature_wise_SVM_CV_SMOTE,
                        group_var = "Feature",
                        cv = TRUE,
                        rdata_path = rdata_path,
@@ -336,11 +314,14 @@ plot_class_acc_w_props(class_res = kernlab_feature_wise_SVM_CV_inv_prob,
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_kernlab_inv_prob.png",
-       width=7, height=6, units="in", dpi=300)
+ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_e1071_SMOTE.png",
+       width=7,height=5, units="in", dpi=300)
 ```
 
+
 Surprisingly, incorporating inverse probability weighting has minimal impact when it comes to the ten-fold cross-validated SVM. Of note, the in-sample and cross-validated SVM were both run with kernlab::ksvm using default parameters.
+
+
 
 ## Null distribution
 
@@ -363,7 +344,7 @@ if (!file.exists(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds"))) {
 
 ```
 
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 e1071_feature_wise_SVM_CV %>%
   dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
   mutate(Type = "main") %>%
@@ -392,7 +373,7 @@ e1071_feature_wise_SVM_CV %>%
 ```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/Main_vs_Null_Acc_BAcc_10FCV_Feature_Wise_Linear_SVM.png",
-       width=7, height=6, units="in", dpi=300)
+       width=7,height=5, units="in", dpi=300)
 ```
 
 The model-free shuffles method is borrowed from Trent's implementation in theft. With this method, the input class labels (Schz or Control) are randomly shuffled N times, and for each iteration, the classification accuracy and balanced accuracy is calculated. This yields a null distribution of accuracies and balanced accuracies, circumventing the need for running any classification algorithms across iterations.
@@ -403,7 +384,7 @@ I've plotted the distribution of null accuracies (coral) alongside the actual ac
 
 We can do the same for inverse probability:
 
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 e1071_feature_wise_SVM_CV_inv_prob %>%
   dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
   mutate(Type = "main") %>%
@@ -432,7 +413,7 @@ e1071_feature_wise_SVM_CV_inv_prob %>%
 ```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/Main_vs_Null_Acc_BAcc_10FCV_Feature_Wise_Linear_SVM_inv_prob.png",
-       width=7, height=6, units="in", dpi=300)
+       width=7,height=5, units="in", dpi=300)
 ```
 
 
@@ -442,14 +423,14 @@ We can empirically derive p-values for both metrics to see if the classification
 ### Deriving p-values using model-free shuffle null distributions
 
 ```{r}
-if (!file.exists(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_pvals.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_pvals.Rds"))) {
   e1071_feature_wise_SVM_CV_pvals <- calc_empirical_nulls(class_res = e1071_feature_wise_SVM_CV,
                                                                    null_data = model_free_shuffle_null_res,
                                                                    grouping_var = "Feature")
-  saveRDS(e1071_feature_wise_SVM_CV_pvals, file=paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
+  saveRDS(e1071_feature_wise_SVM_CV_pvals, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_pvals.Rds"))
   
 } else {
-  e1071_feature_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
+  e1071_feature_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_pvals.Rds"))
 }
 
 e1071_feature_wise_SVM_CV_plabs <- e1071_feature_wise_SVM_CV_pvals %>%
@@ -499,7 +480,7 @@ This panel panel shows the five brain regions with the highest raw accuracy from
 Even after adjusting for multiple comparisons (82 ROIs x 3 Noise-processing methods) using Benjamini-Hochberg False Discovery Rate (BH-FDR), the accuracy values for these five regions are still significant (p < 1.00e-06, FDR < 1.00e-05).
 
 We can do the same for balanced accuracy:
-```{r, fig.width=10, fig.height=6}
+```{r, fig.width=10, fig.height=5}
 top_features <- e1071_feature_wise_SVM_CV %>%
   filter(Noise_Proc == "AROMA+2P") %>%
   arrange(desc(balanced_accuracy)) %>%
@@ -551,14 +532,14 @@ This table summarises the number of ROIs for which raw accuracy or balanced accu
 ### Deriving p-values using model-free shuffle null distributions -- inv prob
 
 ```{r}
-if (!file.exists(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob_pvals.Rds"))) {
   e1071_feature_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = e1071_feature_wise_SVM_CV_inv_prob,
                                                                    null_data = model_free_shuffle_null_res,
                                                                    grouping_var = "Feature")
-  saveRDS(e1071_feature_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+  saveRDS(e1071_feature_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob_pvals.Rds"))
   
 } else {
-  e1071_feature_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+  e1071_feature_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob_pvals.Rds"))
 }
 
 e1071_feature_wise_SVM_CV_inv_prob_plabs <- e1071_feature_wise_SVM_CV_inv_prob_pvals %>%
@@ -570,7 +551,7 @@ e1071_feature_wise_SVM_CV_inv_prob_plabs <- e1071_feature_wise_SVM_CV_inv_prob_p
 
 
 Let's zoom in on AROMA+2P and pick the five brain regions with the highest cross-validated accuracy:
-```{r, fig.width=10, fig.height=6}
+```{r, fig.width=10, fig.height=5}
 top_features <- e1071_feature_wise_SVM_CV_inv_prob %>%
   filter(Noise_Proc == "AROMA+2P") %>%
   arrange(desc(accuracy)) %>%
@@ -608,7 +589,7 @@ This panel panel shows the five brain regions with the highest raw accuracy from
 Even after adjusting for multiple comparisons (82 ROIs x 3 Noise-processing methods) using Benjamini-Hochberg False Discovery Rate (BH-FDR), the accuracy values for these five regions are still significant (p < 1.00e-06, FDR < 1.00e-05).
 
 We can do the same for balanced accuracy:
-```{r, fig.width=10, fig.height=6}
+```{r, fig.width=10, fig.height=5}
 top_features <- e1071_feature_wise_SVM_CV_inv_prob %>%
   filter(Noise_Proc == "AROMA+2P") %>%
   arrange(desc(balanced_accuracy)) %>%
@@ -758,5 +739,57 @@ bal_acc_p <- ggplot() +
 
 acc_p / bal_acc_p
 ggsave("plots/Meta_Null_AROMA_2P_Feature_wise_inv_prob.png", width=7, height=8, units="in", dpi=300)
+```
+
+
+
+### AROMA+2P with SMOTE
+Take the average of 22 random accuracy values from the null distribution 10,000x and compare with the mean from AROMA+2P with inverse probability weighting:
+
+```{r}
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))) {
+  random_acc_list <- list()
+  for (i in 1:10000) {
+    random_acc <- model_free_shuffle_null_res %>%
+      sample_n(22) %>%
+      summarise(mean_accuracy = mean(accuracy, na.rm=T),
+                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+      mutate(Type="null")
+    random_acc_list <- rlist::list.append(random_acc_list, random_acc)
+  }
+  random_22_acc <- do.call(plyr::rbind.fill, random_acc_list)
+  saveRDS(random_22_acc, file=paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+} else {
+  random_22_acc <- readRDS(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+}
+
+real_22_acc <- feature_wise_SVM_CV_SMOTE %>%
+  filter(Noise_Proc=="AROMA+2P") %>%
+  summarise(mean_accuracy = mean(accuracy, na.rm=T),
+            mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+  mutate(Type="main")
+
+# Plot the accuracy
+acc_p <- ggplot() +
+  geom_histogram(data = random_22_acc, mapping=aes(x=mean_accuracy), fill="gray70") +
+  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_accuracy), color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Accuracy") +
+  ggtitle("Mean Accuracy in AROMA+2P Feature-Based Data\nwith Inverse Probability Sample Weighting") +
+  theme(plot.title=element_text(hjust=0.5))
+
+# Plot the balanced accuracy
+bal_acc_p <- ggplot() +
+  geom_histogram(data = random_22_acc, mapping=aes(x=mean_balanced_accuracy), fill="gray70") +
+  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_balanced_accuracy), color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Balanced Accuracy") +
+  ggtitle("Mean Balanced Accuracy in AROMA+2P Feature-Based Data\nwith Inverse Probability Sample Weighting") +
+  theme(plot.title=element_text(hjust=0.5))
+
+acc_p / bal_acc_p
+ggsave("plots/Meta_Null_AROMA_2P_Feature_wise_SMOTE.png", width=7, height=8, units="in", dpi=300)
 ```
 

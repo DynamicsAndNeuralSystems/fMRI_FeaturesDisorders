@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=F, message=F)
 
 ### Source functions
 ```{r}
-source("../helper_functions/in_sample_SVM_code.R")
+source("../helper_functions/SVM_functions.R")
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 set.seed(127)
 ```
@@ -24,44 +24,32 @@ We will start with a simple linear SVM classifier using all 22 features.
 # Compare all three noise processing methods
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
-
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
   
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, ".Rds"))) {
-    combo_wise_SVM_in_sample <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
-                                                                     svm_kernel = kernel,
-                                                                     test_package = test_package,
-                                                                     noise_procs = noise_procs,
-                                                                     svm_feature_var = "Combo",
-                                                                     grouping_var = "Combo",
-                                                                     use_inv_prob_weighting = FALSE) %>%
-      dplyr::rename("accuracy" = "Accuracy",
-                    "balanced_accuracy" = "Balanced_Accuracy")
-    saveRDS(combo_wise_SVM_in_sample, file=paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, ".Rds"))
-  } 
-}
-
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, ".Rds"))) {
+  combo_wise_SVM_in_sample <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
+                                                             svm_kernel = kernel,
+                                                             test_package = test_package,
+                                                             noise_procs = noise_procs,
+                                                             svm_feature_var = "Combo",
+                                                             grouping_var = "Combo",
+                                                             use_inv_prob_weighting = FALSE,
+                                                             use_SMOTE = FALSE)
+  saveRDS(combo_wise_SVM_in_sample, file=paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, ".Rds"))
+} 
 ```
 
-Let's compare e1071 with kernlab. 
-
-e1071:
-
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-e1071_combo_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_e1071.Rds"))
+combo_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_e1071.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = e1071_combo_wise_SVM_in_sample,
+plot_class_acc_w_props(class_res = combo_wise_SVM_in_sample,
                        cv = FALSE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
@@ -70,77 +58,43 @@ plot_class_acc_w_props(class_res = e1071_combo_wise_SVM_in_sample,
 ```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/In_Sample_Combo_Wise_linear_SVM_Multivar_e1071.png",
-       width=7, height=6, units="in", dpi=300)
+       width=7, height=5, units="in", dpi=300)
 ```
-
-kernlab:
-
-```{r, fig.width=7, fig.height=6}
-# Plot accuracy + balanced accuracy in histograms
-# Control subject proportion is highlighted for accuracy
-kernlab_combo_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_kernlab.Rds"))
-
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = kernlab_combo_wise_SVM_in_sample,
-                       cv = FALSE,
-                       rdata_path = rdata_path,
-                       noise_procs = noise_procs)
-```
-
-```{r, eval=F, echo=F}
-# Save plot
-ggsave("plots/In_Sample_combo_wise_linear_SVM_Multivar_kernlab.png",
-       width=7, height=6, units="in", dpi=300)
-```
-
-
 
 ### In-sample linear SVM with inverse probability weighting
 
-We can run linear SVM with the `kernlab` package to directly test sample reweighting with in-sample accuracy and balanced accuracy. 
+We can run linear SVM with the `e1071` package to directly test sample reweighting with in-sample accuracy and balanced accuracy. 
 
 ```{r}
 # Compare all three noise processing methods
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
 
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
-  
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, "_inv_prob.Rds"))) {
-    combo_wise_SVM_in_sample_inv_prob <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
-                                                                     svm_kernel = kernel,
-                                                                     test_package = test_package,
-                                                                     noise_procs = noise_procs,
-                                                                     svm_feature_var = "Combo",
-                                                                     grouping_var = "Combo",
-                                                                     use_inv_prob_weighting = TRUE) %>%
-      dplyr::rename("accuracy" = "Accuracy",
-                    "balanced_accuracy" = "Balanced_Accuracy")
-    saveRDS(combo_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, "_inv_prob.Rds"))
-  } 
-}
-
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, "_inv_prob.Rds"))) {
+  combo_wise_SVM_in_sample_inv_prob <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
+                                                                      svm_kernel = kernel,
+                                                                      test_package = test_package,
+                                                                      noise_procs = noise_procs,
+                                                                      svm_feature_var = "Combo",
+                                                                      grouping_var = "Combo",
+                                                                      use_inv_prob_weighting = TRUE,
+                                                                      use_SMOTE = FALSE) 
+  saveRDS(combo_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, "_inv_prob.Rds"))
+} 
 ```
 
-Let's compare e1071 with kernlab. 
-
-e1071:
-
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-e1071_combo_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_e1071_inv_prob.Rds"))
+combo_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_e1071_inv_prob.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = e1071_combo_wise_SVM_in_sample_inv_prob,
+plot_class_acc_w_props(class_res = combo_wise_SVM_in_sample_inv_prob,
                        cv = FALSE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
@@ -149,29 +103,8 @@ plot_class_acc_w_props(class_res = e1071_combo_wise_SVM_in_sample_inv_prob,
 ```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/In_Sample_combo_wise_linear_SVM_Multivar_e1071_inv_prob.png",
-       width=7, height=6, units="in", dpi=300)
+       width=7, height=5, units="in", dpi=300)
 ```
-
-kernlab:
-
-```{r, fig.width=7, fig.height=6}
-# Plot accuracy + balanced accuracy in histograms
-# Control subject proportion is highlighted for accuracy
-kernlab_combo_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_kernlab_inv_prob.Rds"))
-
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = kernlab_combo_wise_SVM_in_sample_inv_prob,
-                       cv = FALSE,
-                       rdata_path = rdata_path,
-                       noise_procs = noise_procs)
-```
-
-```{r, eval=F, echo=F}
-# Save plot
-ggsave("plots/In_Sample_combo_wise_linear_SVM_Multivar_kernlab_inv_prob.png",
-       width=7, height=6, units="in", dpi=300)
-```
-
 
 
 By assigning each subject a weight equivalent to the inverse proportion of that subject's diagnosis, the linear SVM places a higher cost on incorrectly classifying schizophrenia subjects as controls. 
@@ -179,6 +112,60 @@ By assigning each subject a weight equivalent to the inverse proportion of that 
 This shifts the raw accuracy down to a mean of around 0.68 across the three noise-processing methods, but the balanced accuracy increases to have an average of around 0.68 also -- compared with almost exclusively values of 0.35 previously.
 
 This indicates that inverse probability reweighting mitigates the class imbalance issue and can be carried forward into 10-fold cross-validation linear SVM.
+
+
+### In-sample linear SVM with SMOTE
+
+We can run linear SVM with the `e1071` package to directly test SMOTE with in-sample accuracy and balanced accuracy. 
+
+```{r}
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
+
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, "_SMOTE.Rds"))) {
+  combo_wise_SVM_in_sample_SMOTE <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
+                                                                      svm_kernel = kernel,
+                                                                      test_package = test_package,
+                                                                      noise_procs = noise_procs,
+                                                                      svm_feature_var = "Combo",
+                                                                      grouping_var = "Combo",
+                                                                      use_inv_prob_weighting = FALSE,
+                                                                      use_SMOTE = TRUE) 
+  saveRDS(combo_wise_SVM_in_sample_SMOTE, file=paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, "_SMOTE.Rds"))
+} 
+```
+
+```{r, fig.width=7, fig.height=5}
+# Plot accuracy + balanced accuracy in histograms
+# Control subject proportion is highlighted for accuracy
+combo_wise_SVM_in_sample_SMOTE <- readRDS(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_e1071_SMOTE.Rds"))
+
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+plot_class_acc_w_props(class_res = combo_wise_SVM_in_sample_SMOTE,
+                       cv = FALSE,
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs)
+```
+
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/In_Sample_combo_wise_linear_SVM_Multivar_e1071_SMOTE.png",
+       width=7, height=5, units="in", dpi=300)
+```
+
+
+By assigning each subject a weight equivalent to the inverse proportion of that subject's diagnosis, the linear SVM places a higher cost on incorrectly classifying schizophrenia subjects as controls. 
+
+This shifts the raw accuracy down to a mean of around 0.68 across the three noise-processing methods, but the balanced accuracy increases to have an average of around 0.68 also -- compared with almost exclusively values of 0.35 previously.
+
+This indicates that inverse probability reweighting mitigates the class imbalance issue and can be carried forward into 10-fold cross-validation linear SVM.
+
 
 ## Cross-validated SVM classification
 
@@ -189,40 +176,34 @@ We can implement 10-fold cross-validation (CV) with the `caret` package.
 ```{r}
 # Noise processing methods
 noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
 
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
   
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, ".Rds"))) {
-    combo_wise_SVM_CV <- run_cv_svm_by_input_var(rdata_path = rdata_path,
-                                                               svm_kernel = kernel,
-                                                               test_package = test_package,
-                                                               svm_feature_var = "Combo",
-                                                               grouping_var = "Combo",
-                                                               noise_procs = noise_procs,
-                                                               use_inv_prob_weighting = TRUE) %>%
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, ".Rds"))) {
+  combo_wise_SVM_CV <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                               svm_kernel = kernel,
+                                               test_package = test_package,
+                                               svm_feature_var = "Combo",
+                                               grouping_var = "Combo",
+                                               noise_procs = noise_procs,
+                                               use_inv_prob_weighting = TRUE) %>%
     dplyr::rename("accuracy" = "Accuracy",
                   "balanced_accuracy" = "Balanced_Accuracy")
-    saveRDS(combo_wise_SVM_CV, file=paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, ".Rds"))
-  }
+  saveRDS(combo_wise_SVM_CV, file=paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, ".Rds"))
 }
 ```
 
-e1071:
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-e1071_combo_wise_SVM_CV <- readRDS(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_e1071.Rds"))
+combo_wise_SVM_CV <- readRDS(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_e1071.Rds"))
 
-plot_class_acc_w_props(class_res = e1071_combo_wise_SVM_CV,
+plot_class_acc_w_props(class_res = combo_wise_SVM_CV,
                        cv = TRUE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
@@ -231,27 +212,7 @@ plot_class_acc_w_props(class_res = e1071_combo_wise_SVM_CV,
 ```{r, echo=F, eval=F}
 # Save plot
 ggsave("plots/Combo_Wise_Linear_SVM_CV_e1071.png",
-       width=7, height=6, units="in", dpi=300)
-```
-
-kernlab:
-```{r, fig.width=7, fig.height=6}
-# Plot accuracy + balanced accuracy in histograms
-# Control subject proportion is highlighted for accuracy
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-kernlab_combo_wise_SVM_CV <- readRDS(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_kernlab.Rds"))
-
-
-plot_class_acc_w_props(class_res = kernlab_combo_wise_SVM_CV,
-                       cv = TRUE,
-                       rdata_path = rdata_path,
-                       noise_procs = noise_procs)
-```
-
-```{r, echo=F, eval=F}
-# Save plot
-ggsave("plots/Combo_Wise_Linear_SVM_CV_kernlab.png",
-       width=7, height=6, units="in", dpi=300)
+       width=7, height=5, units="in", dpi=300)
 ```
 
 As with in-sample SVM, the unweighted input samples are virtually all classified as control subjects across all 82 ROIs using the 10-fold cross-validation linear SVM with caret.
@@ -262,40 +223,34 @@ As with in-sample SVM, the unweighted input samples are virtually all classified
 # Try three different noise processing methods
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
-
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
   
-  # Run theft's multivariable classifier on each ROI and save to an RDS object
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, "_inv_prob.Rds"))) {
-    
-    combo_wise_SVM_CV_inv_prob <- run_cv_svm_by_input_var(rdata_path = rdata_path,
-                                                                      svm_kernel = kernel,
-                                                                      test_package = test_package,
-                                                                      svm_feature_var = "Combo",
-                                                                      grouping_var = "Combo",
-                                                                      noise_procs = noise_procs,
-                                                                      use_inv_prob_weighting = TRUE)  %>%
-      dplyr::rename("accuracy" = "Accuracy",
-                    "balanced_accuracy" = "Balanced_Accuracy")
-    
-    saveRDS(combo_wise_SVM_CV_inv_prob, file=paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, "_inv_prob.Rds"))
-  } 
-}
+# Run theft's multivariable classifier on each ROI and save to an RDS object
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, "_inv_prob.Rds"))) {
+  
+  combo_wise_SVM_CV_inv_prob <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                        svm_kernel = kernel,
+                                                        test_package = test_package,
+                                                        svm_feature_var = "Combo",
+                                                        grouping_var = "Combo",
+                                                        noise_procs = noise_procs,
+                                                        use_inv_prob_weighting = TRUE,
+                                                        use_SMOTE = FALSE)  %>%
+    dplyr::rename("accuracy" = "Accuracy",
+                  "balanced_accuracy" = "Balanced_Accuracy")
+  
+  saveRDS(combo_wise_SVM_CV_inv_prob, file=paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, "_inv_prob.Rds"))
+} 
 ```
 
-e1071
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-e1071_combo_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_e1071.Rds"))
+combo_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_e1071_inv_prob.Rds"))
 
-plot_class_acc_w_props(class_res = e1071_combo_wise_SVM_CV_inv_prob,
+plot_class_acc_w_props(class_res = combo_wise_SVM_CV_inv_prob,
                        cv = TRUE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
@@ -303,26 +258,60 @@ plot_class_acc_w_props(class_res = e1071_combo_wise_SVM_CV_inv_prob,
 ```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/Combo_Wise_Linear_SVM_CV_e1071_inv_prob.png",
-       width=7, height=6, units="in", dpi=300)
+       width=7, height=5, units="in", dpi=300)
 ```
 
-kernlab
-```{r, fig.width=7, fig.height=6}
-kernlab_combo_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_kernlab.Rds"))
 
-plot_class_acc_w_props(class_res = kernlab_combo_wise_SVM_CV_inv_prob,
+Surprisingly, incorporating inverse probability weighting has minimal impact when it comes to the ten-fold cross-validated SVM. Of note, the in-sample and cross-validated SVM were both run with kernlab::ksvm using default parameters.
+
+
+### 10-fold cross-validated linear SVM with inverse probability weighting
+
+```{r}
+# Try three different noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
+
+# Run theft's multivariable classifier on each ROI and save to an RDS object
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, "_SMOTE.Rds"))) {
+  
+  combo_wise_SVM_CV_SMOTE <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                     svm_kernel = kernel,
+                                                     test_package = test_package,
+                                                     svm_feature_var = "Combo",
+                                                     grouping_var = "Combo",
+                                                     noise_procs = noise_procs,
+                                                     use_inv_prob_weighting = FALSE,
+                                                     use_SMOTE = TRUE)  %>%
+    dplyr::rename("accuracy" = "Accuracy",
+                  "balanced_accuracy" = "Balanced_Accuracy")
+  
+  saveRDS(combo_wise_SVM_CV_SMOTE, file=paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, "_SMOTE.Rds"))
+} 
+```
+
+```{r, fig.width=7, fig.height=5}
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+combo_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_e1071_SMOTE.Rds"))
+
+plot_class_acc_w_props(class_res = combo_wise_SVM_CV_SMOTE,
                        cv = TRUE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
 ```
-
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/Combo_Wise_Linear_SVM_CV_kernlab_inv_prob.png",
-       width=7, height=6, units="in", dpi=300)
+ggsave("plots/Combo_Wise_Linear_SVM_CV_e1071_SMOTE.png",
+       width=7, height=5, units="in", dpi=300)
 ```
 
+
 Surprisingly, incorporating inverse probability weighting has minimal impact when it comes to the ten-fold cross-validated SVM. Of note, the in-sample and cross-validated SVM were both run with kernlab::ksvm using default parameters.
+
 
 ## Null models
 
@@ -365,7 +354,7 @@ e1071_combo_wise_SVM_CV_plabs <- e1071_combo_wise_SVM_CV_pvals %>%
 ```
 
 Accuracy:
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 e1071_combo_wise_SVM_CV_pvals %>%
   ggplot(data=.) +
   geom_histogram(data = subset(model_free_shuffle_null_res, Type=="null"),
@@ -390,7 +379,7 @@ ggsave("plots/Main_vs_Null_Acc_10FCV_Linear_SVM_combo_wise.png",
 ```
 
 Balanced accuracy:
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 e1071_combo_wise_SVM_CV_pvals %>%
   ggplot(data=.) +
   geom_histogram(data = subset(model_free_shuffle_null_res, Type=="null"),
@@ -446,7 +435,7 @@ e1071_combo_wise_SVM_CV_inv_prob_plabs <- e1071_combo_wise_SVM_CV_inv_prob_pvals
 ```
 
 Accuracy:
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 e1071_combo_wise_SVM_CV_inv_prob_pvals %>%
   ggplot(data=.) +
   geom_histogram(data = subset(model_free_shuffle_null_res, Type=="null"),
@@ -471,7 +460,7 @@ ggsave("plots/Main_vs_Null_Acc_10FCV_Linear_SVM_inv_prob_combo_wise.png",
 ```
 
 Balanced accuracy:
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 e1071_combo_wise_SVM_CV_inv_prob_pvals %>%
   ggplot(data=.) +
   geom_histogram(data = subset(model_free_shuffle_null_res, Type=="null"),
@@ -531,7 +520,7 @@ if (!file.exists(paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))) {
   random_1804_acc <- readRDS(paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))
 }
 
-real_1804_acc <- e1071_combo_wise_SVM_CV %>%
+real_1804_acc <- combo_wise_SVM_CV %>%
   filter(Noise_Proc=="AROMA+2P") %>%
   summarise(mean_accuracy = mean(accuracy, na.rm=T),
             mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
@@ -613,5 +602,61 @@ bal_acc_p <- ggplot() +
 
 acc_p / bal_acc_p
 ggsave("plots/Meta_Null_AROMA_2P_Combo_wise_inv_prob.png", width=7, height=8, units="in", dpi=300)
+```
+
+
+
+### AROMA+2P with SMOTE
+Take the average of 1,804 random accuracy values from the null distribution 10,000x and compare with the mean from AROMA+2P with inverse probability weighting:
+
+```{r}
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))) {
+  random_acc_list <- list()
+  for (i in 1:10000) {
+    random_acc <- model_free_shuffle_null_res %>%
+      sample_n(1804) %>%
+      summarise(mean_accuracy = mean(accuracy, na.rm=T),
+                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+      mutate(Type="null")
+    random_acc_list <- rlist::list.append(random_acc_list, random_acc)
+  }
+  random_1804_acc <- do.call(plyr::rbind.fill, random_acc_list)
+  saveRDS(random_1804_acc, file=paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))
+} else {
+  random_1804_acc <- readRDS(paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))
+}
+
+real_1804_acc <- combo_wise_SVM_CV_SMOTE %>%
+  filter(Noise_Proc=="AROMA+2P") %>%
+  summarise(mean_accuracy = mean(accuracy, na.rm=T),
+            mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+  mutate(Type="main")
+
+# Plot the accuracy
+acc_p <- ggplot() +
+  geom_histogram(data = random_1804_acc, mapping=aes(x=mean_accuracy), 
+                 fill="gray70", bins=500) +
+  geom_vline(data = real_1804_acc, mapping=aes(xintercept = mean_accuracy), 
+             color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Accuracy") +
+  ggtitle("Mean Accuracy in AROMA+2P Combo-Based Data\nwith SMOTE") +
+  theme(plot.title=element_text(hjust=0.5))
+
+# Plot the balanced accuracy
+bal_acc_p <- ggplot() +
+  geom_histogram(data = random_1804_acc, mapping=aes(x=mean_balanced_accuracy), 
+                 fill="gray70", bins=500) +
+  geom_vline(data = real_1804_acc, mapping=aes(xintercept = mean_balanced_accuracy),
+             color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Balanced Accuracy") +
+  ggtitle("Mean Balanced Accuracy in AROMA+2P Combo-Based Data\nwith SMOTE") +
+  theme(plot.title=element_text(hjust=0.5))
+
+acc_p / bal_acc_p
+ggsave("plots/Meta_Null_AROMA_2P_Combo_wise_SMOTE.png", width=7, height=8, units="in", dpi=300)
 ```
 

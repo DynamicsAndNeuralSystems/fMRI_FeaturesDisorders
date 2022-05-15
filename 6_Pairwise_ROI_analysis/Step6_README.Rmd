@@ -1,0 +1,125 @@
+---
+title: "Step 3: ROI-Wise catch22 Feature Analysis"
+output: 
+  github_document
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=F, message=F)
+```
+
+### Source functions
+```{r}
+source("../helper_functions/SVM_functions.R")
+rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+set.seed(127)
+library(patchwork)
+library(knitr)
+library(kableExtra)
+
+study <- "D:/Virtual_Machines/Shared_Folder/PhD_work/"
+pydata_path <- paste0(study, "data/scz/UCLA/pydata/AROMA_2P/")
+ROI_index <- read.csv(paste0(study, "data/scz/UCLA/pydata/ROI_info.csv"))
+```
+
+
+Load Pearson correlation data
+```{r}
+corr_data <- readRDS(paste0(pydata_path, "UCLA_AROMA_2P_pyspi_xcorr.Rds")) %>%
+  mutate(comparison = row_number()) %>%
+  mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
+                              paste0(brain_region_1, "_", brain_region_2),
+                              paste0(brain_region_2, "_", brain_region_1))) %>%
+  distinct(region_pair, Subject_ID, .keep_all=T) %>%
+  pivot_longer(cols = c(brain_region_1,
+                        brain_region_2),
+               names_to = "Region_Number",
+               values_to = "Index") %>%
+  left_join(ROI_index) %>%
+  dplyr::select(-Index) %>%
+  distinct() %>%
+  pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
+              names_from = "Region_Number",
+              values_from = "ROI") %>%
+  dplyr::select(-comparison) %>%
+  mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
+                              paste0(brain_region_1, "_", brain_region_2),
+                              paste0(brain_region_2, "_", brain_region_1)))
+```
+
+Run linear SVM in-sample
+
+```{r}
+data_for_SVM <- corr_data %>%
+  pivot_wider(id_cols = c(Subject_ID, group),
+              names_from = region_pair,
+              values_from = value) %>% 
+  select(-Subject_ID) %>%
+  drop_na()
+data_for_SVM$group <- factor(data_for_SVM$group, levels = c("CONTROL", "SCHZ"))
+  
+pearson_corr_in_sample_SVM <- e1071::svm(group ~ ., 
+                                         data = data_for_SVM ,
+                                         kernel = "linear")
+
+# Generate in-sample predictions based on SVM model
+pred <- predict(pearson_corr_in_sample_SVM, data_for_SVM)
+data_for_SVM$group <- factor(data_for_SVM$group, levels = levels(pred))
+
+# Calculate accuracy and balanced accuracy
+accuracy <- sum(pred == data_for_SVM$group)/length(pred)
+balanced_accuracy <- caret::confusionMatrix(data=pred, 
+                                            reference=data_for_SVM$group)$byClass[["Balanced Accuracy"]]
+balanced_accuracy <- ifelse(is.na(balanced_accuracy), 0.5, balanced_accuracy)
+
+data.frame(accuracy = accuracy,
+           balanced_accuracy = balanced_accuracy)
+```
+
+10-fold cross-validation
+```{r}
+set.seed(127)
+
+flds <- createFolds(data_for_SVM$group, k = 10, list = TRUE, returnTrain = FALSE)
+      
+accuracy_list <- list()
+balanced_accuracy_list <- list()
+
+
+for (i in 1:length(flds)) {
+  test_i <- flds[[i]]
+  train_i <- setdiff(1:nrow(data_for_SVM), test_i)
+  
+  train_data <- data_for_SVM[train_i, ]
+  test_data <- data_for_SVM[test_i, ]
+  
+  svmModel <- e1071::svm(factor(group) ~ .,
+                         kernel = "linear",
+                         cost = 1,
+                         data = train_data)
+  
+  # Generate out-of-sample predictions based on SVM model
+  pred <- predict(svmModel, test_data)
+  test_data$group <- factor(test_data$group, levels = levels(pred))
+  
+  # Calculate accuracy and balanced accuracy
+  accuracy <- sum(pred == test_data$group)/length(pred)
+  balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
+                                              data=pred)$byClass[["Balanced Accuracy"]]
+  
+  accuracy_list[[i]] <- accuracy
+  balanced_accuracy_list[[i]] <- balanced_accuracy
+} 
+
+accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
+accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
+balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
+balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
+
+data.frame(Accuracy = accuracy_avg,
+           AccuracySD = accuracy_sd,
+           Balanced_Accuracy = balanced_accuracy_avg,
+           Balanced_AccuracySD = balanced_accuracy_sd)
+```
+

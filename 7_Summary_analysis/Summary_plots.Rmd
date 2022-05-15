@@ -1,0 +1,158 @@
+---
+title: "Summary plots"
+author: "Annie Bryant"
+date: "5/10/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+```
+
+### Source functions
+```{r}
+rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+library(tidyverse)
+library(cowplot)
+theme_set(theme_cowplot())
+```
+
+
+## Step 3
+
+### Load data
+
+```{r}
+step3_in_sample <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_e1071.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "In-sample")
+step3_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_inv_prob_e1071.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "In-sample inv prob")
+step3_in_sample_SMOTE <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_SMOTE_e1071.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "In-sample SMOTE")
+step3_CV <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_e1071.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "CV")
+step3_CV_inv_prob <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_e1071_inv_prob.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "CV inv prob")
+step3_CV_SMOTE <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_e1071_SMOTE.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "CV SMOTE")
+step3_model_free_shuffle_null <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
+  mutate(Classifier = "Model-free shuffle")
+step3_null_model_inv_prob <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
+  mutate(Classifier = "Null model fit inv prob")
+step3_null_model_SMOTE <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
+  mutate(Classifier = "Null model fit SMOTE")
+```
+
+```{r}
+step3_data <- do.call(plyr::rbind.fill, list(step3_in_sample,
+                               step3_in_sample_inv_prob,
+                               step3_in_sample_SMOTE,
+                               step3_CV,
+                               step3_CV_inv_prob,
+                               step3_CV_SMOTE,
+                               step3_model_free_shuffle_null,
+                               step3_null_model_inv_prob,
+                               step3_null_model_SMOTE)) %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  mutate(Classifier = factor(Classifier, levels = c("In-sample",
+                                                    "In-sample inv prob",
+                                                    "In-sample SMOTE",
+                                                    "CV",
+                                                    "CV inv prob",
+                                                    "CV SMOTE",
+                                                    "Model-free shuffle",
+                                                    "Null model fit inv prob",
+                                                    "Null model fit SMOTE")))
+```
+
+```{r}
+set.seed(127)
+step3_data %>%
+  ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Classifier)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0.5, linetype=2) +
+  facet_wrap(Classifier ~ ., scales="free_y", nrow = 3, dir="v") +
+  ggtitle("Balanced Accuracy Distributions for ROI-wise analysis") +
+  xlab("Balanced Accuracy") +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5))
+ggsave("plots/Step3_Balanced_Accuracy.png",
+       width=8, height=6, units="in", dpi=300)
+```
+
+
+
+## Step 4
+
+### Load data
+
+```{r}
+step4_in_sample <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "In-sample")
+step4_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071_inv_prob.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "In-sample inv prob")
+step4_in_sample_SMOTE <- readRDS(paste0(rdata_path, "multivar_feature_res_svmLinear_in_sample_e1071_SMOTE.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "In-sample SMOTE")
+step4_CV <- readRDS(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_e1071.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "CV")
+step4_CV_inv_prob <- readRDS(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_e1071_inv_prob.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "CV inv prob")
+step4_CV_SMOTE <- readRDS(paste0(rdata_path, "feature_wise_multi_ROI_svmLinear_CV_e1071_SMOTE.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "CV SMOTE")
+step4_model_free_shuffle_null <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
+  mutate(Classifier = "Model-free shuffle")
+step4_null_model_inv_prob <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
+  mutate(Classifier = "Null model fit inv prob")
+step4_null_model_SMOTE <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
+  mutate(Classifier = "Null model fit SMOTE")
+```
+
+```{r}
+step4_data <- do.call(plyr::rbind.fill, list(step4_in_sample,
+                               step4_in_sample_inv_prob,
+                               step4_in_sample_SMOTE,
+                               step4_CV,
+                               step4_CV_inv_prob,
+                               step4_CV_SMOTE,
+                               step4_model_free_shuffle_null,
+                               step4_null_model_inv_prob,
+                               step4_null_model_SMOTE)) %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  mutate(Classifier = factor(Classifier, levels = c("In-sample",
+                                                    "In-sample inv prob",
+                                                    "In-sample SMOTE",
+                                                    "CV",
+                                                    "CV inv prob",
+                                                    "CV SMOTE",
+                                                    "Model-free shuffle",
+                                                    "Null model fit inv prob",
+                                                    "Null model fit SMOTE")))
+```
+
+```{r}
+set.seed(127)
+step4_data %>%
+  ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Classifier)) +
+  geom_histogram() +
+  geom_vline(xintercept = 0.5, linetype=2) +
+  facet_wrap(Classifier ~ ., scales="free_y", nrow = 3, dir="v") +
+  ggtitle("Balanced Accuracy Distributions for Feature-wise analysis") +
+  xlab("Balanced Accuracy") +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5))
+ggsave("plots/step4_Balanced_Accuracy.png",
+       width=8, height=6, units="in", dpi=300)
+```
+

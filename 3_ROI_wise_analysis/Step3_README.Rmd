@@ -1,10 +1,12 @@
 ---
 title: "Step 3: ROI-Wise catch22 Feature Analysis"
-output: github_document
+output: 
+  github_document
+always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=F, message=F)
+knitr::opts_chunk$set(echo = FALSE, warning=F, message=F)
 ```
 
 ### Source functions
@@ -13,6 +15,8 @@ source("../helper_functions/SVM_functions.R")
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 set.seed(127)
 library(patchwork)
+library(knitr)
+library(kableExtra)
 ```
 
 
@@ -26,134 +30,81 @@ We will start with a simple linear SVM classifier using all 22 features.
 # Compare all three noise processing methods
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
 
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
-  
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_", test_package, ".Rds"))) {
-    region_wise_SVM_in_sample <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
-                                                                svm_kernel = kernel,
-                                                                test_package = test_package,
-                                                                grouping_var = "Brain_Region",
-                                                                svm_feature_var = "Feature",
-                                                                noise_procs = noise_procs,
-                                                                use_inv_prob_weighting = FALSE) %>%
-      dplyr::rename("accuracy" = "Accuracy",
-                    "balanced_accuracy" = "Balanced_Accuracy")
-    saveRDS(region_wise_SVM_in_sample, file=paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_", test_package, ".Rds"))
-  } else {
-    region_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_", test_package, ".Rds"))
-  }
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_", test_package, ".Rds"))) {
+  region_wise_SVM_in_sample <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
+                                                              svm_kernel = kernel,
+                                                              test_package = test_package,
+                                                              grouping_var = "Brain_Region",
+                                                              svm_feature_var = "Feature",
+                                                              noise_procs = noise_procs,
+                                                              use_inv_prob_weighting = FALSE)
+  saveRDS(region_wise_SVM_in_sample, file=paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_", test_package, ".Rds"))
+} else {
+  region_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_", test_package, ".Rds"))
 }
 ```
 
-Let's compare e1071 with kernlab. 
-
-e1071:
-
-```{r, fig.width=7, fig.height=6}
-# Plot accuracy + balanced accuracy in histograms
-# Control subject proportion is highlighted for accuracy
-e1071_region_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_e1071.Rds"))
-
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = e1071_region_wise_SVM_in_sample,
+```{r, fig.width=7, fig.height=5}
+plot_class_acc_w_props(class_res = region_wise_SVM_in_sample,
                        group_var = "Brain_Region",
                        cv = FALSE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
 ```
-
-```{r, eval=F, echo=F}
+```{r, echo=F, eval=F}
 # Save plot
-ggsave("plots/In_Sample_Region_Wise_linear_SVM_Multi_Feature_e1071.png",
-       width=7, height=6, units="in", dpi=300)
+ggsave("plots/Region_Wise_In_Sample_SVM.png",
+       width=7, height=5, units="in", dpi=300)
 ```
+The above figure shows the in-sample results from running `e1071::svm` using all 22 catch22 features. The dashed line in the accuracy plot (left) shows the proportion of control subjects for each noise-processing method, and the dashed line in the balanced accuracy plot (right) is set at 0.5 -- the value when all subjects are classified as controls.
 
-kernlab:
+Clearly, the classification algorithm is biased for the majority of ROIs to classify all samples as controls in order to achieve a raw accuracy of ~0.7. Similarly, the balanced accuracy has a clear peak around 0.5.
 
-```{r, fig.width=7, fig.height=6}
-# Plot accuracy + balanced accuracy in histograms
-# Control subject proportion is highlighted for accuracy
-kernlab_region_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_kernlab.Rds"))
-
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = kernlab_region_wise_SVM_in_sample,
-                       group_var = "Brain_Region",
-                       cv = FALSE,
-                       rdata_path = rdata_path,
-                       noise_procs = noise_procs)
-```
-
-```{r, eval=F, echo=F}
-# Save plot
-ggsave("plots/In_Sample_Region_Wise_linear_SVM_Multi_Feature_kernlab.png",
-       width=7, height=6, units="in", dpi=300)
-```
-
-The figure on the left shows the results from running theft's multivariable classifier using all 22 catch22 features with svmLinear (kernlab) in caret.
-
-The dashed line shows the proportion of control subjects in the population for Accuracy (left half).
-
-Clearly, the classification algorithm is biased for the majority of ROIs to classify all samples as controls in order to achieve a raw accuracy of ~0.7. Similarly, the balanced accuracy is centered around 0.35.
-
-This highlights the need to mitigate the class imbalances, either with inverse probability sample weighting or minority class upsampling.
+This highlights the need to mitigate the class imbalances, either with inverse probability sample reweighting.
 
 
 ### In-sample linear SVM with inverse probability weighting
 
-We can run linear SVM with the `kernlab` package to directly test sample reweighting with in-sample accuracy and balanced accuracy. 
+We can run linear SVM with the `e1071` package to directly test sample reweighting with in-sample accuracy and balanced accuracy. We will use inverse probability weighting, meaning that the weight given to a particular sample in the SVM classifier is inversely proportionate to the class size to which the sample belongs.  
+
+By assigning each subject a weight equivalent to the inverse proportion of that subject's diagnosis, the linear SVM places a higher cost on incorrectly classifying schizophrenia subjects as controls. 
 
 ```{r}
 # Compare all three noise processing methods
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
 
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
-  
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_inv_prob_", test_package, ".Rds"))) {
-    region_wise_SVM_in_sample_inv_prob <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
-                                                                svm_kernel = kernel,
-                                                                test_package = test_package,
-                                                                grouping_var = "Brain_Region",
-                                                                svm_feature_var = "Feature",
-                                                                noise_procs = noise_procs,
-                                                                use_inv_prob_weighting = TRUE) %>%
-      dplyr::rename("accuracy" = "Accuracy",
-                    "balanced_accuracy" = "Balanced_Accuracy")
-    saveRDS(region_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_inv_prob_", test_package, ".Rds"))
-  } 
-}
-
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_inv_prob_", test_package, ".Rds"))) {
+  region_wise_SVM_in_sample_inv_prob <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
+                                                                       svm_kernel = kernel,
+                                                                       test_package = test_package,
+                                                                       grouping_var = "Brain_Region",
+                                                                       svm_feature_var = "Feature",
+                                                                       noise_procs = noise_procs,
+                                                                       use_inv_prob_weighting = TRUE)
+  saveRDS(region_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_inv_prob_", test_package, ".Rds"))
+} 
 
 ```
 
-
-Let's compare e1071 with kernlab. 
-
-e1071:
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-e1071_region_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_inv_prob_e1071.Rds"))
+region_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_inv_prob_e1071.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = e1071_region_wise_SVM_in_sample_inv_prob,
+plot_class_acc_w_props(class_res = region_wise_SVM_in_sample_inv_prob,
                        group_var = "Brain_Region",
                        cv = FALSE,
                        rdata_path = rdata_path,
@@ -161,85 +112,105 @@ plot_class_acc_w_props(class_res = e1071_region_wise_SVM_in_sample_inv_prob,
 ```
 ```{r, echo=F, eval=F}
 # Save plot
-ggsave("plots/In_Sample_Region_Wise_SVM_Multi_Feature_Inv_Prob_e1071.png",
-       width=7, height=6, units="in", dpi=300)
+ggsave("plots/Region_Wise_In_Sample_SVM_Inv_Prob.png",
+       width=7, height=5, units="in", dpi=300)
 ```
 
-kernlab:
-```{r, fig.width=7, fig.height=6}
-# Plot accuracy + balanced accuracy in histograms
-# Control subject proportion is highlighted for accuracy
-kernlab_region_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_in_sample_inv_prob_kernlab.Rds"))
-
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = kernlab_region_wise_SVM_in_sample_inv_prob,
-                       group_var = "Brain_Region",
-                       cv = FALSE,
-                       rdata_path = rdata_path,
-                       noise_procs = noise_procs)
-```
-```{r, echo=F, eval=F}
-# Save plot
-ggsave("plots/In_Sample_Region_Wise_SVM_Multi_Feature_Inv_Prob_kernlab.png",
-       width=7, height=6, units="in", dpi=300)
-```
-
-By assigning each subject a weight equivalent to the inverse proportion of that subject's diagnosis, the linear SVM places a higher cost on incorrectly classifying schizophrenia subjects as controls. 
-
-This shifts the raw accuracy down to a mean of around 0.68 across the three noise-processing methods, but the balanced accuracy increases to have an average of around 0.68 also -- compared with almost exclusively values of 0.35 previously.
+This shifts the raw accuracy down to a mean of 0.68 to 0.7 across the three noise-processing methods, but the balanced accuracy increases to have a similar mean range -- compared with the majority of values around 0.5 previously. 
 
 This indicates that inverse probability reweighting mitigates the class imbalance issue and can be carried forward into 10-fold cross-validation linear SVM.
 
 
 
 
+### In-sample linear SVM with SMOTE
+
+We can run linear SVM with the `e1071` package to directly test sample reweighting with in-sample accuracy and balanced accuracy. We will use inverse probability weighting, meaning that the weight given to a particular sample in the SVM classifier is inversely proportionate to the class size to which the sample belongs.  
+
+By assigning each subject a weight equivalent to the inverse proportion of that subject's diagnosis, the linear SVM places a higher cost on incorrectly classifying schizophrenia subjects as controls. 
+
+```{r}
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
+
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_SMOTE_", test_package, ".Rds"))) {
+  region_wise_SVM_in_sample_SMOTE <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
+                                                                       svm_kernel = kernel,
+                                                                       test_package = test_package,
+                                                                       grouping_var = "Brain_Region",
+                                                                       svm_feature_var = "Feature",
+                                                                       noise_procs = noise_procs,
+                                                                       use_inv_prob_weighting = FALSE,
+                                                                       use_SMOTE = TRUE)
+  saveRDS(region_wise_SVM_in_sample_SMOTE, file=paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_SMOTE_", test_package, ".Rds"))
+} 
+
+```
+
+```{r, fig.width=7, fig.height=5}
+# Plot accuracy + balanced accuracy in histograms
+# Control subject proportion is highlighted for accuracy
+region_wise_SVM_in_sample_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_SMOTE_e1071.Rds"))
+
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+plot_class_acc_w_props(class_res = region_wise_SVM_in_sample_SMOTE,
+                       group_var = "Brain_Region",
+                       cv = FALSE,
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs)
+```
+```{r, echo=F, eval=F}
+# Save plot
+ggsave("plots/Region_Wise_In_Sample_SVM_SMOTE.png",
+       width=7, height=5, units="in", dpi=300)
+```
+
+This shifts the raw accuracy down to a mean of 0.68 to 0.7 across the three noise-processing methods, but the balanced accuracy increases to have a similar mean range -- compared with the majority of values around 0.5 previously. 
+
+This indicates that inverse probability reweighting mitigates the class imbalance issue and can be carried forward into 10-fold cross-validation linear SVM.
+
+
 ## Cross-validated SVM classification
 
 ### 10-fold cross-validated linear SVM
 
-We can implement 10-fold cross-validation (CV) with the `caret` package.
+I have chosen to use 10-fold cross validation via manual implementation, as the sample reweighting options in caret were limited and difficult to interpret.
 
 ```{r}
-# Noise processing methods
-noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
 
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
-  
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_", test_package, ".Rds"))) {
-    region_wise_SVM_in_sample <- run_cv_svm_by_input_var(rdata_path = rdata_path,
-                                                         test_package = test_package,
-                                                         svm_kernel = kernel,
-                                                         grouping_var = "Brain_Region",
-                                                         svm_feature_var = "Feature",
-                                                         use_inv_prob_weighting = FALSE,
-                                                         noise_procs = noise_procs)  %>%
-      dplyr::rename("accuracy" = "Accuracy",
-                    "balanced_accuracy" = "Balanced_Accuracy")
-    saveRDS(region_wise_SVM_in_sample, file=paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_", test_package, ".Rds"))
-  }
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "ROI_wise_linear_SVM_CV_", test_package, ".Rds"))) {
+  region_wise_SVM_CV <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                       test_package = test_package,
+                                                       svm_kernel = kernel,
+                                                       grouping_var = "Brain_Region",
+                                                       svm_feature_var = "Feature",
+                                                       use_inv_prob_weighting = FALSE,
+                                                       noise_procs = noise_procs)
+  saveRDS(region_wise_SVM_CV, file=paste0(rdata_path, "ROI_wise_linear_SVM_CV_", test_package, ".Rds"))
 }
 ```
 
-Let's compare e1071 with kernlab. 
-
-e1071:
-
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-e1071_region_wise_SVM_CV <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_e1071.Rds"))
+region_wise_SVM_CV <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = e1071_region_wise_SVM_CV,
+plot_class_acc_w_props(class_res = region_wise_SVM_CV,
                        group_var = "Brain_Region",
                        cv = TRUE,
                        rdata_path = rdata_path,
@@ -248,78 +219,46 @@ plot_class_acc_w_props(class_res = e1071_region_wise_SVM_CV,
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/Region_Wise_linear_SVM_CV_Multi_Feature_e1071.png",
-       width=7, height=6, units="in", dpi=300)
+ggsave("plots/Region_Wise_CV_SVM.png",
+       width=7, height=5, units="in", dpi=300)
 ```
 
-kernlab:
+Interestingly, unlike the in-sample results, there is a fair spread of accuracy and balanced accuracy values outside of the proportions expected from classifying all subjects as controls.
 
-```{r, fig.width=7, fig.height=6}
-# Plot accuracy + balanced accuracy in histograms
-# Control subject proportion is highlighted for accuracy
-kernlab_region_wise_SVM_CV <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_kernlab.Rds"))
-
-noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = kernlab_region_wise_SVM_CV,
-                       group_var = "Brain_Region",
-                       cv = TRUE,
-                       rdata_path = rdata_path,
-                       noise_procs = noise_procs)
-```
-
-```{r, eval=F, echo=F}
-# Save plot
-ggsave("plots/Region_Wise_linear_SVM_CV_Multi_Feature_kernlab.png",
-       width=7, height=6, units="in", dpi=300)
-```
-
-
-As with in-sample SVM, the unweighted input samples are virtually all classified as control subjects across all 82 ROIs using the 10-fold cross-validation linear SVM with caret.
+However, there still is a balanced accuracy peak around 0.5, so we move forward with inverse probability reweighting.
 
 ### 10-fold cross-validated linear SVM with inverse probability weighting
 
 ```{r}
-# Noise processing methods
-noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-# SVM param df
-svm_df <- data.frame(test_packages = c("e1071", "kernlab"),
-                     kernels = c("linear", "vanilladot"))
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
 
-# Iterate over SVM params
-for (i in 1:nrow(svm_df)) {
-  test_package = svm_df$test_packages[i]
-  kernel = svm_df$kernels[i]
-  
-  # Run in-sample SVM using given package + kernel
-  # If the RDS object doesn't already exist, otherwise load it in
-  if (!file.exists(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_", test_package, "_inv_prob.Rds"))) {
-    region_wise_SVM_in_sample_inv_prob <- run_cv_svm_by_input_var(rdata_path = rdata_path,
-                                                                  svm_kernel = kernel,
-                                                                  test_package = test_package,
-                                                                  grouping_var = "Brain_Region",
-                                                                  svm_feature_var = "Feature",
-                                                                  use_inv_prob_weighting = TRUE,
-                                                                  noise_procs = noise_procs)  %>%
-      dplyr::rename("accuracy" = "Accuracy",
-                    "balanced_accuracy" = "Balanced_Accuracy")
-    saveRDS(region_wise_SVM_in_sample_inv_prob, file=paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_", test_package, "_inv_prob.Rds"))
-  }
+
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "ROI_wise_linear_SVM_CV_", test_package, "_inv_prob.Rds"))) {
+  region_wise_SVM_CV_inv_prob <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                                svm_kernel = kernel,
+                                                                test_package = test_package,
+                                                                grouping_var = "Brain_Region",
+                                                                svm_feature_var = "Feature",
+                                                                use_inv_prob_weighting = TRUE,
+                                                                noise_procs = noise_procs)
+  saveRDS(region_wise_SVM_CV_inv_prob, file=paste0(rdata_path, "ROI_wise_linear_SVM_CV_", test_package, "_inv_prob.Rds"))
 }
 ```
 
-
-Let's compare e1071 with kernlab. 
-
-e1071:
-
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-e1071_region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_e1071_inv_prob.Rds"))
+region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = e1071_region_wise_SVM_CV_inv_prob,
+plot_class_acc_w_props(class_res = region_wise_SVM_CV_inv_prob,
                        group_var = "Brain_Region",
                        cv = TRUE,
                        rdata_path = rdata_path,
@@ -328,19 +267,45 @@ plot_class_acc_w_props(class_res = e1071_region_wise_SVM_CV_inv_prob,
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/Region_Wise_linear_SVM_CV_Multi_Feature_Inv_Prob_e1071.png",
-       width=7, height=6, units="in", dpi=300)
+ggsave("plots/Region_Wise_CV_SVM_Inv_Prob.png",
+       width=7, height=5, units="in", dpi=300)
 ```
 
-kernlab:
+As with the in-sample results, the accuracy values are negatively shifted while the balanced accuracy values are positively shifted after applying inverse probability reweighting to the samples.
 
-```{r, fig.width=7, fig.height=6}
+### 10-fold cross-validated linear SVM with SMOTE
+
+```{r}
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
+
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "ROI_wise_linear_SVM_CV_", test_package, "_SMOTE.Rds"))) {
+  region_wise_SVM_CV_SMOTE <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                         svm_kernel = kernel,
+                                                         test_package = test_package,
+                                                         grouping_var = "Brain_Region",
+                                                         svm_feature_var = "Feature",
+                                                         use_inv_prob_weighting = FALSE,
+                                                         use_SMOTE = TRUE,
+                                                         noise_procs = noise_procs)
+  saveRDS(region_wise_SVM_CV_SMOTE, file=paste0(rdata_path, "ROI_wise_linear_SVM_CV_", test_package, "_SMOTE.Rds"))
+}
+```
+
+```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-kernlab_region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_kernlab_inv_prob.Rds"))
+region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-plot_class_acc_w_props(class_res = kernlab_region_wise_SVM_CV_inv_prob,
+plot_class_acc_w_props(class_res = region_wise_SVM_CV_SMOTE,
+                       group_var = "Brain_Region",
                        cv = TRUE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
@@ -348,15 +313,19 @@ plot_class_acc_w_props(class_res = kernlab_region_wise_SVM_CV_inv_prob,
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/Region_Wise_linear_SVM_CV_Multi_Feature_Inv_Prob_kernlab.png",
-       width=7, height=6, units="in", dpi=300)
+ggsave("plots/Region_Wise_CV_SVM_SMOTE.png",
+       width=7, height=5, units="in", dpi=300)
 ```
 
-
-Surprisingly, incorporating inverse probability weighting has minimal impact when it comes to the ten-fold cross-validated SVM. Of note, the in-sample and cross-validated SVM were both run with kernlab::ksvm using default parameters.
+As with the in-sample results, the accuracy values are negatively shifted while the balanced accuracy values are positively shifted after applying inverse probability reweighting to the samples.
 
 ## Model-free shuffle null distribution
+
 ### Generating null distributions from model-free shuffles
+
+This first model-free shuffles method is borrowed from Trent's implementation in theft. With this method, the input class labels (Schz or Control) are randomly shuffled N times, and for each iteration, the classification accuracy and balanced accuracy are calculated. This yields a null distribution of accuracies and balanced accuracies, circumventing the need for running any classification algorithms across iterations.
+
+Here, I've run 1,000,000 iterations of the model-free shuffle, generating 1,000,000 null values for Accuracy and Balanced Accuracy, respectively. Since this method is independent of brain region, the same null distribution can be used to compare with each brain region separately.
 
 ```{r}
 # Try three different noise processing methods
@@ -374,11 +343,11 @@ if (!file.exists(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds"))) {
 }
 ```
 
+### CV linear SVM
+```{r, fig.width=7, fig.height=5}
+region_wise_SVM_CV <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071.Rds"))
 
-```{r, fig.width=7, fig.height=6}
-e1071_region_wise_SVM_CV <- readRDS(paste0(rdata_path, "multivar_ROI_res_svmLinear_CV_e1071.Rds"))
-
-e1071_region_wise_SVM_CV %>%
+region_wise_SVM_CV %>%
   dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
   mutate(Type = "main") %>%
   plyr::rbind.fill(., model_free_shuffle_null_res) %>%
@@ -405,64 +374,26 @@ e1071_region_wise_SVM_CV %>%
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/Main_vs_Null_Acc_BAcc_10FCV_ROI_Wise_Linear_SVM.png",
-       width=7, height=6, units="in", dpi=300)
-```
-
-The model-free shuffles method is borrowed from Trent's implementation in theft. With this method, the input class labels (Schz or Control) are randomly shuffled N times, and for each iteration, the classification accuracy and balanced accuracy is calculated. This yields a null distribution of accuracies and balanced accuracies, circumventing the need for running any classification algorithms across iterations.
-
-Here, I've run 1,000,000 iterations of the model-free shuffle, generating 1,000,000 null values for Accuracy and Balanced Accuracy, respectively. Since this method is independent of brain region, the same null distribution can be used to compare with each brain region separately.
-
-I've plotted the distribution of null accuracies (coral) alongside the actual accuracies (teal) for the 82 ROIs on the left. We can also compare the results with those from using inverse probability weighting:
-
-```{r, fig.width=7, fig.height=6}
-e1071_region_wise_SVM_CV_inv_prob %>%
-  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
-  mutate(Type = "main") %>%
-  plyr::rbind.fill(., model_free_shuffle_null_res) %>%
-  pivot_longer(cols=c(accuracy, balanced_accuracy),
-               names_to = "Metric",
-               values_to = "Values") %>%
-  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
-  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
-                                                    "AROMA+2P+GMR",
-                                                    "AROMA+2P+DiCER"))) %>%
-  ggplot(data=., mapping=aes(x=Values)) +
-  geom_histogram(aes(fill = Type, y=0.5*..density..), 
-                 bins = 50,
-                 alpha=0.6, position="identity") +
-  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
-  xlab("Value from n=1,000,000 Model-Free Shuffles") +
-  ylab("Scaled Density") +
-  labs(fill = "Distribution") +
-  theme(strip.text.y.left = element_text(angle=0),
-        strip.placement = "outside",
-        legend.position = "bottom",
-        legend.direction = "horizontal") 
-```
-
-```{r, eval=F, echo=F}
-# Save plot
-ggsave("plots/Main_vs_Null_Acc_BAcc_10FCV_ROI_Wise_Linear_SVM_inv_prob.png",
-       width=7, height=6, units="in", dpi=300)
+ggsave("plots/Region_Wise_CV_Null_vs_Real_Model_Free_Shuffle.png",
+       width=7, height=5, units="in", dpi=300)
 ```
 
 
-We can empirically derive p-values for both metrics to see if the classification accuracy/balanced accuracy is significantly greater than that in the null distribution.
-
-### Deriving p-values using model-free shuffle null distributions
+I've plotted the distribution of null accuracies (teal) alongside the actual accuracies (pink) for the 82 ROIs on the left. Let's zoom in on AROMA+2P and pick the five brain regions with the highest cross-validated balanced accuracy:
 
 ```{r}
-if (!file.exists(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))) {
-  e1071_region_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = e1071_region_wise_SVM_CV_inv_prob,
-                                                              null_data = model_free_shuffle_null_res,
-                                                              grouping_var = "Brain_Region")
-  saveRDS(e1071_region_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+# Calculate p values from model-free shuffle null distribution
+region_wise_SVM_CV <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071.Rds"))
+if (!file.exists(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_pvals.Rds"))) {
+  region_wise_SVM_CV_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV,
+                                                   null_data = model_free_shuffle_null_res,
+                                                   grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_CV_pvals, file=paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
 } else {
-  e1071_region_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+  region_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
 }
 
-e1071_region_wise_SVM_CV_inv_prob_plabs <- e1071_region_wise_SVM_CV_inv_prob_pvals %>%
+region_wise_SVM_CV_plabs <- region_wise_SVM_CV_pvals %>%
   mutate(acc_p = scales::scientific(acc_p, digits = 3),
          bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
          acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
@@ -470,52 +401,14 @@ e1071_region_wise_SVM_CV_inv_prob_plabs <- e1071_region_wise_SVM_CV_inv_prob_pva
 ```
 
 
-Let's zoom in on AROMA+2P+DiCER and pick the five brain regions with the highest cross-validated accuracy:
-```{r, fig.width=10, fig.height=8}
-brain_regions <- e1071_region_wise_SVM_CV_inv_prob_plabs %>%
-  filter(Noise_Proc == "AROMA+2P") %>%
-  arrange(desc(accuracy)) %>%
-  top_n(5, accuracy) %>%
-  pull(grouping_var)
-
-e1071_region_wise_SVM_CV_inv_prob_pvals %>%
-  filter(Noise_Proc == "AROMA+2P",
-         grouping_var %in% brain_regions) %>%
-  mutate(grouping_var = factor(grouping_var, levels = brain_regions)) %>%
-  ggplot(data=.) +
-  geom_histogram(data = model_free_shuffle_null_res %>% 
-                   dplyr::filter(Noise_Proc == "AROMA+2P"),
-                 aes(x=accuracy, y=0.5*..density..),
-                 fill = "gray70", bins=50) +
-  ggtitle("Main and Model-Free Shuffle Null Accuracy\nfor top AROMA+2 Brain Regions") +
-  geom_vline(aes(xintercept = accuracy), color = "red") +
-  facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
-  ylab("Scaled Density of Null Iterations") +
-  geom_text(data = e1071_region_wise_SVM_CV_inv_prob_plabs %>%
-              filter(Noise_Proc == "AROMA+2P", grouping_var %in% brain_regions) %>%
-              mutate(grouping_var = factor(grouping_var, levels = brain_regions)),
-            aes(label = paste0("P = ", acc_p, "\nBH-FDR = ", acc_p_adj)), 
-            x = 0.67, y = 10.5) +
-  theme(plot.title = element_text(hjust=0.5))
-```
-```{r, echo=F, eval=F}
-ggsave("plots/Main_vs_Null_Acc_AROMA_2P_Top5.png", width=10, 
-       height=6, units="in", dpi=300)
-```
-
-This panel panel shows the five brain regions with the highest raw accuracy from multi-feature 10-fold CV linear SVM. The red bar indicates the real accuracy while the gray bars depict the null distribution (derived from model-free shuffles as shown above). 
-
-Even after adjusting for multiple comparisons (82 ROIs x 3 Noise-processing methods) using Benjamini-Hochberg False Discovery Rate (BH-FDR), the accuracy values for these five regions are still significant (p < 1.00e-06, FDR < 1.00e-05).
-
-We can do the same for balanced accuracy:
-```{r, fig.width=10, fig.height=8}
-brain_regions <- e1071_region_wise_SVM_CV_inv_prob_plabs %>%
+```{r, fig.width=10, fig.height=5}
+brain_regions <- region_wise_SVM_CV_plabs %>%
   filter(Noise_Proc == "AROMA+2P") %>%
   arrange(desc(balanced_accuracy)) %>%
   top_n(5, balanced_accuracy) %>%
   pull(grouping_var)
 
-e1071_region_wise_SVM_CV_inv_prob_pvals %>%
+region_wise_SVM_CV_plabs %>%
   filter(Noise_Proc == "AROMA+2P",
          grouping_var %in% brain_regions) %>%
   mutate(grouping_var = factor(grouping_var, levels = brain_regions)) %>%
@@ -528,68 +421,283 @@ e1071_region_wise_SVM_CV_inv_prob_pvals %>%
   geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
   facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
   ylab("Scaled Density of Null Iterations") +
-  geom_text(data = e1071_region_wise_SVM_CV_inv_prob_plabs %>%
+  xlab("Balanced Accuracy") +
+  geom_text(data = region_wise_SVM_CV_plabs %>%
               filter(Noise_Proc == "AROMA+2P", grouping_var %in% brain_regions) %>%
               mutate(grouping_var = factor(grouping_var, levels = brain_regions)),
             aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
-            x = 0.6, y = 9) +
+            x = 0.6, y = 8.5) +
   theme(plot.title = element_text(hjust=0.5))
 ```
 ```{r, echo=F, eval=F}
-ggsave("plots/Main_vs_Null_BalAcc_AROMA_2P_Top5.png", width=10, 
-       height=6, units="in", dpi=300)
+ggsave("plots/Region_Wise_Model_Free_Shuffle_Top5_Regions_CV_SVM_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
 ```
 
-This panel panel shows the five brain regions with the highest balanced accuracy from multi-feature 10-fold CV linear SVM. The red bar indicates the real accuracy while the gray bars depict the null distribution (derived from model-free shuffles as shown above). 
-
-Even after adjusting for multiple comparisons (82 ROIs x 3 Noise-processing methods) using Benjamini-Hochberg False Discovery Rate (BH-FDR), the accuracy values for these five regions are still significant (p = 0, BH-FDR = 0).
-
 ```{r}
-e1071_region_wise_SVM_CV_inv_prob_pvals %>%
+region_wise_SVM_CV_pvals %>%
   mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
   group_by(Noise_Proc) %>%
   summarise(num_sig_acc = sum(acc_p < 0.05),
             num_sig_acc_fdr = sum(acc_p_adj < 0.05),
             num_sig_bacc = sum(bal_acc_p < 0.05),
-            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05))
+            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
 ```
 
-This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the upsampled model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.  
+This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
 
 
+### CV linear SVM -- inv prob
+```{r, fig.width=7, fig.height=5}
+region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
+
+region_wise_SVM_CV_inv_prob %>%
+  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
+  mutate(Type = "main") %>%
+  plyr::rbind.fill(., model_free_shuffle_null_res) %>%
+  pivot_longer(cols=c(accuracy, balanced_accuracy),
+               names_to = "Metric",
+               values_to = "Values") %>%
+  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
+                                                    "AROMA+2P+GMR",
+                                                    "AROMA+2P+DiCER"))) %>%
+  ggplot(data=., mapping=aes(x=Values)) +
+  geom_histogram(aes(fill = Type, y=0.5*..density..), 
+                 bins = 50,
+                 alpha=0.6, position="identity") +
+  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
+  xlab("Value from n=1,000,000 Model-Free Shuffles") +
+  ylab("Scaled Density") +
+  labs(fill = "Distribution") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal") 
+```
+
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Region_Wise_CV_Null_vs_Real_Model_Free_Shuffle_inv_prob.png",
+       width=7, height=5, units="in", dpi=300)
+```
+
+
+I've plotted the distribution of null accuracies (teal) alongside the actual accuracies (pink) for the 82 ROIs on the left. Let's zoom in on AROMA+2P and pick the five brain regions with the highest cross-validated balanced accuracy:
+
+```{r}
+# Calculate p values from model-free shuffle null distribution
+region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
+if (!file.exists(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))) {
+  region_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV_inv_prob,
+                                                   null_data = model_free_shuffle_null_res,
+                                                   grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+} else {
+  region_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+}
+
+region_wise_SVM_CV_inv_prob_plabs <- region_wise_SVM_CV_inv_prob_pvals %>%
+  mutate(acc_p = scales::scientific(acc_p, digits = 3),
+         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
+         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
+         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+```
+
+
+```{r, fig.width=10, fig.height=5}
+brain_regions <- region_wise_SVM_CV_inv_prob_plabs %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  arrange(desc(balanced_accuracy)) %>%
+  top_n(5, balanced_accuracy) %>%
+  pull(grouping_var)
+
+region_wise_SVM_CV_inv_prob_plabs %>%
+  filter(Noise_Proc == "AROMA+2P",
+         grouping_var %in% brain_regions) %>%
+  mutate(grouping_var = factor(grouping_var, levels = brain_regions)) %>%
+  ggplot(data=.) +
+  geom_histogram(data = model_free_shuffle_null_res %>% 
+                   dplyr::filter(Noise_Proc == "AROMA+2P"),
+                 aes(x=balanced_accuracy, y=0.5*..density..),
+                 fill = "gray70", bins=50) +
+  ggtitle("Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P Brain Regions, Inverse Probability") +
+  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
+  facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
+  ylab("Scaled Density of Null Iterations") +
+  xlab("Balanced Accuracy") +
+  geom_text(data = region_wise_SVM_CV_inv_prob_plabs %>%
+              filter(Noise_Proc == "AROMA+2P", grouping_var %in% brain_regions) %>%
+              mutate(grouping_var = factor(grouping_var, levels = brain_regions)),
+            aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
+            x = 0.6, y = 8.5) +
+  theme(plot.title = element_text(hjust=0.5))
+```
+```{r, echo=F, eval=F}
+ggsave("plots/Region_Wise_Model_Free_Shuffle_Top5_Regions_CV_SVM_Balanced_Accuracy_Inv_Prob.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+region_wise_SVM_CV_inv_prob_pvals %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  group_by(Noise_Proc) %>%
+  summarise(num_sig_acc = sum(acc_p < 0.05),
+            num_sig_acc_fdr = sum(acc_p_adj < 0.05),
+            num_sig_bacc = sum(bal_acc_p < 0.05),
+            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
+```
+
+This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
+ -- 
+
+
+
+### CV linear SVM -- SMOTE
+```{r, fig.width=7, fig.height=5}
+region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
+
+region_wise_SVM_CV_SMOTE %>%
+  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
+  mutate(Type = "main") %>%
+  plyr::rbind.fill(., model_free_shuffle_null_res) %>%
+  pivot_longer(cols=c(accuracy, balanced_accuracy),
+               names_to = "Metric",
+               values_to = "Values") %>%
+  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
+                                                    "AROMA+2P+GMR",
+                                                    "AROMA+2P+DiCER"))) %>%
+  ggplot(data=., mapping=aes(x=Values)) +
+  geom_histogram(aes(fill = Type, y=0.5*..density..), 
+                 bins = 50,
+                 alpha=0.6, position="identity") +
+  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
+  xlab("Value from n=1,000,000 Model-Free Shuffles") +
+  ylab("Scaled Density") +
+  labs(fill = "Distribution") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal") 
+```
+
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Region_Wise_CV_Null_vs_Real_Model_Free_Shuffle_SMOTE.png",
+       width=7, height=5, units="in", dpi=300)
+```
+
+
+I've plotted the distribution of null accuracies (teal) alongside the actual accuracies (pink) for the 82 ROIs on the left. Let's zoom in on AROMA+2P and pick the five brain regions with the highest cross-validated balanced accuracy:
+
+```{r}
+# Calculate p values from model-free shuffle null distribution
+region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
+if (!file.exists(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))) {
+  region_wise_SVM_CV_SMOTE_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV_SMOTE,
+                                                   null_data = model_free_shuffle_null_res,
+                                                   grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))
+} else {
+  region_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))
+}
+
+region_wise_SVM_CV_SMOTE_plabs <- region_wise_SVM_CV_SMOTE_pvals %>%
+  mutate(acc_p = scales::scientific(acc_p, digits = 3),
+         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
+         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
+         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+```
+
+
+```{r, fig.width=10, fig.height=5}
+brain_regions <- region_wise_SVM_CV_SMOTE_plabs %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  arrange(desc(balanced_accuracy)) %>%
+  top_n(5, balanced_accuracy) %>%
+  pull(grouping_var)
+
+region_wise_SVM_CV_SMOTE_plabs %>%
+  filter(Noise_Proc == "AROMA+2P",
+         grouping_var %in% brain_regions) %>%
+  mutate(grouping_var = factor(grouping_var, levels = brain_regions)) %>%
+  ggplot(data=.) +
+  geom_histogram(data = model_free_shuffle_null_res %>% 
+                   dplyr::filter(Noise_Proc == "AROMA+2P"),
+                 aes(x=balanced_accuracy, y=0.5*..density..),
+                 fill = "gray70", bins=50) +
+  ggtitle("Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P Brain Regions, SMOTE") +
+  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
+  facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
+  ylab("Scaled Density of Null Iterations") +
+  xlab("Balanced Accuracy") +
+  geom_text(data = region_wise_SVM_CV_SMOTE_plabs %>%
+              filter(Noise_Proc == "AROMA+2P", grouping_var %in% brain_regions) %>%
+              mutate(grouping_var = factor(grouping_var, levels = brain_regions)),
+            aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
+            x = 0.6, y = 8.5) +
+  theme(plot.title = element_text(hjust=0.5))
+```
+```{r, echo=F, eval=F}
+ggsave("plots/Region_Wise_Model_Free_Shuffle_Top5_Regions_CV_SVM_Balanced_Accuracy_SMOTE.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+region_wise_SVM_CV_SMOTE_pvals %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  group_by(Noise_Proc) %>%
+  summarise(num_sig_acc = sum(acc_p < 0.05),
+            num_sig_acc_fdr = sum(acc_p_adj < 0.05),
+            num_sig_bacc = sum(bal_acc_p < 0.05),
+            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
+```
+
+This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
 
 ## Empirical model-based pooled null distribution
-### Generating null distributions from model-free shuffles
 
-#### In-sample
+### Generating null distributions from pooled null model fits
 
-Run null model permutation function:
+In contrast to the model-free shuffle method, here we are actually shuffling the input class labels right before running the linear SVM over N=100 iterations per ROI (N=82) and pooling the resulting accuracy and balanced accuracy values, to generate empirical null distributions of N=8,200 data points each, respectively.
+
+### In-sample
+
 ```{r}
+# Run null model permutation function
 noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-noise_proc = "AROMA+2P"
-noise_label = "AROMA_2P"
 svm_kernel <- "linear"
 set.seed(127)
 
-if (!file.exists(paste0(rdata_path, "Model_Permutation_Null_In_Sample.Rds"))) {
+if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample.Rds"))) {
   model_permutation_null_in_sample <- run_null_model_n_permutations(rdata_path,
-                                                                    noise_procs = c("AROMA+2P", 
-                                                                                    "AROMA+2P+GMR", 
-                                                                                    "AROMA+2P+DiCER"),
+                                                                    noise_procs = noise_procs,
                                                                     grouping_var = "Brain_Region",
                                                                     svm_feature_var = "Feature",
                                                                     num_permutations = 100,
-                                                                    use_inv_prob_weighting = FALSE)
+                                                                    seed = 127,
+                                                                    use_inv_prob_weighting = FALSE,
+                                                                    cross_validate = FALSE)
   
-  saveRDS(model_permutation_null_in_sample, file=paste0(rdata_path, "Model_Permutation_Null_In_Sample.Rds"))
+  saveRDS(model_permutation_null_in_sample, file=paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample.Rds"))
 } else {
-  model_permutation_null_in_sample <- paste0(rdata_path, "Model_Permutation_Null_In_Sample.Rds")
+  model_permutation_null_in_sample <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample.Rds"))
 }
 ```
 
-Plot null accuracy and balanced accuracy compared with real metrics:
-```{r, fig.width=7, fig.height=6}
-e1071_region_wise_SVM_in_sample %>%
+
+```{r, fig.width=7, fig.height=5}
+# Plot null accuracy and balanced accuracy compared with real metrics:
+region_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_e1071.Rds"))
+
+region_wise_SVM_in_sample %>%
   dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
   mutate(Type = "main") %>%
   plyr::rbind.fill(., model_permutation_null_in_sample) %>%
@@ -605,7 +713,7 @@ e1071_region_wise_SVM_in_sample %>%
                  bins = 50,
                  alpha=0.6, position="identity") +
   facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
-  xlab("Value from n=8,200 Pooled Null Iterations") +
+  xlab("Value from n=82,000 Pooled Null Iterations") +
   ylab("Scaled Density") +
   labs(fill = "Distribution") +
   theme(strip.text.y.left = element_text(angle=0),
@@ -615,39 +723,109 @@ e1071_region_wise_SVM_in_sample %>%
 ```
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/Main_vs_Pooled_Permutation_Null_Acc_BAcc_In_Sample_ROI_Wise_Linear_SVM.png",
-       width=7, height=6, units="in", dpi=300)
+ggsave("plots/Region_Wise_Null_Model_Fit_In_Sample_Top5_Regions_Balanced_Accuracy.png",
+       width=7, height=5, units="in", dpi=300)
 ```
 
-#### In-sample with inverse probability weighting
+The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
 
-Run null model permutation function:
 ```{r}
+region_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_e1071.Rds"))
+
+if (!file.exists(paste0(rdata_path, "ROI_wise_In_Sample_Null_Model_Fits_pvals.Rds"))) {
+  region_wise_SVM_in_sample_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_in_sample,
+                                                          null_data = model_permutation_null_in_sample,
+                                                          grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_in_sample_pvals, file=paste0(rdata_path, "ROI_wise_In_Sample_Null_Model_Fits_pvals.Rds"))
+} else {
+  region_wise_SVM_in_sample_pvals <- readRDS(paste0(rdata_path, "ROI_wise_In_Sample_Null_Model_Fits_pvals.Rds"))
+}
+
+region_wise_SVM_in_sample_plabs <- region_wise_SVM_in_sample_pvals %>%
+  mutate(acc_p = scales::scientific(acc_p, digits = 3),
+         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
+         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
+         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+```
+
+```{r, fig.width=10, fig.height=5}
+brain_regions <- region_wise_SVM_in_sample_plabs %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  arrange(desc(balanced_accuracy)) %>%
+  top_n(5, balanced_accuracy) %>%
+  pull(grouping_var)
+
+region_wise_SVM_in_sample_plabs %>%
+  filter(Noise_Proc == "AROMA+2P",
+         grouping_var %in% brain_regions) %>%
+  mutate(grouping_var = factor(grouping_var, levels = brain_regions)) %>%
+  ggplot(data=.) +
+  geom_histogram(data = model_permutation_null_in_sample %>% 
+                   dplyr::filter(Noise_Proc == "AROMA+2P",
+                                 grouping_var %in% brain_regions)%>%
+                   mutate(grouping_var = factor(grouping_var, 
+                                                levels = brain_regions)),
+                 aes(x=balanced_accuracy, y=0.5*..density..),
+                 fill = "gray70", bins=50) +
+  ggtitle("Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, In-Sample") +
+  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
+  facet_wrap(grouping_var ~ ., nrow = 2) +
+  ylab("Scaled Density of Null Iterations") +
+  xlab("Balanced Accuracy") +
+  geom_text(data = region_wise_SVM_in_sample_plabs %>%
+              filter(Noise_Proc == "AROMA+2P", grouping_var %in% brain_regions) %>%
+              mutate(grouping_var = factor(grouping_var, levels = brain_regions)),
+            aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
+            x = 0.6, y = 50) +
+  theme(plot.title = element_text(hjust=0.5))
+```
+```{r, echo=F, eval=F}
+ggsave("plots/Region_Wise_Null_Model_Fit_Top5_Regions_In_Sample_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+region_wise_SVM_in_sample_pvals %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  group_by(Noise_Proc) %>%
+  summarise(num_sig_acc = sum(acc_p < 0.05),
+            num_sig_acc_fdr = sum(acc_p_adj < 0.05),
+            num_sig_bacc = sum(bal_acc_p < 0.05),
+            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
+```
+
+### In-sample, inverse probability weighted
+
+```{r}
+# Run null model permutation function
 noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-noise_proc = "AROMA+2P"
-noise_label = "AROMA_2P"
 svm_kernel <- "linear"
 set.seed(127)
 
-if (!file.exists(paste0(rdata_path, "Model_Permutation_Null_In_Sample_Inv_Prob.Rds"))) {
+if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample_inv_prob.Rds"))) {
   model_permutation_null_in_sample_inv_prob <- run_null_model_n_permutations(rdata_path,
-                                                                    noise_procs = c("AROMA+2P", 
-                                                                                    "AROMA+2P+GMR", 
-                                                                                    "AROMA+2P+DiCER"),
+                                                                    noise_procs = noise_procs,
                                                                     grouping_var = "Brain_Region",
                                                                     svm_feature_var = "Feature",
                                                                     num_permutations = 100,
-                                                                    use_inv_prob_weighting = TRUE)
+                                                                    seed = 127,
+                                                                    use_inv_prob_weighting = TRUE,
+                                                                    cross_validate = FALSE)
   
-  saveRDS(model_permutation_null_in_sample_inv_prob, file=paste0(rdata_path, "Model_Permutation_Null_In_Sample_Inv_Prob.Rds"))
+  saveRDS(model_permutation_null_in_sample_inv_prob, file=paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample_inv_prob.Rds"))
 } else {
-  model_permutation_null_in_sample_inv_prob <- paste0(rdata_path, "Model_Permutation_Null_In_Sample_Inv_Prob.Rds")
+  model_permutation_null_in_sample_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample_inv_prob.Rds"))
 }
 ```
 
-Plot null accuracy and balanced accuracy compared with real metrics:
-```{r, fig.width=7, fig.height=6}
-e1071_region_wise_SVM_in_sample_inv_prob %>%
+
+```{r, fig.width=7, fig.height=5}
+# Plot null accuracy and balanced accuracy compared with real metrics:
+region_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_inv_prob_e1071.Rds"))
+
+region_wise_SVM_in_sample_inv_prob %>%
   dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
   mutate(Type = "main") %>%
   plyr::rbind.fill(., model_permutation_null_in_sample_inv_prob) %>%
@@ -663,7 +841,7 @@ e1071_region_wise_SVM_in_sample_inv_prob %>%
                  bins = 50,
                  alpha=0.6, position="identity") +
   facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
-  xlab("Value from n=8,200 Pooled Null Iterations") +
+  xlab("Value from n=82,000 Pooled Null Iterations") +
   ylab("Scaled Density") +
   labs(fill = "Distribution") +
   theme(strip.text.y.left = element_text(angle=0),
@@ -674,34 +852,388 @@ e1071_region_wise_SVM_in_sample_inv_prob %>%
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/Main_vs_Pooled_Permutation_Null_Acc_BAcc_In_Sample_ROI_Wise_Linear_SVM_Inv_Prob.png",
-       width=7, height=6, units="in", dpi=300)
+ggsave("plots/Region_Wise_Null_Model_Fit_In_Sample_Top5_Regions_Balanced_Accuracy_Inv_Prob.png",
+       width=7, height=5, units="in", dpi=300)
 ```
 
-#### Cross-validated
+The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
 
-Run null model permutation function:
 ```{r}
+region_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_sample_inv_prob_e1071.Rds"))
+
+if (!file.exists(paste0(rdata_path, "ROI_wise_In_Sample_Null_Model_Fits_pvals_inv_prob.Rds"))) {
+  region_wise_SVM_in_sample_inv_prob_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_in_sample_inv_prob,
+                                                              null_data = model_permutation_null_in_sample_inv_prob,
+                                                              grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_in_sample_inv_prob_pvals, file=paste0(rdata_path, "ROI_wise_In_Sample_Null_Model_Fits_pvals_inv_prob.Rds"))
+} else {
+  region_wise_SVM_in_sample_inv_prob_pvals <- readRDS(paste0(rdata_path, "ROI_wise_In_Sample_Null_Model_Fits_pvals_inv_prob.Rds"))
+}
+
+region_wise_SVM_in_sample_inv_prob_plabs <- region_wise_SVM_in_sample_inv_prob_pvals %>%
+  mutate(acc_p = scales::scientific(acc_p, digits = 3),
+         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
+         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
+         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+```
+
+```{r, fig.width=10, fig.height=5}
+brain_regions <- region_wise_SVM_in_sample_inv_prob_plabs %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  arrange(desc(balanced_accuracy)) %>%
+  top_n(5, balanced_accuracy) %>%
+  pull(grouping_var)
+
+region_wise_SVM_in_sample_inv_prob_plabs %>%
+  filter(Noise_Proc == "AROMA+2P",
+         grouping_var %in% brain_regions) %>%
+  mutate(grouping_var = factor(grouping_var, levels = brain_regions)) %>%
+  ggplot(data=.) +
+  geom_histogram(data = model_permutation_null_in_sample_inv_prob %>% 
+                   dplyr::filter(Noise_Proc == "AROMA+2P",
+                                 grouping_var %in% brain_regions)%>%
+                   mutate(grouping_var = factor(grouping_var, 
+                                                levels = brain_regions)),
+                 aes(x=balanced_accuracy, y=0.5*..density..),
+                 fill = "gray70", bins=50) +
+  ggtitle("Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, In-Sample Inv Prob") +
+  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
+  facet_wrap(grouping_var ~ ., nrow = 2) +
+  ylab("Scaled Density of Null Iterations") +
+  xlab("Balanced Accuracy") +
+  geom_text(data = region_wise_SVM_in_sample_inv_prob_plabs %>%
+              filter(Noise_Proc == "AROMA+2P", grouping_var %in% brain_regions) %>%
+              mutate(grouping_var = factor(grouping_var, levels = brain_regions)),
+            aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
+            x = 0.75, y = 7) +
+  theme(plot.title = element_text(hjust=0.5))
+```
+
+```{r, echo=F, eval=F}
+ggsave("plots/Region_Wise_Null_Model_Fit_Top5_Regions_In_Sample_Inv_Prob_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+region_wise_SVM_in_sample_inv_prob_pvals %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  group_by(Noise_Proc) %>%
+  summarise(num_sig_acc = sum(acc_p < 0.05),
+            num_sig_acc_fdr = sum(acc_p_adj < 0.05),
+            num_sig_bacc = sum(bal_acc_p < 0.05),
+            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
+```
+
+
+
+
+### CV, inverse probability weighted
+
+```{r}
+# Run null model permutation function
 noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 svm_kernel <- "linear"
 set.seed(127)
 
-if (!file.exists(paste0(rdata_path, "Model_Permutation_Null_CV.Rds"))) {
-  model_permutation_null_CV <- run_null_model_n_permutations_CV(rdata_path,
-                                                                noise_procs = noise_procs,
-                                                                grouping_var = "Brain_Region",
-                                                                svm_feature_var = "Feature",
-                                                                num_permutations = 100,
-                                                                seed = 127,
-                                                                use_inv_prob_weighting = FALSE)
+if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_inv_prob.Rds"))) {
+  model_permutation_null_CV_inv_prob <- run_null_model_n_permutations(rdata_path,
+                                                                    noise_procs = noise_procs,
+                                                                    grouping_var = "Brain_Region",
+                                                                    svm_feature_var = "Feature",
+                                                                    num_permutations = 1000,
+                                                                    seed = 127,
+                                                                    use_inv_prob_weighting = TRUE,
+                                                                    cross_validate = TRUE)
   
-  saveRDS(model_permutation_null_CV, file=paste0(rdata_path, "Model_Permutation_Null_CV.Rds"))
+  saveRDS(model_permutation_null_CV_inv_prob, file=paste0(rdata_path, "ROI_wise_model_permutation_null_CV_inv_prob.Rds"))
 } else {
-  model_permutation_null_CV <- paste0(rdata_path, "Model_Permutation_Null_CV.Rds")
+  model_permutation_null_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_inv_prob.Rds"))
 }
 ```
 
-#### Cross-validated with inverse probability weighting
+
+```{r, fig.width=7, fig.height=5}
+# Plot null accuracy and balanced accuracy compared with real metrics:
+region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
+
+region_wise_SVM_CV_inv_prob %>%
+  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
+  mutate(Type = "main") %>%
+  plyr::rbind.fill(., model_permutation_null_CV_inv_prob) %>%
+  dplyr::select(-accuracy_sd, -balanced_accuracy_sd) %>%
+  pivot_longer(cols=c(accuracy, balanced_accuracy),
+               names_to = "Metric",
+               values_to = "Values") %>%
+  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
+                                                    "AROMA+2P+GMR",
+                                                    "AROMA+2P+DiCER"))) %>%
+  ggplot(data=., mapping=aes(x=Values)) +
+  geom_histogram(aes(fill = Type, y=0.5*..density..), 
+                 bins = 50,
+                 alpha=0.6, position="identity") +
+  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
+  xlab("Value from n=82,000 Pooled Null Iterations") +
+  ylab("Scaled Density") +
+  labs(fill = "Distribution") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal") 
+```
+
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Region_Wise_Null_Model_Fit_CV_Top5_Regions_Balanced_Accuracy_Inv_Prob.png",
+       width=7, height=5, units="in", dpi=300)
+```
+
+The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
+
+```{r}
+region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
+
+if (!file.exists(paste0(rdata_path, "ROI_wise_CV_Null_Model_Fits_pvals_inv_prob.Rds"))) {
+  region_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV_inv_prob,
+                                                              null_data = model_permutation_null_CV_inv_prob,
+                                                              grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "ROI_wise_CV_Null_Model_Fits_pvals_inv_prob.Rds"))
+} else {
+  region_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "ROI_wise_CV_Null_Model_Fits_pvals_inv_prob.Rds"))
+}
+
+region_wise_SVM_CV_inv_prob_plabs <- region_wise_SVM_CV_inv_prob_pvals %>%
+  mutate(acc_p = scales::scientific(acc_p, digits = 3),
+         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
+         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
+         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+```
+
+```{r, fig.width=10, fig.height=5}
+brain_regions <- region_wise_SVM_CV_inv_prob_plabs %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  arrange(desc(balanced_accuracy)) %>%
+  top_n(5, balanced_accuracy) %>%
+  pull(grouping_var)
+
+region_wise_SVM_CV_inv_prob_plabs %>%
+  filter(Noise_Proc == "AROMA+2P",
+         grouping_var %in% brain_regions) %>%
+  mutate(grouping_var = factor(grouping_var, levels = brain_regions)) %>%
+  ggplot(data=.) +
+  geom_histogram(data = model_permutation_null_CV_inv_prob %>% 
+                   dplyr::filter(Noise_Proc == "AROMA+2P") %>%
+                   dplyr::select(-grouping_var),
+                 aes(x=balanced_accuracy, y=0.5*..density..),
+                 fill = "gray70", bins=50) +
+  ggtitle("Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, CV Inv Prob") +
+  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
+  facet_wrap(grouping_var ~ ., nrow = 2) +
+  ylab("Scaled Density of Null Iterations") +
+  xlab("Balanced Accuracy") +
+  geom_text(data = region_wise_SVM_CV_inv_prob_plabs %>%
+              filter(Noise_Proc == "AROMA+2P", grouping_var %in% brain_regions) %>%
+              mutate(grouping_var = factor(grouping_var, levels = brain_regions)),
+            aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
+            x = 0.75, y = 3.2) +
+  theme(plot.title = element_text(hjust=0.5))
+```
+
+```{r, echo=F, eval=F}
+ggsave("plots/Region_Wise_Null_Model_Fit_Top5_Regions_CV_Inv_Prob_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+region_wise_SVM_CV_inv_prob_pvals %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  group_by(Noise_Proc) %>%
+  summarise(num_sig_acc = sum(acc_p < 0.05),
+            num_sig_acc_fdr = sum(acc_p_adj < 0.05),
+            num_sig_bacc = sum(bal_acc_p < 0.05),
+            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
+```
+
+
+
+
+
+### CV, SMOTE
+
+```{r}
+# Run null model permutation function
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+svm_kernel <- "linear"
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_SMOTE.Rds"))) {
+  model_permutation_null_CV_SMOTE <- run_null_model_n_permutations(rdata_path,
+                                                                    noise_procs = noise_procs,
+                                                                    grouping_var = "Brain_Region",
+                                                                    svm_feature_var = "Feature",
+                                                                    num_permutations = 1000,
+                                                                    seed = 127,
+                                                                    use_SMOTE_weighting = TRUE,
+                                                                    cross_validate = TRUE)
+  
+  saveRDS(model_permutation_null_CV_SMOTE, file=paste0(rdata_path, "ROI_wise_model_permutation_null_CV_SMOTE.Rds"))
+} else {
+  model_permutation_null_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_SMOTE.Rds"))
+}
+```
+
+
+```{r, fig.width=7, fig.height=5}
+# Plot null accuracy and balanced accuracy compared with real metrics:
+region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
+
+region_wise_SVM_CV_SMOTE %>%
+  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
+  mutate(Type = "main") %>%
+  plyr::rbind.fill(., model_permutation_null_CV_SMOTE) %>%
+  dplyr::select(-accuracy_sd, -balanced_accuracy_sd) %>%
+  pivot_longer(cols=c(accuracy, balanced_accuracy),
+               names_to = "Metric",
+               values_to = "Values") %>%
+  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
+                                                    "AROMA+2P+GMR",
+                                                    "AROMA+2P+DiCER"))) %>%
+  ggplot(data=., mapping=aes(x=Values)) +
+  geom_histogram(aes(fill = Type, y=0.5*..density..), 
+                 bins = 50,
+                 alpha=0.6, position="identity") +
+  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
+  xlab("Value from n=82,000 Pooled Null Iterations") +
+  ylab("Scaled Density") +
+  labs(fill = "Distribution") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal") 
+```
+
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Region_Wise_Null_Model_Fit_CV_Top5_Regions_Balanced_Accuracy_SMOTE.png",
+       width=7, height=5, units="in", dpi=300)
+```
+
+The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
+
+```{r}
+region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
+
+if (!file.exists(paste0(rdata_path, "ROI_wise_CV_Null_Model_Fits_pvals_SMOTE.Rds"))) {
+  region_wise_SVM_CV_SMOTE_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV_SMOTE,
+                                                              null_data = model_permutation_null_CV_SMOTE,
+                                                              grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "ROI_wise_CV_Null_Model_Fits_pvals_SMOTE.Rds"))
+} else {
+  region_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "ROI_wise_CV_Null_Model_Fits_pvals_SMOTE.Rds"))
+}
+
+region_wise_SVM_CV_SMOTE_plabs <- region_wise_SVM_CV_SMOTE_pvals %>%
+  mutate(acc_p = scales::scientific(acc_p, digits = 3),
+         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
+         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
+         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+```
+
+```{r, fig.width=10, fig.height=5}
+brain_regions <- region_wise_SVM_CV_SMOTE_plabs %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  arrange(desc(balanced_accuracy)) %>%
+  top_n(5, balanced_accuracy) %>%
+  pull(grouping_var)
+
+region_wise_SVM_CV_SMOTE_plabs %>%
+  filter(Noise_Proc == "AROMA+2P",
+         grouping_var %in% brain_regions) %>%
+  mutate(grouping_var = factor(grouping_var, levels = brain_regions)) %>%
+  ggplot(data=.) +
+  geom_histogram(data = model_permutation_null_CV_SMOTE %>% 
+                   dplyr::filter(Noise_Proc == "AROMA+2P") %>%
+                   dplyr::select(-grouping_var),
+                 aes(x=balanced_accuracy, y=0.5*..density..),
+                 fill = "gray70", bins=50) +
+  ggtitle("Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, CV SMOTE") +
+  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
+  facet_wrap(grouping_var ~ ., nrow = 2) +
+  ylab("Scaled Density of Null Iterations") +
+  xlab("Balanced Accuracy") +
+  geom_text(data = region_wise_SVM_CV_SMOTE_plabs %>%
+              filter(Noise_Proc == "AROMA+2P", grouping_var %in% brain_regions) %>%
+              mutate(grouping_var = factor(grouping_var, levels = brain_regions)),
+            aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
+            x = 0.75, y = 2.7) +
+  theme(plot.title = element_text(hjust=0.5))
+```
+
+```{r, echo=F, eval=F}
+ggsave("plots/Region_Wise_Null_Model_Fit_Top5_Regions_CV_SMOTE_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+region_wise_SVM_CV_SMOTE_pvals %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  group_by(Noise_Proc) %>%
+  summarise(num_sig_acc = sum(acc_p < 0.05),
+            num_sig_acc_fdr = sum(acc_p_adj < 0.05),
+            num_sig_bacc = sum(bal_acc_p < 0.05),
+            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
+```
+
+## Comparing left vs. right hemispheres
+
+### 10-fold CV inverse probability weighted
+
+```{r, fig.width=6, fig.height=4}
+region_wise_SVM_CV_inv_prob %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  mutate(Hemisphere = ifelse(str_detect(grouping_var, "lh-|Left-"),
+                             "Left", "Right")) %>%
+  mutate(Brain_Region = str_replace_all(grouping_var, "ctx-lh-|Left-|ctx-rh-|Right-", "")) %>%
+  dplyr::select(Hemisphere, Brain_Region, accuracy, balanced_accuracy) %>%
+  pivot_longer(cols=c(accuracy, balanced_accuracy),
+               names_to = "Metric", values_to = "Values") %>%
+  mutate(Metric = ifelse(Metric == "accuracy", "Accuracy", "Balanced Accuracy")) %>%
+  ggplot(data=., mapping=aes(x=Hemisphere, y=Values)) +
+  geom_line(aes(group = Brain_Region, color = Brain_Region)) +
+  facet_grid(. ~ Metric, scales="free") +
+  theme(legend.position = "none")
+```
+
+```{r, eval=F, echo=F}
+ggsave("plots/Left_vs_Right_Hemi_Performance_Line.png", width=6, height=4, units="in", dpi=300)
+```
+
+```{r, fig.width=6, fig.height=4}
+region_wise_SVM_CV_inv_prob %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  mutate(Hemisphere = ifelse(str_detect(grouping_var, "lh-|Left-"),
+                             "Left", "Right")) %>%
+  mutate(Brain_Region = str_replace_all(grouping_var, "ctx-lh-|Left-|ctx-rh-|Right-", "")) %>%
+  dplyr::select(Hemisphere, Brain_Region, accuracy, balanced_accuracy) %>%
+  pivot_longer(cols=c(accuracy, balanced_accuracy),
+               names_to = "Metric", values_to = "Values") %>%
+  mutate(Metric = ifelse(Metric == "accuracy", "Accuracy", "Balanced Accuracy")) %>%
+  ggplot(data=., mapping=aes(x=Hemisphere, y=Values)) +
+  geom_boxplot(aes(fill = Hemisphere)) +
+  facet_grid(. ~ Metric, scales="free") +
+  theme(legend.position = "none")
+```
+```{r, eval=F, echo=F}
+ggsave("plots/Left_vs_Right_Hemi_Performance_Boxplot.png", width=6, height=4, units="in", dpi=300)
+```
+
 
 ## Null model for overall accuracy
 
@@ -727,7 +1259,7 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_meta_null_acc_AROMA_2P.Rds"))) {
   random_82_acc <- readRDS(paste0(rdata_path, "ROI_wise_meta_null_acc_AROMA_2P.Rds"))
 }
 
-real_82_acc <- e1071_region_wise_SVM_CV %>%
+real_82_acc <- region_wise_SVM_CV %>%
   filter(Noise_Proc=="AROMA+2P") %>%
   summarise(mean_accuracy = mean(accuracy, na.rm=T),
             mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
@@ -750,8 +1282,13 @@ bal_acc_p <- ggplot() +
   xlab("Mean Balanced Accuracy") +
   ggtitle("Mean Balanced Accuracy in AROMA+2P ROI-Based Data") +
   theme(plot.title=element_text(hjust=0.5))
+```
 
+```{r, fig.width=7, fig.height=8}
 acc_p / bal_acc_p
+```
+
+```{r, eval=F, echo=F}
 ggsave("plots/Meta_Null_AROMA_2P_ROI_wise.png", width=7, height=8, units="in", dpi=300)
 ```
 
@@ -779,7 +1316,7 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_meta_null_acc_AROMA_2P.Rds"))) {
   random_82_acc <- readRDS(paste0(rdata_path, "ROI_wise_meta_null_acc_AROMA_2P.Rds"))
 }
 
-real_82_acc <- e1071_region_wise_SVM_CV_inv_prob %>%
+real_82_acc <- region_wise_SVM_CV_inv_prob %>%
   filter(Noise_Proc=="AROMA+2P") %>%
   summarise(mean_accuracy = mean(accuracy, na.rm=T),
             mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
@@ -802,8 +1339,70 @@ bal_acc_p <- ggplot() +
   xlab("Mean Balanced Accuracy") +
   ggtitle("Mean Balanced Accuracy in AROMA+2P ROI-Based Data\nwith Inverse Probability Sample Weighting") +
   theme(plot.title=element_text(hjust=0.5))
+```
 
+```{r, fig.width=7, fig.height=8}
 acc_p / bal_acc_p
+```
+
+```{r, eval=F, echo=F}
 ggsave("plots/Meta_Null_AROMA_2P_ROI_wise_inv_prob.png", width=7, height=8, units="in", dpi=300)
 ```
+
+
+### AROMA+2P with SMOTE
+Take the average of 82 random accuracy values from the null distribution 10,000x and compare with the mean from AROMA+2P with inverse probability weighting:
+
+```{r}
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "ROI_wise_meta_null_acc_AROMA_2P.Rds"))) {
+  random_acc_list <- list()
+  for (i in 1:10000) {
+    random_acc <- model_free_shuffle_null_res %>%
+      sample_n(82) %>%
+      summarise(mean_accuracy = mean(accuracy, na.rm=T),
+                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+      mutate(Type="null")
+    random_acc_list <- rlist::list.append(random_acc_list, random_acc)
+  }
+  random_82_acc <- do.call(plyr::rbind.fill, random_acc_list)
+  saveRDS(random_82_acc, file=paste0(rdata_path, "ROI_wise_meta_null_acc_AROMA_2P.Rds"))
+} else {
+  random_82_acc <- readRDS(paste0(rdata_path, "ROI_wise_meta_null_acc_AROMA_2P.Rds"))
+}
+
+real_82_acc <- region_wise_SVM_CV_SMOTE %>%
+  filter(Noise_Proc=="AROMA+2P") %>%
+  summarise(mean_accuracy = mean(accuracy, na.rm=T),
+            mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+  mutate(Type="main")
+
+# Plot the accuracy
+acc_p <- ggplot() +
+  geom_histogram(data = random_82_acc, mapping=aes(x=mean_accuracy), fill="gray70") +
+  geom_vline(data = real_82_acc, mapping=aes(xintercept = mean_accuracy), color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Accuracy") +
+  ggtitle("Mean Accuracy in AROMA+2P ROI-Based Data\nwith SMOTE") +
+  theme(plot.title=element_text(hjust=0.5))
+
+# Plot the balanced accuracy
+bal_acc_p <- ggplot() +
+  geom_histogram(data = random_82_acc, mapping=aes(x=mean_balanced_accuracy), fill="gray70") +
+  geom_vline(data = real_82_acc, mapping=aes(xintercept = mean_balanced_accuracy), color="red", size=1.2) +
+  ylab("Number of Iterations") +
+  xlab("Mean Balanced Accuracy") +
+  ggtitle("Mean Balanced Accuracy in AROMA+2P ROI-Based Data\nwith SMOTE") +
+  theme(plot.title=element_text(hjust=0.5))
+```
+
+```{r, fig.width=7, fig.height=8}
+acc_p / bal_acc_p
+```
+
+```{r, eval=F, echo=F}
+ggsave("plots/Meta_Null_AROMA_2P_ROI_wise_SMOTE.png", width=7, height=8, units="in", dpi=300)
+```
+
 

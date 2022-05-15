@@ -1,0 +1,40 @@
+---
+title: "Load in pyspi data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(reticulate)
+use_python("/home/osboxes/anaconda3/bin/python3")
+source_python("pickle_reader.py")
+
+study <- "/media/sf_Shared_Folder/PhD_work/"
+pydata_path <- paste0(study, "data/scz/UCLA/pydata/AROMA_2P/")
+
+# Load subject metadata
+subject_csv <- read.csv(paste0(study, "data/scz/UCLA/participants.csv"))
+```
+
+```{r}
+if (!file.exists(paste0(pydata_path, "UCLA_AROMA_2P_pyspi_res.Rds"))) {
+  pyspi_data_AROMA_2P_list <- list()
+  for (subject in list.dirs(pydata_path, recursive = F, full.names = F)) {
+    subject_pkl <- extract_df_from_pkl(paste0(pydata_path, subject, "/calc.pkl")) %>%
+      mutate(Subject_ID = subject,
+             group = subset(subject_csv, sampleID == subject) %>% pull(diagnosis))
+    pyspi_data_AROMA_2P_list <- rlist::list.append(pyspi_data_AROMA_2P_list,
+                                                   subject_pkl)
+  }
+  pyspi_data_AROMA_2P <- do.call(plyr::rbind.fill, pyspi_data_AROMA_2P_list)
+  corr_data <- subset(pyspi_data_AROMA_2P, SPI == "xcorr_mean_sig-True")
+  saveRDS(pyspi_data_AROMA_2P, file = paste0(pydata_path, "UCLA_AROMA_2P_pyspi_res.Rds"))
+  saveRDS(corr_data, file = paste0(pydata_path, "UCLA_AROMA_2P_pyspi_xcorr.Rds"))
+} else {
+  corr_data <- readRDS(paste0(pydata_path, "UCLA_AROMA_2P_pyspi_xcorr.Rds"))
+}
+```
