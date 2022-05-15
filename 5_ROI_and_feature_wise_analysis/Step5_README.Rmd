@@ -1,16 +1,21 @@
 ---
 title: "Step 5: ROI+Feature Classification Analysis"
-output: github_document
+output: 
+  github_document
+always_allow_html: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning=F, message=F)
+knitr::opts_chunk$set(echo = F, warning=F, message=F)
 ```
 
 ### Source functions
 ```{r}
 source("../helper_functions/SVM_functions.R")
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+library(knitr)
+library(kableExtra)
+library(patchwork)
 set.seed(127)
 ```
 
@@ -128,7 +133,7 @@ kernel = "linear"
 
 # Run in-sample SVM using given package + kernel
 # If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, "_SMOTE.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071_SMOTE.Rds"))) {
   combo_wise_SVM_in_sample_SMOTE <- run_in_sample_svm_by_input_var(rdata_path = rdata_path,
                                                                       svm_kernel = kernel,
                                                                       test_package = test_package,
@@ -137,14 +142,14 @@ if (!file.exists(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", t
                                                                       grouping_var = "Combo",
                                                                       use_inv_prob_weighting = FALSE,
                                                                       use_SMOTE = TRUE) 
-  saveRDS(combo_wise_SVM_in_sample_SMOTE, file=paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_", test_package, "_SMOTE.Rds"))
+  saveRDS(combo_wise_SVM_in_sample_SMOTE, file=paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071_SMOTE.Rds"))
 } 
 ```
 
 ```{r, fig.width=7, fig.height=5}
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
-combo_wise_SVM_in_sample_SMOTE <- readRDS(paste0(rdata_path, "multivar_combo_res_svmLinear_in_sample_e1071_SMOTE.Rds"))
+combo_wise_SVM_in_sample_SMOTE <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071_SMOTE.Rds"))
 
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 plot_class_acc_w_props(class_res = combo_wise_SVM_in_sample_SMOTE,
@@ -155,7 +160,7 @@ plot_class_acc_w_props(class_res = combo_wise_SVM_in_sample_SMOTE,
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/In_Sample_combo_wise_linear_SVM_Multivar_e1071_SMOTE.png",
+ggsave("plots/Combo_wise_In_Sample_linear_SVM_Multivar_e1071_SMOTE.png",
        width=7, height=5, units="in", dpi=300)
 ```
 
@@ -183,17 +188,16 @@ kernel = "linear"
   
 # Run in-sample SVM using given package + kernel
 # If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, ".Rds"))) {
+if (!file.exists(paste0(rdata_path, "Combo_wise_linear_SVM_CV.Rds"))) {
   combo_wise_SVM_CV <- run_cv_svm_by_input_var(rdata_path = rdata_path,
                                                svm_kernel = kernel,
                                                test_package = test_package,
                                                svm_feature_var = "Combo",
                                                grouping_var = "Combo",
                                                noise_procs = noise_procs,
-                                               use_inv_prob_weighting = TRUE) %>%
-    dplyr::rename("accuracy" = "Accuracy",
-                  "balanced_accuracy" = "Balanced_Accuracy")
-  saveRDS(combo_wise_SVM_CV, file=paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, ".Rds"))
+                                               use_inv_prob_weighting = TRUE,
+                                               use_SMOTE = FALSE)
+  saveRDS(combo_wise_SVM_CV, file=paste0(rdata_path, "Combo_wise_linear_SVM_CV.Rds"))
 }
 ```
 
@@ -201,7 +205,7 @@ if (!file.exists(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_p
 # Plot accuracy + balanced accuracy in histograms
 # Control subject proportion is highlighted for accuracy
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-combo_wise_SVM_CV <- readRDS(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_e1071.Rds"))
+combo_wise_SVM_CV <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_CV.Rds"))
 
 plot_class_acc_w_props(class_res = combo_wise_SVM_CV,
                        cv = TRUE,
@@ -229,7 +233,7 @@ kernel = "linear"
   
 # Run theft's multivariable classifier on each ROI and save to an RDS object
 # If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, "_inv_prob.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Combo_wise_linear_SVM_CV_inv_prob.Rds"))) {
   
   combo_wise_SVM_CV_inv_prob <- run_cv_svm_by_input_var(rdata_path = rdata_path,
                                                         svm_kernel = kernel,
@@ -238,17 +242,15 @@ if (!file.exists(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_p
                                                         grouping_var = "Combo",
                                                         noise_procs = noise_procs,
                                                         use_inv_prob_weighting = TRUE,
-                                                        use_SMOTE = FALSE)  %>%
-    dplyr::rename("accuracy" = "Accuracy",
-                  "balanced_accuracy" = "Balanced_Accuracy")
+                                                        use_SMOTE = FALSE)
   
-  saveRDS(combo_wise_SVM_CV_inv_prob, file=paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, "_inv_prob.Rds"))
+  saveRDS(combo_wise_SVM_CV_inv_prob, file=paste0(rdata_path, "Combo_wise_linear_SVM_CV_inv_prob.Rds"))
 } 
 ```
 
 ```{r, fig.width=7, fig.height=5}
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-combo_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_e1071_inv_prob.Rds"))
+combo_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_CV_inv_prob.Rds"))
 
 plot_class_acc_w_props(class_res = combo_wise_SVM_CV_inv_prob,
                        cv = TRUE,
@@ -265,7 +267,7 @@ ggsave("plots/Combo_Wise_Linear_SVM_CV_e1071_inv_prob.png",
 Surprisingly, incorporating inverse probability weighting has minimal impact when it comes to the ten-fold cross-validated SVM. Of note, the in-sample and cross-validated SVM were both run with kernlab::ksvm using default parameters.
 
 
-### 10-fold cross-validated linear SVM with inverse probability weighting
+### 10-fold cross-validated linear SVM with SMOTE
 
 ```{r}
 # Try three different noise processing methods
@@ -277,7 +279,7 @@ kernel = "linear"
 
 # Run theft's multivariable classifier on each ROI and save to an RDS object
 # If the RDS object doesn't already exist, otherwise load it in
-if (!file.exists(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, "_SMOTE.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Combo_wise_linear_SVM_CV_SMOTE.Rds"))) {
   
   combo_wise_SVM_CV_SMOTE <- run_cv_svm_by_input_var(rdata_path = rdata_path,
                                                      svm_kernel = kernel,
@@ -286,17 +288,15 @@ if (!file.exists(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_p
                                                      grouping_var = "Combo",
                                                      noise_procs = noise_procs,
                                                      use_inv_prob_weighting = FALSE,
-                                                     use_SMOTE = TRUE)  %>%
-    dplyr::rename("accuracy" = "Accuracy",
-                  "balanced_accuracy" = "Balanced_Accuracy")
+                                                     use_SMOTE = TRUE)
   
-  saveRDS(combo_wise_SVM_CV_SMOTE, file=paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_", test_package, "_SMOTE.Rds"))
+  saveRDS(combo_wise_SVM_CV_SMOTE, file=paste0(rdata_path, "Combo_wise_linear_SVM_CV_SMOTE.Rds"))
 } 
 ```
 
 ```{r, fig.width=7, fig.height=5}
 noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-combo_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "combo_wise_multi_ROI_svmLinear_CV_e1071_SMOTE.Rds"))
+combo_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_CV_SMOTE.Rds"))
 
 plot_class_acc_w_props(class_res = combo_wise_SVM_CV_SMOTE,
                        cv = TRUE,
@@ -337,50 +337,25 @@ if (!file.exists(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds"))) {
 
 ```{r}
 if (!file.exists(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_pvals.Rds"))) {
-  e1071_combo_wise_SVM_CV_pvals <- calc_empirical_nulls(class_res = e1071_combo_wise_SVM_CV,
+  combo_wise_SVM_CV_pvals <- calc_empirical_nulls(class_res = combo_wise_SVM_CV,
                                                         null_data = model_free_shuffle_null_res,
                                                         grouping_var = "All")
-  saveRDS(e1071_combo_wise_SVM_CV_pvals, file=paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
+  saveRDS(combo_wise_SVM_CV_pvals, file=paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
   
 } else {
-  e1071_combo_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
+  combo_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
 }
 
-e1071_combo_wise_SVM_CV_plabs <- e1071_combo_wise_SVM_CV_pvals %>%
+combo_wise_SVM_CV_plabs <- combo_wise_SVM_CV_pvals %>%
   mutate(acc_p = scales::scientific(acc_p, digits = 3),
          bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
          acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
          bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
 ```
 
-Accuracy:
-```{r, fig.width=7, fig.height=5}
-e1071_combo_wise_SVM_CV_pvals %>%
-  ggplot(data=.) +
-  geom_histogram(data = subset(model_free_shuffle_null_res, Type=="null"),
-                 aes(x = accuracy, y=0.5*..density..), 
-                 bins = 50,
-                 alpha=0.6, position="identity",
-                 fill = "gray70") +
-  geom_vline(mapping=aes(xintercept = accuracy, color = Noise_Proc), size=1.2) +
-  xlab("Accuracy from n=1,000,000 Model-Free Shuffles") +
-  ylab("Scaled Density") +
-  labs(color = "Noise Processing") +
-  theme(strip.text.y.left = element_text(angle=0),
-        strip.placement = "outside",
-        legend.position = "bottom",
-        legend.direction = "horizontal")
-```
-
-```{r, eval=F, echo=F}
-# Save plot
-ggsave("plots/Main_vs_Null_Acc_10FCV_Linear_SVM_combo_wise.png",
-       width=8, height=5, units="in", dpi=300)
-```
-
 Balanced accuracy:
 ```{r, fig.width=7, fig.height=5}
-e1071_combo_wise_SVM_CV_pvals %>%
+combo_wise_SVM_CV_pvals %>%
   ggplot(data=.) +
   geom_histogram(data = subset(model_free_shuffle_null_res, Type=="null"),
                  aes(x = balanced_accuracy, y=0.5*..density..), 
@@ -399,69 +374,47 @@ e1071_combo_wise_SVM_CV_pvals %>%
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/Main_vs_Null_BAcc_10FCV_Linear_SVM_combo_wise.png",
+ggsave("plots/Combo_Wise_Main_vs_Null_BAcc_10FCV_Linear_SVM.png",
        width=8, height=5, units="in", dpi=300)
 ```
 
 Summary statistics:
 ```{r}
-e1071_combo_wise_SVM_CV_plabs %>%
+combo_wise_SVM_CV_plabs %>%
   mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
-  arrange(Noise_Proc)
+  dplyr::select(Noise_Proc, accuracy, balanced_accuracy, acc_p, bal_acc_p, acc_p_adj, bal_acc_p_adj) %>%
+  arrange(Noise_Proc) %>%
+  kable(.) %>%
+  kable_styling(full_width=F)
 ```
 
 
 
 
 
-### Deriving p-values using model-free shuffle null distributions -- inv prob
+### Deriving p-values using model-free shuffle null distributions -- CV inv prob
 
 ```{r}
 if (!file.exists(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))) {
-  e1071_combo_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = e1071_combo_wise_SVM_CV_inv_prob,
+  combo_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = combo_wise_SVM_CV_inv_prob,
                                                         null_data = model_free_shuffle_null_res,
                                                         grouping_var = "All")
-  saveRDS(e1071_combo_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+  saveRDS(combo_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
   
 } else {
-  e1071_combo_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+  combo_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
 }
 
-e1071_combo_wise_SVM_CV_inv_prob_plabs <- e1071_combo_wise_SVM_CV_inv_prob_pvals %>%
+combo_wise_SVM_CV_inv_prob_plabs <- combo_wise_SVM_CV_inv_prob_pvals %>%
   mutate(acc_p = scales::scientific(acc_p, digits = 3),
          bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
          acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
          bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
 ```
 
-Accuracy:
-```{r, fig.width=7, fig.height=5}
-e1071_combo_wise_SVM_CV_inv_prob_pvals %>%
-  ggplot(data=.) +
-  geom_histogram(data = subset(model_free_shuffle_null_res, Type=="null"),
-                 aes(x = accuracy, y=0.5*..density..), 
-                 bins = 50,
-                 alpha=0.6, position="identity",
-                 fill = "gray70") +
-  geom_vline(mapping=aes(xintercept = accuracy, color = Noise_Proc), size=1.2) +
-  xlab("Accuracy from n=1,000,000 Model-Free Shuffles") +
-  ylab("Scaled Density") +
-  labs(color = "Noise Processing") +
-  theme(strip.text.y.left = element_text(angle=0),
-        strip.placement = "outside",
-        legend.position = "bottom",
-        legend.direction = "horizontal")
-```
-
-```{r, eval=F, echo=F}
-# Save plot
-ggsave("plots/Main_vs_Null_Acc_10FCV_Linear_SVM_inv_prob_combo_wise.png",
-       width=8, height=5, units="in", dpi=300)
-```
-
 Balanced accuracy:
 ```{r, fig.width=7, fig.height=5}
-e1071_combo_wise_SVM_CV_inv_prob_pvals %>%
+combo_wise_SVM_CV_inv_prob_pvals %>%
   ggplot(data=.) +
   geom_histogram(data = subset(model_free_shuffle_null_res, Type=="null"),
                  aes(x = balanced_accuracy, y=0.5*..density..), 
@@ -480,21 +433,77 @@ e1071_combo_wise_SVM_CV_inv_prob_pvals %>%
 
 ```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/Main_vs_Null_BAcc_10FCV_Linear_SVM_inv_prob_combo_wise.png",
+ggsave("plots/Combo_Wise_Main_vs_Null_BAcc_10FCV_Linear_SVM_inv_prob.png",
        width=8, height=5, units="in", dpi=300)
 ```
 
 Summary statistics:
 ```{r}
-e1071_combo_wise_SVM_CV_plabs %>%
+combo_wise_SVM_CV_inv_prob_plabs %>%
   mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
-  arrange(Noise_Proc)
+  arrange(Noise_Proc) %>%
+  dplyr::select(Noise_Proc, accuracy, balanced_accuracy, acc_p, bal_acc_p, acc_p_adj, bal_acc_p_adj) %>%
+  kable(.) %>%
+  kable_styling(full_width=F)
 ```
 
 
 
 
+### Deriving p-values using model-free shuffle null distributions -- CV SMOTE
 
+```{r}
+if (!file.exists(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))) {
+  combo_wise_SVM_CV_SMOTE_pvals <- calc_empirical_nulls(class_res = combo_wise_SVM_CV_SMOTE,
+                                                        null_data = model_free_shuffle_null_res,
+                                                        grouping_var = "All")
+  saveRDS(combo_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))
+  
+} else {
+  combo_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "Combo_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))
+}
+
+combo_wise_SVM_CV_SMOTE_plabs <- combo_wise_SVM_CV_SMOTE_pvals %>%
+  mutate(acc_p = scales::scientific(acc_p, digits = 3),
+         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
+         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
+         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+```
+
+Balanced accuracy:
+```{r, fig.width=7, fig.height=5}
+combo_wise_SVM_CV_SMOTE_pvals %>%
+  ggplot(data=.) +
+  geom_histogram(data = subset(model_free_shuffle_null_res, Type=="null"),
+                 aes(x = balanced_accuracy, y=0.5*..density..), 
+                 bins = 50,
+                 alpha=0.6, position="identity",
+                 fill = "gray70") +
+  geom_vline(mapping=aes(xintercept = balanced_accuracy, color = Noise_Proc), size=1.2) +
+  xlab("Balanced Accuracy from n=1,000,000 Model-Free Shuffles") +
+  ylab("Scaled Density") +
+  labs(color = "Noise Processing") +
+  theme(strip.text.y.left = element_text(angle=0),
+        strip.placement = "outside",
+        legend.position = "bottom",
+        legend.direction = "horizontal")
+```
+
+```{r, eval=F, echo=F}
+# Save plot
+ggsave("plots/Combo_Wise_Main_vs_Null_BAcc_10FCV_Linear_SVM_SMOTE.png",
+       width=8, height=5, units="in", dpi=300)
+```
+
+Summary statistics:
+```{r}
+combo_wise_SVM_CV_SMOTE_plabs %>%
+  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+  arrange(Noise_Proc) %>%
+  dplyr::select(Noise_Proc, accuracy, balanced_accuracy, acc_p, bal_acc_p, acc_p_adj, bal_acc_p_adj) %>%
+  kable(.) %>%
+  kable_styling(full_width=F)
+```
 
 ## Null model for overall accuracy
 
@@ -572,7 +581,7 @@ if (!file.exists(paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))) {
   random_1804_acc <- readRDS(paste0(rdata_path, "Combo_wise_meta_null_acc_AROMA_2P.Rds"))
 }
 
-real_1804_acc <- e1071_combo_wise_SVM_CV_inv_prob %>%
+real_1804_acc <- combo_wise_SVM_CV_inv_prob %>%
   filter(Noise_Proc=="AROMA+2P") %>%
   summarise(mean_accuracy = mean(accuracy, na.rm=T),
             mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
