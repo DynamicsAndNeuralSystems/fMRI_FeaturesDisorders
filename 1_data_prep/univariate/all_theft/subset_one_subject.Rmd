@@ -11,10 +11,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r}
+theft::init_theft("~/anaconda3/envs/theft/bin/python")
 library(tidyverse)
 library(theft)
 library(reticulate)
 rdata_path <- "/media/sf_Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+
+# Use specific theft conda environment
+# Sys.setenv(RETICULATE_PYTHON = "~/anaconda3/envs/theft/bin/python3")
+
 ```
 
 Take the first subject in the dataset
@@ -32,13 +37,19 @@ saveRDS(first_subject_data, paste0(rdata_path, "UCLA_AROMA_2P_First_Subject.Rds"
 Test running theft for one subject locally
 ```{r}
 first_subject_data <- readRDS(paste0(rdata_path, "UCLA_AROMA_2P_First_Subject.Rds"))
+
+start_time <- Sys.time()
 first_subject_theft <- theft::calculate_features(data = first_subject_data, 
                                               id_var = "Brain_Region", 
                                               time_var = "timepoint", 
                                               values_var = "value", 
                                               group_var = "diagnosis", 
-                                              feature_set = "tsfel",
-                                              catch24 = F)
-# saveRDS(first_subject_theft, paste0(rdata_path, "UCLA_AROMA_2P_First_Subject_theft.Rds"))
+                                              feature_set = c('catch22', 'feasts', 'tsfeatures', 'kats', 'tsfresh', 'tsfel'),
+                                              catch24 = T)
+end_time <- Sys.time()
+saveRDS(first_subject_theft, paste0(rdata_path, "UCLA_AROMA_2P_First_Subject_theft.Rds"))
+
+# Print amount of time taken to run all feature sets on one subject's time-series data
+end_time - start_time
 ```
 

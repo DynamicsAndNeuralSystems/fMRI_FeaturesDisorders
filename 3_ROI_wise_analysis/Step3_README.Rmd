@@ -16,9 +16,6 @@ source("../helper_functions/Visualization.R")
 source("../helper_functions/Null_distributions.R")
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 set.seed(127)
-library(patchwork)
-library(knitr)
-library(kableExtra)
 ```
 
 
@@ -342,7 +339,7 @@ region_wise_SVM_CV <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071.R
 plot_main_vs_null_hist(main_res = region_wise_SVM_CV,
                        null_res = model_free_shuffle_null_res,
                        xlab = "Value from n=1,000,000 Model-Free Shuffles",
-                       title = "CV linear SVMResults vs. Model-Free Shuffles")
+                       title = "CV linear SVM Results vs. Model-Free Shuffles")
 
 # Save plot
 ggsave("plots/Region_Wise_CV_Null_vs_Real_Model_Free_Shuffle.png",
@@ -368,7 +365,7 @@ region_wise_SVM_CV_plabs <- truncate_p_values(region_wise_SVM_CV_pvals, N=3)
 
 
 ```{r, fig.width=10, fig.height=5}
-plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_plabs,
+plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_pvals,
                              null_res = model_free_shuffle_null_res,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
@@ -421,7 +418,7 @@ region_wise_SVM_CV_inv_prob_plabs <- truncate_p_values(region_wise_SVM_CV_inv_pr
 
 
 ```{r, fig.width=10, fig.height=5}
-plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_inv_prob_plabs,
+plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_inv_prob_pvals,
                              null_res = model_free_shuffle_null_res,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
@@ -472,7 +469,7 @@ region_wise_SVM_CV_SMOTE_plabs <- truncate_p_values(region_wise_SVM_CV_SMOTE_pva
 
 
 ```{r, fig.width=10, fig.height=5}
-plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_SMOTE_plabs,
+plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_SMOTE_pvals,
                              null_res = model_free_shuffle_null_res,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
@@ -509,7 +506,6 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample.R
                                                                     grouping_var = "Brain_Region",
                                                                     svm_feature_var = "Feature",
                                                                     num_permutations = 10,
-                                                                    seed = 127,
                                                                     use_inv_prob_weighting = FALSE,
                                                                     cross_validate = FALSE)
   
@@ -552,7 +548,7 @@ region_wise_SVM_in_sample_plabs <- truncate_p_values(region_wise_SVM_in_sample_p
 ```
 
 ```{r, fig.width=10, fig.height=5}
-plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_in_sample_plabs,
+plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_in_sample_pvals,
                              null_res = model_permutation_null_in_sample,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
@@ -581,7 +577,6 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample_i
                                                                     grouping_var = "Brain_Region",
                                                                     svm_feature_var = "Feature",
                                                                     num_permutations = 10,
-                                                                    seed = 127,
                                                                     use_inv_prob_weighting = TRUE,
                                                                     cross_validate = FALSE)
   
@@ -623,7 +618,7 @@ region_wise_SVM_in_sample_inv_prob_plabs <- truncate_p_values(region_wise_SVM_in
 ```
 
 ```{r, fig.width=10, fig.height=5}
-plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_in_sample_inv_prob_plabs,
+plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_in_sample_inv_prob_pvals,
                              null_res = model_permutation_null_in_sample_inv_prob,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
@@ -655,7 +650,6 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_inv_prob
                                                                     grouping_var = "Brain_Region",
                                                                     svm_feature_var = "Feature",
                                                                     num_permutations = 10,
-                                                                    seed = 127,
                                                                     use_inv_prob_weighting = TRUE,
                                                                     cross_validate = TRUE)
   
@@ -698,7 +692,7 @@ region_wise_SVM_CV_inv_prob_plabs <- truncate_p_values(region_wise_SVM_CV_inv_pr
 ```
 
 ```{r, fig.width=10, fig.height=5}
-plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_inv_prob_plabs,
+plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_inv_prob_pvals,
                              null_res = model_permutation_null_CV_inv_prob,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
@@ -728,7 +722,6 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_SMOTE.Rd
                                                                     grouping_var = "Brain_Region",
                                                                     svm_feature_var = "Feature",
                                                                     num_permutations = 10,
-                                                                    seed = 127,
                                                                     use_inv_prob_weighting = TRUE,
                                                                     cross_validate = TRUE)
   
@@ -771,7 +764,7 @@ region_wise_SVM_CV_SMOTE_plabs <- truncate_p_values(region_wise_SVM_CV_SMOTE_pva
 ```
 
 ```{r, fig.width=10, fig.height=5}
-plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_SMOTE_plabs,
+plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_SMOTE_pvals,
                              null_res = model_permutation_null_CV_SMOTE,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",

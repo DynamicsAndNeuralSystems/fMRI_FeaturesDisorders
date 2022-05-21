@@ -1,4 +1,5 @@
 library(tidyverse)
+library(patchwork)
 
 #-------------------------------------------------------------------------------
 # Plot distribution of classifier accuracies across given feature variable
@@ -206,6 +207,8 @@ plot_top_5_vars_main_vs_null <- function(class_res_pvals,
                                          null_res,
                                          xlab = "Value",
                                          ylab = "Scaled Density",
+                                         xloc = 0.6,
+                                         yloc = 8.5,
                                          title = "Main vs Null Distribution") {
   
   top_features <- class_res_pvals %>%
@@ -214,12 +217,16 @@ plot_top_5_vars_main_vs_null <- function(class_res_pvals,
     top_n(5, balanced_accuracy) %>%
     pull(grouping_var)
   
-  region_wise_SVM_CV_plabs %>%
+  # Truncate p-value labels
+  top_feature_plabs <- truncate_p_values(class_res_pvals, 3)
+  
+  top_feature_plabs %>%
     filter(Noise_Proc == "AROMA+2P",
            grouping_var %in% top_features) %>%
     mutate(grouping_var = factor(grouping_var, levels = top_features)) %>%
     ggplot(data=.) +
-    geom_histogram(data = model_free_shuffle_null_res %>% 
+    geom_histogram(data = null_res %>% 
+                     dplyr::select(balanced_accuracy, Noise_Proc) %>%
                      dplyr::filter(Noise_Proc == "AROMA+2P"),
                    aes(x=balanced_accuracy, y=0.5*..density..),
                    fill = "gray70", bins=50) +
@@ -229,10 +236,10 @@ plot_top_5_vars_main_vs_null <- function(class_res_pvals,
     xlab(xlab) +
     ylab(ylab) +
     xlab("Balanced Accuracy") +
-    geom_text(data = region_wise_SVM_CV_plabs %>%
+    geom_text(data = top_feature_plabs %>%
                 filter(Noise_Proc == "AROMA+2P", grouping_var %in% top_features) %>%
                 mutate(grouping_var = factor(grouping_var, levels = top_features)),
               aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
-              x = 0.6, y = 8.5) +
+              x = xloc, y = yloc) +
     theme(plot.title = element_text(hjust=0.5))
 }

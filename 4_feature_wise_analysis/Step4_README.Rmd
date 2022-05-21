@@ -11,13 +11,12 @@ knitr::opts_chunk$set(echo = F, warning=F, message=F)
 
 ### Source functions
 ```{r}
-source("../helper_functions/SVM_functions.R")
+source("../helper_functions/Linear_SVM.R")
+source("../helper_functions/Visualization.R")
+source("../helper_functions/Null_distributions.R")
 source("../helper_functions/t_test_functions.R")
-source("../helper_functions/visualization_functions.R")
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 set.seed(127)
-library(patchwork)
-library(kableExtra)
 ```
 
 
@@ -39,10 +38,10 @@ noise_proc = "AROMA+2P"
 noise_label <- gsub("\\+", "_", noise_proc)
 t_stat_histograms(t_test_res=t_test_res,
                   noise_proc = noise_proc)
-```
-```{r, echo=F, eval=F}
+
 ggsave("plots/Feature_Wise_In_Sample_T_Test_Res_AROMA_2P.png", width=16, height=10, units="in", dpi=300)
 ```
+
 ### Top positive and negative feature violin plots
 ```{r}
 # Load AROMA+2P feature matrix
@@ -211,9 +210,7 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample_inv_prob,
                        cv = FALSE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
-```
 
-```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/In_Sample_Feature_Wise_linear_SVM_Multivar_e1071_inv_prob.png",
        width=7,height=5, units="in", dpi=300)
@@ -265,9 +262,7 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample_SMOTE,
                        cv = FALSE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
-```
 
-```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/In_Sample_Feature_Wise_linear_SVM_Multivar_e1071_SMOTE.png",
        width=7,height=5, units="in", dpi=300)
@@ -322,9 +317,7 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_CV,
                        group_var = "Feature",
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
-```
 
-```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_e1071.png",
        width=7,height=5, units="in", dpi=300)
@@ -369,9 +362,7 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_CV_inv_prob,
                        cv = TRUE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
-```
 
-```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_e1071_inv_prob.png",
        width=7,height=5, units="in", dpi=300)
@@ -417,9 +408,7 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_CV_SMOTE,
                        cv = TRUE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
-```
 
-```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_e1071_SMOTE.png",
        width=7,height=5, units="in", dpi=300)
@@ -457,32 +446,11 @@ if (!file.exists(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds"))) {
 ```{r, fig.width=7, fig.height=5}
 feature_wise_SVM_CV <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071.Rds"))
 
-feature_wise_SVM_CV %>%
-  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
-  mutate(Type = "main") %>%
-  plyr::rbind.fill(., model_free_shuffle_null_res) %>%
-  pivot_longer(cols=c(accuracy, balanced_accuracy),
-               names_to = "Metric",
-               values_to = "Values") %>%
-  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
-  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
-                                                    "AROMA+2P+GMR",
-                                                    "AROMA+2P+DiCER"))) %>%
-  ggplot(data=., mapping=aes(x=Values)) +
-  geom_histogram(aes(fill = Type, y=0.5*..density..), 
-                 bins = 50,
-                 alpha=0.6, position="identity") +
-  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
-  xlab("Value from n=1,000,000 Model-Free Shuffles") +
-  ylab("Scaled Density") +
-  labs(fill = "Distribution") +
-  theme(strip.text.y.left = element_text(angle=0),
-        strip.placement = "outside",
-        legend.position = "bottom",
-        legend.direction = "horizontal") 
-```
+plot_main_vs_null_hist(main_res = feature_wise_SVM_CV,
+                       null_res = model_free_shuffle_null_res,
+                       xlab = "Value from n=1,000,000 Model-Free Shuffles",
+                       title = "CV linear SVM Results vs. Model-Free Shuffles")
 
-```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/Feature_Wise_CV_Null_vs_Real_Model_Free_Shuffle.png",
        width=7, height=5, units="in", dpi=300)
@@ -494,66 +462,34 @@ I've plotted the distribution of null accuracies (teal) alongside the actual acc
 ```{r}
 # Calculate p values from model-free shuffle null distribution
 feature_wise_SVM_CV <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071.Rds"))
-if (!file.exists(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_pvals.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_pvals.Rds"))) {
   feature_wise_SVM_CV_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_CV,
                                                    null_data = model_free_shuffle_null_res,
                                                    grouping_var = "Feature")
-  saveRDS(feature_wise_SVM_CV_pvals, file=paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
+  saveRDS(feature_wise_SVM_CV_pvals, file=paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_pvals.Rds"))
 } else {
-  feature_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
+  feature_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_pvals.Rds"))
 }
 
-feature_wise_SVM_CV_plabs <- feature_wise_SVM_CV_pvals %>%
-  mutate(acc_p = scales::scientific(acc_p, digits = 3),
-         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
-         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
-         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+feature_wise_SVM_CV_plabs <- truncate_p_values(feature_wise_SVM_CV_pvals, 3)
 ```
 
 
 ```{r, fig.width=10, fig.height=5}
-features <- feature_wise_SVM_CV_plabs %>%
-  filter(Noise_Proc == "AROMA+2P") %>%
-  arrange(desc(balanced_accuracy)) %>%
-  top_n(5, balanced_accuracy) %>%
-  pull(grouping_var)
+plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_CV_pvals,
+                             null_res = model_free_shuffle_null_res,
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P catch22 Features",
+                             yloc = 8,
+                             xloc = 0.57)
 
-feature_wise_SVM_CV_plabs %>%
-  filter(Noise_Proc == "AROMA+2P",
-         grouping_var %in% features) %>%
-  mutate(grouping_var = factor(grouping_var, levels = features)) %>%
-  ggplot(data=.) +
-  geom_histogram(data = model_free_shuffle_null_res %>% 
-                   dplyr::filter(Noise_Proc == "AROMA+2P"),
-                 aes(x=balanced_accuracy, y=0.5*..density..),
-                 fill = "gray70", bins=50) +
-  ggtitle("Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P catch22 Features") +
-  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
-  facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
-  ylab("Scaled Density of Null Iterations") +
-  xlab("Balanced Accuracy") +
-  geom_text(data = feature_wise_SVM_CV_plabs %>%
-              filter(Noise_Proc == "AROMA+2P", grouping_var %in% features) %>%
-              mutate(grouping_var = factor(grouping_var, levels = features)),
-            aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
-            x = 0.6, y = 8.5) +
-  theme(plot.title = element_text(hjust=0.5))
-```
-```{r, echo=F, eval=F}
 ggsave("plots/Feature_Wise_Model_Free_Shuffle_Top5_Features_CV_SVM_Balanced_Accuracy.png", width=10, 
        height=5, units="in", dpi=300)
 ```
 
 ```{r}
-feature_wise_SVM_CV_pvals %>%
-  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
-  group_by(Noise_Proc) %>%
-  summarise(num_sig_acc = sum(acc_p < 0.05),
-            num_sig_acc_fdr = sum(acc_p_adj < 0.05),
-            num_sig_bacc = sum(bal_acc_p < 0.05),
-            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
-  kable(.) %>%
-  kable_styling(full_width = F)
+summarise_num_sig_features(feature_wise_SVM_CV_pvals)
 ```
 
 This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
@@ -564,32 +500,11 @@ This table summarises the number of ROIs for which raw accuracy or balanced accu
 ```{r, fig.width=7, fig.height=5}
 feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
 
-feature_wise_SVM_CV_inv_prob %>%
-  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
-  mutate(Type = "main") %>%
-  plyr::rbind.fill(., model_free_shuffle_null_res) %>%
-  pivot_longer(cols=c(accuracy, balanced_accuracy),
-               names_to = "Metric",
-               values_to = "Values") %>%
-  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
-  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
-                                                    "AROMA+2P+GMR",
-                                                    "AROMA+2P+DiCER"))) %>%
-  ggplot(data=., mapping=aes(x=Values)) +
-  geom_histogram(aes(fill = Type, y=0.5*..density..), 
-                 bins = 50,
-                 alpha=0.6, position="identity") +
-  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
-  xlab("Value from n=1,000,000 Model-Free Shuffles") +
-  ylab("Scaled Density") +
-  labs(fill = "Distribution") +
-  theme(strip.text.y.left = element_text(angle=0),
-        strip.placement = "outside",
-        legend.position = "bottom",
-        legend.direction = "horizontal") 
-```
+plot_main_vs_null_hist(main_res = feature_wise_SVM_CV_inv_prob,
+                       null_res = model_free_shuffle_null_res,
+                       xlab = "Value from n=1,000,000 Model-Free Shuffles",
+                       title = "CV Inv Prob Linear SVM Results vs. Model-Free Shuffles")
 
-```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/Feature_Wise_CV_Null_vs_Real_Model_Free_Shuffle_inv_prob.png",
        width=7, height=5, units="in", dpi=300)
@@ -601,66 +516,33 @@ I've plotted the distribution of null accuracies (teal) alongside the actual acc
 ```{r}
 # Calculate p values from model-free shuffle null distribution
 feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
-if (!file.exists(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_inv_prob_pvals.Rds"))) {
   feature_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_CV_inv_prob,
                                                    null_data = model_free_shuffle_null_res,
                                                    grouping_var = "Feature")
-  saveRDS(feature_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+  saveRDS(feature_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_inv_prob_pvals.Rds"))
 } else {
-  feature_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+  feature_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_inv_prob_pvals.Rds"))
 }
 
-feature_wise_SVM_CV_inv_prob_plabs <- feature_wise_SVM_CV_inv_prob_pvals %>%
-  mutate(acc_p = scales::scientific(acc_p, digits = 3),
-         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
-         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
-         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+feature_wise_SVM_CV_inv_prob_plabs <- truncate_p_values(feature_wise_SVM_CV_inv_prob_pvals)
 ```
 
 
 ```{r, fig.width=10, fig.height=5}
-features <- feature_wise_SVM_CV_inv_prob_plabs %>%
-  filter(Noise_Proc == "AROMA+2P") %>%
-  arrange(desc(balanced_accuracy)) %>%
-  top_n(5, balanced_accuracy) %>%
-  pull(grouping_var)
+plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_CV_inv_prob_pvals,
+                             null_res = model_free_shuffle_null_res,
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P catch22 Features, CV Inverse Probability",
+                             xloc = 0.58, yloc = 8)
 
-feature_wise_SVM_CV_inv_prob_plabs %>%
-  filter(Noise_Proc == "AROMA+2P",
-         grouping_var %in% features) %>%
-  mutate(grouping_var = factor(grouping_var, levels = features)) %>%
-  ggplot(data=.) +
-  geom_histogram(data = model_free_shuffle_null_res %>% 
-                   dplyr::filter(Noise_Proc == "AROMA+2P"),
-                 aes(x=balanced_accuracy, y=0.5*..density..),
-                 fill = "gray70", bins=50) +
-  ggtitle("Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P catch22 Features, Inverse Probability") +
-  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
-  facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
-  ylab("Scaled Density of Null Iterations") +
-  xlab("Balanced Accuracy") +
-  geom_text(data = feature_wise_SVM_CV_inv_prob_plabs %>%
-              filter(Noise_Proc == "AROMA+2P", grouping_var %in% features) %>%
-              mutate(grouping_var = factor(grouping_var, levels = features)),
-            aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
-            x = 0.6, y = 8.5) +
-  theme(plot.title = element_text(hjust=0.5))
-```
-```{r, echo=F, eval=F}
 ggsave("plots/Feature_Wise_Model_Free_Shuffle_Top5_Features_CV_SVM_Balanced_Accuracy_Inv_Prob.png", width=10, 
        height=5, units="in", dpi=300)
 ```
 
 ```{r}
-feature_wise_SVM_CV_inv_prob_pvals %>%
-  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
-  group_by(Noise_Proc) %>%
-  summarise(num_sig_acc = sum(acc_p < 0.05),
-            num_sig_acc_fdr = sum(acc_p_adj < 0.05),
-            num_sig_bacc = sum(bal_acc_p < 0.05),
-            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
-  kable(.) %>%
-  kable_styling(full_width = F)
+summarise_num_sig_features(feature_wise_SVM_CV_inv_prob_pvals)
 ```
 
 This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
@@ -670,32 +552,11 @@ This table summarises the number of ROIs for which raw accuracy or balanced accu
 ```{r, fig.width=7, fig.height=5}
 feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
 
-feature_wise_SVM_CV_SMOTE %>%
-  dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
-  mutate(Type = "main") %>%
-  plyr::rbind.fill(., model_free_shuffle_null_res) %>%
-  pivot_longer(cols=c(accuracy, balanced_accuracy),
-               names_to = "Metric",
-               values_to = "Values") %>%
-  mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " "))) %>%
-  mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
-                                                    "AROMA+2P+GMR",
-                                                    "AROMA+2P+DiCER"))) %>%
-  ggplot(data=., mapping=aes(x=Values)) +
-  geom_histogram(aes(fill = Type, y=0.5*..density..), 
-                 bins = 50,
-                 alpha=0.6, position="identity") +
-  facet_grid(Noise_Proc ~ Metric, switch="y", scales="free_x") +
-  xlab("Value from n=1,000,000 Model-Free Shuffles") +
-  ylab("Scaled Density") +
-  labs(fill = "Distribution") +
-  theme(strip.text.y.left = element_text(angle=0),
-        strip.placement = "outside",
-        legend.position = "bottom",
-        legend.direction = "horizontal") 
-```
+plot_main_vs_null_hist(main_res = feature_wise_SVM_CV_SMOTE,
+                       null_res = model_free_shuffle_null_res,
+                       xlab = "Value from n=1,000,000 Model-Free Shuffles",
+                       title = "CV SMOTE Linear SVM Results vs. Model-Free Shuffles")
 
-```{r, eval=F, echo=F}
 # Save plot
 ggsave("plots/Feature_Wise_CV_Null_vs_Real_Model_Free_Shuffle_SMOTE.png",
        width=7, height=5, units="in", dpi=300)
@@ -707,226 +568,406 @@ I've plotted the distribution of null accuracies (teal) alongside the actual acc
 ```{r}
 # Calculate p values from model-free shuffle null distribution
 feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
-if (!file.exists(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_SMOTE_pvals.Rds"))) {
   feature_wise_SVM_CV_SMOTE_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_CV_SMOTE,
                                                    null_data = model_free_shuffle_null_res,
                                                    grouping_var = "Brain_Region")
-  saveRDS(feature_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))
+  saveRDS(feature_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_SMOTE_pvals.Rds"))
 } else {
-  feature_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "Feature_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))
+  feature_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_SMOTE_pvals.Rds"))
 }
 
-feature_wise_SVM_CV_SMOTE_plabs <- feature_wise_SVM_CV_SMOTE_pvals %>%
-  mutate(acc_p = scales::scientific(acc_p, digits = 3),
-         bal_acc_p = scales::scientific(bal_acc_p, digits = 3),
-         acc_p_adj = scales::scientific(acc_p_adj, digits = 3),
-         bal_acc_p_adj = scales::scientific(bal_acc_p_adj, digits = 3))
+feature_wise_SVM_CV_SMOTE_plabs <- truncate_p_values(feature_wise_SVM_CV_SMOTE_pvals)
 ```
 
 
 ```{r, fig.width=10, fig.height=5}
-features <- feature_wise_SVM_CV_SMOTE_plabs %>%
-  filter(Noise_Proc == "AROMA+2P") %>%
-  arrange(desc(balanced_accuracy)) %>%
-  top_n(5, balanced_accuracy) %>%
-  pull(grouping_var)
+plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_CV_SMOTE_pvals,
+                             null_res = model_free_shuffle_null_res,
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P Features, CV SMOTE")
 
-feature_wise_SVM_CV_SMOTE_plabs %>%
-  filter(Noise_Proc == "AROMA+2P",
-         grouping_var %in% features) %>%
-  mutate(grouping_var = factor(grouping_var, levels = features)) %>%
-  ggplot(data=.) +
-  geom_histogram(data = model_free_shuffle_null_res %>% 
-                   dplyr::filter(Noise_Proc == "AROMA+2P"),
-                 aes(x=balanced_accuracy, y=0.5*..density..),
-                 fill = "gray70", bins=50) +
-  ggtitle("Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P Features, SMOTE") +
-  geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
-  facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
-  ylab("Scaled Density of Null Iterations") +
-  xlab("Balanced Accuracy") +
-  geom_text(data = feature_wise_SVM_CV_SMOTE_plabs %>%
-              filter(Noise_Proc == "AROMA+2P", grouping_var %in% features) %>%
-              mutate(grouping_var = factor(grouping_var, levels = features)),
-            aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
-            x = 0.6, y = 8.5) +
-  theme(plot.title = element_text(hjust=0.5))
-```
-```{r, echo=F, eval=F}
+
 ggsave("plots/Feature_Wise_Model_Free_Shuffle_Top5_Features_CV_SVM_Balanced_Accuracy_SMOTE.png", width=10, 
        height=5, units="in", dpi=300)
 ```
 
 ```{r}
-feature_wise_SVM_CV_SMOTE_pvals %>%
-  mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
-  group_by(Noise_Proc) %>%
-  summarise(num_sig_acc = sum(acc_p < 0.05),
-            num_sig_acc_fdr = sum(acc_p_adj < 0.05),
-            num_sig_bacc = sum(bal_acc_p < 0.05),
-            num_sig_bacc_fdr = sum(bal_acc_p_adj < 0.05)) %>%
-  kable(.) %>%
-  kable_styling(full_width = F)
+summarise_num_sig_features(feature_wise_SVM_CV_SMOTE_pvals)
 ```
 
 This table summarises the number of catch22 features for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
 
-## Null model for overall accuracy
+## Empirical model-based pooled null distribution
 
-### AROMA+2P
-Take the average of 22 random accuracy values from the null distribution 10,000x and compare with the mean from AROMA+2P:
+### Generating null distributions from pooled null model fits
+
+
+In contrast to the model-free shuffle method, here we are actually shuffling the input class labels right before running the linear SVM over N=100 iterations per ROI (N=82) and pooling the resulting accuracy and balanced accuracy values, to generate empirical null distributions of N=8,200 data points each, respectively.
+
+### In-sample
 
 ```{r}
+# Run null model permutation function
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 set.seed(127)
 
-if (!file.exists(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))) {
-  random_acc_list <- list()
-  for (i in 1:10000) {
-    random_acc <- model_free_shuffle_null_res %>%
-      sample_n(22) %>%
-      summarise(mean_accuracy = mean(accuracy, na.rm=T),
-                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-      mutate(Type="null")
-    random_acc_list <- rlist::list.append(random_acc_list, random_acc)
-  }
-  random_22_acc <- do.call(plyr::rbind.fill, random_acc_list)
-  saveRDS(random_22_acc, file=paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_in_sample.Rds"))) {
+  model_permutation_null_in_sample <- run_null_model_n_permutations(rdata_path,
+                                                                    noise_procs = noise_procs,
+                                                                    grouping_var = "Feature",
+                                                                    svm_feature_var = "Brain_Region",
+                                                                    num_permutations = 10,
+                                                                    use_inv_prob_weighting = FALSE,
+                                                                    cross_validate = FALSE)
+  
+  saveRDS(model_permutation_null_in_sample, file=paste0(rdata_path, "Feature_wise_model_permutation_null_in_sample.Rds"))
 } else {
-  random_22_acc <- readRDS(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+  model_permutation_null_in_sample <- readRDS(paste0(rdata_path, "Feature_wise_model_permutation_null_in_sample.Rds"))
+}
+```
+
+```{r, fig.width=7, fig.height=5}
+# Plot null accuracy and balanced accuracy compared with real metrics:
+feature_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071.Rds"))
+
+plot_main_vs_null_hist(main_res = feature_wise_SVM_in_sample,
+                       null_res = model_permutation_null_in_sample,
+                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
+                       title = "In-sample linear SVM Results vs. Null Model Fits")
+
+# Save plot
+ggsave("plots/Feature_Wise_Null_Model_Fit_In_Sample_Balanced_Accuracy.png",
+       width=7, height=5, units="in", dpi=300)
+```
+
+The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
+
+```{r}
+feature_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071.Rds"))
+
+if (!file.exists(paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals.Rds"))) {
+  feature_wise_SVM_in_sample_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_in_sample,
+                                                           null_data = model_permutation_null_in_sample,
+                                                           grouping_var = "Brain_Region")
+  saveRDS(feature_wise_SVM_in_sample_pvals, file=paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals.Rds"))
+} else {
+  feature_wise_SVM_in_sample_pvals <- readRDS(paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals.Rds"))
 }
 
-feature_wise_SVM_CV <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071.Rds"))
-real_22_acc <- feature_wise_SVM_CV %>%
-  filter(Noise_Proc=="AROMA+2P") %>%
-  summarise(mean_accuracy = mean(accuracy, na.rm=T),
-            mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-  mutate(Type="main")
+feature_wise_SVM_in_sample_plabs <- truncate_p_values(feature_wise_SVM_in_sample_pvals)
+```
 
-# Plot the accuracy
-acc_p <- ggplot() +
-  geom_histogram(data = random_22_acc, mapping=aes(x=mean_accuracy), fill="gray70") +
-  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_accuracy), color="red", size=1.2) +
-  ylab("Number of Iterations") +
-  xlab("Mean Accuracy") +
-  ggtitle("Mean Accuracy in AROMA+2P Feature-Based Data") +
-  theme(plot.title=element_text(hjust=0.5))
+```{r, fig.width=10, fig.height=5}
+plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_in_sample_pvals,
+                             null_res = model_permutation_null_in_sample,
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P catch22 features, In-Sample",
+                             xloc = 0.94, 
+                             yloc = 5.5)
 
-# Plot the balanced accuracy
-bal_acc_p <- ggplot() +
-  geom_histogram(data = random_22_acc, mapping=aes(x=mean_balanced_accuracy), fill="gray70") +
-  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_balanced_accuracy), color="red", size=1.2) +
-  ylab("Number of Iterations") +
-  xlab("Mean Balanced Accuracy") +
-  ggtitle("Mean Balanced Accuracy in AROMA+2P Feature-Based Data") +
-  theme(plot.title=element_text(hjust=0.5))
+# Save plots
+ggsave("plots/feature_wise_Null_Model_Fit_Top5_Regions_In_Sample_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
 
-acc_p / bal_acc_p
-ggsave("plots/Meta_Null_AROMA_2P_Feature_wise.png", width=7, height=8, units="in", dpi=300)
+```{r}
+summarise_num_sig_features(feature_wise_SVM_in_sample_pvals)
+```
+
+### In-sample, inverse probability weighted
+
+```{r}
+# Run null model permutation function
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+svm_kernel <- "linear"
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_in_sample_inv_prob.Rds"))) {
+  model_permutation_null_in_sample_inv_prob <- run_null_model_n_permutations(rdata_path,
+                                                                             noise_procs = noise_procs,
+                                                                             grouping_var = "Brain_Region",
+                                                                             svm_feature_var = "Feature",
+                                                                             num_permutations = 10,
+                                                                             use_inv_prob_weighting = TRUE,
+                                                                             cross_validate = FALSE)
+  
+  saveRDS(model_permutation_null_in_sample_inv_prob, file=paste0(rdata_path, "Feature_wise_model_permutation_null_in_sample_inv_prob.Rds"))
+} else {
+  model_permutation_null_in_sample_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_model_permutation_null_in_sample_inv_prob.Rds"))
+}
+```
+
+
+```{r, fig.width=7, fig.height=5}
+# Plot null accuracy and balanced accuracy compared with real metrics:
+feature_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_in_sample_e1071_inv_prob.Rds"))
+
+plot_main_vs_null_hist(main_res = feature_wise_SVM_in_sample_inv_prob,
+                       null_res = model_permutation_null_in_sample_inv_prob,
+                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
+                       title = "In-sample Inv Prob linear SVM Results vs. Null Model Fits")
+
+ggsave("plots/feature_wise_Null_Model_Fit_In_Sample_Balanced_Accuracy_Inv_Prob.png",
+       width=7, height=5, units="in", dpi=300)
+```
+
+The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
+
+```{r}
+if (!file.exists(paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals_inv_prob.Rds"))) {
+  feature_wise_SVM_in_sample_inv_prob_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_in_sample_inv_prob,
+                                                              null_data = model_permutation_null_in_sample_inv_prob,
+                                                              grouping_var = "Brain_Region")
+  saveRDS(feature_wise_SVM_in_sample_inv_prob_pvals, file=paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals_inv_prob.Rds"))
+} else {
+  feature_wise_SVM_in_sample_inv_prob_pvals <- readRDS(paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals_inv_prob.Rds"))
+}
+
+feature_wise_SVM_in_sample_inv_prob_plabs <- truncate_p_values(feature_wise_SVM_in_sample_inv_prob_pvals)
+```
+
+```{r, fig.width=10, fig.height=5}
+plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_in_sample_inv_prob_pvals,
+                             null_res = model_permutation_null_in_sample_inv_prob,
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P catch22 Features, In-Sample Inv Prob")
+
+# Save plot
+ggsave("plots/feature_wise_Null_Model_Fit_Top5_Regions_In_Sample_Inv_Prob_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+summarise_num_sig_features(feature_wise_SVM_in_sample_inv_prob_pvals)
 ```
 
 
 
-### AROMA+2P with inverse probability weighting 
-Take the average of 22 random accuracy values from the null distribution 10,000x and compare with the mean from AROMA+2P with inverse probability weighting:
+
+### CV, inverse probability weighted
 
 ```{r}
+# Run null model permutation function
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+svm_kernel <- "linear"
 set.seed(127)
 
-if (!file.exists(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))) {
-  random_acc_list <- list()
-  for (i in 1:10000) {
-    random_acc <- model_free_shuffle_null_res %>%
-      sample_n(22) %>%
-      summarise(mean_accuracy = mean(accuracy, na.rm=T),
-                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-      mutate(Type="null")
-    random_acc_list <- rlist::list.append(random_acc_list, random_acc)
-  }
-  random_22_acc <- do.call(plyr::rbind.fill, random_acc_list)
-  saveRDS(random_22_acc, file=paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_inv_prob.Rds"))) {
+  model_permutation_null_CV_inv_prob <- run_null_model_n_permutations(rdata_path,
+                                                                    noise_procs = noise_procs,
+                                                                    grouping_var = "Brain_Region",
+                                                                    svm_feature_var = "Feature",
+                                                                    num_permutations = 10,
+                                                                    use_inv_prob_weighting = TRUE,
+                                                                    cross_validate = TRUE)
+  
+  saveRDS(model_permutation_null_CV_inv_prob, file=paste0(rdata_path, "Feature_wise_model_permutation_null_CV_inv_prob.Rds"))
 } else {
-  random_22_acc <- readRDS(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+  model_permutation_null_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_inv_prob.Rds"))
 }
+```
 
+
+```{r, fig.width=7, fig.height=5}
+# Plot null accuracy and balanced accuracy compared with real metrics:
 feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
-real_22_acc <- feature_wise_SVM_CV_inv_prob %>%
-  filter(Noise_Proc=="AROMA+2P") %>%
-  summarise(mean_accuracy = mean(accuracy, na.rm=T),
-            mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-  mutate(Type="main")
 
-# Plot the accuracy
-acc_p <- ggplot() +
-  geom_histogram(data = random_22_acc, mapping=aes(x=mean_accuracy), fill="gray70") +
-  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_accuracy), color="red", size=1.2) +
-  ylab("Number of Iterations") +
-  xlab("Mean Accuracy") +
-  ggtitle("Mean Accuracy in AROMA+2P Feature-Based Data\nwith Inverse Probability Sample Weighting") +
-  theme(plot.title=element_text(hjust=0.5))
+plot_main_vs_null_hist(main_res = feature_wise_SVM_CV_inv_prob,
+                       null_res = model_permutation_null_CV_inv_prob,
+                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
+                       title = "CV Inv Prob linear SVM Results vs. Null Model Fits")
 
-# Plot the balanced accuracy
-bal_acc_p <- ggplot() +
-  geom_histogram(data = random_22_acc, mapping=aes(x=mean_balanced_accuracy), fill="gray70") +
-  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_balanced_accuracy), color="red", size=1.2) +
-  ylab("Number of Iterations") +
-  xlab("Mean Balanced Accuracy") +
-  ggtitle("Mean Balanced Accuracy in AROMA+2P Feature-Based Data\nwith Inverse Probability Sample Weighting") +
-  theme(plot.title=element_text(hjust=0.5))
-
-acc_p / bal_acc_p
-ggsave("plots/Meta_Null_AROMA_2P_Feature_wise_inv_prob.png", width=7, height=8, units="in", dpi=300)
+# Save plot
+ggsave("plots/feature_wise_Null_Model_Fit_CV_Balanced_Accuracy_Inv_Prob.png",
+       width=7, height=5, units="in", dpi=300)
 ```
 
-
-
-### AROMA+2P with SMOTE
-Take the average of 22 random accuracy values from the null distribution 10,000x and compare with the mean from AROMA+2P with inverse probability weighting:
+The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
 
 ```{r}
-set.seed(127)
+feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
 
-if (!file.exists(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))) {
-  random_acc_list <- list()
-  for (i in 1:10000) {
-    random_acc <- model_free_shuffle_null_res %>%
-      sample_n(22) %>%
-      summarise(mean_accuracy = mean(accuracy, na.rm=T),
-                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-      mutate(Type="null")
-    random_acc_list <- rlist::list.append(random_acc_list, random_acc)
-  }
-  random_22_acc <- do.call(plyr::rbind.fill, random_acc_list)
-  saveRDS(random_22_acc, file=paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+if (!file.exists(paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_inv_prob.Rds"))) {
+  feature_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_CV_inv_prob,
+                                                              null_data = model_permutation_null_CV_inv_prob,
+                                                              grouping_var = "Brain_Region")
+  saveRDS(feature_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_inv_prob.Rds"))
 } else {
-  random_22_acc <- readRDS(paste0(rdata_path, "Feature_wise_meta_null_acc_AROMA_2P.Rds"))
+  feature_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_inv_prob.Rds"))
 }
 
-feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
-real_22_acc <- feature_wise_SVM_CV_SMOTE %>%
-  filter(Noise_Proc=="AROMA+2P") %>%
-  summarise(mean_accuracy = mean(accuracy, na.rm=T),
-            mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-  mutate(Type="main")
-
-# Plot the accuracy
-acc_p <- ggplot() +
-  geom_histogram(data = random_22_acc, mapping=aes(x=mean_accuracy), fill="gray70") +
-  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_accuracy), color="red", size=1.2) +
-  ylab("Number of Iterations") +
-  xlab("Mean Accuracy") +
-  ggtitle("Mean Accuracy in AROMA+2P Feature-Based Data\nwith Inverse Probability Sample Weighting") +
-  theme(plot.title=element_text(hjust=0.5))
-
-# Plot the balanced accuracy
-bal_acc_p <- ggplot() +
-  geom_histogram(data = random_22_acc, mapping=aes(x=mean_balanced_accuracy), fill="gray70") +
-  geom_vline(data = real_22_acc, mapping=aes(xintercept = mean_balanced_accuracy), color="red", size=1.2) +
-  ylab("Number of Iterations") +
-  xlab("Mean Balanced Accuracy") +
-  ggtitle("Mean Balanced Accuracy in AROMA+2P Feature-Based Data\nwith Inverse Probability Sample Weighting") +
-  theme(plot.title=element_text(hjust=0.5))
-
-acc_p / bal_acc_p
-ggsave("plots/Meta_Null_AROMA_2P_Feature_wise_SMOTE.png", width=7, height=8, units="in", dpi=300)
+feature_wise_SVM_CV_inv_prob_plabs <- truncate_p_values(feature_wise_SVM_CV_inv_prob_pvals)
 ```
 
+```{r, fig.width=10, fig.height=5}
+plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_CV_inv_prob_pvals,
+                             null_res = model_permutation_null_CV_inv_prob,
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P catch22 Features, CV Inv Prob")
+
+# Save plot
+ggsave("plots/feature_wise_Null_Model_Fit_CV_Inv_Prob_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+summarise_num_sig_features(feature_wise_SVM_CV_inv_prob_pvals)
+```
+
+
+### CV, SMOTE
+
+```{r}
+# Run null model permutation function
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+svm_kernel <- "linear"
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_SMOTE.Rds"))) {
+  model_permutation_null_CV_SMOTE <- run_null_model_n_permutations(rdata_path,
+                                                                    noise_procs = noise_procs,
+                                                                    grouping_var = "Brain_Region",
+                                                                    svm_feature_var = "Feature",
+                                                                    num_permutations = 10,
+                                                                    use_inv_prob_weighting = TRUE,
+                                                                    cross_validate = TRUE)
+  
+  saveRDS(model_permutation_null_CV_SMOTE, file=paste0(rdata_path, "Feature_wise_model_permutation_null_CV_SMOTE.Rds"))
+} else {
+  model_permutation_null_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_SMOTE.Rds"))
+}
+```
+
+
+```{r, fig.width=7, fig.height=5}
+# Plot null accuracy and balanced accuracy compared with real metrics:
+feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
+
+plot_main_vs_null_hist(main_res = feature_wise_SVM_CV_SMOTE,
+                       null_res = model_permutation_null_CV_SMOTE,
+                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
+                       title = "CV SMOTE linear SVM Results vs. Null Model Fits")
+
+# Save plot
+ggsave("plots/feature_wise_Null_Model_Fit_CV_Balanced_Accuracy_SMOTE.png",
+       width=7, height=5, units="in", dpi=300)
+```
+
+The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
+
+```{r}
+feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
+
+if (!file.exists(paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_SMOTE.Rds"))) {
+  feature_wise_SVM_CV_SMOTE_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_CV_SMOTE,
+                                                              null_data = model_permutation_null_CV_SMOTE,
+                                                              grouping_var = "Brain_Region")
+  saveRDS(feature_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_SMOTE.Rds"))
+} else {
+  feature_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_SMOTE.Rds"))
+}
+
+feature_wise_SVM_CV_SMOTE_plabs <- truncate_p_values(feature_wise_SVM_CV_SMOTE_pvals)
+```
+
+```{r, fig.width=10, fig.height=5}
+plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_CV_SMOTE_pvals,
+                             null_res = model_permutation_null_CV_SMOTE,
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P catch22 Features, CV SMOTE",
+                             xloc = 0.55,
+                             yloc = 4)
+
+# Save plot
+ggsave("plots/feature_wise_Null_Model_Fit_Top5_Regions_CV_SMOTE_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+summarise_num_sig_features(feature_wise_SVM_CV_SMOTE_pvals)
+```
+
+
+## Comparing model-free shuffle with pooled empirical null distributions
+
+```{r}
+# In-sample inverse probability
+in_sample_inv_prob_p <- model_free_shuffle_null_res %>%
+  mutate(Null_Type = "Model-Free Shuffle") %>%
+  plyr::rbind.fill(model_permutation_null_in_sample_inv_prob %>% 
+                     mutate(Null_Type = "Null Model Fit, In-sample Inv Prob")) %>%
+  mutate(Null_Type = factor(Null_Type, levels = c("Model-Free Shuffle",
+                                                  "Null Model Fit, In-sample Inv Prob",
+                                                  "Null Model Fit, CV Inv Prob",
+                                                  "Null Model Fit, CV SMOTE"))) %>%
+  ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
+  geom_histogram(alpha=0.5, 
+                 aes(y=0.5*..density..), 
+                 position="identity") +
+  scale_x_continuous(limits = c(0.3, 0.8)) +
+  ylab("") +
+  xlab("") +
+  labs(fill = "Null Type") +
+  scale_fill_manual(values = list("Model-Free Shuffle" = "gray70", 
+                                  "Null Model Fit, In-sample Inv Prob" = "coral",
+                                  "Null Model Fit, CV Inv Prob" = "dodgerblue",
+                                  "Null Model Fit, CV SMOTE" = "green"))
+
+# CV inverse probability
+CV_inv_prob_p <- model_free_shuffle_null_res %>%
+  mutate(Null_Type = "Model-Free Shuffle") %>%
+  plyr::rbind.fill(model_permutation_null_CV_inv_prob %>% 
+                     mutate(Null_Type = "Null Model Fit, CV Inv Prob")) %>%
+  mutate(Null_Type = factor(Null_Type, levels = c("Model-Free Shuffle",
+                                                  "Null Model Fit, In-sample Inv Prob",
+                                                  "Null Model Fit, CV Inv Prob",
+                                                  "Null Model Fit, CV SMOTE"))) %>%
+  ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
+  geom_histogram(alpha=0.5, 
+                 aes(y=0.5*..density..), 
+                 position="identity") +
+  scale_x_continuous(limits = c(0.3, 0.8)) +
+  ylab("Scaled Density") +
+  xlab("") +
+  labs(fill = "Null Type") +
+  scale_fill_manual(values = list("Model-Free Shuffle" = "gray70", 
+                                  "Null Model Fit, In-sample Inv Prob" = "coral",
+                                  "Null Model Fit, CV Inv Prob" = "dodgerblue",
+                                  "Null Model Fit, CV SMOTE" = "green"))
+
+# CV SMOTE
+CV_SMOTE_p <- model_free_shuffle_null_res %>%
+  mutate(Null_Type = "Model-Free Shuffle") %>%
+  plyr::rbind.fill(model_permutation_null_CV_SMOTE %>% 
+                     mutate(Null_Type = "Null Model Fit, CV SMOTE")) %>%
+  mutate(Null_Type = factor(Null_Type, levels = c("Model-Free Shuffle",
+                                                  "Null Model Fit, In-sample Inv Prob",
+                                                  "Null Model Fit, CV Inv Prob",
+                                                  "Null Model Fit, CV SMOTE"))) %>%
+  ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
+  geom_histogram(alpha=0.5, 
+                 aes(y=0.5*..density..), 
+                 position="identity") +
+  scale_x_continuous(limits = c(0.3, 0.8)) +
+  ylab("") +
+  xlab("Balanced Accuracy") +
+  labs(fill = "Null Type") +
+  scale_fill_manual(values = list("Model-Free Shuffle" = "gray70", 
+                                  "Null Model Fit, In-sample Inv Prob" = "coral",
+                                  "Null Model Fit, CV Inv Prob" = "dodgerblue",
+                                  "Null Model Fit, CV SMOTE" = "green"))
+
+in_sample_inv_prob_p / CV_inv_prob_p / CV_SMOTE_p  + 
+  plot_annotation(title = "Null Distributions by Model Type") + 
+  plot_layout(guides = "collect") & 
+  theme(legend.position = 'bottom') &
+  guides(fill = guide_legend(nrow=2,byrow=TRUE))
+ggsave("plots/Null_Distributions_by_Model_Type.png",
+       width = 7, height = 5, units = "in", dpi=300)
+```

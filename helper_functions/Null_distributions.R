@@ -1,6 +1,8 @@
 library(caret)
 library(dplyr)
 library(rlist)
+library(knitr)
+library(kableExtra)
 
 #-------------------------------------------------------------------------------
 # Model-free shuffles
@@ -78,12 +80,9 @@ run_null_model_n_permutations <- function(rdata_path,
                                           test_package = "e1071",
                                           svm_kernel = "linear",
                                           num_permutations = 100,
-                                          seed = 127,
                                           cross_validate = FALSE,
                                           use_inv_prob_weighting = FALSE,
                                           use_SMOTE = FALSE) {
-  
-  set.seed(127)
   
   # Initialize empty list
   null_list <- list()
