@@ -21,6 +21,7 @@ library(kableExtra)
 study <- "D:/Virtual_Machines/Shared_Folder/PhD_work/"
 pydata_path <- paste0(study, "data/scz/UCLA/pydata/AROMA_2P/")
 ROI_index <- read.csv(paste0(study, "data/scz/UCLA/pydata/ROI_info.csv"))
+SPI_directionality <- read.csv("SPI_Direction_Info.csv")
 ```
 
 
@@ -56,11 +57,7 @@ corr_data <- subset(all_pyspi_data, SPI == "xcorr_mean_sig-True")  %>%
   mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
                               paste0(brain_region_1, "_", brain_region_2),
                               paste0(brain_region_2, "_", brain_region_1)))
-```
 
-#### In-sample linear SVM
-
-```{r}
 data_for_SVM <- corr_data %>%
   pivot_wider(id_cols = c(Subject_ID, group),
               names_from = region_pair,
@@ -68,7 +65,11 @@ data_for_SVM <- corr_data %>%
   select(-Subject_ID) %>%
   drop_na()
 data_for_SVM$group <- factor(data_for_SVM$group, levels = c("CONTROL", "SCHZ"))
-  
+```
+
+#### In-sample linear SVM
+
+```{r}
 pearson_corr_in_sample_SVM <- e1071::svm(group ~ ., 
                                          data = data_for_SVM ,
                                          kernel = "linear")
@@ -248,57 +249,398 @@ data.frame(Accuracy = accuracy_avg,
 #### In sample
 
 ```{r}
-df_list <- list()
-for (this_SPI in unique(all_pyspi_data$SPI)) {
-  SPI_data <- subset(all_pyspi_data, SPI == this_SPI)  %>%
-    mutate(comparison = row_number()) %>%
-    mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
-                                paste0(brain_region_1, "_", brain_region_2),
-                                paste0(brain_region_2, "_", brain_region_1))) %>%
-    distinct(region_pair, Subject_ID, .keep_all=T) %>%
-    pivot_longer(cols = c(brain_region_1,
-                          brain_region_2),
-                 names_to = "Region_Number",
-                 values_to = "Index") %>%
-    left_join(ROI_index) %>%
-    dplyr::select(-Index) %>%
-    distinct() %>%
-    pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
-                names_from = "Region_Number",
-                values_from = "ROI") %>%
-    dplyr::select(-comparison) %>%
-    mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
-                                paste0(brain_region_1, "_", brain_region_2),
-                                paste0(brain_region_2, "_", brain_region_1)))
-  
-  data_for_SVM <- SPI_data %>%
-    pivot_wider(id_cols = c(Subject_ID, group),
-                names_from = region_pair,
-                values_from = value) %>% 
-    select(-Subject_ID) %>%
-    drop_na()
-  data_for_SVM$group <- factor(data_for_SVM$group, levels = c("CONTROL", "SCHZ"))
-  
-  pearson_corr_in_sample_SVM <- e1071::svm(group ~ ., 
-                                           data = data_for_SVM ,
-                                           kernel = "linear")
-  
-  # Generate in-sample predictions based on SVM model
-  pred <- predict(pearson_corr_in_sample_SVM, data_for_SVM)
-  data_for_SVM$group <- factor(data_for_SVM$group, levels = levels(pred))
-  
-  # Calculate accuracy and balanced accuracy
-  accuracy <- sum(pred == data_for_SVM$group)/length(pred)
-  balanced_accuracy <- caret::confusionMatrix(data=pred, 
-                                              reference=data_for_SVM$group)$byClass[["Balanced Accuracy"]]
-  balanced_accuracy <- ifelse(is.na(balanced_accuracy), 0.5, balanced_accuracy)
-  
-  res_df <- data.frame(SPI = this_SPI,
-                       accuracy = accuracy,
-                       balanced_accuracy = balanced_accuracy)
-  df_list <- rlist::list.append(df_list, res_df)
+if (!file.exists(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_In_Sample.Rds"))) {
+  df_list <- list()
+  for (this_SPI in unique(all_pyspi_data$SPI)) {
+    # Identify whether current SPI is directed or undirected
+    directionality <- SPI_directionality %>% filter(SPI == this_SPI) %>% pull(Direction)
+    SPI_data <- subset(all_pyspi_data, SPI == this_SPI)  %>%
+      mutate(comparison = row_number()) %>%
+      pivot_longer(cols = c(brain_region_1,
+                            brain_region_2),
+                   names_to = "Region_Number",
+                   values_to = "Index") %>%
+      left_join(ROI_index) %>%
+      dplyr::select(-Index) %>%
+      pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
+                  names_from = "Region_Number",
+                  values_from = "ROI") %>%
+      dplyr::select(-comparison) 
+    
+    # Combine brain regions into new pairwise column depending on directionality
+    if (directionality == "Undirected") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
+                                    paste0(brain_region_1, "_", brain_region_2),
+                                    paste0(brain_region_2, "_", brain_region_1)))
+    } else if (directionality == "Directed") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = paste0(brain_region_1, "_", brain_region_2))
+    }
+    
+    data_for_SVM <- SPI_data %>%
+      distinct(Subject_ID, region_pair, .keep_all = T) %>%
+      pivot_wider(id_cols = c(Subject_ID, group),
+                  names_from = region_pair,
+                  values_from = value) %>% 
+      select(-Subject_ID) %>%
+      drop_na()
+    
+    if (nrow(data_for_SVM ) > 0) {
+      data_for_SVM$group <- factor(data_for_SVM$group, levels = c("CONTROL", "SCHZ"))
+      
+      SVM_in_sample <- e1071::svm(group ~ ., 
+                                               data = data_for_SVM ,
+                                               kernel = "linear")
+      
+      # Generate in-sample predictions based on SVM model
+      pred <- predict(SVM_in_sample, data_for_SVM)
+      data_for_SVM$group <- factor(data_for_SVM$group, levels = levels(pred))
+      
+      # Calculate accuracy and balanced accuracy
+      accuracy <- sum(pred == data_for_SVM$group)/length(pred)
+      balanced_accuracy <- caret::confusionMatrix(data=pred, 
+                                                  reference=data_for_SVM$group)$byClass[["Balanced Accuracy"]]
+      balanced_accuracy <- ifelse(is.na(balanced_accuracy), 0.5, balanced_accuracy)
+      
+      res_df <- data.frame(SPI = this_SPI,
+                           accuracy = accuracy,
+                           balanced_accuracy = balanced_accuracy)
+      df_list <- rlist::list.append(df_list, res_df)
+    }
+    
+  }
+  saveRDS(df_list, paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_In_Sample.Rds"))
+} else {
+  df_list <- readRDS(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_In_Sample.Rds"))
 }
-saveRDS(df_list, "df_list_temp.Rds")
+pairwise_in_sample_svm_res <- do.call(plyr::rbind.fill, df_list)
+```
+
+#### CV
+
+```{r}
+if (!file.exists(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV.Rds"))) {
+  df_list <- list()
+  for (this_SPI in unique(all_pyspi_data$SPI)) {
+    # Identify whether current SPI is directed or undirected
+    directionality <- SPI_directionality %>% filter(SPI == this_SPI) %>% pull(Direction)
+    
+    SPI_data <- subset(all_pyspi_data, SPI == this_SPI)  %>%
+      mutate(comparison = row_number()) %>%
+      pivot_longer(cols = c(brain_region_1,
+                            brain_region_2),
+                   names_to = "Region_Number",
+                   values_to = "Index") %>%
+      left_join(ROI_index) %>%
+      dplyr::select(-Index) %>%
+      pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
+                  names_from = "Region_Number",
+                  values_from = "ROI") %>%
+      dplyr::select(-comparison) 
+    
+    # Combine brain regions into new pairwise column depending on directionality
+    if (directionality == "Undirected") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
+                                    paste0(brain_region_1, "_", brain_region_2),
+                                    paste0(brain_region_2, "_", brain_region_1)))
+    } else if (directionality == "Directed") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = paste0(brain_region_1, "_", brain_region_2))
+    }
+    
+    data_for_SVM <- SPI_data %>%
+      distinct(Subject_ID, region_pair, .keep_all = T) %>%
+      pivot_wider(id_cols = c(Subject_ID, group),
+                  names_from = region_pair,
+                  values_from = value) %>% 
+      select(-Subject_ID) %>%
+      drop_na()
+    
+    if (nrow(data_for_SVM ) > 0) {
+      data_for_SVM$group <- factor(data_for_SVM$group, levels = c("CONTROL", "SCHZ"))
+      
+      flds <- createFolds(data_for_SVM$group, k = 10, list = TRUE, returnTrain = FALSE)
+      
+      accuracy_list <- list()
+      balanced_accuracy_list <- list()
+      
+      for (i in 1:length(flds)) {
+        test_i <- flds[[i]]
+        train_i <- setdiff(1:nrow(data_for_SVM), test_i)
+        
+        train_data <- data_for_SVM[train_i, ]
+        test_data <- data_for_SVM[test_i, ]
+        
+        svmModel <- e1071::svm(factor(group) ~ .,
+                               kernel = "linear",
+                               cost = 1,
+                               data = train_data)
+        
+        # Generate out-of-sample predictions based on SVM model
+        pred <- predict(svmModel, test_data)
+        test_data$group <- factor(test_data$group, levels = levels(pred))
+        
+        # Calculate accuracy and balanced accuracy
+        accuracy <- sum(pred == test_data$group)/length(pred)
+        balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
+                                                    data=pred)$byClass[["Balanced Accuracy"]]
+        
+        accuracy_list[[i]] <- accuracy
+        balanced_accuracy_list[[i]] <- balanced_accuracy
+      } 
+      
+      accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
+      accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
+      balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
+      balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
+      
+      res_df <- data.frame(SPI = this_SPI,
+                           accuracy = accuracy,
+                           accuracy_sd = accuracy_sd,
+                           balanced_accuracy = balanced_accuracy,
+                           balanced_accuracy_sd = balanced_accuracy_sd)
+      df_list <- rlist::list.append(df_list, res_df)
+    }
+  }
+  pairwise_CV_svm_res <- do.call(plyr::rbind.fill, df_list)
+  saveRDS(pairwise_CV_svm_res, paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV.Rds"))
+} else {
+  pairwise_CV_svm_res <- readRDS(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV.Rds"))
+}
+```
+
+
+#### CV -- inv prob
+
+```{r}
+if (!file.exists(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV_inv_prob.Rds"))) {
+  df_list <- list()
+  for (this_SPI in unique(all_pyspi_data$SPI)) {
+    # Identify whether current SPI is directed or undirected
+    directionality <- SPI_directionality %>% filter(SPI == this_SPI) %>% pull(Direction)
+    
+    SPI_data <- subset(all_pyspi_data, SPI == this_SPI)  %>%
+      mutate(comparison = row_number()) %>%
+      pivot_longer(cols = c(brain_region_1,
+                            brain_region_2),
+                   names_to = "Region_Number",
+                   values_to = "Index") %>%
+      left_join(ROI_index) %>%
+      dplyr::select(-Index) %>%
+      pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
+                  names_from = "Region_Number",
+                  values_from = "ROI") %>%
+      dplyr::select(-comparison) 
+    
+    # Combine brain regions into new pairwise column depending on directionality
+    if (directionality == "Undirected") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
+                                    paste0(brain_region_1, "_", brain_region_2),
+                                    paste0(brain_region_2, "_", brain_region_1)))
+    } else if (directionality == "Directed") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = paste0(brain_region_1, "_", brain_region_2))
+    }
+    
+    sample_props <- SPI_data %>%
+      dplyr::group_by(Subject_ID, region_pair) %>%
+      dplyr::filter(!any(is.na(value))) %>%
+      dplyr::ungroup() %>%
+      dplyr::distinct(Subject_ID, group) %>%
+      dplyr::summarise(control_prop = sum(group=="CONTROL") / n(),
+                       schz_prop = sum(group=="SCHZ")/n())
+    
+    # Convert to sample weights based on inverse of probability
+    sample_wts <- list("CONTROL" = 1/sample_props$control_prop,
+                       "SCHZ" = 1/sample_props$schz_prop)
+      
+    data_for_SVM <- SPI_data %>%
+      distinct(Subject_ID, region_pair, .keep_all = T) %>%
+      pivot_wider(id_cols = c(Subject_ID, group),
+                  names_from = region_pair,
+                  values_from = value) %>% 
+      select(-Subject_ID) %>%
+      drop_na()
+    
+    if (nrow(data_for_SVM ) > 0) {
+      data_for_SVM$group <- factor(data_for_SVM$group, levels = c("CONTROL", "SCHZ"))
+      
+      flds <- createFolds(data_for_SVM$group, k = 10, list = TRUE, returnTrain = FALSE)
+      
+      accuracy_list <- list()
+      balanced_accuracy_list <- list()
+      
+      for (i in 1:length(flds)) {
+        test_i <- flds[[i]]
+        train_i <- setdiff(1:nrow(data_for_SVM), test_i)
+        
+        train_data <- data_for_SVM[train_i, ]
+        test_data <- data_for_SVM[test_i, ]
+        
+        svmModel <- e1071::svm(factor(group) ~ .,
+                               kernel = "linear",
+                               cost = 1,
+                               data = train_data,
+                               class.weights = sample_wts)
+        
+        # Generate out-of-sample predictions based on SVM model
+        pred <- predict(svmModel, test_data)
+        test_data$group <- factor(test_data$group, levels = levels(pred))
+        
+        # Calculate accuracy and balanced accuracy
+        accuracy <- sum(pred == test_data$group)/length(pred)
+        balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
+                                                    data=pred)$byClass[["Balanced Accuracy"]]
+        
+        accuracy_list[[i]] <- accuracy
+        balanced_accuracy_list[[i]] <- balanced_accuracy
+      } 
+      
+      accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
+      accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
+      balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
+      balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
+      
+      res_df <- data.frame(SPI = this_SPI,
+                           accuracy = accuracy,
+                           accuracy_sd = accuracy_sd,
+                           balanced_accuracy = balanced_accuracy,
+                           balanced_accuracy_sd = balanced_accuracy_sd)
+      df_list <- rlist::list.append(df_list, res_df)
+    }
+  }
+  pairwise_CV_svm_inv_prob_res <- do.call(plyr::rbind.fill, df_list)
+  saveRDS(pairwise_CV_svm_inv_prob_res, paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV_inv_prob.Rds"))
+} else {
+  pairwise_CV_svm_inv_prob_res <- readRDS(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV_inv_prob.Rds"))
+}
+```
+
+
+
+
+#### CV -- SMOTE
+
+```{r}
+if (!file.exists(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV_SMOTE.Rds"))) {
+  df_list <- list()
+  for (this_SPI in unique(all_pyspi_data$SPI)) {
+    # Identify whether current SPI is directed or undirected
+    directionality <- SPI_directionality %>% filter(SPI == this_SPI) %>% pull(Direction)
+    
+    SPI_data <- subset(all_pyspi_data, SPI == this_SPI)  %>%
+      mutate(comparison = row_number()) %>%
+      pivot_longer(cols = c(brain_region_1,
+                            brain_region_2),
+                   names_to = "Region_Number",
+                   values_to = "Index") %>%
+      left_join(ROI_index) %>%
+      dplyr::select(-Index) %>%
+      pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
+                  names_from = "Region_Number",
+                  values_from = "ROI") %>%
+      dplyr::select(-comparison) 
+    
+    # Combine brain regions into new pairwise column depending on directionality
+    if (directionality == "Undirected") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
+                                    paste0(brain_region_1, "_", brain_region_2),
+                                    paste0(brain_region_2, "_", brain_region_1)))
+    } else if (directionality == "Directed") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = paste0(brain_region_1, "_", brain_region_2))
+    }
+      
+    data_for_SVM <- SPI_data %>%
+      distinct(Subject_ID, region_pair, .keep_all = T) %>%
+      pivot_wider(id_cols = c(Subject_ID, group),
+                  names_from = region_pair,
+                  values_from = value) %>% 
+      select(-Subject_ID) %>%
+      drop_na()
+    
+    if (nrow(data_for_SVM ) > 0) {
+      data_for_SVM$group <- factor(data_for_SVM$group, levels = c("CONTROL", "SCHZ"))
+      
+      flds <- createFolds(data_for_SVM$group, k = 10, list = TRUE, returnTrain = FALSE)
+      
+      accuracy_list <- list()
+      balanced_accuracy_list <- list()
+      
+      for (i in 1:length(flds)) {
+        test_i <- flds[[i]]
+        train_i <- setdiff(1:nrow(data_for_SVM), test_i)
+        
+        train_data <- data_for_SVM[train_i, ]
+        test_data <- data_for_SVM[test_i, ]
+        
+        train_data <- smotefamily::SMOTE(train_data[,-1], train_data$group, K = 5)$data %>%
+          dplyr::rename("group" = "class")
+        
+        svmModel <- e1071::svm(factor(group) ~ .,
+                               kernel = "linear",
+                               cost = 1,
+                               data = train_data)
+        
+        # Generate out-of-sample predictions based on SVM model
+        pred <- predict(svmModel, test_data)
+        test_data$group <- factor(test_data$group, levels = levels(pred))
+        
+        # Calculate accuracy and balanced accuracy
+        accuracy <- sum(pred == test_data$group)/length(pred)
+        balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
+                                                    data=pred)$byClass[["Balanced Accuracy"]]
+        
+        accuracy_list[[i]] <- accuracy
+        balanced_accuracy_list[[i]] <- balanced_accuracy
+      } 
+      
+      accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
+      accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
+      balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
+      balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
+      
+      res_df <- data.frame(SPI = this_SPI,
+                           accuracy = accuracy,
+                           accuracy_sd = accuracy_sd,
+                           balanced_accuracy = balanced_accuracy,
+                           balanced_accuracy_sd = balanced_accuracy_sd)
+      df_list <- rlist::list.append(df_list, res_df)
+    }
+  }
+  pairwise_CV_svm_SMOTE_res <- do.call(plyr::rbind.fill, df_list)
+  saveRDS(pairwise_CV_svm_SMOTE_res, paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV_SMOTE.Rds"))
+} else {
+  pairwise_CV_svm_SMOTE_res <- readRDS(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV_SMOTE.Rds"))
+}
+```
+
+Combine results into one table
+```{r}
+pairwise_in_sample_svm_res$Method <- "In-sample"
+pairwise_CV_svm_res$Method <- "CV"
+pairwise_CV_svm_inv_prob_res$Method <- "CV inv prob"
+pairwise_CV_svm_SMOTE_res$Method <- "CV SMOTE"
+
+do.call(plyr::rbind.fill, list(pairwise_in_sample_svm_res,
+                               pairwise_CV_svm_res,
+                               pairwise_CV_svm_inv_prob_res,
+                               pairwise_CV_svm_SMOTE_res)) %>%
+  mutate(SPI = fct_reorder(SPI, balanced_accuracy, .fun = mean),
+         Method = factor(Method, levels = c("In-sample", "CV", 
+                                            "CV inv prob", "CV SMOTE"))) %>%
+  ggplot(data=., mapping = aes(x=Method, y=SPI, fill=balanced_accuracy)) +
+  geom_tile() +
+  geom_text(aes(label = round(100*balanced_accuracy, 2))) +
+  ggtitle("Balanced Accuracy by PySPI SPI") +
+  scale_fill_gradient(low = "white", high = "red") +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5))
+ggsave("plots/PySPI_SPI_Balanced_Accuracy.png", width=8, height=5, units="in", dpi=300)
 ```
 
 

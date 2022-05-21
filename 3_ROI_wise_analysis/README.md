@@ -98,6 +98,8 @@ applying inverse probability reweighting to the samples.
 
 ### 10-fold cross-validated linear SVM with SMOTE
 
+sa\[’\]
+
 ![](Step3_README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 As with the in-sample results, the accuracy values are negatively
@@ -159,16 +161,16 @@ num_sig_bacc_fdr
 AROMA+2P
 </td>
 <td style="text-align:right;">
-68
+73
 </td>
 <td style="text-align:right;">
-68
+73
 </td>
 <td style="text-align:right;">
 7
 </td>
 <td style="text-align:right;">
-0
+4
 </td>
 </tr>
 <tr>
@@ -176,16 +178,16 @@ AROMA+2P
 AROMA+2P+GMR
 </td>
 <td style="text-align:right;">
-79
+76
 </td>
 <td style="text-align:right;">
-79
+76
 </td>
 <td style="text-align:right;">
-13
+15
 </td>
 <td style="text-align:right;">
-6
+4
 </td>
 </tr>
 <tr>
@@ -193,16 +195,16 @@ AROMA+2P+GMR
 AROMA+2P+DiCER
 </td>
 <td style="text-align:right;">
-80
+76
 </td>
 <td style="text-align:right;">
-80
+76
 </td>
 <td style="text-align:right;">
-11
+14
 </td>
 <td style="text-align:right;">
-2
+4
 </td>
 </tr>
 </tbody>
@@ -256,10 +258,10 @@ AROMA+2P
 0
 </td>
 <td style="text-align:right;">
-25
+18
 </td>
 <td style="text-align:right;">
-13
+15
 </td>
 </tr>
 <tr>
@@ -267,16 +269,16 @@ AROMA+2P
 AROMA+2P+GMR
 </td>
 <td style="text-align:right;">
-5
+6
 </td>
 <td style="text-align:right;">
-0
+4
 </td>
 <td style="text-align:right;">
-34
+35
 </td>
 <td style="text-align:right;">
-18
+15
 </td>
 </tr>
 <tr>
@@ -284,16 +286,16 @@ AROMA+2P+GMR
 AROMA+2P+DiCER
 </td>
 <td style="text-align:right;">
-2
+3
 </td>
 <td style="text-align:right;">
 0
 </td>
 <td style="text-align:right;">
-31
+23
 </td>
 <td style="text-align:right;">
-17
+15
 </td>
 </tr>
 </tbody>
@@ -341,16 +343,16 @@ num_sig_bacc_fdr
 AROMA+2P
 </td>
 <td style="text-align:right;">
-6
+2
 </td>
 <td style="text-align:right;">
-0
+1
 </td>
 <td style="text-align:right;">
-24
+19
 </td>
 <td style="text-align:right;">
-14
+4
 </td>
 </tr>
 <tr>
@@ -358,16 +360,16 @@ AROMA+2P
 AROMA+2P+GMR
 </td>
 <td style="text-align:right;">
-12
+10
 </td>
 <td style="text-align:right;">
-2
+4
 </td>
 <td style="text-align:right;">
-29
+25
 </td>
 <td style="text-align:right;">
-16
+17
 </td>
 </tr>
 <tr>
@@ -375,16 +377,16 @@ AROMA+2P+GMR
 AROMA+2P+DiCER
 </td>
 <td style="text-align:right;">
-7
+10
 </td>
 <td style="text-align:right;">
-0
+1
 </td>
 <td style="text-align:right;">
-28
+22
 </td>
 <td style="text-align:right;">
-6
+11
 </td>
 </tr>
 </tbody>
@@ -441,13 +443,13 @@ num_sig_bacc_fdr
 AROMA+2P
 </td>
 <td style="text-align:right;">
-13
+8
 </td>
 <td style="text-align:right;">
 0
 </td>
 <td style="text-align:right;">
-17
+15
 </td>
 <td style="text-align:right;">
 0
@@ -464,10 +466,10 @@ AROMA+2P+GMR
 0
 </td>
 <td style="text-align:right;">
-18
+14
 </td>
 <td style="text-align:right;">
-0
+2
 </td>
 </tr>
 <tr>
@@ -481,10 +483,10 @@ AROMA+2P+DiCER
 0
 </td>
 <td style="text-align:right;">
-13
+12
 </td>
 <td style="text-align:right;">
-4
+0
 </td>
 </tr>
 </tbody>
@@ -532,7 +534,7 @@ AROMA+2P
 0
 </td>
 <td style="text-align:right;">
-8
+10
 </td>
 <td style="text-align:right;">
 0
@@ -549,10 +551,10 @@ AROMA+2P+GMR
 2
 </td>
 <td style="text-align:right;">
-13
+11
 </td>
 <td style="text-align:right;">
-3
+4
 </td>
 </tr>
 <tr>
@@ -563,13 +565,13 @@ AROMA+2P+DiCER
 10
 </td>
 <td style="text-align:right;">
-2
+0
 </td>
 <td style="text-align:right;">
-11
+13
 </td>
 <td style="text-align:right;">
-1
+0
 </td>
 </tr>
 </tbody>
@@ -611,13 +613,13 @@ num_sig_bacc_fdr
 AROMA+2P
 </td>
 <td style="text-align:right;">
-5
+9
 </td>
 <td style="text-align:right;">
 0
 </td>
 <td style="text-align:right;">
-0
+15
 </td>
 <td style="text-align:right;">
 0
@@ -628,16 +630,16 @@ AROMA+2P
 AROMA+2P+GMR
 </td>
 <td style="text-align:right;">
+13
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
 14
 </td>
 <td style="text-align:right;">
 2
-</td>
-<td style="text-align:right;">
-2
-</td>
-<td style="text-align:right;">
-0
 </td>
 </tr>
 <tr>
@@ -648,10 +650,10 @@ AROMA+2P+DiCER
 14
 </td>
 <td style="text-align:right;">
-1
+0
 </td>
 <td style="text-align:right;">
-0
+14
 </td>
 <td style="text-align:right;">
 0
@@ -696,13 +698,13 @@ num_sig_bacc_fdr
 AROMA+2P
 </td>
 <td style="text-align:right;">
-11
+18
 </td>
 <td style="text-align:right;">
 0
 </td>
 <td style="text-align:right;">
-0
+8
 </td>
 <td style="text-align:right;">
 0
@@ -713,13 +715,13 @@ AROMA+2P
 AROMA+2P+GMR
 </td>
 <td style="text-align:right;">
-17
-</td>
-<td style="text-align:right;">
-9
+23
 </td>
 <td style="text-align:right;">
 0
+</td>
+<td style="text-align:right;">
+15
 </td>
 <td style="text-align:right;">
 0
@@ -730,13 +732,13 @@ AROMA+2P+GMR
 AROMA+2P+DiCER
 </td>
 <td style="text-align:right;">
-12
+25
 </td>
 <td style="text-align:right;">
-0
+6
 </td>
 <td style="text-align:right;">
-0
+11
 </td>
 <td style="text-align:right;">
 0
