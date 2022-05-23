@@ -9,14 +9,14 @@ Step 5: ROI+Feature Classification Analysis
 
 We will start with a simple linear SVM classifier using all 22 features.
 
-![](Step5_README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 ### In-sample linear SVM with inverse probability weighting
 
 We can run linear SVM with the `e1071` package to directly test sample
 reweighting with in-sample accuracy and balanced accuracy.
 
-![](Step5_README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 By assigning each subject a weight equivalent to the inverse proportion
 of that subject’s diagnosis, the linear SVM places a higher cost on
@@ -36,7 +36,7 @@ linear SVM.
 We can run linear SVM with the `e1071` package to directly test SMOTE
 with in-sample accuracy and balanced accuracy.
 
-![](Step5_README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 By assigning each subject a weight equivalent to the inverse proportion
 of that subject’s diagnosis, the linear SVM places a higher cost on
@@ -57,7 +57,7 @@ linear SVM.
 
 We can implement 10-fold cross-validation (CV) with the `caret` package.
 
-![](Step5_README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 As with in-sample SVM, the unweighted input samples are virtually all
 classified as control subjects across all 82 ROIs using the 10-fold
@@ -65,7 +65,7 @@ cross-validation linear SVM with caret.
 
 ### 10-fold cross-validated linear SVM with inverse probability weighting
 
-![](Step5_README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 Surprisingly, incorporating inverse probability weighting has minimal
 impact when it comes to the ten-fold cross-validated SVM. Of note, the
@@ -74,23 +74,39 @@ default parameters.
 
 ### 10-fold cross-validated linear SVM with SMOTE
 
-![](Step5_README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 Surprisingly, incorporating inverse probability weighting has minimal
 impact when it comes to the ten-fold cross-validated SVM. Of note, the
 in-sample and cross-validated SVM were both run with kernlab::ksvm using
 default parameters.
 
-## Null models
+## Model-free shuffle null distribution
 
 ### Generating null distributions from model-free shuffles
 
-### Deriving p-values using model-free shuffle null distributions
+This first model-free shuffles method is borrowed from Trent’s
+implementation in theft. With this method, the input class labels (Schz
+or Control) are randomly shuffled N times, and for each iteration, the
+classification accuracy and balanced accuracy are calculated. This
+yields a null distribution of accuracies and balanced accuracies,
+circumventing the need for running any classification algorithms across
+iterations.
 
-Balanced accuracy:
-![](Step5_README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+Here, I’ve run 1,000,000 iterations of the model-free shuffle,
+generating 1,000,000 null values for Accuracy and Balanced Accuracy,
+respectively. Since this method is independent of ROI/feature combo, the
+same null distribution can be used to compare with each ROI/feature
+combo separately.
 
-Summary statistics:
+### CV linear SVM
+
+I’ve plotted the distribution of null accuracies (gray) alongside the
+actual accuracies (green, red, and blue) for the ROI/Feature combos per
+noise-processing method.
+
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -98,22 +114,138 @@ Summary statistics:
 Noise_Proc
 </th>
 <th style="text-align:right;">
-accuracy
+balanced_accuracy
+</th>
+<th style="text-align:left;">
+bal_acc_p
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.5726515
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+3.71e-02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;">
+0.6337879
+</td>
+<td style="text-align:left;">
+1.68e-04
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.5317424
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+2.42e-01
+</td>
+</tr>
+</tbody>
+</table>
+
+This table summarises the number of ROIs for which raw accuracy or
+balanced accuracy is significantly greater than the model-free shuffle
+null distribution, both before and after adjusting for multiple
+comparisons with BH-FDR.
+
+### CV linear SVM – inv prob
+
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
+I’ve plotted the distribution of null accuracies (gray) alongside the
+actual accuracies (green, red, and blue) for the ROI/Feature combos per
+noise-processing method.
+
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Noise_Proc
 </th>
 <th style="text-align:right;">
 balanced_accuracy
 </th>
 <th style="text-align:left;">
-acc_p
+bal_acc_p
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.5721970
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+3.71e-02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;">
+0.6276515
+</td>
+<td style="text-align:left;">
+6.37e-04
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.5564394
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+7.71e-02
+</td>
+</tr>
+</tbody>
+</table>
+
+This table summarises the number of ROIs for which raw accuracy or
+balanced accuracy is significantly greater than the model-free shuffle
+null distribution, both before and after adjusting for multiple
+comparisons with BH-FDR.
+
+### CV linear SVM – SMOTE
+
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+I’ve plotted the distribution of null accuracies (gray) alongside the
+actual accuracies (green, red, and blue) for the ROI/Feature combos per
+noise-processing method.
+
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Noise_Proc
+</th>
+<th style="text-align:right;">
+balanced_accuracy
 </th>
 <th style="text-align:left;">
 bal_acc_p
-</th>
-<th style="text-align:left;">
-acc_p\_adj
-</th>
-<th style="text-align:left;">
-bal_acc_p\_adj
 </th>
 </tr>
 </thead>
@@ -123,22 +255,10 @@ bal_acc_p\_adj
 AROMA+2P
 </td>
 <td style="text-align:right;">
-0.7297794
-</td>
-<td style="text-align:right;">
-0.6088636
+0.5588636
 </td>
 <td style="text-align:left;">
-1.4e-05
-</td>
-<td style="text-align:left;">
-2.2e-03
-</td>
-<td style="text-align:left;">
-1.4e-05
-</td>
-<td style="text-align:left;">
-2.2e-03
+7.73e-02
 </td>
 </tr>
 <tr>
@@ -146,56 +266,49 @@ AROMA+2P
 AROMA+2P+GMR
 </td>
 <td style="text-align:right;">
-0.7525735
-</td>
-<td style="text-align:right;">
-0.6406061
+0.6634091
 </td>
 <td style="text-align:left;">
-1e-06
-</td>
-<td style="text-align:left;">
-1.68e-04
-</td>
-<td style="text-align:left;">
-1e-06
-</td>
-<td style="text-align:left;">
-1.68e-04
+5e-06
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
 AROMA+2P+DiCER
 </td>
-<td style="text-align:right;">
-0.6904412
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.5325758
 </td>
-<td style="text-align:right;">
-0.5430303
-</td>
-<td style="text-align:left;">
-6.76e-04
-</td>
-<td style="text-align:left;">
-1.44e-01
-</td>
-<td style="text-align:left;">
-6.76e-04
-</td>
-<td style="text-align:left;">
-1.44e-01
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+2.42e-01
 </td>
 </tr>
 </tbody>
 </table>
 
-### Deriving p-values using model-free shuffle null distributions – CV inv prob
+This table summarises the number of ROIs for which raw accuracy or
+balanced accuracy is significantly greater than the model-free shuffle
+null distribution, both before and after adjusting for multiple
+comparisons with BH-FDR.
 
-Balanced accuracy:
-![](Step5_README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+## Empirical model-based pooled null distribution
 
-Summary statistics:
+### Generating null distributions from pooled null model fits
+
+In contrast to the model-free shuffle method, here we are actually
+shuffling the input class labels right before running the linear SVM
+over N=100 iterations per ROI (N=82) and pooling the resulting accuracy
+and balanced accuracy values, to generate empirical null distributions
+of N=1,000 data points each, respectively.
+
+### In-sample
+
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+
+The fitted empirical null model distribution is fairly similar to the
+real accuracy and balanced accuracy values using in-sample linear SVM
+with no reweighting.
+
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -203,22 +316,10 @@ Summary statistics:
 Noise_Proc
 </th>
 <th style="text-align:right;">
-accuracy
-</th>
-<th style="text-align:right;">
 balanced_accuracy
 </th>
 <th style="text-align:left;">
-acc_p
-</th>
-<th style="text-align:left;">
 bal_acc_p
-</th>
-<th style="text-align:left;">
-acc_p\_adj
-</th>
-<th style="text-align:left;">
-bal_acc_p\_adj
 </th>
 </tr>
 </thead>
@@ -228,22 +329,10 @@ bal_acc_p\_adj
 AROMA+2P
 </td>
 <td style="text-align:right;">
-0.7297794
-</td>
-<td style="text-align:right;">
-0.6088636
+1
 </td>
 <td style="text-align:left;">
-1.4e-05
-</td>
-<td style="text-align:left;">
-2.2e-03
-</td>
-<td style="text-align:left;">
-1.4e-05
-</td>
-<td style="text-align:left;">
-2.2e-03
+1e+00
 </td>
 </tr>
 <tr>
@@ -251,22 +340,10 @@ AROMA+2P
 AROMA+2P+GMR
 </td>
 <td style="text-align:right;">
-0.7525735
-</td>
-<td style="text-align:right;">
-0.6406061
+1
 </td>
 <td style="text-align:left;">
-1e-06
-</td>
-<td style="text-align:left;">
-1.68e-04
-</td>
-<td style="text-align:left;">
-1e-06
-</td>
-<td style="text-align:left;">
-1.68e-04
+1e+00
 </td>
 </tr>
 <tr>
@@ -274,33 +351,23 @@ AROMA+2P+GMR
 AROMA+2P+DiCER
 </td>
 <td style="text-align:right;">
-0.6904412
-</td>
-<td style="text-align:right;">
-0.5430303
+1
 </td>
 <td style="text-align:left;">
-6.76e-04
-</td>
-<td style="text-align:left;">
-1.44e-01
-</td>
-<td style="text-align:left;">
-6.76e-04
-</td>
-<td style="text-align:left;">
-1.44e-01
+1e+00
 </td>
 </tr>
 </tbody>
 </table>
 
-### Deriving p-values using model-free shuffle null distributions – CV SMOTE
+### In-sample, inverse probability weighted
 
-Balanced accuracy:
-![](Step5_README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
-Summary statistics:
+The fitted empirical null model distribution is fairly similar to the
+real accuracy and balanced accuracy values using in-sample linear SVM
+with no reweighting.
+
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
@@ -308,22 +375,10 @@ Summary statistics:
 Noise_Proc
 </th>
 <th style="text-align:right;">
-accuracy
-</th>
-<th style="text-align:right;">
 balanced_accuracy
 </th>
 <th style="text-align:left;">
-acc_p
-</th>
-<th style="text-align:left;">
 bal_acc_p
-</th>
-<th style="text-align:left;">
-acc_p\_adj
-</th>
-<th style="text-align:left;">
-bal_acc_p\_adj
 </th>
 </tr>
 </thead>
@@ -333,22 +388,10 @@ bal_acc_p\_adj
 AROMA+2P
 </td>
 <td style="text-align:right;">
-0.7297794
-</td>
-<td style="text-align:right;">
-0.6146970
+1
 </td>
 <td style="text-align:left;">
-1.4e-05
-</td>
-<td style="text-align:left;">
-2.2e-03
-</td>
-<td style="text-align:left;">
-1.4e-05
-</td>
-<td style="text-align:left;">
-2.2e-03
+1e+00
 </td>
 </tr>
 <tr>
@@ -356,22 +399,10 @@ AROMA+2P
 AROMA+2P+GMR
 </td>
 <td style="text-align:right;">
-0.7466912
-</td>
-<td style="text-align:right;">
-0.6364394
+1
 </td>
 <td style="text-align:left;">
-1e-06
-</td>
-<td style="text-align:left;">
-1.68e-04
-</td>
-<td style="text-align:left;">
-1e-06
-</td>
-<td style="text-align:left;">
-1.68e-04
+1e+00
 </td>
 </tr>
 <tr>
@@ -379,48 +410,133 @@ AROMA+2P+GMR
 AROMA+2P+DiCER
 </td>
 <td style="text-align:right;">
-0.6904412
-</td>
-<td style="text-align:right;">
-0.5430303
+1
 </td>
 <td style="text-align:left;">
-6.76e-04
-</td>
-<td style="text-align:left;">
-1.44e-01
-</td>
-<td style="text-align:left;">
-6.76e-04
-</td>
-<td style="text-align:left;">
-1.44e-01
+1e+00
 </td>
 </tr>
 </tbody>
 </table>
 
-## Null model for overall accuracy
+### CV, inverse probability weighted
 
-### AROMA+2P
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
-Take the average of 1804 random accuracy values from the null
-distribution 10,000x and compare with the mean from AROMA+2P:
+The fitted empirical null model distribution is fairly similar to the
+real accuracy and balanced accuracy values using in-sample linear SVM
+with no reweighting.
 
-![](Step5_README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Noise_Proc
+</th>
+<th style="text-align:right;">
+balanced_accuracy
+</th>
+<th style="text-align:left;">
+bal_acc_p
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.5721970
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+2.97e-02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;">
+0.6276515
+</td>
+<td style="text-align:left;">
+9.9e-03
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.5564394
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+7.92e-02
+</td>
+</tr>
+</tbody>
+</table>
 
-### AROMA+2P with inverse probability weighting
+### CV, SMOTE
 
-Take the average of 22 random accuracy values from the null distribution
-10,000x and compare with the mean from AROMA+2P with inverse probability
-weighting:
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
 
-![](Step5_README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+The fitted empirical null model distribution is fairly similar to the
+real accuracy and balanced accuracy values using in-sample linear SVM
+with no reweighting.
 
-### AROMA+2P with SMOTE
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Noise_Proc
+</th>
+<th style="text-align:right;">
+balanced_accuracy
+</th>
+<th style="text-align:left;">
+bal_acc_p
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.5588636
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+3.96e-02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;">
+0.6634091
+</td>
+<td style="text-align:left;">
+9.9e-03
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.5325758
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+1.88e-01
+</td>
+</tr>
+</tbody>
+</table>
 
-Take the average of 1,804 random accuracy values from the null
-distribution 10,000x and compare with the mean from AROMA+2P with
-inverse probability weighting:
+## Comparing model-free shuffle with pooled empirical null distributions
 
-![](Step5_README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/5_ROI_and_feature_wise_analysis/README_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->

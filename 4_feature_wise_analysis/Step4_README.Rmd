@@ -604,7 +604,7 @@ This table summarises the number of catch22 features for which raw accuracy or b
 ### Generating null distributions from pooled null model fits
 
 
-In contrast to the model-free shuffle method, here we are actually shuffling the input class labels right before running the linear SVM over N=100 iterations per ROI (N=82) and pooling the resulting accuracy and balanced accuracy values, to generate empirical null distributions of N=8,200 data points each, respectively.
+In contrast to the model-free shuffle method, here we are actually shuffling the input class labels right before running the linear SVM over N=40 iterations per feature (N=22) and pooling the resulting accuracy and balanced accuracy values, to generate empirical null distributions of N=880 data points each, respectively.
 
 ### In-sample
 
@@ -618,7 +618,7 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_in_samp
                                                                     noise_procs = noise_procs,
                                                                     grouping_var = "Feature",
                                                                     svm_feature_var = "Brain_Region",
-                                                                    num_permutations = 10,
+                                                                    num_permutations = 40,
                                                                     use_inv_prob_weighting = FALSE,
                                                                     cross_validate = FALSE)
   
@@ -690,7 +690,7 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_in_samp
                                                                              noise_procs = noise_procs,
                                                                              grouping_var = "Brain_Region",
                                                                              svm_feature_var = "Feature",
-                                                                             num_permutations = 10,
+                                                                             num_permutations = 40,
                                                                              use_inv_prob_weighting = TRUE,
                                                                              cross_validate = FALSE)
   
@@ -761,7 +761,7 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_inv_
                                                                     noise_procs = noise_procs,
                                                                     grouping_var = "Brain_Region",
                                                                     svm_feature_var = "Feature",
-                                                                    num_permutations = 10,
+                                                                    num_permutations = 40,
                                                                     use_inv_prob_weighting = TRUE,
                                                                     cross_validate = TRUE)
   
@@ -833,7 +833,7 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_SMOT
                                                                     noise_procs = noise_procs,
                                                                     grouping_var = "Brain_Region",
                                                                     svm_feature_var = "Feature",
-                                                                    num_permutations = 10,
+                                                                    num_permutations = 40,
                                                                     use_inv_prob_weighting = TRUE,
                                                                     cross_validate = TRUE)
   
@@ -969,5 +969,5 @@ in_sample_inv_prob_p / CV_inv_prob_p / CV_SMOTE_p  +
   theme(legend.position = 'bottom') &
   guides(fill = guide_legend(nrow=2,byrow=TRUE))
 ggsave("plots/Null_Distributions_by_Model_Type.png",
-       width = 7, height = 5, units = "in", dpi=300)
+       width = 7, height = 6, units = "in", dpi=300)
 ```

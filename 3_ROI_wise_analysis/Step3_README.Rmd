@@ -351,13 +351,13 @@ I've plotted the distribution of null accuracies (teal) alongside the actual acc
 ```{r}
 # Calculate p values from model-free shuffle null distribution
 region_wise_SVM_CV <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071.Rds"))
-if (!file.exists(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_pvals.Rds"))) {
+if (!file.exists(paste0(rdata_path, "ROI_wise_CV_linear_SVM_e1071_pvals.Rds"))) {
   region_wise_SVM_CV_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV,
                                                    null_data = model_free_shuffle_null_res,
                                                    grouping_var = "Brain_Region")
-  saveRDS(region_wise_SVM_CV_pvals, file=paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
+  saveRDS(region_wise_SVM_CV_pvals, file=paste0(rdata_path, "ROI_wise_CV_linear_SVM_e1071_pvals.Rds"))
 } else {
-  region_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_pvals.Rds"))
+  region_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "ROI_wise_CV_linear_SVM_e1071_pvals.Rds"))
 }
 
 region_wise_SVM_CV_plabs <- truncate_p_values(region_wise_SVM_CV_pvals, N=3)
@@ -403,13 +403,13 @@ I've plotted the distribution of null accuracies (teal) alongside the actual acc
 ```{r}
 # Calculate p values from model-free shuffle null distribution
 region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_inv_prob.Rds"))
-if (!file.exists(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))) {
+if (!file.exists(paste0(rdata_path, "ROI_wise_CV_linear_SVM_e1071_inv_prob_pvals.Rds"))) {
   region_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV_inv_prob,
                                                    null_data = model_free_shuffle_null_res,
                                                    grouping_var = "Brain_Region")
-  saveRDS(region_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+  saveRDS(region_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "ROI_wise_CV_linear_SVM_e1071_inv_prob_pvals.Rds"))
 } else {
-  region_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_inv_prob_pvals.Rds"))
+  region_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "ROI_wise_CV_linear_SVM_e1071_inv_prob_pvals.Rds"))
 }
 
 
@@ -455,13 +455,13 @@ I've plotted the distribution of null accuracies (teal) alongside the actual acc
 ```{r}
 # Calculate p values from model-free shuffle null distribution
 region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071_SMOTE.Rds"))
-if (!file.exists(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))) {
+if (!file.exists(paste0(rdata_path, "ROI_wise_CV_linear_SVM_e1071_SMOTE_pvals.Rds"))) {
   region_wise_SVM_CV_SMOTE_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV_SMOTE,
                                                    null_data = model_free_shuffle_null_res,
                                                    grouping_var = "Brain_Region")
-  saveRDS(region_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))
+  saveRDS(region_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "ROI_wise_CV_linear_SVM_e1071_SMOTE_pvals.Rds"))
 } else {
-  region_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "ROI_wise_10FCV_linear_SVM_e1071_SMOTE_pvals.Rds"))
+  region_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "ROI_wise_CV_linear_SVM_e1071_SMOTE_pvals.Rds"))
 }
 
 region_wise_SVM_CV_SMOTE_plabs <- truncate_p_values(region_wise_SVM_CV_SMOTE_pvals)
@@ -490,7 +490,7 @@ This table summarises the number of ROIs for which raw accuracy or balanced accu
 
 ### Generating null distributions from pooled null model fits
 
-In contrast to the model-free shuffle method, here we are actually shuffling the input class labels right before running the linear SVM over N=100 iterations per ROI (N=82) and pooling the resulting accuracy and balanced accuracy values, to generate empirical null distributions of N=8,200 data points each, respectively.
+In contrast to the model-free shuffle method, here we are actually shuffling the input class labels right before running the linear SVM over N=10 iterations per ROI (N=82) and pooling the resulting accuracy and balanced accuracy values, to generate empirical null distributions of N=820 data points each, respectively.
 
 ### In-sample
 
@@ -855,7 +855,7 @@ in_sample_inv_prob_p / CV_inv_prob_p / CV_SMOTE_p  +
   theme(legend.position = 'bottom') &
   guides(fill = guide_legend(nrow=2,byrow=TRUE))
 ggsave("plots/Null_Distributions_by_Model_Type.png",
-       width = 7, height = 5, units = "in", dpi=300)
+       width = 7, height = 6, units = "in", dpi=300)
 ```
 
  

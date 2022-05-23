@@ -209,37 +209,60 @@ plot_top_5_vars_main_vs_null <- function(class_res_pvals,
                                          ylab = "Scaled Density",
                                          xloc = 0.6,
                                          yloc = 8.5,
-                                         title = "Main vs Null Distribution") {
+                                         title = "Main vs Null Distribution",
+                                         combo = FALSE) {
   
-  top_features <- class_res_pvals %>%
-    filter(Noise_Proc == "AROMA+2P") %>%
-    arrange(desc(balanced_accuracy)) %>%
-    top_n(5, balanced_accuracy) %>%
-    pull(grouping_var)
+  if (combo) {
+    p <- class_res_pvals %>%
+      ggplot(data=.) +
+      geom_histogram(data = subset(null_res, Type=="null"),
+                     aes(x = balanced_accuracy, y=0.5*..density..), 
+                     bins = 50,
+                     alpha=0.6, position="identity",
+                     fill = "gray70") +
+      geom_vline(mapping=aes(xintercept = balanced_accuracy, color = Noise_Proc), size=1.2) +
+      ggtitle(title) +
+      xlab(xlab) +
+      ylab(ylab) +
+      labs(color = "Noise Processing") +
+      theme(strip.text.y.left = element_text(angle=0),
+            strip.placement = "outside",
+            legend.position = "bottom",
+            legend.direction = "horizontal",
+            plot.title = element_text(hjust=0.5))
+  } else {
+    top_features <- class_res_pvals %>%
+      filter(Noise_Proc == "AROMA+2P") %>%
+      arrange(desc(balanced_accuracy)) %>%
+      top_n(5, balanced_accuracy) %>%
+      pull(grouping_var)
+    
+    # Truncate p-value labels
+    top_feature_plabs <- truncate_p_values(class_res_pvals, 3)
+    
+    p <- top_feature_plabs %>%
+      filter(Noise_Proc == "AROMA+2P",
+             grouping_var %in% top_features) %>%
+      mutate(grouping_var = factor(grouping_var, levels = top_features)) %>%
+      ggplot(data=.) +
+      geom_histogram(data = null_res %>% 
+                       dplyr::select(balanced_accuracy, Noise_Proc) %>%
+                       dplyr::filter(Noise_Proc == "AROMA+2P"),
+                     aes(x=balanced_accuracy, y=0.5*..density..),
+                     fill = "gray70", bins=50) +
+      ggtitle(title) +
+      geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
+      facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
+      xlab(xlab) +
+      ylab(ylab) +
+      xlab("Balanced Accuracy") +
+      geom_text(data = top_feature_plabs %>%
+                  filter(Noise_Proc == "AROMA+2P", grouping_var %in% top_features) %>%
+                  mutate(grouping_var = factor(grouping_var, levels = top_features)),
+                aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
+                x = xloc, y = yloc) +
+      theme(plot.title = element_text(hjust=0.5))
+  }
+  return(p)
   
-  # Truncate p-value labels
-  top_feature_plabs <- truncate_p_values(class_res_pvals, 3)
-  
-  top_feature_plabs %>%
-    filter(Noise_Proc == "AROMA+2P",
-           grouping_var %in% top_features) %>%
-    mutate(grouping_var = factor(grouping_var, levels = top_features)) %>%
-    ggplot(data=.) +
-    geom_histogram(data = null_res %>% 
-                     dplyr::select(balanced_accuracy, Noise_Proc) %>%
-                     dplyr::filter(Noise_Proc == "AROMA+2P"),
-                   aes(x=balanced_accuracy, y=0.5*..density..),
-                   fill = "gray70", bins=50) +
-    ggtitle(title) +
-    geom_vline(aes(xintercept = balanced_accuracy), color = "red") +
-    facet_wrap(grouping_var ~ ., scales="free_y", nrow = 2) +
-    xlab(xlab) +
-    ylab(ylab) +
-    xlab("Balanced Accuracy") +
-    geom_text(data = top_feature_plabs %>%
-                filter(Noise_Proc == "AROMA+2P", grouping_var %in% top_features) %>%
-                mutate(grouping_var = factor(grouping_var, levels = top_features)),
-              aes(label = paste0("P = ", bal_acc_p, "\nBH-FDR = ", bal_acc_p_adj)), 
-              x = xloc, y = yloc) +
-    theme(plot.title = element_text(hjust=0.5))
 }
