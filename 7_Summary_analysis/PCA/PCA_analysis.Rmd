@@ -119,7 +119,7 @@ feature_eigen_df %>%
 
 Iterate through 1:PCs (i.e. 1:82) to see at what point in-sample linear SVM reaches 100% accuracy per catch22 feature:
 
-```{r}
+```{r, eval=F}
 feature_wise_SVM_by_PC_list <- list()
 for (this_feature in unique(feature_matrix$names)) {
   feature_PCA_res <- feature_PCA_df %>%
@@ -159,7 +159,7 @@ feature_wise_SVM_by_PC <- do.call(plyr::rbind.fill, feature_wise_SVM_by_PC_list)
 
 
 Let's see where balanced accuracy starts to hit 100% across the 22 features:
-```{r}
+```{r, eval=F}
 feature_wise_SVM_by_PC %>%
   ggplot(data=., mapping=aes(x = Num_PCs, y = balanced_accuracy)) +
   geom_point() +
@@ -172,7 +172,7 @@ feature_wise_SVM_by_PC %>%
 
 For the sake of comparison, I'll do this for inverse probability weighting as well:
 
-```{r}
+```{r, eval=F}
 feature_wise_SVM_by_PC_inv_prob_list <- list()
       
 for (this_feature in unique(feature_matrix$names)) {
@@ -226,7 +226,7 @@ for (this_feature in unique(feature_matrix$names)) {
 feature_wise_SVM_by_PC_inv_prob <- do.call(plyr::rbind.fill, feature_wise_SVM_by_PC_inv_prob_list)
 ```
 
-```{r}
+```{r, eval=F}
 feature_wise_SVM_by_PC_inv_prob %>%
   ggplot(data=., mapping=aes(x = Num_PCs, y = balanced_accuracy)) +
   geom_point() +
@@ -373,18 +373,18 @@ if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_in_sample_inv_pro
 Run linear 10-fold SVM for each number of PCs from 1-167
 ```{r}
 if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_CV.Rds"))) {
-  groups <- combo_data$group
+  group <- combo_data$group
   combo_CV_PCA_res_df_list <- list()
   seed = 127
   set.seed(seed)
   
   for (i in 1:nrow(combo_eigen)) {
-    svm_for_pc <- as.data.frame(cbind(groups, as.numeric(combo_data_PCA$x[, 1:i]))) %>%
+    svm_for_pc <- as.data.frame(cbind(group, as.numeric(combo_data_PCA$x[, 1:i]))) %>%
       mutate_at(vars(contains("V")), as.numeric) %>%
       mutate_at(vars(starts_with("PC")), as.numeric) 
     
     # Create ten folds from data
-    flds <- caret::createFolds(svm_for_pc$groups, k = 10, list = TRUE, returnTrain = FALSE)
+    flds <- caret::createFolds(svm_for_pc$group, k = 10, list = TRUE, returnTrain = FALSE)
     
     accuracy_list <- list()
     balanced_accuracy_list <- list()
@@ -397,18 +397,18 @@ if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_CV.Rds"))) {
       test_data <- svm_for_pc[test_j, ]
       train_data <- svm_for_pc[train_j, ]
       
-      svmModel <- e1071::svm(factor(groups) ~ .,
+      svmModel <- e1071::svm(factor(group) ~ .,
                              kernel = "linear",
                              cost = 1,
                              data = train_data)
       
       # Generate out-of-sample predictions based on SVM model
       pred <- predict(svmModel, test_data)
-      test_data$groups <- factor(test_data$groups, levels = levels(pred))
+      test_data$group <- factor(test_data$group, levels = levels(pred))
       
       # Calculate accuracy and balanced accuracy
-      accuracy <- sum(pred == test_data$groups)/length(pred)
-      balanced_accuracy <- caret::confusionMatrix(reference=test_data$groups, 
+      accuracy <- sum(pred == test_data$group)/length(pred)
+      balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
                                                   data=pred)$byClass[["Balanced Accuracy"]]
       
       accuracy_list[[i]] <- accuracy
@@ -443,157 +443,160 @@ if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_CV.Rds"))) {
 #### inv prob
 Run linear 10-fold SVM for each number of PCs from 1 to 167
 ```{r}
-groups <- combo_data$group
-combo_CV_inv_prob_PCA_res_df_list <- list()
-seed = 127
-set.seed(seed)
-
-for (i in 1:nrow(combo_eigen)) {
-  svm_for_pc <- as.data.frame(cbind(groups, as.numeric(combo_data_PCA$x[, 1:i]))) %>%
-    mutate_at(vars(contains("V")), funs(as.numeric(.)))
-  
-  sample_props <- svm_for_pc %>%
-    dplyr::summarise(control_prop = sum(groups=="Control") / n(),
-                     schz_prop = sum(groups=="Schz")/n())
-  
-  # Convert to sample weights based on inverse of probability
-  sample_wts <- list("Control" = 1/sample_props$control_prop,
-                     "Schz" = 1/sample_props$schz_prop)
-  
-  # Create ten folds from data
+if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_CV_inv_prob.Rds"))) {
+  group <- combo_data$group
+  combo_CV_inv_prob_PCA_res_df_list <- list()
+  seed = 127
   set.seed(seed)
-  flds <- caret::createFolds(svm_for_pc$groups, k = 10, list = TRUE, returnTrain = FALSE)
   
-  accuracy_list <- list()
-  balanced_accuracy_list <- list()
+  for (i in 1:nrow(combo_eigen)) {
+    svm_for_pc <- as.data.frame(cbind(group, as.numeric(combo_data_PCA$x[, 1:i]))) %>%
+      mutate_at(vars(contains("V")), as.numeric) %>%
+      mutate_at(vars(starts_with("PC")), as.numeric) 
+    
+    sample_props <- svm_for_pc %>%
+      dplyr::summarise(control_prop = sum(group=="Control") / n(),
+                       schz_prop = sum(group=="Schz")/n())
+    
+    # Convert to sample weights based on inverse of probability
+    sample_wts <- list("Control" = 1/sample_props$control_prop,
+                       "Schz" = 1/sample_props$schz_prop)
+    
+    # Create ten folds from data
+    set.seed(seed)
+    flds <- caret::createFolds(svm_for_pc$group, k = 10, list = TRUE, returnTrain = FALSE)
+    
+    accuracy_list <- list()
+    balanced_accuracy_list <- list()
+    
+    # Iterate over each fold
+    for (j in 1:length(flds)) {
+      test_j <- flds[[j]]
+      train_j <- setdiff(1:nrow(svm_for_pc), test_j)
+      
+      test_data <- svm_for_pc[test_j, ]
+      train_data <- svm_for_pc[train_j, ]
+      
+      svmModel <- e1071::svm(factor(group) ~ .,
+                             kernel = "linear",
+                             cost = 1,
+                             data = train_data,
+                             class.weights = sample_wts)
+      
+      # Generate out-of-sample predictions based on SVM model
+      pred <- predict(svmModel, test_data)
+      test_data$group <- factor(test_data$group, levels = levels(pred))
+      
+      # Calculate accuracy and balanced accuracy
+      accuracy <- sum(pred == test_data$group)/length(pred)
+      balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
+                                                  data=pred)$byClass[["Balanced Accuracy"]]
+      
+      accuracy_list[[i]] <- accuracy
+      balanced_accuracy_list[[i]] <- balanced_accuracy
+    } 
+    
+    accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
+    accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
+    balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
+    balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
+    
+    
+    # Compile results into a dataframe
+    df_res <- data.frame(Num_PCs = i,
+                         accuracy = accuracy,
+                         accuracy_sd = accuracy_sd,
+                         balanced_accuracy = balanced_accuracy,
+                         balanced_accuracy_sd = balanced_accuracy_sd)
+    
+    # Append results to list
+    combo_CV_inv_prob_PCA_res_df_list <- rlist::list.append(combo_CV_inv_prob_PCA_res_df_list, df_res)
+  }
   
-  # Iterate over each fold
-  for (j in 1:length(flds)) {
-    test_j <- flds[[j]]
-    train_j <- setdiff(1:nrow(svm_for_pc), test_j)
-    
-    test_data <- svm_for_pc[test_j, ]
-    train_data <- svm_for_pc[train_j, ]
-    
-    svmModel <- e1071::svm(factor(groups) ~ .,
-                           kernel = "linear",
-                           cost = 1,
-                           data = train_data,
-                                 class.weights = sample_wts)
-    
-    # Generate out-of-sample predictions based on SVM model
-    pred <- predict(svmModel, test_data)
-    test_data$groups <- factor(test_data$groups, levels = levels(pred))
-    
-    # Calculate accuracy and balanced accuracy
-    accuracy <- sum(pred == test_data$groups)/length(pred)
-    balanced_accuracy <- caret::confusionMatrix(reference=test_data$groups, 
-                                                data=pred)$byClass[["Balanced Accuracy"]]
-    
-    accuracy_list[[i]] <- accuracy
-    balanced_accuracy_list[[i]] <- balanced_accuracy
-  } 
-  
-  accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
-  accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
-  balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
-  balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
-  
-    
-  # Compile results into a dataframe
-  df_res <- data.frame(Num_PCs = i,
-                       accuracy = accuracy,
-                       accuracy_sd = accuracy_sd,
-                       balanced_accuracy = balanced_accuracy,
-                       balanced_accuracy_sd = balanced_accuracy_sd)
-  
-  # Append results to list
-  combo_CV_inv_prob_PCA_res_df_list <- rlist::list.append(combo_CV_inv_prob_PCA_res_df_list, df_res)
+  combo_CV_inv_prob_PCA_res_df <- do.call(plyr::rbind.fill, combo_CV_inv_prob_PCA_res_df_list)
+  saveRDS(Combo_wise_PCA_linear_SVM_CV_inv_prob, paste0(rdata_path, "Combo_wise_PCA_linear_SVM_CV_inv_prob.Rds"))
+} else {
+  Combo_wise_PCA_linear_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_CV_inv_prob.Rds"))
 }
-
-combo_CV_inv_prob_PCA_res_df <- do.call(plyr::rbind.fill, combo_CV_inv_prob_PCA_res_df_list)
-saveRDS(combo_CV_inv_prob_PCA_res_df, "combo_CV_inv_prob_PCA_res_df.Rds")
 ```
 
-
-look at this graph out to maybe 1,000 at intervals of 5-10
-```{r}
-res_df_CV_inv_prob %>%
-  pivot_longer(cols = c("accuracy", "balanced_accuracy"),
-               names_to = "Metric",
-               values_to = "Values") %>%
-  ggplot(data = ., mapping = aes(x = Num_PCs,
-                                 y = Values)) +
-  geom_line() +
-  facet_grid(. ~ Metric, scales = "free")
-```
 
 #### SMOTE
 Run linear 10-fold SVM for each number of PCs from 1 to 82
 ```{r}
-groups <- combo_data$group
-combo_CV_SMOTE_PCA_res_df_list <- list()
-seed = 127
-set.seed(seed)
-
-for (i in 2:nrow(combo_eigen)) {
-  svm_for_pc <- as.data.frame(cbind(groups, combo_data_PCA$x[, 1:i])) %>%
-    mutate_at(vars(contains(c("V", "PC"))), funs(as.numeric(.)))
-  
-  svm_for_pc <- smotefamily::SMOTE(as.data.frame(svm_for_pc[,-1]), 
-                                   svm_for_pc$groups, K = 5)$data %>%
-          dplyr::rename("groups" = "class")
-  
-  # Create ten folds from data
+if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_CV_SMOTE.Rds"))) {
+  group <- combo_data$group
+  combo_CV_SMOTE_PCA_res_df_list <- list()
+  seed = 127
   set.seed(seed)
-  flds <- caret::createFolds(svm_for_pc$groups, k = 10, list = TRUE, returnTrain = FALSE)
   
-  accuracy_list <- list()
-  balanced_accuracy_list <- list()
+  for (i in 2:nrow(combo_eigen)) {
+    svm_for_pc <- as.data.frame(cbind(group, as.numeric(combo_data_PCA$x[, 1:i]))) %>%
+      mutate_at(vars(contains("V")), as.numeric) %>%
+      mutate_at(vars(starts_with("PC")), as.numeric) 
+    
+    svm_for_pc <- smotefamily::SMOTE(as.data.frame(svm_for_pc[,-1]), 
+                                     svm_for_pc$group, K = 5)$data %>%
+      dplyr::rename("group" = "class")
+    
+    # Create ten folds from data
+    set.seed(seed)
+    flds <- caret::createFolds(svm_for_pc$group, k = 10, list = TRUE, returnTrain = FALSE)
+    
+    accuracy_list <- list()
+    balanced_accuracy_list <- list()
+    
+    # Iterate over each fold
+    for (j in 1:length(flds)) {
+      test_j <- flds[[j]]
+      train_j <- setdiff(1:nrow(svm_for_pc), test_j)
+      
+      test_data <- svm_for_pc[test_j, ]
+      train_data <- svm_for_pc[train_j, ]
+      
+      svmModel <- e1071::svm(factor(group) ~ .,
+                             kernel = "linear",
+                             cost = 1,
+                             data = train_data)
+      
+      # Generate out-of-sample predictions based on SVM model
+      pred <- predict(svmModel, test_data)
+      test_data$group <- factor(test_data$group, levels = levels(pred))
+      
+      # Calculate accuracy and balanced accuracy
+      accuracy <- sum(pred == test_data$group)/length(pred)
+      balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
+                                                  data=pred)$byClass[["Balanced Accuracy"]]
+      
+      accuracy_list[[i]] <- accuracy
+      balanced_accuracy_list[[i]] <- balanced_accuracy
+    } 
+    
+    accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
+    accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
+    balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
+    balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
+    
+    
+    # Compile results into a dataframe
+    df_res <- data.frame(Num_PCs = i,
+                         accuracy = accuracy,
+                         accuracy_sd = accuracy_sd,
+                         balanced_accuracy = balanced_accuracy,
+                         balanced_accuracy_sd = balanced_accuracy_sd)
+    
+    # Append results to list
+    combo_CV_SMOTE_PCA_res_df_list <- rlist::list.append(combo_CV_SMOTE_PCA_res_df_list, df_res)
+  }
   
-  # Iterate over each fold
-  for (j in 1:length(flds)) {
-    test_j <- flds[[j]]
-    train_j <- setdiff(1:nrow(svm_for_pc), test_j)
-    
-    test_data <- svm_for_pc[test_j, ]
-    train_data <- svm_for_pc[train_j, ]
-    
-    svmModel <- e1071::svm(factor(groups) ~ .,
-                           kernel = "linear",
-                           cost = 1,
-                           data = train_data)
-    
-    # Generate out-of-sample predictions based on SVM model
-    pred <- predict(svmModel, test_data)
-    test_data$groups <- factor(test_data$groups, levels = levels(pred))
-    
-    # Calculate accuracy and balanced accuracy
-    accuracy <- sum(pred == test_data$groups)/length(pred)
-    balanced_accuracy <- caret::confusionMatrix(reference=test_data$groups, 
-                                                data=pred)$byClass[["Balanced Accuracy"]]
-    
-    accuracy_list[[i]] <- accuracy
-    balanced_accuracy_list[[i]] <- balanced_accuracy
-  } 
-  
-  accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
-  accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
-  balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
-  balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
-  
-    
-  # Compile results into a dataframe
-  df_res <- data.frame(Num_PCs = i,
-                       accuracy = accuracy,
-                       accuracy_sd = accuracy_sd,
-                       balanced_accuracy = balanced_accuracy,
-                       balanced_accuracy_sd = balanced_accuracy_sd)
-  
-  # Append results to list
-  combo_CV_SMOTE_PCA_res_df_list <- rlist::list.append(combo_CV_SMOTE_PCA_res_df_list, df_res)
+  combo_CV_SMOTE_PCA_res_df <- do.call(plyr::rbind.fill, combo_CV_SMOTE_PCA_res_df_list)
+  saveRDS(Combo_wise_PCA_linear_SVM_CV_SMOTE, paste0("Combo_wise_PCA_linear_SVM_CV_SMOTE.Rds"))
+} else {
+  Combo_wise_PCA_linear_SVM_CV_SMOTE <- readRDS(paste0("Combo_wise_PCA_linear_SVM_CV_SMOTE.Rds"))
 }
-
-combo_CV_SMOTE_PCA_res_df <- do.call(plyr::rbind.fill, combo_CV_SMOTE_PCA_res_df_list)
-saveRDS(combo_CV_SMOTE_PCA_res_df, "combo_CV_SMOTE_PCA_res_df.Rds")
 ```
+
+```{r}
+
+```
+
