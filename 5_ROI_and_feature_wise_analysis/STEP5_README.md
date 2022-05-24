@@ -450,7 +450,7 @@ AROMA+2P
 0.5721970
 </td>
 <td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-2.97e-02
+2e-02
 </td>
 </tr>
 <tr>
@@ -461,7 +461,7 @@ AROMA+2P+GMR
 0.6276515
 </td>
 <td style="text-align:left;">
-9.9e-03
+0e+00
 </td>
 </tr>
 <tr>
@@ -472,7 +472,7 @@ AROMA+2P+DiCER
 0.5564394
 </td>
 <td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-7.92e-02
+7e-02
 </td>
 </tr>
 </tbody>
@@ -509,7 +509,7 @@ AROMA+2P
 0.5588636
 </td>
 <td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-3.96e-02
+3e-02
 </td>
 </tr>
 <tr>
@@ -520,7 +520,7 @@ AROMA+2P+GMR
 0.6634091
 </td>
 <td style="text-align:left;">
-9.9e-03
+0e+00
 </td>
 </tr>
 <tr>
@@ -531,7 +531,7 @@ AROMA+2P+DiCER
 0.5325758
 </td>
 <td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-1.88e-01
+1.8e-01
 </td>
 </tr>
 </tbody>

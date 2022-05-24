@@ -1,9 +1,5 @@
 import pandas as pd
 import dill
-import numpy as np
-
-test = np.load("/media/sf_Shared_Folder/PhD_work/data/scz/UCLA/pydata//AROMA_2P/sub-50085.npy")
-pkl_file="/media/sf_Shared_Folder/PhD_work/data/scz/UCLA/pydata//AROMA_2P/sub-50085.pkl"
 
 def extract_df_from_pkl(pkl_file):
     

@@ -513,6 +513,9 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample.R
 } else {
   model_permutation_null_in_sample <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample.Rds"))
 }
+
+# Find number of iterations for plot label
+num_null_dist_values <- nrow(model_permutation_null_in_sample %>% filter(Noise_Proc == "AROMA+2P"))
 ```
 
 
@@ -522,8 +525,8 @@ region_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_in_
 
 plot_main_vs_null_hist(main_res = region_wise_SVM_in_sample,
                        null_res = model_permutation_null_in_sample,
-                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
-                       title = "In-sample linear SVM Results vs. Null Model Fits")
+                       xlab = sprintf("Value from n=%s Null Model Fit Shuffles", num_null_dist_values),
+                       title = "In-sample linear SVM Results vs.\nNull Model Fits")
 
 # Save plot
 ggsave("plots/Region_Wise_Null_Model_Fit_In_Sample_Balanced_Accuracy.png",
@@ -552,7 +555,9 @@ plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_in_sample_pvals,
                              null_res = model_permutation_null_in_sample,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
-                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, In-Sample")
+                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, In-Sample",
+                             yloc = 45,
+                             xloc = 0.65)
 
 # Save plots
 ggsave("plots/Region_Wise_Null_Model_Fit_Top5_Regions_In_Sample_Balanced_Accuracy.png", width=10, 
@@ -584,6 +589,8 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample_i
 } else {
   model_permutation_null_in_sample_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_in_sample_inv_prob.Rds"))
 }
+# Find number of iterations for plot label
+num_null_dist_values <- nrow(model_permutation_null_in_sample_inv_prob %>% filter(Noise_Proc == "AROMA+2P"))
 ```
 
 
@@ -593,8 +600,8 @@ region_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linea
 
 plot_main_vs_null_hist(main_res = region_wise_SVM_in_sample_inv_prob,
                        null_res = model_permutation_null_in_sample_inv_prob,
-                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
-                       title = "In-sample Inv Prob linear SVM Results vs. Null Model Fits")
+                       xlab = sprintf("Value from n=%s Null Model Fit Shuffles", num_null_dist_values),
+                       title = "In-sample Inv Prob linear SVM Results vs.\nNull Model Fits")
 
 ggsave("plots/Region_Wise_Null_Model_Fit_In_Sample_Balanced_Accuracy_Inv_Prob.png",
        width=7, height=5, units="in", dpi=300)
@@ -622,7 +629,9 @@ plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_in_sample_inv_pro
                              null_res = model_permutation_null_in_sample_inv_prob,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
-                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, In-Sample Inv Prob")
+                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, In-Sample Inv Prob",
+                             xloc = 0.75, 
+                             yloc = 6)
 
 # Save plot
 ggsave("plots/Region_Wise_Null_Model_Fit_Top5_Regions_In_Sample_Inv_Prob_Balanced_Accuracy.png", width=10, 
@@ -657,6 +666,8 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_inv_prob
 } else {
   model_permutation_null_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_inv_prob.Rds"))
 }
+# Find number of iterations for plot label
+num_null_dist_values <- nrow(model_permutation_null_CV_inv_prob %>% filter(Noise_Proc == "AROMA+2P"))
 ```
 
 
@@ -666,8 +677,8 @@ region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_C
 
 plot_main_vs_null_hist(main_res = region_wise_SVM_CV_inv_prob,
                        null_res = model_permutation_null_CV_inv_prob,
-                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
-                       title = "CV Inv Prob linear SVM Results vs. Null Model Fits")
+                       xlab = sprintf("Value from n=%s Null Model Fit Shuffles", num_null_dist_values),
+                       title = "CV Inv Prob linear SVM Results vs.\nNull Model Fits")
 
 # Save plot
 ggsave("plots/Region_Wise_Null_Model_Fit_CV_Balanced_Accuracy_Inv_Prob.png",
@@ -696,7 +707,9 @@ plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_inv_prob_pvals
                              null_res = model_permutation_null_CV_inv_prob,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
-                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, CV Inv Prob")
+                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, CV Inv Prob",
+                             xloc = 0.6,
+                             yloc = 4)
 
 # Save plot
 ggsave("plots/Region_Wise_Null_Model_Fit_CV_Inv_Prob_Balanced_Accuracy.png", width=10, 
@@ -729,6 +742,8 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_SMOTE.Rd
 } else {
   model_permutation_null_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_CV_SMOTE.Rds"))
 }
+# Find number of iterations for plot label
+num_null_dist_values <- nrow(model_permutation_null_CV_SMOTE %>% filter(Noise_Proc == "AROMA+2P"))
 ```
 
 
@@ -738,8 +753,8 @@ region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e
 
 plot_main_vs_null_hist(main_res = region_wise_SVM_CV_SMOTE,
                        null_res = model_permutation_null_CV_SMOTE,
-                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
-                       title = "CV SMOTE linear SVM Results vs. Null Model Fits")
+                       xlab = sprintf("Value from n=%s Null Model Fit Shuffles", num_null_dist_values),
+                       title = "CV SMOTE linear SVM Results vs.\nNull Model Fits")
 
 # Save plot
 ggsave("plots/Region_Wise_Null_Model_Fit_CV_Balanced_Accuracy_SMOTE.png",
@@ -768,7 +783,9 @@ plot_top_5_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_SMOTE_pvals,
                              null_res = model_permutation_null_CV_SMOTE,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
-                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, CV SMOTE")
+                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, CV SMOTE",
+                             xloc = 0.6,
+                             yloc = 4)
 
 # Save plot
 ggsave("plots/Region_Wise_Null_Model_Fit_Top5_Regions_CV_SMOTE_Balanced_Accuracy.png", width=10, 

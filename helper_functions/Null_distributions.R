@@ -145,8 +145,9 @@ calc_empirical_nulls <- function(class_res,
                        num_bal_acc_greater = sum(main_balanced_accuracy > 
                                                    balanced_accuracy[Type=="null"],
                                                  na.rm=T),
-                       acc_p = 1 - (num_acc_greater/n()),
-                       bal_acc_p = 1 - (num_bal_acc_greater/n())) %>%
+                       total_null = sum(Type == "null"),
+                       acc_p = 1 - (num_acc_greater/total_null),
+                       bal_acc_p = 1 - (num_bal_acc_greater/total_null)) %>%
       ungroup() %>%
       distinct() %>%
       dplyr::rename("accuracy" = "main_accuracy",

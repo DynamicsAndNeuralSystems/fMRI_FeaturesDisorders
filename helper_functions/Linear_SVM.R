@@ -24,11 +24,18 @@ in_sample_linear_SVM <- function(input_data,
                                  svm_kernel = "linear",
                                  sample_wts = list("Control" = 1,
                                                    "Schz" = 1),
+                                 use_SMOTE = FALSE,
                                  shuffle_labels = FALSE) {
   
   # Shuffle labels if specified
   if (shuffle_labels) {
     input_data <- transform(input_data, group = sample(group, replace = FALSE))
+  }
+  
+  # Apply SMOTE to training data only if indicated
+  if (use_SMOTE) {
+    input_data <- smotefamily::SMOTE(input_data[,-1], input_data$group, K = 5)$data %>%
+      dplyr::rename("group" = "class")
   }
   
   # Run linear SVM
@@ -248,6 +255,176 @@ run_in_sample_svm_by_input_var <- function(rdata_path,
 }
 
 #-------------------------------------------------------------------------------
+# Run simple pairwise PYSPI in-sample multi-feature linear SVM by given grouping var
+#-------------------------------------------------------------------------------
+run_pairwise_SVM_by_SPI <- function(pairwise_data,
+                                    svm_kernel = "linear",
+                                    test_package = "e1071",
+                                    noise_proc = "AROMA+2P",
+                                    cross_validate = FALSE,
+                                    use_inv_prob_weighting = FALSE,
+                                    use_SMOTE = FALSE,
+                                    shuffle_labels = FALSE) {
+  
+  # Initialize results list for SPI-wise in-sample linear SVM
+  class_res_list <- list()
+  
+  # Iterate over each PYSPI SPI
+  for (this_SPI in unique(all_pyspi_data$SPI)) {
+    # Identify whether current SPI is directed or undirected
+    directionality <- SPI_directionality %>% filter(SPI == this_SPI) %>% pull(Direction)
+    
+    # Reshape SPI data to contain brain region names
+    SPI_data <- subset(all_pyspi_data, SPI == this_SPI)  %>%
+      mutate(comparison = row_number()) %>%
+      pivot_longer(cols = c(brain_region_1,
+                            brain_region_2),
+                   names_to = "Region_Number",
+                   values_to = "Index") %>%
+      left_join(ROI_index) %>%
+      dplyr::select(-Index) %>%
+      pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
+                  names_from = "Region_Number",
+                  values_from = "ROI") %>%
+      dplyr::select(-comparison) 
+    
+    # Combine brain regions into new pairwise column depending on directionality
+    if (directionality == "Undirected") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
+                                    paste0(brain_region_1, "_", brain_region_2),
+                                    paste0(brain_region_2, "_", brain_region_1)))
+    } else if (directionality == "Directed") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = paste0(brain_region_1, "_", brain_region_2))
+    }
+    
+    # Pivot data from long to wide for SVM
+    data_for_SVM <- SPI_data %>%
+      dplyr::select(Subject_ID, group, region_pair, value) %>%
+      mutate(value = round(value, 8)) %>%
+      distinct() %>%
+      pivot_wider(id_cols = c(Subject_ID, group),
+                  names_from = region_pair, 
+                  values_from = value) %>%
+      dplyr::select(-Subject_ID) %>%
+      drop_na()
+    
+    # Get sample weights if inverse probability weighting flag is applied
+    if (use_inv_prob_weighting) {
+      # Get control/schz proportions
+      sample_props <- data_for_SVM %>%
+        ungroup() %>%
+        dplyr::summarise(control_prop = sum(group=="CONTROL") / n(),
+                         schz_prop = sum(group=="SCHZ")/n())
+      
+      # Convert to sample weights based on inverse of probability
+      sample_wts <- list("CONTROL" = 1/sample_props$control_prop,
+                         "SCHZ" = 1/sample_props$schz_prop)
+    } else {
+      sample_wts <- list("CONTROL" = 1,
+                         "SCHZ" = 1)
+    }
+    
+    # Pass data_for_SVM to in_sample_linear_SVM
+    if (nrow(data_for_SVM ) > 0) {
+      
+      cat("\nNow running linear SVM for", this_SPI, "\n")
+      if (cross_validate) {
+        SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
+                                            k = 10,
+                                            svm_kernel = svm_kernel,
+                                            sample_wts = sample_wts,
+                                            use_SMOTE = use_SMOTE,
+                                            shuffle_labels = shuffle_labels)
+      } else {
+        SVM_results <- in_sample_linear_SVM(input_data = data_for_SVM,
+                                            svm_kernel = svm_kernel,
+                                            sample_wts = sample_wts,
+                                            use_SMOTE = use_SMOTE,
+                                            shuffle_labels = shuffle_labels)
+      }
+      SVM_results <- SVM_results %>%
+        mutate(SPI = this_SPI,
+               Noise_Proc = noise_proc,
+               use_inv_prob_weighting = use_inv_prob_weighting,
+               use_SMOTE = use_SMOTE)
+      
+      # Append results to list
+      class_res_list <- rlist::list.append(class_res_list, SVM_results)
+    }
+  }
+  
+  # Combine results from all regions into a dataframe
+  class_res_df <- do.call(plyr::rbind.fill, class_res_list)
+  
+  # Return dataframe
+  return(class_res_df)
+}
+
+#-------------------------------------------------------------------------------
+# Run linear SVM by iterating over number of principal components (PCs)
+#-------------------------------------------------------------------------------
+run_SVM_from_PCA <- function(PCA_res,
+                             PCA_prepped = FALSE,
+                             group_vector,
+                             cross_validate = FALSE,
+                             use_inv_prob_weighting = FALSE,
+                             use_SMOTE = FALSE) {
+  total_n_PCs <- length(PCA_res$sdev)
+  group <- group_vector
+  
+  # Initialize empty list
+  PCA_SVM_res_list <- list()
+  
+  # Start from 2 if using SMOTE
+  starting_i <- ifelse(use_SMOTE, 2, 1)
+  
+  # Increasingly iterate over each PCs
+  for (i in starting_i:total_n_PCs) {
+    svm_for_pc <- as.data.frame(cbind(group, PCA_res$x[, 1:i])) %>%
+        mutate_at(vars(contains("V")), as.numeric) %>%
+        mutate_at(vars(starts_with("PC")), as.numeric) 
+    
+    
+    if (use_inv_prob_weighting) {
+      sample_props <- svm_for_pc %>%
+        dplyr::summarise(control_prop = sum(group=="Control") / n(),
+                         schz_prop = sum(group=="Schz")/n())
+      
+      # Convert to sample weights based on inverse of probability
+      sample_wts <- list("Control" = 1/sample_props$control_prop,
+                         "Schz" = 1/sample_props$schz_prop)
+    } else {
+      sample_wts <- list("Control" = 1, "Schz" = 1)
+    }
+    
+    # Compile results into a dataframe
+    if (cross_validate) {
+      df_res <- k_fold_CV_linear_SVM(input_data = svm_for_pc,
+                                     k = 10,
+                                     svm_kernel = "linear",
+                                     sample_wts = sample_wts,
+                                     use_SMOTE = FALSE,
+                                     shuffle_labels = FALSE)
+    } else {
+      df_res <- in_sample_linear_SVM(input_data = svm_for_pc,
+                                     svm_kernel = "linear",
+                                     sample_wts = sample_wts,
+                                     use_SMOTE = FALSE,
+                                     shuffle_labels = FALSE)
+    }
+    
+    df_res$Num_PCs <- i
+    
+    # Append results to list
+    PCA_SVM_res_list <- rlist::list.append(PCA_SVM_res_list, df_res)
+  }
+  
+  PCA_SVM_res <- do.call(plyr::rbind.fill, PCA_SVM_res_list)
+  
+}
+#-------------------------------------------------------------------------------
 # Run 10-fold cross-validated multi-feature linear SVM by given grouping var
 #-------------------------------------------------------------------------------
 
@@ -362,8 +539,101 @@ run_cv_svm_by_input_var <- function(rdata_path,
   return(class_res_df)
 }
 
-
-
-
-
-
+#-------------------------------------------------------------------------------
+# Run pairwise PYSPI CV linear SVM by SPI
+#-------------------------------------------------------------------------------
+run_in_sample_pairwise_svm_by_SPI <- function(pairwise_data,
+                                              svm_kernel = "linear",
+                                              test_package = "e1071",
+                                              noise_proc = "AROMA+2P",
+                                              use_inv_prob_weighting = FALSE,
+                                              use_SMOTE = FALSE,
+                                              shuffle_labels = FALSE) {
+  
+  # Initialize results list for SPI-wise in-sample linear SVM
+  class_res_list <- list()
+  
+  # Iterate over each PYSPI SPI
+  for (this_SPI in unique(all_pyspi_data$SPI)) {
+    # Identify whether current SPI is directed or undirected
+    directionality <- SPI_directionality %>% filter(SPI == this_SPI) %>% pull(Direction)
+    
+    # Reshape SPI data to contain brain region names
+    SPI_data <- subset(all_pyspi_data, SPI == this_SPI)  %>%
+      mutate(comparison = row_number()) %>%
+      pivot_longer(cols = c(brain_region_1,
+                            brain_region_2),
+                   names_to = "Region_Number",
+                   values_to = "Index") %>%
+      left_join(ROI_index) %>%
+      dplyr::select(-Index) %>%
+      pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
+                  names_from = "Region_Number",
+                  values_from = "ROI") %>%
+      dplyr::select(-comparison) 
+    
+    # Combine brain regions into new pairwise column depending on directionality
+    if (directionality == "Undirected") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
+                                    paste0(brain_region_1, "_", brain_region_2),
+                                    paste0(brain_region_2, "_", brain_region_1)))
+    } else if (directionality == "Directed") {
+      SPI_data <- SPI_data %>%
+        mutate(region_pair = paste0(brain_region_1, "_", brain_region_2))
+    }
+    
+    # Pivot data from long to wide for SVM
+    data_for_SVM <- SPI_data %>%
+      dplyr::select(Subject_ID, group, region_pair, value) %>%
+      distinct() %>%
+      pivot_wider(id_cols = c(Subject_ID, group),
+                  names_from = region_pair, 
+                  values_from = value) %>%
+      dplyr::select(-Subject_ID) %>%
+      drop_na()
+    
+    # Get sample weights if inverse probability weighting flag is applied
+    if (use_inv_prob_weighting) {
+      # Get control/schz proportions
+      sample_props <- data_for_SVM %>%
+        ungroup() %>%
+        dplyr::summarise(control_prop = sum(group=="CONTROL") / n(),
+                         schz_prop = sum(group=="SCHZ")/n())
+      
+      # Convert to sample weights based on inverse of probability
+      sample_wts <- list("CONTROL" = 1/sample_props$control_prop,
+                         "SCHZ" = 1/sample_props$schz_prop)
+    } else {
+      sample_wts <- list("CONTROL" = 1,
+                         "SCHZ" = 1)
+    }
+    
+    # Apply SMOTE if indicated
+    if (use_SMOTE) {
+      data_for_SVM <- smotefamily::SMOTE(data_for_SVM[,-1], data_for_SVM$group, K = 5)$data %>%
+        dplyr::rename("group" = "class")
+    }
+    
+    # Pass data_for_SVM to in_sample_linear_SVM
+    if (nrow(data_for_SVM ) > 0) {
+      SVM_results <- k(input_data = data_for_SVM,
+                                          svm_kernel = svm_kernel,
+                                          sample_wts = sample_wts,
+                                          shuffle_labels = shuffle_labels) %>%
+        mutate(SPI = this_SPI,
+               Noise_Proc = noise_proc,
+               use_inv_prob_weighting = use_inv_prob_weighting,
+               use_SMOTE = use_SMOTE)
+      
+      # Append results to list
+      class_res_list <- rlist::list.append(class_res_list, SVM_results)
+    }
+  }
+  
+  # Combine results from all regions into a dataframe
+  class_res_df <- do.call(plyr::rbind.fill, class_res_list)
+  
+  # Return dataframe
+  return(class_res_df)
+}
