@@ -151,15 +151,17 @@ calc_empirical_nulls <- function(class_res,
       ungroup() %>%
       distinct() %>%
       dplyr::rename("accuracy" = "main_accuracy",
-                    "balanced_accuracy" = "main_balanced_accuracy")
+                    "balanced_accuracy" = "main_balanced_accuracy") 
     
     merged_list <- rlist::list.append(merged_list, group_merged)
   }
   main_p_values <- do.call(plyr::rbind.fill, merged_list) %>%
     ungroup() %>%
+    mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
     group_by(Noise_Proc) %>%
     mutate(acc_p_adj = p.adjust(acc_p, method="BH"),
-           bal_acc_p_adj = p.adjust(bal_acc_p, method="BH"))
+           bal_acc_p_adj = p.adjust(bal_acc_p, method="BH")) %>%
+    arrange(Noise_Proc)
   
   return(main_p_values)
 }

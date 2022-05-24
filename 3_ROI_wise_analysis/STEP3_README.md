@@ -9,7 +9,7 @@ Step 3: ROI-Wise catch22 Feature Analysis
 
 We will start with a simple linear SVM classifier using all 22 features.
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-75-1.png)<!-- -->
 
 The above figure shows the in-sample results from running `e1071::svm`
 using all 22 catch22 features. The dashed line in the accuracy plot
@@ -37,7 +37,7 @@ By assigning each subject a weight equivalent to the inverse proportion
 of that subject’s diagnosis, the linear SVM places a higher cost on
 incorrectly classifying schizophrenia subjects as controls.
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-78-1.png)<!-- -->
 
 This shifts the raw accuracy down to a mean of 0.68 to 0.7 across the
 three noise-processing methods, but the balanced accuracy increases to
@@ -60,7 +60,7 @@ By assigning each subject a weight equivalent to the inverse proportion
 of that subject’s diagnosis, the linear SVM places a higher cost on
 incorrectly classifying schizophrenia subjects as controls.
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-80-1.png)<!-- -->
 
 This shifts the raw accuracy down to a mean of 0.68 to 0.7 across the
 three noise-processing methods, but the balanced accuracy increases to
@@ -79,7 +79,7 @@ I have chosen to use 10-fold cross validation via manual implementation,
 as the sample reweighting options in caret were limited and difficult to
 interpret.
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-82-1.png)<!-- -->
 
 Interestingly, unlike the in-sample results, there is a fair spread of
 accuracy and balanced accuracy values outside of the proportions
@@ -90,7 +90,7 @@ forward with inverse probability reweighting.
 
 ### 10-fold cross-validated linear SVM with inverse probability weighting
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-84-1.png)<!-- -->
 
 As with the in-sample results, the accuracy values are negatively
 shifted while the balanced accuracy values are positively shifted after
@@ -100,7 +100,7 @@ applying inverse probability reweighting to the samples.
 
 sa\[’\]
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-86-1.png)<!-- -->
 
 As with the in-sample results, the accuracy values are negatively
 shifted while the balanced accuracy values are positively shifted after
@@ -126,14 +126,14 @@ separately.
 
 ### CV linear SVM
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-88-1.png)<!-- -->
 
 I’ve plotted the distribution of null accuracies (teal) alongside the
 actual accuracies (pink) for the 82 ROIs on the left. Let’s zoom in on
 AROMA+2P and pick the five brain regions with the highest
 cross-validated balanced accuracy:
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-90-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -217,14 +217,14 @@ comparisons with BH-FDR.
 
 ### CV linear SVM – inv prob
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-92-1.png)<!-- -->
 
 I’ve plotted the distribution of null accuracies (teal) alongside the
 actual accuracies (pink) for the 82 ROIs on the left. Let’s zoom in on
 AROMA+2P and pick the five brain regions with the highest
 cross-validated balanced accuracy:
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-94-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -308,14 +308,14 @@ comparisons with BH-FDR.
 
 ### CV linear SVM – SMOTE
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-96-1.png)<!-- -->
 
 I’ve plotted the distribution of null accuracies (teal) alongside the
 actual accuracies (pink) for the 82 ROIs on the left. Let’s zoom in on
 AROMA+2P and pick the five brain regions with the highest
 cross-validated balanced accuracy:
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-98-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -409,13 +409,13 @@ of N=820 data points each, respectively.
 
 ### In-sample
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-101-1.png)<!-- -->
 
 The fitted empirical null model distribution is fairly similar to the
 real accuracy and balanced accuracy values using in-sample linear SVM
 with no reweighting.
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-103-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -494,13 +494,13 @@ AROMA+2P+DiCER
 
 ### In-sample, inverse probability weighted
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-106-1.png)<!-- -->
 
 The fitted empirical null model distribution is fairly similar to the
 real accuracy and balanced accuracy values using in-sample linear SVM
 with no reweighting.
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-108-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -579,13 +579,13 @@ AROMA+2P+DiCER
 
 ### CV, inverse probability weighted
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-111-1.png)<!-- -->
 
 The fitted empirical null model distribution is fairly similar to the
 real accuracy and balanced accuracy values using in-sample linear SVM
 with no reweighting.
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-113-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -664,13 +664,13 @@ AROMA+2P+DiCER
 
 ### CV, SMOTE
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-116-1.png)<!-- -->
 
 The fitted empirical null model distribution is fairly similar to the
 real accuracy and balanced accuracy values using in-sample linear SVM
 with no reweighting.
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-46-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-118-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -749,4 +749,4 @@ AROMA+2P+DiCER
 
 ## Comparing model-free shuffle with pooled empirical null distributions
 
-![](Step3_README_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
+![](STEP3_README_files/figure-gfm/unnamed-chunk-120-1.png)<!-- -->

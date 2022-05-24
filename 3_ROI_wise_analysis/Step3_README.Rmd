@@ -799,7 +799,7 @@ summarise_num_sig_features(region_wise_SVM_CV_SMOTE_pvals)
 
 ## Comparing model-free shuffle with pooled empirical null distributions
 
-```{r}
+```{r, fig.width = 7, fig.height = 7}
 # In-sample inverse probability
 in_sample_inv_prob_p <- model_free_shuffle_null_res %>%
   mutate(Null_Type = "Model-Free Shuffle") %>%
@@ -812,7 +812,8 @@ in_sample_inv_prob_p <- model_free_shuffle_null_res %>%
   ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
   geom_histogram(alpha=0.5, 
                  aes(y=0.5*..density..), 
-                 position="identity") +
+                 position="identity",
+                 bins = 50) +
   scale_x_continuous(limits = c(0.3, 0.8)) +
   ylab("") +
   xlab("") +
@@ -834,7 +835,8 @@ CV_inv_prob_p <- model_free_shuffle_null_res %>%
   ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
   geom_histogram(alpha=0.5, 
                  aes(y=0.5*..density..), 
-                 position="identity") +
+                 position="identity",
+                 bins = 50) +
   scale_x_continuous(limits = c(0.3, 0.8)) +
   ylab("Scaled Density") +
   xlab("") +
@@ -856,7 +858,8 @@ CV_SMOTE_p <- model_free_shuffle_null_res %>%
   ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
   geom_histogram(alpha=0.5, 
                  aes(y=0.5*..density..), 
-                 position="identity") +
+                 position="identity",
+                 bins = 50) +
   scale_x_continuous(limits = c(0.3, 0.8)) +
   ylab("") +
   xlab("Balanced Accuracy") +
@@ -872,7 +875,7 @@ in_sample_inv_prob_p / CV_inv_prob_p / CV_SMOTE_p  +
   theme(legend.position = 'bottom') &
   guides(fill = guide_legend(nrow=2,byrow=TRUE))
 ggsave("plots/Null_Distributions_by_Model_Type.png",
-       width = 7, height = 6, units = "in", dpi=300)
+       width = 7, height = 7, units = "in", dpi=300)
 ```
 
  

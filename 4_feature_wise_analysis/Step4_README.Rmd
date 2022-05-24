@@ -162,11 +162,9 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample,
                        cv = FALSE,
                        rdata_path = rdata_path,
                        noise_procs = noise_procs)
-```
 
-```{r, eval=F, echo=F}
 # Save plot
-ggsave("plots/In_Sample_Feature_Wise_linear_SVM_Multivar_e1071.png",
+ggsave("plots/Feature_Wise_linear_SVM_in_sample.png",
        width=7,height=5, units="in", dpi=300)
 ```
 
@@ -212,7 +210,7 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample_inv_prob,
                        noise_procs = noise_procs)
 
 # Save plot
-ggsave("plots/In_Sample_Feature_Wise_linear_SVM_Multivar_e1071_inv_prob.png",
+ggsave("plots/Feature_Wise_linear_SVM_in_sample_inv_prob.png",
        width=7,height=5, units="in", dpi=300)
 ```
 
@@ -264,7 +262,7 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_in_sample_SMOTE,
                        noise_procs = noise_procs)
 
 # Save plot
-ggsave("plots/In_Sample_Feature_Wise_linear_SVM_Multivar_e1071_SMOTE.png",
+ggsave("plots/Feature_Wise_linear_SVM_in_sample_SMOTE.png",
        width=7,height=5, units="in", dpi=300)
 ```
 
@@ -319,7 +317,7 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_CV,
                        noise_procs = noise_procs)
 
 # Save plot
-ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_e1071.png",
+ggsave("plots/Feature_Wise_linear_SVM_CV.png",
        width=7,height=5, units="in", dpi=300)
 ```
 
@@ -364,7 +362,7 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_CV_inv_prob,
                        noise_procs = noise_procs)
 
 # Save plot
-ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_e1071_inv_prob.png",
+ggsave("plots/Feature_Wise_linear_SVM_CV_inv_prob.png",
        width=7,height=5, units="in", dpi=300)
 ```
 
@@ -410,7 +408,7 @@ plot_class_acc_w_props(class_res = feature_wise_SVM_CV_SMOTE,
                        noise_procs = noise_procs)
 
 # Save plot
-ggsave("plots/Feature_Wise_linear_SVM_CV_Multivar_e1071_SMOTE.png",
+ggsave("plots/Feature_Wise_linear_SVM_CV_SMOTE.png",
        width=7,height=5, units="in", dpi=300)
 ```
 
@@ -449,10 +447,10 @@ feature_wise_SVM_CV <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1
 plot_main_vs_null_hist(main_res = feature_wise_SVM_CV,
                        null_res = model_free_shuffle_null_res,
                        xlab = "Value from n=1,000,000 Model-Free Shuffles",
-                       title = "CV linear SVM Results vs. Model-Free Shuffles")
+                       title = "CV linear SVM Results vs.\nModel-Free Shuffles")
 
 # Save plot
-ggsave("plots/Feature_Wise_CV_Null_vs_Real_Model_Free_Shuffle.png",
+ggsave("plots/Feature_Wise_CV_Null_Model_Free_Shuffle_vs_Real.png",
        width=7, height=5, units="in", dpi=300)
 ```
 
@@ -480,9 +478,9 @@ plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_CV_pvals,
                              null_res = model_free_shuffle_null_res,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
-                             title = "Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P catch22 Features",
+                             title = "Main CV and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P catch22 Features",
                              yloc = 8,
-                             xloc = 0.57)
+                             xloc = 0.6)
 
 ggsave("plots/Feature_Wise_Model_Free_Shuffle_Top5_Features_CV_SVM_Balanced_Accuracy.png", width=10, 
        height=5, units="in", dpi=300)
@@ -503,7 +501,7 @@ feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_
 plot_main_vs_null_hist(main_res = feature_wise_SVM_CV_inv_prob,
                        null_res = model_free_shuffle_null_res,
                        xlab = "Value from n=1,000,000 Model-Free Shuffles",
-                       title = "CV Inv Prob Linear SVM Results vs. Model-Free Shuffles")
+                       title = "CV Inv Prob Linear SVM Results vs.\nModel-Free Shuffles")
 
 # Save plot
 ggsave("plots/Feature_Wise_CV_Null_vs_Real_Model_Free_Shuffle_inv_prob.png",
@@ -535,7 +533,7 @@ plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_CV_inv_prob_pval
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
                              title = "Main and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P catch22 Features, CV Inverse Probability",
-                             xloc = 0.58, yloc = 8)
+                             xloc = 0.6, yloc = 8)
 
 ggsave("plots/Feature_Wise_Model_Free_Shuffle_Top5_Features_CV_SVM_Balanced_Accuracy_Inv_Prob.png", width=10, 
        height=5, units="in", dpi=300)
@@ -555,7 +553,7 @@ feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM
 plot_main_vs_null_hist(main_res = feature_wise_SVM_CV_SMOTE,
                        null_res = model_free_shuffle_null_res,
                        xlab = "Value from n=1,000,000 Model-Free Shuffles",
-                       title = "CV SMOTE Linear SVM Results vs. Model-Free Shuffles")
+                       title = "CV SMOTE Linear SVM Results vs.\nModel-Free Shuffles")
 
 # Save plot
 ggsave("plots/Feature_Wise_CV_Null_vs_Real_Model_Free_Shuffle_SMOTE.png",
@@ -571,7 +569,7 @@ feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM
 if (!file.exists(paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_SMOTE_pvals.Rds"))) {
   feature_wise_SVM_CV_SMOTE_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_CV_SMOTE,
                                                    null_data = model_free_shuffle_null_res,
-                                                   grouping_var = "Brain_Region")
+                                                   grouping_var = "Feature")
   saveRDS(feature_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_SMOTE_pvals.Rds"))
 } else {
   feature_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "Feature_wise_CV_linear_SVM_e1071_SMOTE_pvals.Rds"))
@@ -626,6 +624,8 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_in_samp
 } else {
   model_permutation_null_in_sample <- readRDS(paste0(rdata_path, "Feature_wise_model_permutation_null_in_sample.Rds"))
 }
+# Find number of iterations for plot label
+num_null_dist_values <- nrow(model_permutation_null_in_sample %>% filter(Noise_Proc == "AROMA+2P"))
 ```
 
 ```{r, fig.width=7, fig.height=5}
@@ -634,8 +634,8 @@ feature_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "Feature_wise_linear_SV
 
 plot_main_vs_null_hist(main_res = feature_wise_SVM_in_sample,
                        null_res = model_permutation_null_in_sample,
-                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
-                       title = "In-sample linear SVM Results vs. Null Model Fits")
+                       xlab = sprintf("Value from n=%s Null Model Fit Shuffles", num_null_dist_values),
+                       title = "In-sample linear SVM Results vs.\nNull Model Fits")
 
 # Save plot
 ggsave("plots/Feature_Wise_Null_Model_Fit_In_Sample_Balanced_Accuracy.png",
@@ -650,7 +650,7 @@ feature_wise_SVM_in_sample <- readRDS(paste0(rdata_path, "Feature_wise_linear_SV
 if (!file.exists(paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals.Rds"))) {
   feature_wise_SVM_in_sample_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_in_sample,
                                                            null_data = model_permutation_null_in_sample,
-                                                           grouping_var = "Brain_Region")
+                                                           grouping_var = "Feature")
   saveRDS(feature_wise_SVM_in_sample_pvals, file=paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals.Rds"))
 } else {
   feature_wise_SVM_in_sample_pvals <- readRDS(paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals.Rds"))
@@ -664,9 +664,9 @@ plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_in_sample_pvals,
                              null_res = model_permutation_null_in_sample,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
-                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P catch22 features, In-Sample",
+                             title = "Main In-Sample and Null Model Fit Balanced Accuracy\nfor top AROMA+2P catch22 features, In-Sample",
                              xloc = 0.94, 
-                             yloc = 5.5)
+                             yloc = 6.5)
 
 # Save plots
 ggsave("plots/feature_wise_Null_Model_Fit_Top5_Regions_In_Sample_Balanced_Accuracy.png", width=10, 
@@ -688,8 +688,8 @@ set.seed(127)
 if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_in_sample_inv_prob.Rds"))) {
   model_permutation_null_in_sample_inv_prob <- run_null_model_n_permutations(rdata_path,
                                                                              noise_procs = noise_procs,
-                                                                             grouping_var = "Brain_Region",
-                                                                             svm_feature_var = "Feature",
+                                                                             grouping_var = "Feature",
+                                                                             svm_feature_var = "Brain_Region",
                                                                              num_permutations = 40,
                                                                              use_inv_prob_weighting = TRUE,
                                                                              cross_validate = FALSE)
@@ -698,6 +698,8 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_in_samp
 } else {
   model_permutation_null_in_sample_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_model_permutation_null_in_sample_inv_prob.Rds"))
 }
+# Find number of iterations for plot label
+num_null_dist_values <- nrow(model_permutation_null_in_sample_inv_prob %>% filter(Noise_Proc == "AROMA+2P"))
 ```
 
 
@@ -707,8 +709,8 @@ feature_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_
 
 plot_main_vs_null_hist(main_res = feature_wise_SVM_in_sample_inv_prob,
                        null_res = model_permutation_null_in_sample_inv_prob,
-                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
-                       title = "In-sample Inv Prob linear SVM Results vs. Null Model Fits")
+                       xlab = sprintf("Value from n=%s Null Model Fit Shuffles", num_null_dist_values),
+                       title = "In-sample Inv Prob linear SVM Results vs.\nNull Model Fits")
 
 ggsave("plots/feature_wise_Null_Model_Fit_In_Sample_Balanced_Accuracy_Inv_Prob.png",
        width=7, height=5, units="in", dpi=300)
@@ -720,7 +722,7 @@ The fitted empirical null model distribution is fairly similar to the real accur
 if (!file.exists(paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals_inv_prob.Rds"))) {
   feature_wise_SVM_in_sample_inv_prob_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_in_sample_inv_prob,
                                                               null_data = model_permutation_null_in_sample_inv_prob,
-                                                              grouping_var = "Brain_Region")
+                                                              grouping_var = "Feature")
   saveRDS(feature_wise_SVM_in_sample_inv_prob_pvals, file=paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals_inv_prob.Rds"))
 } else {
   feature_wise_SVM_in_sample_inv_prob_pvals <- readRDS(paste0(rdata_path, "Feature_wise_In_Sample_Null_Model_Fits_pvals_inv_prob.Rds"))
@@ -734,7 +736,9 @@ plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_in_sample_inv_pr
                              null_res = model_permutation_null_in_sample_inv_prob,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
-                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P catch22 Features, In-Sample Inv Prob")
+                             title = "Main In-Sample Inv Prob and Null Model Fit\nBalanced Accuracyfor top AROMA+2P catch22 Features",
+                             xloc = 0.875,
+                             yloc = 7.5)
 
 # Save plot
 ggsave("plots/feature_wise_Null_Model_Fit_Top5_Regions_In_Sample_Inv_Prob_Balanced_Accuracy.png", width=10, 
@@ -759,8 +763,8 @@ set.seed(127)
 if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_inv_prob.Rds"))) {
   model_permutation_null_CV_inv_prob <- run_null_model_n_permutations(rdata_path,
                                                                     noise_procs = noise_procs,
-                                                                    grouping_var = "Brain_Region",
-                                                                    svm_feature_var = "Feature",
+                                                                    grouping_var = "Feature",
+                                                                    svm_feature_var = "Brain_Region",
                                                                     num_permutations = 40,
                                                                     use_inv_prob_weighting = TRUE,
                                                                     cross_validate = TRUE)
@@ -769,6 +773,8 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_inv_
 } else {
   model_permutation_null_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_inv_prob.Rds"))
 }
+# Find number of iterations for plot label
+num_null_dist_values <- nrow(model_permutation_null_in_sample %>% filter(Noise_Proc == "AROMA+2P"))
 ```
 
 
@@ -778,8 +784,8 @@ feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_
 
 plot_main_vs_null_hist(main_res = feature_wise_SVM_CV_inv_prob,
                        null_res = model_permutation_null_CV_inv_prob,
-                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
-                       title = "CV Inv Prob linear SVM Results vs. Null Model Fits")
+                       xlab = sprintf("Value from n=%s Null Model Fit Shuffles", num_null_dist_values),
+                       title = "CV Inv Prob linear SVM Results vs.\nNull Model Fits")
 
 # Save plot
 ggsave("plots/feature_wise_Null_Model_Fit_CV_Balanced_Accuracy_Inv_Prob.png",
@@ -794,7 +800,7 @@ feature_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_linear_
 if (!file.exists(paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_inv_prob.Rds"))) {
   feature_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_CV_inv_prob,
                                                               null_data = model_permutation_null_CV_inv_prob,
-                                                              grouping_var = "Brain_Region")
+                                                              grouping_var = "Feature")
   saveRDS(feature_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_inv_prob.Rds"))
 } else {
   feature_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_inv_prob.Rds"))
@@ -808,7 +814,9 @@ plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_CV_inv_prob_pval
                              null_res = model_permutation_null_CV_inv_prob,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
-                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P catch22 Features, CV Inv Prob")
+                             title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P catch22 Features, CV Inv Prob",
+                             xloc = 0.58,
+                             yloc = 4.5)
 
 # Save plot
 ggsave("plots/feature_wise_Null_Model_Fit_CV_Inv_Prob_Balanced_Accuracy.png", width=10, 
@@ -831,8 +839,8 @@ set.seed(127)
 if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_SMOTE.Rds"))) {
   model_permutation_null_CV_SMOTE <- run_null_model_n_permutations(rdata_path,
                                                                     noise_procs = noise_procs,
-                                                                    grouping_var = "Brain_Region",
-                                                                    svm_feature_var = "Feature",
+                                                                    grouping_var = "Feature",
+                                                                    svm_feature_var = "Brain_Region",
                                                                     num_permutations = 40,
                                                                     use_inv_prob_weighting = TRUE,
                                                                     cross_validate = TRUE)
@@ -841,6 +849,8 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_SMOT
 } else {
   model_permutation_null_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_SMOTE.Rds"))
 }
+# Find number of iterations for plot label
+num_null_dist_values <- nrow(model_permutation_null_in_sample %>% filter(Noise_Proc == "AROMA+2P"))
 ```
 
 
@@ -850,8 +860,8 @@ feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM
 
 plot_main_vs_null_hist(main_res = feature_wise_SVM_CV_SMOTE,
                        null_res = model_permutation_null_CV_SMOTE,
-                       xlab = "Value from n=8,200 Null Model Fit Shuffles",
-                       title = "CV SMOTE linear SVM Results vs. Null Model Fits")
+                       xlab = sprintf("Value from n=%s Null Model Fit Shuffles", num_null_dist_values),
+                       title = "CV SMOTE linear SVM Results vs.\nNull Model Fits")
 
 # Save plot
 ggsave("plots/feature_wise_Null_Model_Fit_CV_Balanced_Accuracy_SMOTE.png",
@@ -866,7 +876,7 @@ feature_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM
 if (!file.exists(paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_SMOTE.Rds"))) {
   feature_wise_SVM_CV_SMOTE_pvals <- calc_empirical_nulls(class_res = feature_wise_SVM_CV_SMOTE,
                                                               null_data = model_permutation_null_CV_SMOTE,
-                                                              grouping_var = "Brain_Region")
+                                                              grouping_var = "Feature")
   saveRDS(feature_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_SMOTE.Rds"))
 } else {
   feature_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "Feature_wise_CV_Null_Model_Fits_pvals_SMOTE.Rds"))
@@ -881,8 +891,8 @@ plot_top_5_vars_main_vs_null(class_res_pvals = feature_wise_SVM_CV_SMOTE_pvals,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
                              title = "Main and Null Model Fit Balanced Accuracy\nfor top AROMA+2P catch22 Features, CV SMOTE",
-                             xloc = 0.55,
-                             yloc = 4)
+                             xloc = 0.57,
+                             yloc = 4.5)
 
 # Save plot
 ggsave("plots/feature_wise_Null_Model_Fit_Top5_Regions_CV_SMOTE_Balanced_Accuracy.png", width=10, 
@@ -896,7 +906,7 @@ summarise_num_sig_features(feature_wise_SVM_CV_SMOTE_pvals)
 
 ## Comparing model-free shuffle with pooled empirical null distributions
 
-```{r}
+```{r, fig.width = 7, fig.height = 7}
 # In-sample inverse probability
 in_sample_inv_prob_p <- model_free_shuffle_null_res %>%
   mutate(Null_Type = "Model-Free Shuffle") %>%
@@ -909,8 +919,9 @@ in_sample_inv_prob_p <- model_free_shuffle_null_res %>%
   ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
   geom_histogram(alpha=0.5, 
                  aes(y=0.5*..density..), 
-                 position="identity") +
-  scale_x_continuous(limits = c(0.3, 0.8)) +
+                 position="identity",
+                 bins = 50) +
+  scale_x_continuous(limits = c(0.3, 1.01)) +
   ylab("") +
   xlab("") +
   labs(fill = "Null Type") +
@@ -931,8 +942,9 @@ CV_inv_prob_p <- model_free_shuffle_null_res %>%
   ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
   geom_histogram(alpha=0.5, 
                  aes(y=0.5*..density..), 
-                 position="identity") +
-  scale_x_continuous(limits = c(0.3, 0.8)) +
+                 position="identity",
+                 bins = 50) +
+  scale_x_continuous(limits = c(0.3, 1.01)) +
   ylab("Scaled Density") +
   xlab("") +
   labs(fill = "Null Type") +
@@ -953,8 +965,9 @@ CV_SMOTE_p <- model_free_shuffle_null_res %>%
   ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
   geom_histogram(alpha=0.5, 
                  aes(y=0.5*..density..), 
-                 position="identity") +
-  scale_x_continuous(limits = c(0.3, 0.8)) +
+                 position="identity",
+                 bins = 50) +
+  scale_x_continuous(limits = c(0.3, 1.01)) +
   ylab("") +
   xlab("Balanced Accuracy") +
   labs(fill = "Null Type") +
@@ -969,5 +982,5 @@ in_sample_inv_prob_p / CV_inv_prob_p / CV_SMOTE_p  +
   theme(legend.position = 'bottom') &
   guides(fill = guide_legend(nrow=2,byrow=TRUE))
 ggsave("plots/Null_Distributions_by_Model_Type.png",
-       width = 7, height = 6, units = "in", dpi=300)
+       width = 7, height = 7, units = "in", dpi=300)
 ```

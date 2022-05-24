@@ -73,7 +73,8 @@ k_fold_CV_linear_SVM <- function(input_data,
                                  sample_wts = list("Control" = 1,
                                                    "Schz" = 1),
                                  use_SMOTE = FALSE,
-                                 shuffle_labels = FALSE) {
+                                 shuffle_labels = FALSE,
+                                 return_all_fold_metrics = FALSE) {
   
   # Shuffle labels if specified
   if (shuffle_labels) {
@@ -133,11 +134,20 @@ k_fold_CV_linear_SVM <- function(input_data,
   balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
   balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
   
-  # Compile results into a dataframe
-  df_res <- data.frame(accuracy = accuracy_avg,
-                       accuracy_SD = accuracy_sd,
-                       balanced_accuracy = balanced_accuracy_avg,
-                       balanced_accuracy_SD = balanced_accuracy_sd)
+  if (return_all_fold_metrics) {
+    # Compile results into a dataframe
+    df_res <- data.frame(Null_Iteration = 1:k,
+                         accuracy = unlist(accuracy_list),
+                         balanced_accuracy = unlist(balanced_accuracy_list))
+  } else {
+    # Compile results into a dataframe
+    df_res <- data.frame(accuracy = accuracy_avg,
+                         accuracy_SD = accuracy_sd,
+                         balanced_accuracy = balanced_accuracy_avg,
+                         balanced_accuracy_SD = balanced_accuracy_sd)
+  }
+  return(df_res)
+  
 }
 
 #-------------------------------------------------------------------------------
@@ -262,6 +272,7 @@ run_pairwise_SVM_by_SPI <- function(pairwise_data,
                                     test_package = "e1071",
                                     noise_proc = "AROMA+2P",
                                     cross_validate = FALSE,
+                                    return_all_fold_metrics = FALSE,
                                     use_inv_prob_weighting = FALSE,
                                     use_SMOTE = FALSE,
                                     shuffle_labels = FALSE) {
@@ -336,6 +347,7 @@ run_pairwise_SVM_by_SPI <- function(pairwise_data,
                                             svm_kernel = svm_kernel,
                                             sample_wts = sample_wts,
                                             use_SMOTE = use_SMOTE,
+                                            return_all_fold_metrics = return_all_fold_metrics,
                                             shuffle_labels = shuffle_labels)
       } else {
         SVM_results <- in_sample_linear_SVM(input_data = data_for_SVM,

@@ -33,218 +33,6 @@ Load pyspi data
 all_pyspi_data <- readRDS(paste0(rdata_path_for_pyspi, "All_subject_pyspi.Rds"))
 ```
 
-
-### Focus on pearson correlation
-
-#### Load data
-```{r}
-corr_data <- subset(all_pyspi_data, SPI == "xcorr_mean_sig-True")  %>%
-  mutate(comparison = row_number()) %>%
-  mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
-                              paste0(brain_region_1, "_", brain_region_2),
-                              paste0(brain_region_2, "_", brain_region_1))) %>%
-  distinct(region_pair, Subject_ID, .keep_all=T) %>%
-  pivot_longer(cols = c(brain_region_1,
-                        brain_region_2),
-               names_to = "Region_Number",
-               values_to = "Index") %>%
-  left_join(ROI_index) %>%
-  dplyr::select(-Index) %>%
-  distinct() %>%
-  pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
-              names_from = "Region_Number",
-              values_from = "ROI") %>%
-  dplyr::select(-comparison) %>%
-  mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
-                              paste0(brain_region_1, "_", brain_region_2),
-                              paste0(brain_region_2, "_", brain_region_1)))
-
-data_for_SVM <- corr_data %>%
-  pivot_wider(id_cols = c(Subject_ID, group),
-              names_from = region_pair,
-              values_from = value) %>% 
-  select(-Subject_ID) %>%
-  drop_na()
-data_for_SVM$group <- factor(data_for_SVM$group, levels = c("CONTROL", "SCHZ"))
-```
-
-#### In-sample linear SVM
-
-```{r}
-pearson_corr_in_sample_SVM <- e1071::svm(group ~ ., 
-                                         data = data_for_SVM ,
-                                         kernel = "linear")
-
-# Generate in-sample predictions based on SVM model
-pred <- predict(pearson_corr_in_sample_SVM, data_for_SVM)
-data_for_SVM$group <- factor(data_for_SVM$group, levels = levels(pred))
-
-# Calculate accuracy and balanced accuracy
-accuracy <- sum(pred == data_for_SVM$group)/length(pred)
-balanced_accuracy <- caret::confusionMatrix(data=pred, 
-                                            reference=data_for_SVM$group)$byClass[["Balanced Accuracy"]]
-balanced_accuracy <- ifelse(is.na(balanced_accuracy), 0.5, balanced_accuracy)
-
-data.frame(accuracy = accuracy,
-           balanced_accuracy = balanced_accuracy)
-```
-
-#### CV linear SVM
-```{r}
-set.seed(127)
-
-flds <- createFolds(data_for_SVM$group, k = 10, list = TRUE, returnTrain = FALSE)
-      
-accuracy_list <- list()
-balanced_accuracy_list <- list()
-
-
-for (i in 1:length(flds)) {
-  test_i <- flds[[i]]
-  train_i <- setdiff(1:nrow(data_for_SVM), test_i)
-  
-  train_data <- data_for_SVM[train_i, ]
-  test_data <- data_for_SVM[test_i, ]
-  
-  svmModel <- e1071::svm(factor(group) ~ .,
-                         kernel = "linear",
-                         cost = 1,
-                         data = train_data)
-  
-  # Generate out-of-sample predictions based on SVM model
-  pred <- predict(svmModel, test_data)
-  test_data$group <- factor(test_data$group, levels = levels(pred))
-  
-  # Calculate accuracy and balanced accuracy
-  accuracy <- sum(pred == test_data$group)/length(pred)
-  balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
-                                              data=pred)$byClass[["Balanced Accuracy"]]
-  
-  accuracy_list[[i]] <- accuracy
-  balanced_accuracy_list[[i]] <- balanced_accuracy
-} 
-
-accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
-accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
-balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
-balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
-
-data.frame(Accuracy = accuracy_avg,
-           AccuracySD = accuracy_sd,
-           Balanced_Accuracy = balanced_accuracy_avg,
-           Balanced_AccuracySD = balanced_accuracy_sd)
-```
-
-
-
-#### CV linear SVM inv prob
-```{r}
-set.seed(127)
-
-sample_props <- corr_data %>%
-  dplyr::group_by(Subject_ID, region_pair) %>%
-  dplyr::filter(!any(is.na(value))) %>%
-  dplyr::ungroup() %>%
-  dplyr::distinct(Subject_ID, group) %>%
-  dplyr::summarise(control_prop = sum(group=="CONTROL") / n(),
-                   schz_prop = sum(group=="SCHZ")/n())
-
-# Convert to sample weights based on inverse of probability
-sample_wts <- list("CONTROL" = 1/sample_props$control_prop,
-                   "SCHZ" = 1/sample_props$schz_prop)
-
-flds <- createFolds(data_for_SVM$group, k = 10, list = TRUE, returnTrain = FALSE)
-      
-accuracy_list <- list()
-balanced_accuracy_list <- list()
-
-
-for (i in 1:length(flds)) {
-  test_i <- flds[[i]]
-  train_i <- setdiff(1:nrow(data_for_SVM), test_i)
-  
-  train_data <- data_for_SVM[train_i, ]
-  test_data <- data_for_SVM[test_i, ]
-  
-  svmModel <- e1071::svm(factor(group) ~ .,
-                         kernel = "linear",
-                         cost = 1,
-                         data = train_data,
-                         class.weights = sample_wts)
-  
-  # Generate out-of-sample predictions based on SVM model
-  pred <- predict(svmModel, test_data)
-  test_data$group <- factor(test_data$group, levels = levels(pred))
-  
-  # Calculate accuracy and balanced accuracy
-  accuracy <- sum(pred == test_data$group)/length(pred)
-  balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
-                                              data=pred)$byClass[["Balanced Accuracy"]]
-  
-  accuracy_list[[i]] <- accuracy
-  balanced_accuracy_list[[i]] <- balanced_accuracy
-} 
-
-accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
-accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
-balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
-balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
-
-data.frame(Accuracy = accuracy_avg,
-           AccuracySD = accuracy_sd,
-           Balanced_Accuracy = balanced_accuracy_avg,
-           Balanced_AccuracySD = balanced_accuracy_sd)
-```
-
-#### CV linear SVM SMOTE
-```{r}
-set.seed(127)
-
-flds <- createFolds(data_for_SVM$group, k = 10, list = TRUE, returnTrain = FALSE)
-      
-accuracy_list <- list()
-balanced_accuracy_list <- list()
-
-for (i in 1:length(flds)) {
-  test_i <- flds[[i]]
-  train_i <- setdiff(1:nrow(data_for_SVM), test_i)
-  
-  train_data <- data_for_SVM[train_i, ]
-  test_data <- data_for_SVM[test_i, ]
-  
-  train_data <- smotefamily::SMOTE(train_data[,-1], train_data$group, K = 5)$data %>%
-            dplyr::rename("group" = "class")
-  
-  svmModel <- e1071::svm(factor(group) ~ .,
-                         kernel = "linear",
-                         cost = 1,
-                         data = train_data)
-  
-  # Generate out-of-sample predictions based on SVM model
-  pred <- predict(svmModel, test_data)
-  test_data$group <- factor(test_data$group, levels = levels(pred))
-  
-  # Calculate accuracy and balanced accuracy
-  accuracy <- sum(pred == test_data$group)/length(pred)
-  balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
-                                              data=pred)$byClass[["Balanced Accuracy"]]
-  
-  accuracy_list[[i]] <- accuracy
-  balanced_accuracy_list[[i]] <- balanced_accuracy
-} 
-
-accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
-accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
-balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
-balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
-
-data.frame(Accuracy = accuracy_avg,
-           AccuracySD = accuracy_sd,
-           Balanced_Accuracy = balanced_accuracy_avg,
-           Balanced_AccuracySD = balanced_accuracy_sd)
-```
-
-
 ### All SPIs
 
 #### In sample
@@ -256,6 +44,7 @@ if (!file.exists(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_In_Sample.Rds"
                                                                     test_package = "e1071",
                                                                     noise_proc = "AROMA+2P",
                                                                     cross_validate = FALSE,
+                                                                    return_all_fold_metrics = FALSE,
                                                                     use_inv_prob_weighting = FALSE,
                                                                     use_SMOTE = FALSE,
                                                                     shuffle_labels = FALSE)
@@ -276,6 +65,7 @@ if (!file.exists(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV.Rds"))) {
                                                                     test_package = "e1071",
                                                                     noise_proc = "AROMA+2P",
                                                                     cross_validate = TRUE,
+                                                                    return_all_fold_metrics = TRUE,
                                                                     use_inv_prob_weighting = FALSE,
                                                                     use_SMOTE = FALSE,
                                                                     shuffle_labels = FALSE)
@@ -295,6 +85,7 @@ if (!file.exists(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV_inv_prob.Rd
                                                                     test_package = "e1071",
                                                                     noise_proc = "AROMA+2P",
                                                                     cross_validate = TRUE,
+                                                                    return_all_fold_metrics = TRUE,
                                                                     use_inv_prob_weighting = TRUE,
                                                                     use_SMOTE = FALSE,
                                                                     shuffle_labels = FALSE)
@@ -303,8 +94,6 @@ if (!file.exists(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV_inv_prob.Rd
   Pairwise_Linear_SVM_All_ROIs_CV_inv_prob <- readRDS(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV_inv_prob.Rds"))
 }
 ```
-
-
 
 
 #### CV -- SMOTE
@@ -316,6 +105,7 @@ if (!file.exists(paste0(rdata_path, "Pairwise_Linear_SVM_All_ROIs_CV_SMOTE.Rds")
                                                                    test_package = "e1071",
                                                                    noise_proc = "AROMA+2P",
                                                                    cross_validate = TRUE,
+                                                                    return_all_fold_metrics = TRUE,
                                                                    use_inv_prob_weighting = FALSE,
                                                                    use_SMOTE = TRUE,
                                                                    shuffle_labels = FALSE)
@@ -332,21 +122,82 @@ Pairwise_Linear_SVM_All_ROIs_CV$Method <- "CV"
 Pairwise_Linear_SVM_All_ROIs_CV_inv_prob$Method <- "CV inv prob"
 Pairwise_Linear_SVM_All_ROIs_CV_SMOTE$Method <- "CV SMOTE"
 
-do.call(plyr::rbind.fill, list(pairwise_in_sample_svm_res,
-                               pairwise_CV_svm_res,
-                               pairwise_CV_svm_inv_prob_res,
-                               pairwise_CV_svm_SMOTE_res)) %>%
-  mutate(SPI = fct_reorder(SPI, balanced_accuracy, .fun = mean),
+pairwise_metrics <- do.call(plyr::rbind.fill, list(Pairwise_Linear_SVM_All_ROIs_In_Sample,
+                               Pairwise_Linear_SVM_All_ROIs_CV,
+                               Pairwise_Linear_SVM_All_ROIs_CV_inv_prob,
+                               Pairwise_Linear_SVM_All_ROIs_CV_SMOTE)) 
+
+mean_pairwise_metrics <- pairwise_metrics %>%
+  group_by(SPI, Method) %>%
+  summarise(mean_accuracy = mean(accuracy),
+            mean_balanced_accuracy = mean(balanced_accuracy)) %>%
+  ungroup()
+```
+
+heatmaps
+```{r}
+# Accuracy
+mean_pairwise_metrics %>%
+  mutate(SPI = fct_reorder(SPI, mean_accuracy, .fun = mean),
          Method = factor(Method, levels = c("In-sample", "CV", 
                                             "CV inv prob", "CV SMOTE"))) %>%
-  ggplot(data=., mapping = aes(x=Method, y=SPI, fill=balanced_accuracy)) +
+  arrange(SPI) %>%
+  ggplot(data=., mapping = aes(x=Method, y=SPI, fill=mean_accuracy)) +
   geom_tile() +
-  geom_text(aes(label = round(100*balanced_accuracy, 2))) +
+  geom_text(aes(label = round(100*mean_accuracy, 2))) +
+  ggtitle("Accuracy by PySPI SPI") +
+  scale_fill_gradient(low = "white", high = "red") +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5))
+ggsave("plots/PySPI_SPI_Accuracy.png", width=8, height=5, units="in", dpi=300)
+
+# Balanced Accuracy
+mean_pairwise_metrics %>%
+  mutate(SPI = fct_reorder(SPI, mean_balanced_accuracy, .fun = mean),
+         Method = factor(Method, levels = c("In-sample", "CV", 
+                                            "CV inv prob", "CV SMOTE"))) %>%
+  ggplot(data=., mapping = aes(x=Method, y=SPI, fill=mean_balanced_accuracy)) +
+  geom_tile() +
+  geom_text(aes(label = round(100*mean_balanced_accuracy, 2))) +
   ggtitle("Balanced Accuracy by PySPI SPI") +
   scale_fill_gradient(low = "white", high = "red") +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 10)) +
   theme(legend.position = "none",
         plot.title = element_text(hjust=0.5))
 ggsave("plots/PySPI_SPI_Balanced_Accuracy.png", width=8, height=5, units="in", dpi=300)
+```
+
+Boxplot for each CV method
+
+```{r}
+# Accuracy
+pairwise_metrics %>%
+  filter(Method != "In-sample") %>%
+  mutate(SPI = fct_reorder(SPI, accuracy, .fun = mean, .desc=F)) %>%
+  ggplot(data=., mapping = aes(y = SPI,
+                               x = accuracy)) +
+  geom_boxplot(aes(fill = SPI)) +
+  xlab("Accuracy") +
+  ylab("SPI") +
+  ggtitle("CV Accuracy by pySPI SPI") +
+  facet_grid(. ~ Method, scales="free_y") +
+  theme(legend.position = "none")
+ggsave("plots/PySPI_SPI_Accuracy_CV_Boxplots.png", width=10, height=6, units="in", dpi=300)
+
+# Balanced Accuracy
+pairwise_metrics %>%
+  filter(Method != "In-sample") %>%
+  mutate(SPI = fct_reorder(SPI, balanced_accuracy, .fun = mean, .desc=F)) %>%
+  ggplot(data=., mapping = aes(y = SPI,
+                               x = balanced_accuracy)) +
+  geom_boxplot(aes(fill = SPI)) +
+  xlab("Balanced Accuracy") +
+  ylab("SPI") +
+  ggtitle("CV Balanced Accuracy by pySPI SPI")+                                
+  facet_grid(. ~ Method, scales="free_y") +
+  theme(legend.position = "none")
+ggsave("plots/PySPI_SPI_Balanced_Accuracy_CV_Boxplots.png", width=10, height=6, units="in", dpi=300)
 ```
 
 
