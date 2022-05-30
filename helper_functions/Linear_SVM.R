@@ -378,7 +378,6 @@ run_pairwise_SVM_by_SPI <- function(pairwise_data,
 # Run linear SVM by iterating over number of principal components (PCs)
 #-------------------------------------------------------------------------------
 run_SVM_from_PCA <- function(PCA_res,
-                             PCA_prepped = FALSE,
                              group_vector,
                              cross_validate = FALSE,
                              use_inv_prob_weighting = FALSE,
@@ -397,7 +396,6 @@ run_SVM_from_PCA <- function(PCA_res,
     svm_for_pc <- as.data.frame(cbind(group, PCA_res$x[, 1:i])) %>%
         mutate_at(vars(contains("V")), as.numeric) %>%
         mutate_at(vars(starts_with("PC")), as.numeric) 
-    
     
     if (use_inv_prob_weighting) {
       sample_props <- svm_for_pc %>%
@@ -434,8 +432,9 @@ run_SVM_from_PCA <- function(PCA_res,
   }
   
   PCA_SVM_res <- do.call(plyr::rbind.fill, PCA_SVM_res_list)
-  
+  return(PCA_SVM_res)
 }
+
 #-------------------------------------------------------------------------------
 # Run 10-fold cross-validated multi-feature linear SVM by given grouping var
 #-------------------------------------------------------------------------------

@@ -1,0 +1,80 @@
+---
+title: 'Step 7: Univariate + Pairwise Features'
+output: 
+  github_document
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=F, message=F)
+```
+
+Source functions
+```{r}
+github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
+source(paste0(github_dir, "helper_functions/Linear_SVM.R"))
+source(paste0(github_dir, "helper_functions/Visualization.R"))
+source(paste0(github_dir, "helper_functions/Null_distributions.R"))
+
+rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+
+# Load catch22 data for current noise processing method
+feature_matrix <- readRDS(paste0(rdata_path, "UCLA_AROMA_2P_catch22.Rds"))      
+
+# Load pyspi data
+study <- "D:/Virtual_Machines/Shared_Folder/PhD_work/"
+SPI_directionality <- read.csv("../6_Pairwise_ROI_analysis/SPI_Direction_Info.csv")
+rdata_path_for_pyspi <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/pydata/R_files/"
+all_pyspi_data <- readRDS(paste0(rdata_path_for_pyspi, "All_subject_pyspi.Rds"))
+ROI_index <- read.csv(paste0(study, "data/scz/UCLA/pydata/ROI_info.csv"))
+```
+
+```{r}
+# Univariate
+
+```
+
+
+```{r}
+# PYSPI
+this_SPI <- "cov_EmpiricalCovariance"
+
+# Prep pyspi data
+directionality <- SPI_directionality %>% filter(SPI == this_SPI) %>% pull(Direction)
+
+# Reshape SPI data to contain brain region names
+SPI_data <- subset(all_pyspi_data, SPI == this_SPI)  %>%
+  mutate(comparison = row_number()) %>%
+  pivot_longer(cols = c(brain_region_1,
+                        brain_region_2),
+               names_to = "Region_Number",
+               values_to = "Index") %>%
+  left_join(ROI_index) %>%
+  dplyr::select(-Index) %>%
+  pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
+              names_from = "Region_Number",
+              values_from = "ROI") %>%
+  dplyr::select(-comparison) 
+
+# Combine brain regions into new pairwise column depending on directionality
+if (directionality == "Undirected") {
+  SPI_data <- SPI_data %>%
+    mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
+                                paste0(brain_region_1, "_", brain_region_2),
+                                paste0(brain_region_2, "_", brain_region_1)))
+} else if (directionality == "Directed") {
+  SPI_data <- SPI_data %>%
+    mutate(region_pair = paste0(brain_region_1, "_", brain_region_2))
+}
+
+# Pivot data from long to wide for SVM
+pyspi_data_for_SVM <- SPI_data %>%
+  dplyr::select(Subject_ID, group, region_pair, value) %>%
+  mutate(value = round(value, 8)) %>%
+  distinct() %>%
+  pivot_wider(id_cols = c(Subject_ID, group),
+              names_from = region_pair, 
+              values_from = value) %>%
+  drop_na()
+```
+

@@ -622,7 +622,8 @@ if (!file.exists(paste0(rdata_path, "Combo_wise_model_permutation_null_CV_inv_pr
                                                                     svm_feature_var = "Combo",
                                                                     num_permutations = 100,
                                                                     use_inv_prob_weighting = TRUE,
-                                                                    cross_validate = TRUE)
+                                                                    cross_validate = TRUE,
+                                                                   use_SMOTE = FALSE)
   
   saveRDS(model_permutation_null_CV_inv_prob, file=paste0(rdata_path, "Combo_wise_model_permutation_null_CV_inv_prob.Rds"))
 } else {
@@ -684,12 +685,13 @@ set.seed(127)
 
 if (!file.exists(paste0(rdata_path, "Combo_wise_model_permutation_null_CV_SMOTE.Rds"))) {
   model_permutation_null_CV_SMOTE <- run_null_model_n_permutations(rdata_path,
-                                                                    noise_procs = noise_procs,
-                                                                    grouping_var = "Combo",
-                                                                    svm_feature_var = "Combo",
-                                                                    num_permutations = 100,
-                                                                    use_inv_prob_weighting = TRUE,
-                                                                    cross_validate = TRUE)
+                                                                   noise_procs = noise_procs,
+                                                                   grouping_var = "Combo",
+                                                                   svm_feature_var = "Combo",
+                                                                   num_permutations = 100,
+                                                                   cross_validate = TRUE,
+                                                                   use_inv_prob_weighting = FALSE,
+                                                                   use_SMOTE = TRUE)
   
   saveRDS(model_permutation_null_CV_SMOTE, file=paste0(rdata_path, "Combo_wise_model_permutation_null_CV_SMOTE.Rds"))
 } else {

@@ -1,0 +1,42 @@
+---
+title: "catchaMouse16 analysis"
+author: "Annie Bryant"
+date: "5/24/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Source functions
+```{r}
+github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
+source(paste0(github_dir, "helper_functions/Linear_SVM.R"))
+source(paste0(github_dir, "helper_functions/Visualization.R"))
+source(paste0(github_dir, "helper_functions/Null_distributions.R"))
+
+rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+```
+
+
+Load in AROMA+2P catchaMouse16 data
+```{r}
+catchaMouse16_data <- readRDS(paste0(rdata_path, "UCLA_AROMA_2P_catchaMouse16.Rds"))
+```
+
+
+Plot histogram for each feature
+```{r}
+catchaMouse16_data %>%
+  ggplot(data = ., mapping = aes(x=Value)) +
+  geom_histogram(aes(fill = catchaMouse16_Feature)) +
+  facet_wrap(catchaMouse16_Feature ~ ., scales="free") +
+  ggtitle("catchaMouse16 Feature Distributions in\nUCLA AROMA+2P Schizophrenia Cohort") +
+  xlab("Raw Feature Value") +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5)) 
+ggsave("plots/catchaMouse16_raw_feature_distributions.png", width=8, height=6, 
+       units="in", dpi=300)
+```
+

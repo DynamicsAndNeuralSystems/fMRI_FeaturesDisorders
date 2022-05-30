@@ -72,14 +72,14 @@ step3_data <- do.call(plyr::rbind.fill, list(step3_in_sample,
 ```
 
 ```{r}
-set.seed(127)
 step3_data %>%
   ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Classifier)) +
-  geom_histogram() +
+  geom_histogram(bins = 50) +
   geom_vline(xintercept = 0.5, linetype=2) +
   facet_wrap(Classifier ~ ., scales="free_y", nrow = 3, dir="v") +
   ggtitle("Balanced Accuracy Distributions for ROI-wise analysis") +
   xlab("Balanced Accuracy") +
+  ylab("Number of ROIs") +
   theme(legend.position = "none",
         plot.title = element_text(hjust=0.5))
 ggsave("plots/Step3_Balanced_Accuracy_Summary.png",
@@ -113,9 +113,9 @@ step4_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_linear_SVM_CV_e1071_S
          Classifier = "CV SMOTE")
 step4_model_free_shuffle_null <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
   mutate(Classifier = "Model-free shuffle")
-step4_null_model_inv_prob <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
+step4_null_model_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_inv_prob.Rds")) %>%
   mutate(Classifier = "Null model fit inv prob")
-step4_null_model_SMOTE <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
+step4_null_model_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_model_permutation_null_CV_SMOTE.Rds")) %>%
   mutate(Classifier = "Null model fit SMOTE")
 ```
 
@@ -142,17 +142,91 @@ step4_data <- do.call(plyr::rbind.fill, list(step4_in_sample,
 ```
 
 ```{r}
-set.seed(127)
 step4_data %>%
   ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Classifier)) +
-  geom_histogram() +
+  geom_histogram(bins = 50) +
   geom_vline(xintercept = 0.5, linetype=2) +
   facet_wrap(Classifier ~ ., scales="free_y", nrow = 3, dir="v") +
   ggtitle("Balanced Accuracy Distributions for Feature-wise analysis") +
   xlab("Balanced Accuracy") +
+  ylab("Number of Features") +
   theme(legend.position = "none",
         plot.title = element_text(hjust=0.5))
 ggsave("plots/Step4_Balanced_Accuracy_Summary.png",
        width=8, height=6, units="in", dpi=300)
+```
+
+## Step 5 combo-wise
+
+### Load data
+
+```{r}
+step5_in_sample <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "In-sample")
+step5_in_sample_inv_prob <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071_inv_prob.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "In-sample inv prob")
+step5_in_sample_SMOTE <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_in_sample_e1071_SMOTE.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "In-sample SMOTE")
+step5_CV <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_CV_e1071.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "CV")
+step5_CV_inv_prob <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_CV_inv_prob_e1071.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "CV inv prob")
+step5_CV_SMOTE <- readRDS(paste0(rdata_path, "Combo_wise_linear_SVM_CV_SMOTE_e1071.Rds")) %>%
+  mutate(Type = "main",
+         Classifier = "CV SMOTE")
+step5_model_free_shuffle_null <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds")) %>%
+  mutate(Classifier = "Model-free shuffle")
+step5_null_model_inv_prob <- readRDS(paste0(rdata_path, "Combo_wise_model_permutation_null_CV_inv_prob.Rds")) %>%
+  mutate(Classifier = "Null model fit inv prob")
+step5_null_model_SMOTE <- readRDS(paste0(rdata_path, "Combo_wise_model_permutation_null_CV_SMOTE.Rds")) %>%
+  mutate(Classifier = "Null model fit SMOTE")
+```
+
+```{r}
+step5_data <- do.call(plyr::rbind.fill, list(step5_in_sample,
+                               step5_in_sample_inv_prob,
+                               step5_in_sample_SMOTE,
+                               step5_CV,
+                               step5_CV_inv_prob,
+                               step5_CV_SMOTE,
+                               step5_model_free_shuffle_null,
+                               step5_null_model_inv_prob,
+                               step5_null_model_SMOTE)) %>%
+  filter(Noise_Proc == "AROMA+2P") %>%
+  mutate(Classifier = factor(Classifier, levels = c("In-sample",
+                                                    "In-sample inv prob",
+                                                    "In-sample SMOTE",
+                                                    "CV",
+                                                    "CV inv prob",
+                                                    "CV SMOTE",
+                                                    "Model-free shuffle",
+                                                    "Null model fit inv prob",
+                                                    "Null model fit SMOTE")))
+```
+
+```{r}
+step5_data %>%
+  ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Classifier)) +
+  geom_histogram(bins = 50) +
+  geom_vline(xintercept = 0.5, linetype=2) +
+  facet_wrap(Classifier ~ ., scales="free_y", nrow = 3, dir="v") +
+  ggtitle("Balanced Accuracy Distributions for Combo-wise analysis") +
+  xlab("Balanced Accuracy") +
+  ylab("Number of Combos") +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5))
+```
+
+```{r}
+summary(step5_null_model_inv_prob)
+```
+
+```{r}
+summary(step5_null_model_SMOTE)
 ```
 
