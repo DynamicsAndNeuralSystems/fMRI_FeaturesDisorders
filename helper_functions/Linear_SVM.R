@@ -408,6 +408,7 @@ run_pairwise_SVM_by_SPI <- function(pairwise_data,
 run_SVM_from_PCA <- function(PCA_res,
                              group_vector,
                              c_values = c(1),
+                             interval = 1,
                              cross_validate = FALSE,
                              use_inv_prob_weighting = FALSE,
                              use_SMOTE = FALSE,
@@ -422,7 +423,7 @@ run_SVM_from_PCA <- function(PCA_res,
   starting_i <- ifelse(use_SMOTE, 2, 1)
   
   # Increasingly iterate over each PCs
-  for (i in starting_i:total_n_PCs) {
+  for (i in seq(starting_i, total_n_PCs, by = interval)) {
     svm_for_pc <- as.data.frame(cbind(group, PCA_res$x[, 1:i])) %>%
         mutate_at(vars(contains("V")), as.numeric) %>%
         mutate_at(vars(starts_with("PC")), as.numeric) 

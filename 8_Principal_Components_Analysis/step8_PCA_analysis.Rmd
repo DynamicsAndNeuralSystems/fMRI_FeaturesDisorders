@@ -36,7 +36,7 @@ all_pyspi_data <- readRDS(paste0(rdata_path_for_pyspi, "All_subject_pyspi.Rds"))
 ROI_index <- read.csv(paste0(study, "data/scz/UCLA/pydata/ROI_info.csv"))
 ```
 
-## Step 3
+## ROI-wise
 
 AROMA + 2P
 
@@ -324,10 +324,11 @@ ggsave("plots/ROI_Wise_PCA_All_Methods_Linear_SVM_Balanced_Accuracy.png", width=
        units="in", dpi=300)
 ```
 
-## Step 4
+## Feature-wise
 
 AROMA + 2P
 
+### Run PCA
 ```{r}
 feature_PCA_list <- list()
 feature_PC_scores_list <- list()
@@ -377,10 +378,11 @@ ggsave("plots/Feature_Wise_PCA_Cumulative_Variance.png", width=6, height=4,
        units="in", dpi=300)
 ```
 
-Iterate through every PCs from 1 to 82 to see to see at what point in-sample linear SVM reaches 100% accuracy per catch22 feature:
+### SVM with PCs: C = 1
 
+#### Unweighted
 ```{r}
-if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_in_sample.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_unweighted.Rds"))) {
   Feature_wise_unweighted_SVM_by_PC_list <- list()
   
   # Iterate over each catch22 feature
@@ -395,7 +397,8 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_in_sample.Rds")
     df_res <- run_SVM_from_PCA(
       PCA_res = feature_PCA_list[[this_feature]],
       group_vector = groups,
-      c_values = c(0.1, 0.5, 1, 5),
+      c_values = 1,
+      interval = 1,
       use_inv_prob_weighting = FALSE,
       use_SMOTE = FALSE,
       return_all_fold_metrics = FALSE) %>%
@@ -413,30 +416,11 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_in_sample.Rds")
   Feature_wise_PCA_linear_SVM_unweighted <- readRDS(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_unweighted.Rds"))
 }
 ```
-
-
-Let's see where balanced accuracy starts to hit 100% across the 22 features:
-```{r}
-Feature_wise_PCA_linear_SVM_unweighted %>%
-  mutate(group_for_line = paste0(Sample_Type, "_", catch22_feature)) %>%
-  ggplot(data=., mapping=aes(x = Num_PCs, y = balanced_accuracy)) +
-  geom_line(aes(group = group_for_line), alpha=0.2, color="gray60") +
-  stat_smooth(geom = "line", aes(color = Sample_Type), size=1.5, se=T) +
-  # stat_smooth(geom = "line", color = "red", size = 1.5, se=T) +
-  ylab("Balanced Accuracy by Feature") +
-  xlab("# PCs Used in Linear SVM") +
-  facet_wrap(c_value ~ ., scales="free") +
-  ggtitle("In-Sample Linear SVM with Feature-wise PCA") +
-  theme(plot.title = element_text(hjust=0.5))
-ggsave("plots/Feature_Wise_PCA_In_Sample_Linear_SVM_Balanced_Accuracy.png", width=6, height=4, 
-       units="in", dpi=300)
-```
-
-For the sake of comparison, I'll do this for inverse probability weighting as well:
+#### Inverse probability weighted
 
 ```{r}
-if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_in_sample_inv_prob.Rds"))) {
-  Feature_wise_in_sample_SVM_inv_prob_by_PC_list <- list()
+if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_inv_prob.Rds"))) {
+  Feature_wise_unweighted_SVM_inv_prob_by_PC_list <- list()
   
   # Iterate over each catch22 feature
   for (this_feature in unique(feature_matrix$names)) {
@@ -450,87 +434,27 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_in_sample_inv_p
     df_res <- run_SVM_from_PCA(
       PCA_res = feature_PCA_list[[this_feature]],
       group_vector = groups,
-      cross_validate = FALSE,
+      c_values = 1,
+      interval = 2,
       use_inv_prob_weighting = TRUE,
       use_SMOTE = FALSE
     ) %>%
       mutate(catch22_feature = this_feature)
     
     # Append this feature's linear SVM results to list
-    Feature_wise_in_sample_SVM_inv_prob_by_PC_list <- rlist::list.append(Feature_wise_in_sample_SVM_inv_prob_by_PC_list,
+    Feature_wise_unweighted_SVM_inv_prob_by_PC_list <- rlist::list.append(Feature_wise_unweighted_SVM_inv_prob_by_PC_list,
                                                                          df_res)
   }
 
   # Combine SVM results across features
-  Feature_wise_PCA_linear_SVM_in_sample_inv_prob <- do.call(plyr::rbind.fill, Feature_wise_in_sample_SVM_inv_prob_by_PC_list)
-  saveRDS(Feature_wise_PCA_linear_SVM_in_sample_inv_prob, paste0(rdata_path, "Feature_wise_PCA_linear_SVM_in_sample_inv_prob.Rds"))
+  Feature_wise_PCA_linear_SVM_unweighted_inv_prob <- do.call(plyr::rbind.fill, Feature_wise_unweighted_SVM_inv_prob_by_PC_list)
+  saveRDS(Feature_wise_PCA_linear_SVM_unweighted_inv_prob, paste0(rdata_path, "Feature_wise_PCA_linear_SVM_inv_prob.Rds"))
 } else {
-  Feature_wise_PCA_linear_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_in_sample_inv_prob.Rds"))
+  Feature_wise_PCA_linear_SVM_unweighted_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_inv_prob.Rds"))
 }
 ```
 
-```{r}
-Feature_wise_PCA_linear_SVM_in_sample_inv_prob %>%
-  ggplot(data=., mapping=aes(x = Num_PCs, y = balanced_accuracy)) +
-  geom_line(aes(group = catch22_feature), alpha=0.2) +
-  stat_smooth(geom = "line", color = "red", size = 1.5, se=T) +
-  ylab("Balanced Accuracy by Feature") +
-  xlab("# PCs Used in Linear SVM") +
-  ggtitle("In-Sample Inv Prob Linear SVM\nwith Feature-wise PCA") +
-  theme(plot.title = element_text(hjust=0.5))
-ggsave("plots/Feature_Wise_PCA_In_Sample_Inv_ProbLinear_SVM_Balanced_Accuracy.png", width=6, height=4, 
-       units="in", dpi=300)
-```
-
-
-We can do the same with cross-validation and inverse probability weighting:
-```{r}
-if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_CV_inv_prob.Rds"))) {
-  Feature_wise_CV_SVM_by_PC_inv_prob_list <- list()
-  
-  # Iterate over each catch22 feature
-  for (this_feature in unique(feature_matrix$names)) {
-    
-    # Subset feature data from overall PCA results
-    groups <- feature_PC_scores %>%
-      filter(feature == this_feature) %>%
-      pull(group)
-    
-    # Run SVM for current feature
-    df_res <- run_SVM_from_PCA(
-      PCA_res = feature_PCA_list[[this_feature]],
-      group_vector = groups,
-      cross_validate = TRUE,
-      use_inv_prob_weighting = TRUE,
-      use_SMOTE = FALSE
-    ) %>%
-      mutate(catch22_feature = this_feature)
-    
-    # Append this feature's linear SVM results to list
-    Feature_wise_CV_SVM_by_PC_inv_prob_list <- rlist::list.append(Feature_wise_CV_SVM_by_PC_inv_prob_list,
-                                                                         df_res)
-  }
-    # Combine SVM results across features
-  Feature_wise_PCA_linear_SVM_CV_inv_prob <- do.call(plyr::rbind.fill, Feature_wise_CV_SVM_by_PC_inv_prob_list)
-  
-  saveRDS(Feature_wise_PCA_linear_SVM_CV_inv_prob, paste0(rdata_path, "Feature_wise_PCA_linear_SVM_CV_inv_prob.Rds"))
-} else {
-  Feature_wise_PCA_linear_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_CV_inv_prob.Rds"))
-}
-```
-
-```{r}
-Feature_wise_PCA_linear_SVM_CV_inv_prob %>%
-  ggplot(data=., mapping=aes(x = Num_PCs, y = balanced_accuracy)) +
-  geom_line(aes(group = catch22_feature), alpha=0.2) +
-  stat_smooth(geom = "line", color = "red", size = 1.5, se=T) +
-  ylab("Balanced Accuracy by Feature") +
-  xlab("# PCs Used in Linear SVM") +
-  ggtitle("CV Inv Prob Linear SVM with\nFeature-wise PCA") +
-  theme(plot.title = element_text(hjust=0.5))
-ggsave("plots/Feature_Wise_PCA_CV_Inv_Prob_Linear_SVM_Balanced_Accuracy.png", width=6, height=4, 
-       units="in", dpi=300)
-```
+#### SMOTE
 
 And with SMOTE
 ```{r}
@@ -549,7 +473,8 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_CV_SMOTE.Rds"))
     df_res <- run_SVM_from_PCA(
       PCA_res = feature_PCA_list[[this_feature]],
       group_vector = groups,
-      cross_validate = TRUE,
+      c_values = 1,
+      interval = 1,
       use_inv_prob_weighting = FALSE,
       use_SMOTE = TRUE
     ) %>%
@@ -567,6 +492,121 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_CV_SMOTE.Rds"))
   Feature_wise_PCA_linear_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_CV_SMOTE.Rds"))
 }
 ```
+
+### SVM with PCs: evaluating different values of C
+
+#### Unweighted
+
+```{r}
+if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_unweighted_diffC.Rds"))) {
+  Feature_wise_unweighted_SVM_by_PC_list <- list()
+  
+  # Iterate over each catch22 feature
+  for (this_feature in unique(feature_matrix$names)) {
+    
+    # Subset feature data from overall PCA results
+    groups <- feature_PC_scores %>%
+      filter(feature == this_feature) %>%
+      pull(group)
+    
+    # Run SVM for current feature
+    df_res <- run_SVM_from_PCA(
+      PCA_res = feature_PCA_list[[this_feature]],
+      group_vector = groups,
+      c_values = 2^c(-10, -6, -2, 0, 2),
+      interval = 5,
+      use_inv_prob_weighting = FALSE,
+      use_SMOTE = FALSE,
+      return_all_fold_metrics = FALSE) %>%
+      mutate(catch22_feature = this_feature)
+    
+    # Append this feature's linear SVM results to list
+    Feature_wise_unweighted_SVM_by_PC_list <- rlist::list.append(Feature_wise_unweighted_SVM_by_PC_list,
+                                                                         df_res)
+  }
+    # Combine SVM results across features
+  Feature_wise_PCA_linear_SVM_unweighted_diffC <- do.call(plyr::rbind.fill, Feature_wise_unweighted_SVM_by_PC_list)
+  
+  saveRDS(Feature_wise_PCA_linear_SVM_unweighted_diffC, paste0(rdata_path, "Feature_wise_PCA_linear_SVM_unweighted_diffC.Rds"))
+} else {
+  Feature_wise_PCA_linear_SVM_unweighted_diffC <- readRDS(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_unweighted_diffC.Rds"))
+}
+```
+
+
+Plot balanced accuracy across different values of C:
+```{r}
+Feature_wise_PCA_linear_SVM_unweighted_diffC %>%
+  mutate(group_for_line = paste0(Sample_Type, "_", catch22_feature)) %>%
+  ggplot(data=., mapping=aes(x = Num_PCs, y = balanced_accuracy)) +
+  geom_line(aes(group = group_for_line), alpha=0.2, color="gray60") +
+  stat_smooth(geom = "line", aes(color = Sample_Type), size=1.5, se=T) +
+  ylab("Balanced Accuracy by Feature") +
+  xlab("# PCs Used in Linear SVM") +
+  facet_wrap(c_value ~ ., scales="free") +
+  ggtitle("Linear SVM with Feature-wise PCA\nby SVM C Value") +
+  theme(plot.title = element_text(hjust=0.5),
+        legend.position = "bottom")
+ggsave("plots/Feature_Wise_PCA_by_C_Value_Linear_SVM_Balanced_Accuracy_diffC.png", width=6, height=5, 
+       units="in", dpi=300)
+```
+
+For the sake of comparison, I'll do this for inverse probability weighting as well:
+
+```{r}
+if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_inv_prob_diffC.Rds"))) {
+  Feature_wise_unweighted_SVM_inv_prob_by_PC_list <- list()
+  
+  # Iterate over each catch22 feature
+  for (this_feature in unique(feature_matrix$names)) {
+    
+    # Subset feature data from overall PCA results
+    groups <- feature_PC_scores %>%
+      filter(feature == this_feature) %>%
+      pull(group)
+    
+    # Run SVM for current feature
+    df_res <- run_SVM_from_PCA(
+      PCA_res = feature_PCA_list[[this_feature]],
+      group_vector = groups,
+      c_values = 2^c(-10, -6, -2, 0, 2),
+      interval = 5,
+      use_inv_prob_weighting = TRUE,
+      use_SMOTE = FALSE
+    ) %>%
+      mutate(catch22_feature = this_feature)
+    
+    # Append this feature's linear SVM results to list
+    Feature_wise_unweighted_SVM_inv_prob_by_PC_list <- rlist::list.append(Feature_wise_unweighted_SVM_inv_prob_by_PC_list,
+                                                                         df_res)
+  }
+
+  # Combine SVM results across features
+  Feature_wise_PCA_linear_SVM_unweighted_inv_prob_diffC <- do.call(plyr::rbind.fill, Feature_wise_unweighted_SVM_inv_prob_by_PC_list)
+  saveRDS(Feature_wise_PCA_linear_SVM_unweighted_inv_prob_diffC, paste0(rdata_path, "Feature_wise_PCA_linear_SVM_inv_prob_diffC.Rds"))
+} else {
+  Feature_wise_PCA_linear_SVM_unweighted_inv_prob_diffC <- readRDS(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_inv_prob_diffC.Rds"))
+}
+```
+
+```{r}
+Feature_wise_PCA_linear_SVM_unweighted_inv_prob_diffC %>%
+  mutate(group_for_line = paste0(Sample_Type, "_", catch22_feature)) %>%
+  ggplot(data=., mapping=aes(x = Num_PCs, y = balanced_accuracy)) +
+  geom_line(aes(group = group_for_line), alpha=0.2, color="gray60") +
+  stat_smooth(geom = "line", aes(color = Sample_Type), size=1.5, se=T) +
+  ylab("Balanced Accuracy by Feature") +
+  xlab("# PCs Used in Linear SVM") +
+  facet_wrap(c_value ~ ., scales="free") +
+  ggtitle("Inv Prob Linear SVM with Feature-wise PCA\nby SVM C Value") +
+  theme(plot.title = element_text(hjust=0.5),
+        legend.position = "bottom")
+ggsave("plots/Feature_Wise_PCA_In_Sample_Inv_Prob_Linear_SVM_Balanced_Accuracy_diffC.png", width=6, height=5, 
+       units="in", dpi=300)
+```
+
+
+
 
 ```{r}
 Feature_wise_PCA_linear_SVM_CV_SMOTE %>%
@@ -880,14 +920,17 @@ pairwise_PC_scores <- do.call(plyr::rbind.fill, pairwise_PC_scores_list)
 Cumulative variance plot for SPIs:
 ```{r}
 pairwise_eigen_df %>%
-  ggplot(data = ., mapping = aes(x=Components, y=Cumulative_Variance)) +
+  mutate(SPI = fct_reorder(SPI, Cumulative_Variance, .fun = mean)) %>%
+  ggplot(data = ., mapping = aes(x=Components, y=Cumulative_Variance, color = SPI)) +
   geom_point() +
-  geom_line(aes(group = SPI), alpha = 0.5) +
+  geom_line(aes(group = SPI, color = SPI), alpha = 0.5) +
   ylab("Cumulative Variance by Pairwise SPI") +
   xlab("Number of PCs") +
   ggtitle("pySPI Pairwise SPI PCA Cumulative Variance") +
-  theme(plot.title = element_text(hjust = 0.5))
-ggsave("plots/Pairwise_SPI_PCA_Cumulative_Variance.png", width=6, height=4, 
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "bottom") +
+  guides(color=guide_legend(nrow=10,byrow=TRUE))
+ggsave("plots/Pairwise_SPI_PCA_Cumulative_Variance.png", width=10, height=6, 
        units="in", dpi=300)
 ```
 

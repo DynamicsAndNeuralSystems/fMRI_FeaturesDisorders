@@ -88,6 +88,7 @@ if (!file.exists(paste0(rdata_path, "ROI_wise_linear_SVM_CV_", test_package, "_i
                                                                 grouping_var = "Brain_Region",
                                                                 svm_feature_var = "Feature",
                                                                 use_inv_prob_weighting = TRUE,
+                                                                 use_SMOTE = FALSE,
                                                                 noise_procs = noise_procs)
   saveRDS(region_wise_SVM_CV_inv_prob, file=paste0(rdata_path, "ROI_wise_linear_SVM_CV_", test_package, "_inv_prob.Rds"))
 }
@@ -179,7 +180,7 @@ if (!file.exists(paste0(rdata_path, "Null_Model_Free_Shuffles.Rds"))) {
 }
 ```
 
-### CV linear SVM
+### Unweighted linear SVM
 ```{r, fig.width=8, fig.height=4.5}
 region_wise_SVM_CV <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071.Rds"))
 
