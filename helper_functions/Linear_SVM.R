@@ -69,6 +69,7 @@ in_sample_linear_SVM <- function(input_data,
 #-------------------------------------------------------------------------------
 k_fold_CV_linear_SVM <- function(input_data,
                                  k = 10,
+                                 c_values = c(1),
                                  svm_kernel = "linear",
                                  sample_wts = list("Control" = 1,
                                                    "Schz" = 1),
@@ -88,8 +89,11 @@ k_fold_CV_linear_SVM <- function(input_data,
   flds <- caret::createFolds(input_data$group, k = k, list = TRUE, returnTrain = FALSE)
   
   # Initialize list for performance metrics
-  accuracy_list <- list()
-  balanced_accuracy_list <- list()
+  c_value_list <- list()
+  in_accuracy_list <- list()
+  in_balanced_accuracy_list <- list()
+  out_accuracy_list <- list()
+  out_balanced_accuracy_list <- list()
   
   # Iterate over folds 1 through k
   for (i in 1:k) {
@@ -108,46 +112,70 @@ k_fold_CV_linear_SVM <- function(input_data,
     }
     
     # Run linear SVM on fold
-    svmModel <- e1071::svm(factor(group) ~ .,
-                           kernel = svm_kernel,
-                           cost = 1,
-                           data = train_data,
-                           class.weights = sample_wts)
     
-    # Generate out-of-sample predictions based on SVM model
-    pred <- predict(svmModel, test_data)
-    test_data$group <- factor(test_data$group, levels = levels(pred))
+    # Iterate over each value of c
+    for (c in c_values) {
+      svmModel <- e1071::svm(factor(group) ~ .,
+                             kernel = svm_kernel,
+                             cost = c,
+                             data = train_data,
+                             class.weights = sample_wts)
+      
+      # Generate in-sample predictions based on SVM model
+      in_sample_pred <- predict(svmModel, train_data)
+      train_data$group <- factor(train_data$group, levels = levels(in_sample_pred))
+      
+      # Calculate accuracy and balanced accuracy
+      in_accuracy <- sum(in_sample_pred == train_data$group)/length(in_sample_pred)
+      in_balanced_accuracy <- caret::confusionMatrix(reference=train_data$group, 
+                                                     data=in_sample_pred)$byClass[["Balanced Accuracy"]]
+      
+      # Generate out-of-sample predictions based on SVM model
+      out_sample_pred <- predict(svmModel, test_data)
+      test_data$group <- factor(test_data$group, levels = levels(out_sample_pred))
+      
+      # Calculate accuracy and balanced accuracy
+      out_accuracy <- sum(out_sample_pred == test_data$group)/length(out_sample_pred)
+      out_balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
+                                                      data=out_sample_pred)$byClass[["Balanced Accuracy"]]
+      
+      # Append results to list for given fold
+      c_value_list <- rlist::list.append(c_value_list, c)
+      in_accuracy_list <- rlist::list.append(in_accuracy_list, in_accuracy)
+      in_balanced_accuracy_list <- rlist::list.append(in_balanced_accuracy_list, in_balanced_accuracy)
+      out_accuracy_list <- rlist::list.append(out_accuracy_list, out_accuracy)
+      out_balanced_accuracy_list <- rlist::list.append(out_balanced_accuracy_list, out_balanced_accuracy)
+    }
     
-    # Calculate accuracy and balanced accuracy
-    accuracy <- sum(pred == test_data$group)/length(pred)
-    balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
-                                                data=pred)$byClass[["Balanced Accuracy"]]
-    
-    # Append results to list for given fold
-    accuracy_list[[i]] <- accuracy
-    balanced_accuracy_list[[i]] <- balanced_accuracy
   } 
   
-  # Calculate summary statistics for accuracy and balanced accuracy
-  accuracy_avg <- mean(unlist(accuracy_list), na.rm=T)
-  accuracy_sd <- sd(unlist(accuracy_list), na.rm=T)
-  balanced_accuracy_avg <- mean(unlist(balanced_accuracy_list), na.rm=T)
-  balanced_accuracy_sd <- sd(unlist(balanced_accuracy_list), na.rm=T)
+  df_res_in_sample <- data.frame(Null_Iteration = rep(1:k, length(c_values)),
+                                 c_value = unlist(c_value_list),
+                                 accuracy = unlist(in_accuracy_list),
+                                 balanced_accuracy = unlist(in_balanced_accuracy_list),
+                                 Sample_Type = "In-sample")
+  df_res_out_sample <- data.frame(Null_Iteration = rep(1:k, length(c_values)),
+                                  c_value = unlist(c_value_list),
+                                  accuracy = unlist(out_accuracy_list),
+                                  balanced_accuracy = unlist(out_balanced_accuracy_list),
+                                  Sample_Type = "Out-of-sample")
+  
+  df_res <- plyr::rbind.fill(df_res_in_sample, df_res_out_sample)
   
   if (return_all_fold_metrics) {
-    # Compile results into a dataframe
-    df_res <- data.frame(Null_Iteration = 1:k,
-                         accuracy = unlist(accuracy_list),
-                         balanced_accuracy = unlist(balanced_accuracy_list))
+    return(df_res)
   } else {
-    # Compile results into a dataframe
-    df_res <- data.frame(accuracy = accuracy_avg,
-                         accuracy_SD = accuracy_sd,
-                         balanced_accuracy = balanced_accuracy_avg,
-                         balanced_accuracy_SD = balanced_accuracy_sd)
+    df_res_avg <- df_res %>%
+      group_by(Sample_Type, c_value) %>%
+      summarise(accuracy_avg = mean(accuracy, na.rm=T),
+                balanced_accuracy_avg = mean(balanced_accuracy, na.rm=T),
+                accuracy_SD = sd(accuracy, na.rm=T),
+                balanced_accuracy_SD = sd(balanced_accuracy, na.rm=T)) %>%
+      dplyr::rename("accuracy" = "accuracy_avg",
+                    "balanced_accuracy" = "balanced_accuracy_avg")
+    
+    return(df_res_avg)
   }
-  return(df_res)
-  
 }
 
 #-------------------------------------------------------------------------------
@@ -379,9 +407,11 @@ run_pairwise_SVM_by_SPI <- function(pairwise_data,
 #-------------------------------------------------------------------------------
 run_SVM_from_PCA <- function(PCA_res,
                              group_vector,
+                             c_values = c(1),
                              cross_validate = FALSE,
                              use_inv_prob_weighting = FALSE,
-                             use_SMOTE = FALSE) {
+                             use_SMOTE = FALSE,
+                             return_all_fold_metrics = FALSE) {
   total_n_PCs <- length(PCA_res$sdev)
   group <- group_vector
   
@@ -410,21 +440,15 @@ run_SVM_from_PCA <- function(PCA_res,
     }
     
     # Compile results into a dataframe
-    if (cross_validate) {
-      df_res <- k_fold_CV_linear_SVM(input_data = svm_for_pc,
-                                     k = 10,
-                                     svm_kernel = "linear",
-                                     sample_wts = sample_wts,
-                                     use_SMOTE = FALSE,
-                                     shuffle_labels = FALSE)
-    } else {
-      df_res <- in_sample_linear_SVM(input_data = svm_for_pc,
-                                     svm_kernel = "linear",
-                                     sample_wts = sample_wts,
-                                     use_SMOTE = FALSE,
-                                     shuffle_labels = FALSE)
-    }
-    
+    df_res <- k_fold_CV_linear_SVM(input_data = svm_for_pc,
+                                   k = 10,
+                                   c_values = c_values,
+                                   svm_kernel = "linear",
+                                   sample_wts = sample_wts,
+                                   use_SMOTE = FALSE,
+                                   shuffle_labels = FALSE,
+                                   return_all_fold_metrics = return_all_fold_metrics)
+  
     df_res$Num_PCs <- i
     
     # Append results to list

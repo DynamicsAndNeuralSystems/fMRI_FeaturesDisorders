@@ -381,7 +381,7 @@ Iterate through every PCs from 1 to 82 to see to see at what point in-sample lin
 
 ```{r}
 if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_in_sample.Rds"))) {
-  Feature_wise_in_sample_SVM_by_PC_list <- list()
+  Feature_wise_unweighted_SVM_by_PC_list <- list()
   
   # Iterate over each catch22 feature
   for (this_feature in unique(feature_matrix$names)) {
@@ -395,34 +395,37 @@ if (!file.exists(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_in_sample.Rds")
     df_res <- run_SVM_from_PCA(
       PCA_res = feature_PCA_list[[this_feature]],
       group_vector = groups,
-      cross_validate = FALSE,
+      c_values = c(0.1, 0.5, 1, 5),
       use_inv_prob_weighting = FALSE,
-      use_SMOTE = FALSE
-    ) %>%
+      use_SMOTE = FALSE,
+      return_all_fold_metrics = FALSE) %>%
       mutate(catch22_feature = this_feature)
     
     # Append this feature's linear SVM results to list
-    Feature_wise_in_sample_SVM_by_PC_list <- rlist::list.append(Feature_wise_in_sample_SVM_by_PC_list,
+    Feature_wise_unweighted_SVM_by_PC_list <- rlist::list.append(Feature_wise_unweighted_SVM_by_PC_list,
                                                                          df_res)
   }
     # Combine SVM results across features
-  Feature_wise_PCA_linear_SVM_in_sample <- do.call(plyr::rbind.fill, Feature_wise_in_sample_SVM_by_PC_list)
+  Feature_wise_PCA_linear_SVM_unweighted <- do.call(plyr::rbind.fill, Feature_wise_unweighted_SVM_by_PC_list)
   
-  saveRDS(Feature_wise_PCA_linear_SVM_in_sample, paste0(rdata_path, "Feature_wise_PCA_linear_SVM_in_sample.Rds"))
+  saveRDS(Feature_wise_PCA_linear_SVM_unweighted, paste0(rdata_path, "Feature_wise_PCA_linear_SVM_unweighted.Rds"))
 } else {
-  Feature_wise_PCA_linear_SVM_in_sample <- readRDS(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_in_sample.Rds"))
+  Feature_wise_PCA_linear_SVM_unweighted <- readRDS(paste0(rdata_path, "Feature_wise_PCA_linear_SVM_unweighted.Rds"))
 }
 ```
 
 
 Let's see where balanced accuracy starts to hit 100% across the 22 features:
 ```{r}
-Feature_wise_PCA_linear_SVM_in_sample %>%
+Feature_wise_PCA_linear_SVM_unweighted %>%
+  mutate(group_for_line = paste0(Sample_Type, "_", catch22_feature)) %>%
   ggplot(data=., mapping=aes(x = Num_PCs, y = balanced_accuracy)) +
-  geom_line(aes(group = catch22_feature), alpha=0.2) +
-  stat_smooth(geom = "line", color = "red", size = 1.5, se=T) +
+  geom_line(aes(group = group_for_line), alpha=0.2, color="gray60") +
+  stat_smooth(geom = "line", aes(color = Sample_Type), size=1.5, se=T) +
+  # stat_smooth(geom = "line", color = "red", size = 1.5, se=T) +
   ylab("Balanced Accuracy by Feature") +
   xlab("# PCs Used in Linear SVM") +
+  facet_wrap(c_value ~ ., scales="free") +
   ggtitle("In-Sample Linear SVM with Feature-wise PCA") +
   theme(plot.title = element_text(hjust=0.5))
 ggsave("plots/Feature_Wise_PCA_In_Sample_Linear_SVM_Balanced_Accuracy.png", width=6, height=4, 

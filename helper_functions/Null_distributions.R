@@ -80,37 +80,21 @@ run_null_model_n_permutations <- function(rdata_path,
                                           test_package = "e1071",
                                           svm_kernel = "linear",
                                           num_permutations = 100,
-                                          cross_validate = FALSE,
                                           use_inv_prob_weighting = FALSE,
                                           use_SMOTE = FALSE) {
   
-  # Initialize empty list
-  null_list <- list()
+  nullOuts <- 1:num_permutations %>%
+    purrr::map_df( ~ run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                             svm_kernel = svm_kernel,
+                                             test_package = test_package,
+                                             grouping_var = grouping_var,
+                                             svm_feature_var = svm_feature_var,
+                                             noise_procs = noise_procs,
+                                             use_inv_prob_weighting = use_inv_prob_weighting,
+                                             use_SMOTE = use_SMOTE,
+                                             shuffle_labels = T))
   
-  if (cross_validate) {
-    nullOuts <- 1:num_permutations %>%
-      purrr::map_df( ~ run_cv_svm_by_input_var(rdata_path = rdata_path,
-                                               svm_kernel = svm_kernel,
-                                               test_package = test_package,
-                                               grouping_var = grouping_var,
-                                               svm_feature_var = svm_feature_var,
-                                               noise_procs = noise_procs,
-                                               use_inv_prob_weighting = use_inv_prob_weighting,
-                                               use_SMOTE = use_SMOTE,
-                                               shuffle_labels = T))
-    
-  } else {
-    nullOuts <- 1:num_permutations %>%
-      purrr::map_df( ~ run_in_sample_svm_by_input_var(rdata_path = rdata_path,
-                                                      svm_kernel = svm_kernel,
-                                                      test_package = test_package,
-                                                      grouping_var = grouping_var,
-                                                      svm_feature_var = svm_feature_var,
-                                                      noise_procs = noise_procs,
-                                                      use_inv_prob_weighting = use_inv_prob_weighting,
-                                                      use_SMOTE = use_SMOTE,
-                                                      shuffle_labels = T))
-  }
+  
   null_res <- nullOuts %>%
     dplyr::mutate(Type = "null")
   
@@ -126,9 +110,24 @@ calc_empirical_nulls <- function(class_res,
                                  null_data,
                                  grouping_var = "Brain_Region") {
   merged_list <- list()
+  
+  if (!("Sample_Type" %in% colnames(null_data))) {
+    null_in <- null_data %>%
+      mutate(Sample_Type = "In-sample")
+    null_out <- null_data %>%
+      mutate(Sample_Type = "Out-of-sample")
+    null_data <- plyr::rbind.fill(null_in, null_out)
+  }
+  
   main_res <- class_res %>%
-    dplyr::select(grouping_var, Noise_Proc, accuracy, balanced_accuracy) %>%
-    mutate(Type = "main")
+    dplyr::select(grouping_var, Sample_Type, Noise_Proc, accuracy, balanced_accuracy) %>%
+    mutate(Type = "main") %>%
+    pivot_longer(cols=c(accuracy, balanced_accuracy),
+                 names_to="Metric",
+                 values_to="Value") %>%
+    pivot_wider(id_cols = c(grouping_var, Noise_Proc, 
+                            Type, Sample_Type),
+                names_from = Metric, values_from = Value)
   
   for (group_var in unique(class_res$grouping_var)) {
     
@@ -137,17 +136,12 @@ calc_empirical_nulls <- function(class_res,
     
     group_merged <- plyr::rbind.fill(group_main,
                                      group_null) %>%
-      group_by(grouping_var, Noise_Proc) %>%
+      group_by(grouping_var, Noise_Proc, Sample_Type) %>%
       dplyr::summarise(main_accuracy = unique(accuracy[Type=="main"]),
                        main_balanced_accuracy = unique(balanced_accuracy[Type=="main"]),
-                       num_acc_greater = sum(main_accuracy > accuracy[Type=="null"],
-                                             na.rm=T),
-                       num_bal_acc_greater = sum(main_balanced_accuracy > 
-                                                   balanced_accuracy[Type=="null"],
-                                                 na.rm=T),
-                       total_null = sum(Type == "null"),
-                       acc_p = 1 - (num_acc_greater/total_null),
-                       bal_acc_p = 1 - (num_bal_acc_greater/total_null)) %>%
+                       acc_p = 1 - stats::ecdf(accuracy[Type=="null"])(accuracy[Type=="main"]),
+                       bal_acc_p = 1 - stats::ecdf(balanced_accuracy[Type=="null"])(balanced_accuracy[Type=="main"]),
+                       ) %>%
       ungroup() %>%
       distinct() %>%
       dplyr::rename("accuracy" = "main_accuracy",
@@ -185,7 +179,7 @@ truncate_p_values <- function(pvalue_df, N=3) {
 summarise_num_sig_features <- function(pvalue_df) {
   pvalue_df %>%
     mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
-    group_by(Noise_Proc) %>%
+    group_by(Noise_Proc, Sample_Type) %>%
     summarise(num_sig_acc = sum(acc_p < 0.05),
               num_sig_acc_fdr = sum(acc_p_adj < 0.05),
               num_sig_bacc = sum(bal_acc_p < 0.05),
