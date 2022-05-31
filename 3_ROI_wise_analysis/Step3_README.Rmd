@@ -386,8 +386,6 @@ ggsave("plots/Region_Wise_Null_Model_Fit_Unweighted_Balanced_Accuracy.png",
 The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
 
 ```{r}
-region_wise_SVM_unweighted <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_e1071.Rds"))
-
 if (!file.exists(paste0(rdata_path, "ROI_wise_Unweighted_Null_Model_Fits_pvals.Rds"))) {
   region_wise_SVM_unweighted_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_unweighted,
                                                           null_data = model_permutation_null_unweighted,
@@ -407,8 +405,8 @@ plot_top_6_vars_main_vs_null(class_res_pvals = region_wise_SVM_unweighted_pvals,
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
                              title = "Main Out-of-Sample and Null Model Fit Balanced Accuracy\nfor top AROMA+2P Brain Regions, Unweighted",
-                             yloc = 14,
-                             xloc = 0.68)
+                             yloc = 22,
+                             xloc = 0.59)
 
 # Save plots
 ggsave("plots/Region_Wise_Null_Model_Fit_Top5_Regions_Unweighted_Balanced_Accuracy.png", width=10, 
