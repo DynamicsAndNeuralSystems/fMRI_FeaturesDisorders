@@ -409,7 +409,6 @@ run_SVM_from_PCA <- function(PCA_res,
                              group_vector,
                              c_values = c(1),
                              interval = 1,
-                             cross_validate = FALSE,
                              use_inv_prob_weighting = FALSE,
                              use_SMOTE = FALSE,
                              return_all_fold_metrics = FALSE) {

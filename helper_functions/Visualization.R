@@ -55,10 +55,10 @@ plot_class_acc_w_props <- function(class_res,
       dplyr::select(grouping_var, Sample_Type, Noise_Proc, accuracy, balanced_accuracy)
   } else {
     p_data <- class_res %>%
-      dplyr::select(Noise_Proc, Sample_Type, accuracy, balanced_accuracy)
+      dplyr::select(Noise_Proc, Sample_Type, accuracy, accuracy_SD, balanced_accuracy, balanced_accuracy_SD)
   }
   
-  p_data %>%
+  p_data <- p_data %>%
     left_join(., ctrl_prop) %>%
     pivot_longer(cols=c(accuracy, balanced_accuracy),
                  names_to = "Metric",
@@ -73,18 +73,43 @@ plot_class_acc_w_props <- function(class_res,
     mutate(Full_Metric = factor(Full_Metric, levels = c("in accuracy", "out accuracy",
                                               "in balanced accuracy", 
                                               "out balanced accuracy")),
-           Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
-    ggplot(data=., mapping=aes(x=Value)) +
-    geom_histogram(fill="lightsteelblue", bins=50) +
-    ggtitle(plot_title) +
-    geom_vline(aes(xintercept = ctrl_prop), linetype=2, color="gray30") +
-    facet_grid(Noise_Proc ~ Full_Metric, scales="free_y", switch="y",
-               labeller = labeller(Full_Metric = label_wrap_gen(20))) +
-    xlab("Metric Value") +
-    ylab(ylab) +
-    theme(strip.placement = "outside",
-          strip.text.y.left = element_text(angle=0),
-          plot.title = element_text(hjust=0.5))
+           Noise_Proc = factor(Noise_Proc, levels = noise_procs)) 
+  
+  # Return histogram if the group var is provided
+  if (!is.null(group_var)) {
+    p_data %>%
+      ggplot(data=., mapping=aes(x=Value)) +
+      geom_histogram(fill="lightsteelblue", bins=50) +
+      ggtitle(plot_title) +
+      geom_vline(aes(xintercept = ctrl_prop), linetype=2, color="gray30") +
+      facet_grid(Noise_Proc ~ Full_Metric, scales="free_y", switch="y",
+                 labeller = labeller(Full_Metric = label_wrap_gen(20))) +
+      xlab("Metric Value") +
+      ylab(ylab) +
+      theme(strip.placement = "outside",
+            strip.text.y.left = element_text(angle=0),
+            plot.title = element_text(hjust=0.5))
+  } else {
+    p_data %>%
+      pivot_longer(cols = c(accuracy_SD, balanced_accuracy_SD),
+                   names_to = "Metric2", values_to = "SD") %>%
+      mutate(Metric2 = str_replace_all(Metric2, "_SD", "")) %>%
+      filter(Metric == Metric2) %>%
+      dplyr::select(-Metric2) %>%
+      ggplot(data=., mapping=aes(x=Full_Metric, y=Value)) +
+      geom_bar(aes(fill = Full_Metric), stat = 'identity') +
+      geom_errorbar(aes(ymin = Value - SD, ymax = Value + SD)) +
+      ggtitle(plot_title) +
+      facet_grid(Noise_Proc ~ ., scales="free_y", switch="y") +
+      xlab("Performance Metric") +
+      scale_x_discrete(labels = function(x) str_wrap(x, width = 15)) +
+      ylab(ylab) +
+      theme(strip.placement = "outside",
+            strip.text.y.left = element_text(angle=0),
+            plot.title = element_text(hjust=0.5),
+            legend.position = 'none')
+  }
+  
 }
 
 
@@ -188,6 +213,7 @@ plot_top_6_vars_main_vs_null <- function(class_res_pvals,
   
   if (combo) {
     p <- class_res_pvals %>%
+      filter(Sample_Type == sample_type) %>%
       ggplot(data=.) +
       geom_histogram(data = subset(null_res, Type=="null"),
                      aes(x = balanced_accuracy, y=0.5*..density..), 

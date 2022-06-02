@@ -3,61 +3,13 @@ Step 5: ROI+Feature Classification Analysis
 
 ### Source functions
 
-## In-sample SVM classification
-
-### Simple in-sample linear SVM
-
-We will start with a simple linear SVM classifier using all 22 features.
-
-![](STEP5_README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
-
-### In-sample linear SVM with inverse probability weighting
-
-We can run linear SVM with the `e1071` package to directly test sample
-reweighting with in-sample accuracy and balanced accuracy.
-
-![](STEP5_README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
-
-By assigning each subject a weight equivalent to the inverse proportion
-of that subject’s diagnosis, the linear SVM places a higher cost on
-incorrectly classifying schizophrenia subjects as controls.
-
-This shifts the raw accuracy down to a mean of around 0.68 across the
-three noise-processing methods, but the balanced accuracy increases to
-have an average of around 0.68 also – compared with almost exclusively
-values of 0.35 previously.
-
-This indicates that inverse probability reweighting mitigates the class
-imbalance issue and can be carried forward into 10-fold cross-validation
-linear SVM.
-
-### In-sample linear SVM with SMOTE
-
-We can run linear SVM with the `e1071` package to directly test SMOTE
-with in-sample accuracy and balanced accuracy.
-
-![](STEP5_README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
-
-By assigning each subject a weight equivalent to the inverse proportion
-of that subject’s diagnosis, the linear SVM places a higher cost on
-incorrectly classifying schizophrenia subjects as controls.
-
-This shifts the raw accuracy down to a mean of around 0.68 across the
-three noise-processing methods, but the balanced accuracy increases to
-have an average of around 0.68 also – compared with almost exclusively
-values of 0.35 previously.
-
-This indicates that inverse probability reweighting mitigates the class
-imbalance issue and can be carried forward into 10-fold cross-validation
-linear SVM.
-
 ## Cross-validated SVM classification
 
 ### 10-fold cross-validated linear SVM
 
 We can implement 10-fold cross-validation (CV) with the `caret` package.
 
-![](STEP5_README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](Step5_README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 As with in-sample SVM, the unweighted input samples are virtually all
 classified as control subjects across all 82 ROIs using the 10-fold
@@ -65,7 +17,7 @@ cross-validation linear SVM with caret.
 
 ### 10-fold cross-validated linear SVM with inverse probability weighting
 
-![](STEP5_README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](Step5_README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 Surprisingly, incorporating inverse probability weighting has minimal
 impact when it comes to the ten-fold cross-validated SVM. Of note, the
@@ -74,7 +26,7 @@ default parameters.
 
 ### 10-fold cross-validated linear SVM with SMOTE
 
-![](STEP5_README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](Step5_README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 Surprisingly, incorporating inverse probability weighting has minimal
 impact when it comes to the ten-fold cross-validated SVM. Of note, the
@@ -105,7 +57,7 @@ I’ve plotted the distribution of null accuracies (gray) alongside the
 actual accuracies (green, red, and blue) for the ROI/Feature combos per
 noise-processing method.
 
-![](STEP5_README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](Step5_README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -116,7 +68,7 @@ Noise_Proc
 <th style="text-align:right;">
 balanced_accuracy
 </th>
-<th style="text-align:left;">
+<th style="text-align:right;">
 bal_acc_p
 </th>
 </tr>
@@ -127,32 +79,32 @@ bal_acc_p
 AROMA+2P
 </td>
 <td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
-0.5726515
-</td>
-<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-3.71e-02
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+GMR
-</td>
-<td style="text-align:right;">
-0.6337879
-</td>
-<td style="text-align:left;">
-1.68e-04
-</td>
-</tr>
-<tr>
-<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-AROMA+2P+DiCER
+0.6256061
 </td>
 <td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
-0.5317424
+0.000676
 </td>
+</tr>
+<tr>
 <td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-2.42e-01
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.6339394
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.000167
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;">
+0.5093182
+</td>
+<td style="text-align:right;">
+0.368329
 </td>
 </tr>
 </tbody>
@@ -165,7 +117,7 @@ comparisons with BH-FDR.
 
 ### CV linear SVM – inv prob
 
-![](STEP5_README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](Step5_README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 I’ve plotted the distribution of null accuracies (gray) alongside the
 actual accuracies (green, red, and blue) for the ROI/Feature combos per
@@ -180,7 +132,7 @@ Noise_Proc
 <th style="text-align:right;">
 balanced_accuracy
 </th>
-<th style="text-align:left;">
+<th style="text-align:right;">
 bal_acc_p
 </th>
 </tr>
@@ -191,32 +143,32 @@ bal_acc_p
 AROMA+2P
 </td>
 <td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
-0.5721970
-</td>
-<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-3.71e-02
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+GMR
-</td>
-<td style="text-align:right;">
-0.6276515
-</td>
-<td style="text-align:left;">
-6.37e-04
-</td>
-</tr>
-<tr>
-<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-AROMA+2P+DiCER
+0.6088636
 </td>
 <td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
-0.5564394
+0.002201
 </td>
+</tr>
+<tr>
 <td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-7.71e-02
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.6389394
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.000167
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;">
+0.5434848
+</td>
+<td style="text-align:right;">
+0.143590
 </td>
 </tr>
 </tbody>
@@ -229,7 +181,7 @@ comparisons with BH-FDR.
 
 ### CV linear SVM – SMOTE
 
-![](STEP5_README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](Step5_README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 I’ve plotted the distribution of null accuracies (gray) alongside the
 actual accuracies (green, red, and blue) for the ROI/Feature combos per
@@ -244,43 +196,43 @@ Noise_Proc
 <th style="text-align:right;">
 balanced_accuracy
 </th>
-<th style="text-align:left;">
+<th style="text-align:right;">
 bal_acc_p
 </th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:left;">
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
 AROMA+2P
 </td>
-<td style="text-align:right;">
-0.5588636
-</td>
-<td style="text-align:left;">
-7.73e-02
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+GMR
-</td>
-<td style="text-align:right;">
-0.6634091
-</td>
-<td style="text-align:left;">
-5e-06
-</td>
-</tr>
-<tr>
-<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-AROMA+2P+DiCER
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.5772727
 </td>
 <td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
-0.5325758
+0.016072
 </td>
+</tr>
+<tr>
 <td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-2.42e-01
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.6296212
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.000636
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;">
+0.5205303
+</td>
+<td style="text-align:right;">
+0.241621
 </td>
 </tr>
 </tbody>
@@ -301,127 +253,11 @@ over N=100 iterations per ROI (N=82) and pooling the resulting accuracy
 and balanced accuracy values, to generate empirical null distributions
 of N=1,000 data points each, respectively.
 
-### In-sample
-
-![](STEP5_README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
-
-The fitted empirical null model distribution is fairly similar to the
-real accuracy and balanced accuracy values using in-sample linear SVM
-with no reweighting.
-
-<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
-<thead>
-<tr>
-<th style="text-align:left;">
-Noise_Proc
-</th>
-<th style="text-align:right;">
-balanced_accuracy
-</th>
-<th style="text-align:left;">
-bal_acc_p
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-AROMA+2P
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:left;">
-1e+00
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+GMR
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:left;">
-1e+00
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+DiCER
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:left;">
-1e+00
-</td>
-</tr>
-</tbody>
-</table>
-
-### In-sample, inverse probability weighted
-
-![](STEP5_README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
-
-The fitted empirical null model distribution is fairly similar to the
-real accuracy and balanced accuracy values using in-sample linear SVM
-with no reweighting.
-
-<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
-<thead>
-<tr>
-<th style="text-align:left;">
-Noise_Proc
-</th>
-<th style="text-align:right;">
-balanced_accuracy
-</th>
-<th style="text-align:left;">
-bal_acc_p
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-AROMA+2P
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:left;">
-1e+00
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+GMR
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:left;">
-1e+00
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+DiCER
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:left;">
-1e+00
-</td>
-</tr>
-</tbody>
-</table>
+### Unweighted
 
 ### CV, inverse probability weighted
 
-![](STEP5_README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+![](Step5_README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 The fitted empirical null model distribution is fairly similar to the
 real accuracy and balanced accuracy values using in-sample linear SVM
@@ -447,32 +283,65 @@ bal_acc_p
 AROMA+2P
 </td>
 <td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
-0.5721970
-</td>
-<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-2e-02
-</td>
-</tr>
-<tr>
-<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-AROMA+2P+GMR
-</td>
-<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
-0.6276515
+1.0000000
 </td>
 <td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
 0e+00
 </td>
 </tr>
 <tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.6088636
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+1e-02
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+1.0000000
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0e+00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.6389394
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0e+00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+1.0000000
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.0e+00
+</td>
+</tr>
+<tr>
 <td style="text-align:left;">
 AROMA+2P+DiCER
 </td>
 <td style="text-align:right;">
-0.5564394
+0.5434848
 </td>
 <td style="text-align:left;">
-7e-02
+1.3e-01
 </td>
 </tr>
 </tbody>
@@ -480,7 +349,7 @@ AROMA+2P+DiCER
 
 ### CV, SMOTE
 
-![](STEP5_README_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
+![](Step5_README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 The fitted empirical null model distribution is fairly similar to the
 real accuracy and balanced accuracy values using in-sample linear SVM
@@ -506,10 +375,21 @@ bal_acc_p
 AROMA+2P
 </td>
 <td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
-0.5588636
+1.0000000
 </td>
 <td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
-3e-02
+0e+00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.5772727
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+1e-02
 </td>
 </tr>
 <tr>
@@ -517,10 +397,32 @@ AROMA+2P
 AROMA+2P+GMR
 </td>
 <td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
-0.6634091
+1.0000000
 </td>
 <td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
 0e+00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.6296212
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0e+00
+</td>
+</tr>
+<tr>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:right;font-weight: bold;color: black !important;background-color: palegreen !important;">
+1.0000000
+</td>
+<td style="text-align:left;font-weight: bold;color: black !important;background-color: palegreen !important;">
+0.0e+00
 </td>
 </tr>
 <tr>
@@ -528,10 +430,10 @@ AROMA+2P+GMR
 AROMA+2P+DiCER
 </td>
 <td style="text-align:right;">
-0.5325758
+0.5205303
 </td>
 <td style="text-align:left;">
-1.8e-01
+1.9e-01
 </td>
 </tr>
 </tbody>
@@ -539,4 +441,4 @@ AROMA+2P+DiCER
 
 ## Comparing model-free shuffle with pooled empirical null distributions
 
-![](STEP5_README_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
+![](Step5_README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->

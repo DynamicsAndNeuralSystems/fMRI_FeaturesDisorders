@@ -222,6 +222,7 @@ feature_wise_SVM_CV_plabs <- truncate_p_values(feature_wise_SVM_CV_pvals, 3)
 ```{r, fig.width=10, fig.height=5}
 plot_top_6_vars_main_vs_null(class_res_pvals = feature_wise_SVM_CV_pvals,
                              null_res = model_free_shuffle_null_res,
+                             sample_type = "Out-of-sample",
                              xlab = "Value",
                              ylab = "Scaled Density of Null Iterations",
                              title = "Main Out-of-Sample and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P catch22 Features",
@@ -590,7 +591,7 @@ in_sample_inv_prob_p <- model_free_shuffle_null_res %>%
                  aes(y=0.5*..density..), 
                  position="identity",
                  bins = 50) +
-  scale_x_continuous(limits = c(0.3, 0.8)) +
+  scale_x_continuous(limits = c(0.3, 1.01)) +
   ylab("") +
   xlab("") +
   labs(fill = "Null Type") +
@@ -614,7 +615,7 @@ CV_inv_prob_p <- model_free_shuffle_null_res %>%
                  aes(y=0.5*..density..), 
                  position="identity",
                  bins = 50) +
-  scale_x_continuous(limits = c(0.3, 0.8)) +
+  scale_x_continuous(limits = c(0.3, 1.01)) +
   ylab("Scaled Density") +
   xlab("") +
   labs(fill = "Null Type") +
@@ -638,7 +639,7 @@ CV_SMOTE_p <- model_free_shuffle_null_res %>%
                  aes(y=0.5*..density..), 
                  position="identity",
                  bins = 50) +
-  scale_x_continuous(limits = c(0.3, 0.8)) +
+  scale_x_continuous(limits = c(0.3, 1.01)) +
   ylab("") +
   xlab("Balanced Accuracy") +
   labs(fill = "Null Type") +
