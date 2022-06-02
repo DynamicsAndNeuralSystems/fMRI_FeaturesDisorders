@@ -29,6 +29,7 @@ calc_acc_bacc_for_shuffle <- function(x) {
 
 # Run given number of model free class label shuffles and calculate accuracy
 run_model_free_n_shuffles <- function(rdata_path,
+                                      feature_set = "catch22",
                                       noise_procs = c("AROMA+2P", 
                                                       "AROMA+2P+GMR", 
                                                       "AROMA+2P+DiCER"),
@@ -45,11 +46,16 @@ run_model_free_n_shuffles <- function(rdata_path,
     noise_label <- gsub("\\+", "_", noise_proc)
     
     # Load catch22 data for current noise processing method
-    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22_zscored.Rds", 
+    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s_zscored.Rds", 
+                                                         feature_set,
                                                          noise_label)))   
     
-    input_groups <- feature_matrix %>% 
-      distinct(Subject_ID, group) %>%
+    input_groups <- feature_matrix %>%
+      # Drop columns that are all NA/NAN
+      dplyr::select(where(function(x) any(!is.na(x)))) %>%
+      # Drop rows with NA for one or more column
+      drop_na() %>%
+    distinct(Subject_ID, group) %>%
       mutate(group = factor(group, levels = c("Schz", "Control"))) %>%
       pull(group)
     

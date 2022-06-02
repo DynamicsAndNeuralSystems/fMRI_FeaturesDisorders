@@ -9,31 +9,68 @@
 library(tidyverse)
 
 #-------------------------------------------------------------------------------
-
+# Function to read in univariate TS feature data and return subjects with NA values
 #-------------------------------------------------------------------------------
-# Function to read in catch22 data and return subjects with NA values
 
-find_catch22_na <- function(rdata_path, noise_procs = c("AROMA+2P",
-                                                        "AROMA+2P+GMR",
-                                                        "AROMA+2P+DiCER")) {
+find_univariate_subject_na <- function(rdata_path, 
+                                    feature_set = "catch22",
+                                    noise_procs = c("AROMA+2P",
+                                                    "AROMA+2P+GMR",
+                                                    "AROMA+2P+DiCER")) {
   
-  catch22_data_list <- list()
+  TS_feature_data_list <- list()
   for (noise_proc in noise_procs) {
     noise_label <- gsub("\\+", "_", noise_proc)
-    catch22_df <- readRDS(paste0(rdata_path, "UCLA_", noise_label, "_catch22.Rds")) %>%
-      mutate(noise_proc = noise_proc)
+    TS_feature_df <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s.Rds",
+                                                        noise_label,
+                                                        feature_set)))
     
-    catch22_data_list[[noise_label]] <- catch22_df
+    TS_feature_data_list[[noise_label]] <- TS_feature_df
   }
-  catch22_data <- do.call(plyr::rbind.fill, catch22_data_list)
+  TS_feature_data <- do.call(plyr::rbind.fill, TS_feature_data_list)
   
-  NA_subjects_data <- catch22_data %>%
-    group_by(Subject_ID, noise_proc) %>%
+  NA_subjects_data <- TS_feature_data %>%
+    group_by(Subject_ID, Noise_Proc) %>%
     summarise(num_na = sum(is.na(values))) %>%
     filter(num_na > 0) %>%
-    pivot_wider(id_cols=Subject_ID, names_from=noise_proc, values_from=num_na)
+    pivot_wider(id_cols=Subject_ID, names_from=Noise_Proc, values_from=num_na)
   
   return(NA_subjects_data)
+}
+
+#-------------------------------------------------------------------------------
+# Function to read in univariate TS feature data and return features with NA values
+#-------------------------------------------------------------------------------
+
+find_univariate_feature_na <- function(rdata_path, 
+                                       feature_set = "catch22",
+                                       noise_procs = c("AROMA+2P",
+                                                       "AROMA+2P+GMR",
+                                                       "AROMA+2P+DiCER")) {
+  
+  TS_feature_data_list <- list()
+  for (noise_proc in noise_procs) {
+    noise_label <- gsub("\\+", "_", noise_proc)
+    TS_feature_df <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s.Rds",
+                                                        noise_label,
+                                                        feature_set)))
+    
+    TS_feature_data_list[[noise_label]] <- TS_feature_df
+  }
+  TS_feature_data <- do.call(plyr::rbind.fill, TS_feature_data_list)
+  
+  NA_feature_data <- TS_feature_data %>%
+    dplyr::select(Subject_ID, names, Noise_Proc, values) %>%
+    group_by(names, Noise_Proc) %>%
+    distinct() %>%
+    filter(is.na(values)) %>%
+    group_by(names, Noise_Proc) %>%
+    summarise(num_na_subjects = n()) %>%
+    pivot_wider(id_cols = names,
+                names_from = Noise_Proc,
+                values_from = num_na_subjects)
+  
+  return(NA_feature_data)
 }
 
 

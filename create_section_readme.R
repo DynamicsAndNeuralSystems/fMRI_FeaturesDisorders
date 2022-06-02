@@ -6,9 +6,9 @@ setwd(github_dir)
 # Step 2
 
 # Step 3
-rmarkdown::render(paste0(github_dir,"3_ROI_wise_analysis/Step3_README.Rmd"))
-file.copy(paste0(github_dir,"3_ROI_wise_analysis/Step3_README.md"),
-          paste0(github_dir,"3_ROI_wise_analysis/README.md"),
+rmarkdown::render(paste0(github_dir,"3_ROI_wise_analysis/catch22/Step3_README.Rmd"))
+file.copy(paste0(github_dir,"3_ROI_wise_analysis/catch22/Step3_README.md"),
+          paste0(github_dir,"3_ROI_wise_analysis/catch22/README.md"),
           overwrite = T)
 # Step 4
 rmarkdown::render(paste0(github_dir,"4_Feature_wise_analysis/Step4_README.Rmd"))

@@ -7,6 +7,7 @@ library(scales)
 # along with control vs schz proportions
 #-------------------------------------------------------------------------------
 plot_class_acc_w_props <- function(class_res,
+                                   feature_set = "catch22",
                                    rdata_path,
                                    group_var = NULL,
                                    plot_title = "",
@@ -20,8 +21,8 @@ plot_class_acc_w_props <- function(class_res,
     noise_label <- gsub("\\+", "_", noise_proc)
     
     # Load corresponding feature matrix
-    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22_zscored.Rds", 
-                                                         noise_label)))
+    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s_zscored.Rds", 
+                                                         noise_label, feature_set)))
     
     group_var_name <- ifelse(group_var == "Feature", "names", group_var)
     

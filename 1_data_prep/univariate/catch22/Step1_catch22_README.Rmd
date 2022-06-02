@@ -1,5 +1,5 @@
 ---
-title: "Data Preparation"
+title: "Step 1: catch22 Data Preparation"
 output: github_document
 ---
 
@@ -21,8 +21,8 @@ First, make note of the three R packages needed for this component:
 
 Source the data preparation functions:
 ```{r}
-scripts_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
-source(paste0(scripts_dir, "helper_functions/univariate_data_prep_functions.R"))
+github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
+source(paste0(github_dir, "helper_functions/Data_preparation_univariate.R"))
 ```
 
 ```{r, echo=F}

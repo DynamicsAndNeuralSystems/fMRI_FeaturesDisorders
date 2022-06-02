@@ -1,19 +1,36 @@
 ---
-title: "Quality Control"
+title: "Step 2: Quality Control"
 output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.show = 'hold')
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.show = 'hold')
 ```
 
-### Source functions
+
 ```{r}
-source("QC_functions.R")
+### Source functions
+source("../helper_functions/QC_functions.R")
 ```
 
+# Univariate
 
-### NA values
+## catchaMouse16
+
+One thing to look at is how many subjects had `NA` values per feature:
+
+```{r}
+NA_feature_data_catchaMouse16 <- find_univariate_feature_na(rdata_path = rdata_path,
+                                                            feature_set = "catchaMouse16")
+
+NA_feature_data_catchaMouse16
+```
+
+The feature `ST_LocalExtrema_n100_diffmaxabsmin` is NA across all 171 subjects.
+
+
+## catch22 
+
 
 One thing to look at is how many features showed up as NA across each subject by noise processing method.
 
@@ -22,7 +39,8 @@ theme_set(cowplot::theme_cowplot())
 data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/"
 rdata_path <- paste0(data_path, "Rdata/")
 
-NA_subjects_data <- find_catch22_na(rdata_path = rdata_path)
+NA_subjects_data <- find_univariate_feature_na(rdata_path = rdata_path,
+                                               feature_set = "catch22")
 NA_subjects_data
 ```
 
@@ -32,6 +50,7 @@ This shows that there are six subjects for whom catch22 returned NA values for a
 plot_catch22_na_ts(rdata_path=rdata_path, 
                    subject_IDs=NA_subjects_data$Subject_ID)
 ```
+
 ```{r, echo=F, eval=F}
 ggsave("plots/Raw_fMRI_Signal_NA_Subjects.png",
        width=7, height=6, units="in", dpi=300)
@@ -92,3 +111,12 @@ ggsave("plots/SCZ_to_CTRL_Retained_by_FD_Threshold.png",
        width=5, height=4, units="in", dpi=300)
 ```
 
+
+
+## catchaMouse16 
+
+# Pairwise
+
+## pySPI
+
+### NA values
