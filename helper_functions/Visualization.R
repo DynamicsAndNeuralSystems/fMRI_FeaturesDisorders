@@ -14,39 +14,11 @@ plot_class_acc_w_props <- function(class_res,
                                    noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"),
                                    ylab = "Number of ROIs") {
   
-  # Calculate the proportion of control subjects after omitting NAs for each method
-  ctrl_prop_list <- list()
-  for (noise_proc in noise_procs) {
-    # Clean up names
-    noise_label <- gsub("\\+", "_", noise_proc)
-    
-    # Load corresponding feature matrix
-    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s_zscored.Rds", 
-                                                         noise_label, feature_set)))
-    
-    group_var_name <- ifelse(group_var == "Feature", "names", group_var)
-    
-    # Calculate proportion of controls after dropping NA
-    if (!is.null(group_var)) {
-      ctrl_proportion <- feature_matrix %>%
-        group_by(Subject_ID, get(group_var_name)) %>%
-        filter(!any(is.na(values))) %>%
-        ungroup() %>%
-        distinct(Subject_ID, group) %>%
-        summarise(ctrl_prop = sum(group=="Control") / n()) %>%
-        mutate(Noise_Proc = noise_proc)
-    } else {
-      ctrl_proportion <- feature_matrix %>%
-        group_by(Subject_ID) %>%
-        filter(!any(is.na(values))) %>%
-        ungroup() %>%
-        distinct(Subject_ID, group) %>%
-        summarise(ctrl_prop = sum(group=="Control") / n()) %>%
-        mutate(Noise_Proc = noise_proc)
-    }
-    ctrl_prop_list <- rlist::list.append(ctrl_prop_list, ctrl_proportion)
-  }
-  ctrl_prop <- do.call(plyr::rbind.fill, ctrl_prop_list)
+  # Calculate the proportion of control subjects after omitting NAs
+  ctrl_prop <- readRDS(paste0(rdata_path, "Filtered_subject_info_",
+                                 feature_set, ".Rds")) %>%
+    dplyr::summarise(ctrl_prop = sum(group=="Control") / n()) %>%
+    pull(ctrl_prop)
   
   # Plot accuracy + balanced accuracy in histograms
   # Control subject proportion is highlighted for accuracy, 
@@ -60,7 +32,6 @@ plot_class_acc_w_props <- function(class_res,
   }
   
   p_data <- p_data %>%
-    left_join(., ctrl_prop) %>%
     pivot_longer(cols=c(accuracy, balanced_accuracy),
                  names_to = "Metric",
                  values_to = "Value") %>%
@@ -117,7 +88,6 @@ plot_class_acc_w_props <- function(class_res,
 #-------------------------------------------------------------------------------
 # Plot main vs null distribution histogram
 #-------------------------------------------------------------------------------
-
 plot_main_vs_null_hist <- function(main_res,
                                    null_res,
                                    xlab = "Value",
@@ -131,10 +101,14 @@ plot_main_vs_null_hist <- function(main_res,
     pivot_longer(cols = c(accuracy, balanced_accuracy),
                  names_to = "Metric",
                  values_to = "Values") %>%
-    mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " ")),
-           Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
-                                                      "AROMA+2P+GMR",
-                                                      "AROMA+2P+DiCER")))
+    mutate(Metric = stringr::str_to_title(str_replace_all(Metric, "_", " ")))
+  
+  if ("Noise_Proc" %in% colnames(null_res_long)) {
+    null_res_long <- null_res_long %>%
+      dplyr::mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P",
+                                                               "AROMA+2P+GMR",
+                                                               "AROMA+2P+DiCER")))
+  }
   
   if (!("Sample_Type" %in% colnames(null_res_long))) {
     null_res_in <- null_res_long %>% mutate(Full_Metric = paste0("In ", Metric))
@@ -245,12 +219,20 @@ plot_top_6_vars_main_vs_null <- function(class_res_pvals,
              grouping_var %in% top_features,
              Sample_Type == sample_type)
     
+    # Prep null data
+    if ("Noise_Proc" %in% colnames(null_res)) {
+      null_data_for_plot <- null_res %>%
+        dplyr::select(balanced_accuracy, Noise_Proc) %>%
+        dplyr::filter(Noise_Proc == "AROMA+2P")
+    } else {
+      null_data_for_plot <- null_res %>%
+        dplyr::select(balanced_accuracy)
+    }
+      
     p <- top_feature_plabs %>%
       mutate(grouping_var = factor(grouping_var, levels = top_features)) %>%
       ggplot(data=.) +
-      geom_histogram(data = null_res %>% 
-                       dplyr::select(balanced_accuracy, Noise_Proc) %>%
-                       dplyr::filter(Noise_Proc == "AROMA+2P"),
+      geom_histogram(data = null_data_for_plot,
                      aes(x=balanced_accuracy, y=0.5*..density..),
                      fill = "gray70", bins=50) +
       ggtitle(title) +

@@ -30,43 +30,15 @@ calc_acc_bacc_for_shuffle <- function(x) {
 # Run given number of model free class label shuffles and calculate accuracy
 run_model_free_n_shuffles <- function(rdata_path,
                                       feature_set = "catch22",
-                                      noise_procs = c("AROMA+2P", 
-                                                      "AROMA+2P+GMR", 
-                                                      "AROMA+2P+DiCER"),
                                       num_shuffles = 1000000) {
   
-  set.seed(123)
+  input_groups <- readRDS(paste0(rdata_path, "Filtered_subject_info_",
+                                 feature_set, ".Rds")) %>%
+    pull(group)
   
-  # Initialize empty list
-  null_list <- list()
-  
-  # Iterate over each noise-processing method
-  for (noise_proc in noise_procs) {
-    # Clean up names
-    noise_label <- gsub("\\+", "_", noise_proc)
-    
-    # Load catch22 data for current noise processing method
-    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s_zscored.Rds", 
-                                                         feature_set,
-                                                         noise_label)))   
-    
-    input_groups <- feature_matrix %>%
-      # Drop columns that are all NA/NAN
-      dplyr::select(where(function(x) any(!is.na(x)))) %>%
-      # Drop rows with NA for one or more column
-      drop_na() %>%
-    distinct(Subject_ID, group) %>%
-      mutate(group = factor(group, levels = c("Schz", "Control"))) %>%
-      pull(group)
-    
-    # Run model-free shuffles
-    output <- 1:num_shuffles %>%
-      purrr::map_df(~ calc_acc_bacc_for_shuffle(input_groups)) %>%
-      mutate(Noise_Proc = noise_proc)
-    
-    null_list <- rlist::list.append(null_list, output)
-  }
-  null_res <- do.call(plyr::rbind.fill, null_list) %>%
+  # Run model-free shuffles
+  null_res <- 1:num_shuffles %>%
+    purrr::map_df(~ calc_acc_bacc_for_shuffle(input_groups)) %>%
     dplyr::mutate(Type = "null")
   
   return(null_res)
@@ -81,6 +53,7 @@ run_null_model_n_permutations <- function(rdata_path,
                                           noise_procs = c("AROMA+2P", 
                                                           "AROMA+2P+GMR", 
                                                           "AROMA+2P+DiCER"),
+                                          feature_set = "catch22",
                                           grouping_var = "Brain_Region",
                                           svm_feature_var = "Feature",
                                           test_package = "e1071",
@@ -92,6 +65,7 @@ run_null_model_n_permutations <- function(rdata_path,
   nullOuts <- 1:num_permutations %>%
     purrr::map_df( ~ run_cv_svm_by_input_var(rdata_path = rdata_path,
                                              svm_kernel = svm_kernel,
+                                             feature_set = feature_set,
                                              test_package = test_package,
                                              grouping_var = grouping_var,
                                              svm_feature_var = svm_feature_var,
@@ -140,20 +114,37 @@ calc_empirical_nulls <- function(class_res,
     group_null <- null_data %>% mutate(grouping_var = group_var)
     group_main <- subset(main_res, grouping_var == group_var)
     
-    group_merged <- plyr::rbind.fill(group_main,
-                                     group_null) %>%
-      group_by(grouping_var, Noise_Proc, Sample_Type) %>%
-      dplyr::summarise(main_accuracy = unique(accuracy[Type=="main"]),
-                       main_balanced_accuracy = unique(balanced_accuracy[Type=="main"]),
-                       acc_p = 1 - stats::ecdf(accuracy[Type=="null"])(accuracy[Type=="main"]),
-                       bal_acc_p = 1 - stats::ecdf(balanced_accuracy[Type=="null"])(balanced_accuracy[Type=="main"]),
-                       ) %>%
-      ungroup() %>%
-      distinct() %>%
-      dplyr::rename("accuracy" = "main_accuracy",
-                    "balanced_accuracy" = "main_balanced_accuracy") 
+    # If null dataset is specific to each noise-processing method
+    if ("Noise_Proc" %in% colnames(group_null)) {
+      p_value_res <- plyr::rbind.fill(group_main,
+                                       group_null) %>%
+        group_by(grouping_var, Noise_Proc, Sample_Type) %>%
+        dplyr::summarise(main_accuracy = unique(accuracy[Type=="main"]),
+                         main_balanced_accuracy = unique(balanced_accuracy[Type=="main"]),
+                         acc_p = 1 - stats::ecdf(accuracy[Type=="null"])(accuracy[Type=="main"]),
+                         bal_acc_p = 1 - stats::ecdf(balanced_accuracy[Type=="null"])(balanced_accuracy[Type=="main"]),
+        ) %>%
+        ungroup() %>%
+        distinct() %>%
+        dplyr::rename("accuracy" = "main_accuracy",
+                      "balanced_accuracy" = "main_balanced_accuracy") 
+    } else {
+      null_accuracy <- group_null$accuracy
+      null_balanced_accuracy <- group_null$balanced_accuracy
+      p_value_res <- group_main %>%
+        group_by(grouping_var, Noise_Proc, Sample_Type) %>%
+        dplyr::summarise(main_accuracy = accuracy,
+                         main_balanced_accuracy = balanced_accuracy,
+                         acc_p = 1 - stats::ecdf(null_accuracy)(main_accuracy),
+                         bal_acc_p = 1 - stats::ecdf(null_balanced_accuracy)(main_balanced_accuracy),
+        ) %>%
+        ungroup() %>%
+        distinct() %>%
+        dplyr::rename("accuracy" = "main_accuracy",
+                      "balanced_accuracy" = "main_balanced_accuracy") 
+    }
     
-    merged_list <- rlist::list.append(merged_list, group_merged)
+    merged_list <- rlist::list.append(merged_list, p_value_res)
   }
   main_p_values <- do.call(plyr::rbind.fill, merged_list) %>%
     ungroup() %>%

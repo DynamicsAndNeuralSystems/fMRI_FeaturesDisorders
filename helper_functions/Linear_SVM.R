@@ -120,8 +120,8 @@ k_fold_CV_linear_SVM <- function(input_data,
     return(df_res)
   } else {
     df_res_avg <- df_res %>%
-      group_by(Sample_Type, c_value) %>%
-      summarise(accuracy_avg = mean(accuracy, na.rm=T),
+      dplyr::group_by(Sample_Type, c_value) %>%
+      dplyr::summarise(accuracy_avg = mean(accuracy, na.rm=T),
                 balanced_accuracy_avg = mean(balanced_accuracy, na.rm=T),
                 accuracy_SD = sd(accuracy, na.rm=T),
                 balanced_accuracy_SD = sd(balanced_accuracy, na.rm=T)) %>%
@@ -149,6 +149,22 @@ run_cv_svm_by_input_var <- function(rdata_path,
                                     use_SMOTE = FALSE,
                                     shuffle_labels = FALSE) {
   
+  # Define sample weights
+  # Default is 1 and 1 if use_inv_prob_weighting is not included
+  if (use_inv_prob_weighting) {
+    # Get control/schz proportions
+    sample_props <- readRDS(paste0(rdata_path, "Filtered_subject_info_",
+                                   feature_set, ".Rds")) %>%
+      dplyr::summarise(control_prop = sum(group=="Control") / n(),
+                       schz_prop = sum(group=="Schz")/n())
+    
+    # Convert to sample weights based on inverse of probability
+    sample_wts <- list("Control" = 1/sample_props$control_prop,
+                       "Schz" = 1/sample_props$schz_prop)
+  } else {
+    sample_wts <- list("Control" = 1, "Schz" = 1)
+  }
+  
   class_res_list <- list()
   for (noise_proc in noise_procs) {
     # Clean up names
@@ -156,7 +172,7 @@ run_cv_svm_by_input_var <- function(rdata_path,
     
     # Load z-scored feature data for current noise processing method and
     # time-series feature set
-    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s_zscored.Rds", 
+    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s_zscored_filtered.Rds", 
                                                          noise_label, feature_set)))      
     
     if (svm_feature_var == "Feature") {
@@ -177,26 +193,7 @@ run_cv_svm_by_input_var <- function(rdata_path,
       
       grouping_var_vector <- c("All")
     }
-    
-    # Define sample weights
-    # Default is 1 and 1 if use_inv_prob_weighting is not included
-    if (use_inv_prob_weighting) {
-      # Get control/schz proportions
-      sample_props <- feature_matrix %>%
-        dplyr::group_by(Subject_ID, Brain_Region) %>%
-        dplyr::filter(!any(is.na(values))) %>%
-        dplyr::ungroup() %>%
-        dplyr::distinct(Subject_ID, group) %>%
-        dplyr::summarise(control_prop = sum(group=="Control") / n(),
-                         schz_prop = sum(group=="Schz")/n())
-      
-      # Convert to sample weights based on inverse of probability
-      sample_wts <- list("Control" = 1/sample_props$control_prop,
-                         "Schz" = 1/sample_props$schz_prop)
-    } else {
-      sample_wts <- list("Control" = 1,
-                         "Schz" = 1)
-    }
+  
     
     # Reshape data from long to wide for SVM
     for (group_var in grouping_var_vector) {
@@ -236,8 +233,8 @@ run_cv_svm_by_input_var <- function(rdata_path,
                                           sample_wts = sample_wts,
                                           use_SMOTE = use_SMOTE,
                                           shuffle_labels = shuffle_labels) %>%
-        mutate(grouping_var = group_var,
-               Noise_Proc = noise_proc)
+        dplyr::mutate(grouping_var = group_var,
+                      Noise_Proc = noise_proc)
       
       # Append results to list
       class_res_list <- rlist::list.append(class_res_list,
@@ -412,101 +409,3 @@ run_SVM_from_PCA <- function(PCA_res,
 
 
 
-#-------------------------------------------------------------------------------
-# Run pairwise PYSPI CV linear SVM by SPI
-#-------------------------------------------------------------------------------
-run_in_sample_pairwise_svm_by_SPI <- function(pairwise_data,
-                                              svm_kernel = "linear",
-                                              test_package = "e1071",
-                                              noise_proc = "AROMA+2P",
-                                              use_inv_prob_weighting = FALSE,
-                                              use_SMOTE = FALSE,
-                                              shuffle_labels = FALSE) {
-  
-  # Initialize results list for SPI-wise in-sample linear SVM
-  class_res_list <- list()
-  
-  # Iterate over each PYSPI SPI
-  for (this_SPI in unique(all_pyspi_data$SPI)) {
-    # Identify whether current SPI is directed or undirected
-    directionality <- SPI_directionality %>% filter(SPI == this_SPI) %>% pull(Direction)
-    
-    # Reshape SPI data to contain brain region names
-    SPI_data <- subset(all_pyspi_data, SPI == this_SPI)  %>%
-      mutate(comparison = row_number()) %>%
-      pivot_longer(cols = c(brain_region_1,
-                            brain_region_2),
-                   names_to = "Region_Number",
-                   values_to = "Index") %>%
-      left_join(ROI_index) %>%
-      dplyr::select(-Index) %>%
-      pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
-                  names_from = "Region_Number",
-                  values_from = "ROI") %>%
-      dplyr::select(-comparison) 
-    
-    # Combine brain regions into new pairwise column depending on directionality
-    if (directionality == "Undirected") {
-      SPI_data <- SPI_data %>%
-        mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
-                                    paste0(brain_region_1, "_", brain_region_2),
-                                    paste0(brain_region_2, "_", brain_region_1)))
-    } else if (directionality == "Directed") {
-      SPI_data <- SPI_data %>%
-        mutate(region_pair = paste0(brain_region_1, "_", brain_region_2))
-    }
-    
-    # Pivot data from long to wide for SVM
-    data_for_SVM <- SPI_data %>%
-      dplyr::select(Subject_ID, group, region_pair, value) %>%
-      distinct() %>%
-      pivot_wider(id_cols = c(Subject_ID, group),
-                  names_from = region_pair, 
-                  values_from = value) %>%
-      dplyr::select(-Subject_ID) %>%
-      drop_na()
-    
-    # Get sample weights if inverse probability weighting flag is applied
-    if (use_inv_prob_weighting) {
-      # Get control/schz proportions
-      sample_props <- data_for_SVM %>%
-        ungroup() %>%
-        dplyr::summarise(control_prop = sum(group=="CONTROL") / n(),
-                         schz_prop = sum(group=="SCHZ")/n())
-      
-      # Convert to sample weights based on inverse of probability
-      sample_wts <- list("CONTROL" = 1/sample_props$control_prop,
-                         "SCHZ" = 1/sample_props$schz_prop)
-    } else {
-      sample_wts <- list("CONTROL" = 1,
-                         "SCHZ" = 1)
-    }
-    
-    # Apply SMOTE if indicated
-    if (use_SMOTE) {
-      data_for_SVM <- smotefamily::SMOTE(data_for_SVM[,-1], data_for_SVM$group, K = 5)$data %>%
-        dplyr::rename("group" = "class")
-    }
-    
-    # Pass data_for_SVM to in_sample_linear_SVM
-    if (nrow(data_for_SVM ) > 0) {
-      SVM_results <- k(input_data = data_for_SVM,
-                                          svm_kernel = svm_kernel,
-                                          sample_wts = sample_wts,
-                                          shuffle_labels = shuffle_labels) %>%
-        mutate(SPI = this_SPI,
-               Noise_Proc = noise_proc,
-               use_inv_prob_weighting = use_inv_prob_weighting,
-               use_SMOTE = use_SMOTE)
-      
-      # Append results to list
-      class_res_list <- rlist::list.append(class_res_list, SVM_results)
-    }
-  }
-  
-  # Combine results from all regions into a dataframe
-  class_res_df <- do.call(plyr::rbind.fill, class_res_list)
-  
-  # Return dataframe
-  return(class_res_df)
-}

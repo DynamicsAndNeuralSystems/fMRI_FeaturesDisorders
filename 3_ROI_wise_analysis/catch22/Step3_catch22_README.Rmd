@@ -1,0 +1,675 @@
+---
+title: "Step 3: ROI-Wise catch22 Feature Analysis"
+output: 
+  github_document
+always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=F, message=F)
+```
+
+### Source functions
+```{r}
+github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
+source(paste0(github_dir, "helper_functions/Linear_SVM.R"))
+source(paste0(github_dir, "helper_functions/Visualization.R"))
+source(paste0(github_dir, "helper_functions/Null_distributions.R"))
+
+rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+set.seed(127)
+```
+
+## Cross-validated SVM classification
+
+### 10-fold cross-validated linear SVM
+
+I have chosen to use 10-fold cross validation via manual implementation, as the sample reweighting options in caret were limited and difficult to interpret.
+
+```{r}
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
+
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22.Rds"))) {
+  region_wise_SVM_CV <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                feature_set = "catch22",
+                                                test_package = test_package,
+                                                svm_kernel = kernel,
+                                                grouping_var = "Brain_Region",
+                                                svm_feature_var = "Feature",
+                                                use_inv_prob_weighting = FALSE,
+                                                use_SMOTE = FALSE,
+                                                noise_procs = noise_procs)
+  saveRDS(region_wise_SVM_CV, file=paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22.Rds"))
+}
+```
+
+```{r, fig.width=8, fig.height=4.5}
+# Plot accuracy + balanced accuracy in histograms
+# Control subject proportion is highlighted for accuracy
+region_wise_SVM_CV <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22.Rds"))
+
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+plot_class_acc_w_props(class_res = region_wise_SVM_CV,
+                                   feature_set = "catch22",
+                       group_var = "Brain_Region",
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs,
+                       plot_title = "Unweighted ROI-wise catch22 Linear SVM Results")
+
+# Save plot
+ggsave("plots/Region_Wise_catch22_CV_SVM.png",
+       width=8, height=4.5, units="in", dpi=300)
+```
+
+Interestingly, unlike the in-sample results, there is a fair spread of accuracy and balanced accuracy values outside of the proportions expected from classifying all subjects as controls.
+
+However, there still is a balanced accuracy peak around 0.5, so we move forward with inverse probability reweighting.
+
+### 10-fold cross-validated linear SVM with inverse probability weighting
+
+```{r}
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
+
+
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_inv_prob.Rds"))) {
+  region_wise_SVM_CV_inv_prob <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                         feature_set = "catch22",
+                                                         svm_kernel = kernel,
+                                                         test_package = test_package,
+                                                         grouping_var = "Brain_Region",
+                                                         svm_feature_var = "Feature",
+                                                         use_inv_prob_weighting = TRUE,
+                                                         use_SMOTE = FALSE,
+                                                         noise_procs = noise_procs)
+  saveRDS(region_wise_SVM_CV_inv_prob, file=paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_inv_prob.Rds"))
+}
+```
+
+```{r, fig.width=8, fig.height=4.5}
+# Plot accuracy + balanced accuracy in histograms
+# Control subject proportion is highlighted for accuracy
+region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_inv_prob.Rds"))
+
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+plot_class_acc_w_props(class_res = region_wise_SVM_CV_inv_prob,
+                                   feature_set = "catch22",
+                       group_var = "Brain_Region",
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs,
+                       plot_title = "Inv Prob-Weighted ROI-wise catch2 Linear SVM Results")
+
+# Save plot
+ggsave("plots/Region_Wise_CV_SVM_Inv_Prob_catch22.png",
+       width=8, height=4.5, units="in", dpi=300)
+```
+
+As with the in-sample results, the accuracy values are negatively shifted while the balanced accuracy values are positively shifted after applying inverse probability reweighting to the samples.
+
+### 10-fold cross-validated linear SVM with SMOTE
+sa[']
+```{r}
+# Compare all three noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# Use e1071 SVM with a linear kernel
+test_package = "e1071"
+kernel = "linear"
+
+# Run in-sample SVM using given package + kernel
+# If the RDS object doesn't already exist, otherwise load it in
+if (!file.exists(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_SMOTE.Rds"))) {
+  region_wise_SVM_CV_SMOTE <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                      feature_set = "catch22",
+                                                      svm_kernel = kernel,
+                                                      test_package = test_package,
+                                                      grouping_var = "Brain_Region",
+                                                      svm_feature_var = "Feature",
+                                                      use_inv_prob_weighting = FALSE,
+                                                      use_SMOTE = TRUE,
+                                                      noise_procs = noise_procs)
+  saveRDS(region_wise_SVM_CV_SMOTE, file=paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_SMOTE.Rds"))
+}
+```
+
+```{r, fig.width=8, fig.height=4.5}
+# Plot accuracy + balanced accuracy in histograms
+# Control subject proportion is highlighted for accuracy
+region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_SMOTE.Rds"))
+
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+plot_class_acc_w_props(class_res = region_wise_SVM_CV_SMOTE,
+                       feature_set = "catch22",
+                       group_var = "Brain_Region",
+                       rdata_path = rdata_path,
+                       noise_procs = noise_procs,
+                       plot_title = "SMOTE-Weighted catch22 ROI-wise Linear SVM Results")
+
+# Save plot
+ggsave("plots/Region_Wise_CV_SVM_SMOTE_catch22.png",
+       width=8, height=4.5, units="in", dpi=300)
+```
+
+As with the in-sample results, the accuracy values are negatively shifted while the balanced accuracy values are positively shifted after applying inverse probability reweighting to the samples.
+
+## Model-free shuffle null distribution
+
+### Generating null distributions from model-free shuffles
+
+This first model-free shuffles method is borrowed from Trent's implementation in theft. With this method, the input class labels (Schz or Control) are randomly shuffled N times, and for each iteration, the classification accuracy and balanced accuracy are calculated. This yields a null distribution of accuracies and balanced accuracies, circumventing the need for running any classification algorithms across iterations.
+
+Here, I've run 100,000 iterations of the model-free shuffle, generating 100,000 null values for Accuracy and Balanced Accuracy, respectively. Since this method is independent of brain region, the same null distribution can be used to compare with each brain region separately.
+
+```{r}
+# Try three different noise processing methods
+noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+
+# One without minority upsampling
+if (!file.exists(paste0(rdata_path, "Null_Model_Free_Shuffles_catch22.Rds"))) {
+  model_free_shuffle_null_res <- run_model_free_n_shuffles(num_shuffles = 100000,
+                                                           feature_set = "catch22",
+                                                           rdata_path = rdata_path)
+  saveRDS(model_free_shuffle_null_res, file = paste0(rdata_path, "Null_Model_Free_Shuffles_catch22.Rds"))
+} else {
+  model_free_shuffle_null_res <- readRDS(paste0(rdata_path, "Null_Model_Free_Shuffles_catch22.Rds"))
+}
+```
+
+### Unweighted linear SVM
+```{r, fig.width=8, fig.height=4.5}
+region_wise_SVM_CV <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22.Rds"))
+
+plot_main_vs_null_hist(main_res = region_wise_SVM_CV,
+                       null_res = model_free_shuffle_null_res,
+                       xlab = "Value from n=100,000 Model-Free Shuffles",
+                       title = "Unweighted Region-Wise Linear SVM catch22\nvs. Model-Free Shuffles")
+
+# Save plot
+ggsave("plots/Region_Wise_Unweighted_catch22_Null_vs_Real_Model_Free_Shuffle.png",
+       width=8, height=4.5, units="in", dpi=300)
+```
+
+I've plotted the distribution of null accuracies (teal) alongside the actual accuracies (pink) for the 82 ROIs on the left. Let's zoom in on AROMA+2P and pick the five brain regions with the highest cross-validated balanced accuracy:
+
+```{r}
+# Calculate p values from model-free shuffle null distribution
+region_wise_SVM_CV <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22.Rds"))
+if (!file.exists(paste0(rdata_path, "ROI_wise_CV_linear_SVM_catch22_pvals.Rds"))) {
+  region_wise_SVM_CV_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV,
+                                                   null_data = model_free_shuffle_null_res,
+                                                   grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_CV_pvals, file=paste0(rdata_path, "ROI_wise_CV_linear_SVM_catch22_pvals.Rds"))
+} else {
+  region_wise_SVM_CV_pvals <- readRDS(paste0(rdata_path, "ROI_wise_CV_linear_SVM_catch22_pvals.Rds"))
+}
+
+region_wise_SVM_CV_plabs <- truncate_p_values(region_wise_SVM_CV_pvals, N=3)
+```
+
+
+```{r, fig.width=10, fig.height=5}
+# Out-of-sample
+plot_top_6_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_pvals,
+                             null_res = model_free_shuffle_null_res,
+                             sample_type = "Out-of-sample",
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main Out-of-Sample and Model-Free Shuffle Null\ncatch22 Balanced Accuracy for top AROMA+2P Brain Regions",
+                             yloc = 9.5)
+
+ggsave("plots/Region_Wise_catch22_Model_Free_Shuffle_Top_Regions_Out_of_Sample_SVM_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+summarise_num_sig_features(pvalue_df = region_wise_SVM_CV_pvals)
+```
+
+This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
+
+
+### CV linear SVM -- inv prob
+```{r, fig.width=8, fig.height=4.5}
+region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_inv_prob.Rds"))
+
+plot_main_vs_null_hist(main_res = region_wise_SVM_CV_inv_prob,
+                       null_res = model_free_shuffle_null_res,
+                       xlab = "Value from n=100,000 Model-Free Shuffles",
+                       title = "Inv Prob Region-Wise Linear SVM catch22\nvs. Model-Free Shuffles")
+
+# Save plot
+ggsave("plots/Region_Wise_Inv_Prob_catch22_Null_vs_Real_Model_Free_Shuffle.png",
+       width=8, height=4.5, units="in", dpi=300)
+```
+
+
+
+I've plotted the distribution of null accuracies (teal) alongside the actual accuracies (pink) for the 82 ROIs on the left. Let's zoom in on AROMA+2P and pick the five brain regions with the highest cross-validated balanced accuracy:
+
+```{r}
+# Calculate p values from model-free shuffle null distribution
+region_wise_SVM_CV_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_inv_prob.Rds"))
+if (!file.exists(paste0(rdata_path, "ROI_wise_CV_linear_SVM_catch22_inv_prob_pvals.Rds"))) {
+  region_wise_SVM_CV_inv_prob_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV_inv_prob,
+                                                   null_data = model_free_shuffle_null_res,
+                                                   grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_CV_inv_prob_pvals, file=paste0(rdata_path, "ROI_wise_CV_linear_SVM_catch22_inv_prob_pvals.Rds"))
+} else {
+  region_wise_SVM_CV_inv_prob_pvals <- readRDS(paste0(rdata_path, "ROI_wise_CV_linear_SVM_catch22_inv_prob_pvals.Rds"))
+}
+
+region_wise_SVM_CV_inv_prob_plabs <- truncate_p_values(region_wise_SVM_CV_inv_prob_pvals)
+```
+
+
+```{r, fig.width=10, fig.height=5}
+plot_top_6_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_inv_prob_pvals,
+                             null_res = model_free_shuffle_null_res,
+                             sample_type = "Out-of-sample",
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main Out-of-Sample catch22 and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P Brain Regions, Inverse Probability",
+                             yloc = 9.5)
+
+# Save plot
+ggsave("plots/Region_Wise_catch22_Inv_Prob_Model_Free_Shuffle_Top_Regions_Out_of_Sample_SVM_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+summarise_num_sig_features(region_wise_SVM_CV_inv_prob_pvals)
+```
+
+This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
+
+### CV linear SVM -- SMOTE
+```{r, fig.width=8, fig.height=4.5}
+region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_SMOTE.Rds"))
+
+plot_main_vs_null_hist(main_res = region_wise_SVM_CV_SMOTE,
+                       null_res = model_free_shuffle_null_res,
+                       xlab = "Value from n=100,000 Model-Free Shuffles",
+                       title = "SMOTE Region-Wise Linear SVM catch22\nvs. Model-Free Shuffles")
+
+# Save plot
+ggsave("plots/Region_Wise_SMOTE_catch22_Null_vs_Real_Model_Free_Shuffle.png",
+       width=8, height=4.5, units="in", dpi=300)
+```
+
+
+I've plotted the distribution of null accuracies (teal) alongside the actual accuracies (pink) for the 82 ROIs on the left. Let's zoom in on AROMA+2P and pick the five brain regions with the highest cross-validated balanced accuracy:
+
+```{r}
+# Calculate p values from model-free shuffle null distribution
+region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_SMOTE.Rds"))
+if (!file.exists(paste0(rdata_path, "ROI_wise_CV_linear_SVM_catch22_SMOTE_pvals.Rds"))) {
+  region_wise_SVM_CV_SMOTE_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV_SMOTE,
+                                                   null_data = model_free_shuffle_null_res,
+                                                   grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_CV_SMOTE_pvals, file=paste0(rdata_path, "ROI_wise_CV_linear_SVM_catch22_SMOTE_pvals.Rds"))
+} else {
+  region_wise_SVM_CV_SMOTE_pvals <- readRDS(paste0(rdata_path, "ROI_wise_CV_linear_SVM_catch22_SMOTE_pvals.Rds"))
+}
+
+region_wise_SVM_CV_SMOTE_plabs <- truncate_p_values(region_wise_SVM_CV_SMOTE_pvals)
+```
+
+
+```{r, fig.width=10, fig.height=5}
+plot_top_6_vars_main_vs_null(class_res_pvals = region_wise_SVM_CV_SMOTE_pvals,
+                             null_res = model_free_shuffle_null_res,
+                             sample_type = "Out-of-sample",
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main Out-of-Sample catch22 and Model-Free Shuffle Null Balanced Accuracy\nfor top AROMA+2P Brain Regions, SMOTE")
+
+# Save plot
+ggsave("plots/Region_Wise_catch22_SMOTE_Model_Free_Shuffle_Top_Regions_Out_of_Sample_SVM_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+summarise_num_sig_features(region_wise_SVM_CV_SMOTE_pvals)
+```
+
+This table summarises the number of ROIs for which raw accuracy or balanced accuracy is significantly greater than the model-free shuffle null distribution, both before and after adjusting for multiple comparisons with BH-FDR.
+
+## Empirical model-based pooled null distribution
+
+### Generating null distributions from pooled null model fits
+
+In contrast to the model-free shuffle method, here we are actually shuffling the input class labels right before running the linear SVM over N=10 iterations per ROI (N=82) and pooling the resulting accuracy and balanced accuracy values, to generate empirical null distributions of N=820 data points each, respectively.
+
+### Unweighted
+
+```{r}
+# Run null model permutation function
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+svm_kernel <- "linear"
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_unweighted_catch22.Rds"))) {
+  model_permutation_null_unweighted <- run_null_model_n_permutations(rdata_path,
+                                                                     feature_set = "catch22",
+                                                                     noise_procs = noise_procs,
+                                                                     grouping_var = "Brain_Region",
+                                                                     svm_feature_var = "Feature",
+                                                                     num_permutations = 10,
+                                                                     use_inv_prob_weighting = FALSE,
+                                                                     use_SMOTE = FALSE)
+  
+  saveRDS(model_permutation_null_unweighted, file=paste0(rdata_path, "ROI_wise_model_permutation_null_unweighted_catch22.Rds"))
+} else {
+  model_permutation_null_unweighted <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_unweighted_catch22.Rds"))
+}
+
+# Find number of iterations for plot label
+num_null_dist_values <- nrow(model_permutation_null_unweighted %>% filter(Noise_Proc == "AROMA+2P"))
+```
+
+
+```{r, fig.width=8, fig.height=5}
+# Plot null accuracy and balanced accuracy compared with real metrics:
+region_wise_SVM_unweighted <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22.Rds"))
+
+plot_main_vs_null_hist(main_res = region_wise_SVM_unweighted,
+                       null_res = model_permutation_null_unweighted,
+                       xlab = sprintf("Value from n=%s Null Model Fit Shuffles", num_null_dist_values),
+                       title = "Region-wise Unweighted catch22 Linear SVM Results\nvs. Null Model Fits")
+
+# Save plot
+ggsave("plots/Region_Wise_catch22_Null_Model_Fit_Unweighted_Balanced_Accuracy.png",
+       width=8, height=5, units="in", dpi=300)
+```
+
+The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
+
+```{r}
+if (!file.exists(paste0(rdata_path, "ROI_wise_catch22_Unweighted_Null_Model_Fits_pvals.Rds"))) {
+  region_wise_SVM_unweighted_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_unweighted,
+                                                          null_data = model_permutation_null_unweighted,
+                                                          grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_unweighted_pvals, file=paste0(rdata_path, "ROI_wise_catch22_Unweighted_Null_Model_Fits_pvals.Rds"))
+} else {
+  region_wise_SVM_unweighted_pvals <- readRDS(paste0(rdata_path, "ROI_wise_catch22_Unweighted_Null_Model_Fits_pvals.Rds"))
+}
+
+region_wise_SVM_unweighted_plabs <- truncate_p_values(region_wise_SVM_unweighted_pvals)
+```
+
+```{r, fig.width=10, fig.height=5}
+plot_top_6_vars_main_vs_null(class_res_pvals = region_wise_SVM_unweighted_pvals,
+                             null_res = model_permutation_null_unweighted,
+                             sample_type = "Out-of-sample",
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main Region-wise Out-of-Sample and Null Model Fit\nBalanced Accuracy for top AROMA+2P Brain Regions, Unweighted",
+                             yloc = 22,
+                             xloc = 0.59)
+
+# Save plots
+ggsave("plots/Region_Wise_catch22_Unweighted_Null_Model_Fits_Top_Regions_Out_of_Sample_SVM_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+summarise_num_sig_features(region_wise_SVM_unweighted_pvals)
+```
+
+### Inverse probability weighted
+
+```{r}
+# Run null model permutation function
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+svm_kernel <- "linear"
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_inv_prob_catch22.Rds"))) {
+  model_permutation_null_inv_prob <- run_null_model_n_permutations(rdata_path,
+                                                                   feature_set = "catch22",
+                                                                    noise_procs = noise_procs,
+                                                                    grouping_var = "Brain_Region",
+                                                                    svm_feature_var = "Feature",
+                                                                    num_permutations = 10,
+                                                                    use_inv_prob_weighting = TRUE,
+                                                                    use_SMOTE = FALSE)
+  
+  saveRDS(model_permutation_null_inv_prob, file=paste0(rdata_path, "ROI_wise_model_permutation_null_inv_prob_catch22.Rds"))
+} else {
+  model_permutation_null_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_inv_prob_catch22.Rds"))
+}
+# Find number of iterations for plot label
+num_null_dist_values <- nrow(model_permutation_null_inv_prob %>% filter(Noise_Proc == "AROMA+2P"))
+```
+
+
+```{r, fig.width=8, fig.height=5}
+# Plot null accuracy and balanced accuracy compared with real metrics:
+region_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_inv_prob.Rds"))
+
+plot_main_vs_null_hist(main_res = region_wise_SVM_in_sample_inv_prob,
+                       null_res = model_permutation_null_inv_prob,
+                       xlab = sprintf("Value from n=%s Null Model Fit Shuffles", num_null_dist_values),
+                       title = "Region-wise catch22 Inv Prob Linear SVM\nResults vs. Null Model Fits")
+
+ggsave("plots/Region_Wise_catch22_Null_Model_Fit_Inv_Prob_Balanced_Accuracy.png",
+       width=8, height=5, units="in", dpi=300)
+```
+
+The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
+
+```{r}
+region_wise_SVM_in_sample_inv_prob <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_inv_prob.Rds"))
+
+if (!file.exists(paste0(rdata_path, "ROI_wise_Inv_Prob_Null_Model_Fits_pvals.Rds"))) {
+  region_wise_inv_prob_null_model_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_in_sample_inv_prob,
+                                                              null_data = model_permutation_null_inv_prob,
+                                                              grouping_var = "Brain_Region")
+  saveRDS(region_wise_inv_prob_null_model_pvals, file=paste0(rdata_path, "ROI_wise_Inv_Prob_Null_Model_Fits_pvals.Rds"))
+} else {
+  region_wise_inv_prob_null_model_pvals <- readRDS(paste0(rdata_path, "ROI_wise_Inv_Prob_Null_Model_Fits_pvals.Rds"))
+}
+
+region_wise_inv_prob_null_model_plabs <- truncate_p_values(region_wise_inv_prob_null_model_pvals)
+```
+
+```{r, fig.width=10, fig.height=5}
+plot_top_6_vars_main_vs_null(class_res_pvals = region_wise_inv_prob_null_model_pvals,
+                             null_res = model_permutation_null_inv_prob,
+                             sample_type = "Out-of-sample",
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main Region-wise Out-of-Sample and Null Model Fit\nBalanced Accuracy for top AROMA+2P Brain Regions, Inv Prob",
+                             xloc = 0.61, 
+                             yloc = 3.1)
+
+# Save plot
+ggsave("plots/Region_Wise_catch22_Inv_Prob_Null_Model_Fits_Top_Regions_Out_of_Sample_SVM_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+summarise_num_sig_features(region_wise_inv_prob_null_model_pvals)
+```
+
+
+
+
+
+### SMOTE
+
+```{r}
+# Run null model permutation function
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+svm_kernel <- "linear"
+set.seed(127)
+
+if (!file.exists(paste0(rdata_path, "ROI_wise_model_permutation_null_SMOTE_catch22.Rds"))) {
+  model_permutation_null_SMOTE <- run_null_model_n_permutations(rdata_path,
+                                                                feature_set = "catch22",
+                                                                    noise_procs = noise_procs,
+                                                                    grouping_var = "Brain_Region",
+                                                                    svm_feature_var = "Feature",
+                                                                    num_permutations = 10,
+                                                                    use_inv_prob_weighting = FALSE,
+                                                                    use_SMOTE = TRUE)
+  
+  saveRDS(model_permutation_null_SMOTE, file=paste0(rdata_path, "ROI_wise_model_permutation_null_SMOTE_catch22.Rds"))
+} else {
+  model_permutation_null_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_model_permutation_null_SMOTE_catch22.Rds"))
+}
+# Find number of iterations for plot label
+num_null_dist_values <- nrow(model_permutation_null_SMOTE %>% filter(Noise_Proc == "AROMA+2P"))
+```
+
+
+```{r, fig.width=8, fig.height=5}
+# Plot null accuracy and balanced accuracy compared with real metrics:
+region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_SMOTE.Rds"))
+
+plot_main_vs_null_hist(main_res = region_wise_SVM_CV_SMOTE,
+                       null_res = model_permutation_null_SMOTE,
+                       xlab = sprintf("Value from n=%s Null Model Fit Shuffles", num_null_dist_values),
+                       title = "Region-wise catch22 SMOTE Linear SVM\nResults vs. Null Model Fits")
+
+# Save plot
+ggsave("plots/Region_Wise_catch22_Null_Model_Fit_SMOTE_Balanced_Accuracy.png",
+       width=8, height=5, units="in", dpi=300)
+```
+
+The fitted empirical null model distribution is fairly similar to the real accuracy and balanced accuracy values using in-sample linear SVM with no reweighting. 
+
+```{r}
+region_wise_SVM_CV_SMOTE <- readRDS(paste0(rdata_path, "ROI_wise_linear_SVM_CV_catch22_SMOTE.Rds"))
+
+if (!file.exists(paste0(rdata_path, "ROI_wise_SMOTE_Null_Model_Fits_pvals_catch22.Rds"))) {
+  region_wise_SVM_SMOTE_pvals <- calc_empirical_nulls(class_res = region_wise_SVM_CV_SMOTE,
+                                                              null_data = model_permutation_null_SMOTE,
+                                                              grouping_var = "Brain_Region")
+  saveRDS(region_wise_SVM_SMOTE_pvals, file=paste0(rdata_path, "ROI_wise_SMOTE_Null_Model_Fits_pvals_catch22.Rds"))
+} else {
+  region_wise_SVM_SMOTE_pvals <- readRDS(paste0(rdata_path, "ROI_wise_SMOTE_Null_Model_Fits_pvals_catch22.Rds"))
+}
+
+region_wise_SVM_SMOTE_plabs <- truncate_p_values(region_wise_SVM_SMOTE_pvals)
+```
+
+```{r, fig.width=10, fig.height=5}
+plot_top_6_vars_main_vs_null(class_res_pvals = region_wise_SVM_SMOTE_pvals,
+                             null_res = model_permutation_null_SMOTE,
+                             sample_type = "Out-of-sample",
+                             xlab = "Value",
+                             ylab = "Scaled Density of Null Iterations",
+                             title = "Main Region-wise Out-of-Sample and Null Model Fit\nBalanced Accuracy for top AROMA+2P Brain Regions, SMOTE",
+                             xloc = 0.6,
+                             yloc = 4.3)
+
+# Save plot
+ggsave("plots/Region_Wise_catch22_SMOTE_Null_Model_Fits_Top_Regions_Out_of_Sample_SVM_Balanced_Accuracy.png", width=10, 
+       height=5, units="in", dpi=300)
+```
+
+```{r}
+summarise_num_sig_features(region_wise_SVM_SMOTE_pvals)
+```
+
+
+## Comparing model-free shuffle with pooled empirical null distributions
+
+```{r, fig.width = 7, fig.height = 7}
+# In-sample inverse probability
+in_sample_inv_prob_p <- model_free_shuffle_null_res %>%
+  mutate(Null_Type = "Model-Free Shuffle") %>%
+  plyr::rbind.fill(model_permutation_null_inv_prob %>% 
+                     filter(Sample_Type == "In-sample") %>%
+                     mutate(Null_Type = "Null Model Fit, In-sample Inv Prob")) %>%
+  mutate(Null_Type = factor(Null_Type, levels = c("Model-Free Shuffle",
+                                                  "Null Model Fit, In-sample Inv Prob",
+                                                  "Null Model Fit, Out-of-sample Inv Prob",
+                                                  "Null Model Fit, Out-of-sample SMOTE"))) %>%
+  ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
+  geom_histogram(alpha=0.5, 
+                 aes(y=0.5*..density..), 
+                 position="identity",
+                 bins = 50) +
+  scale_x_continuous(limits = c(0.3, 0.8)) +
+  ylab("") +
+  xlab("") +
+  labs(fill = "Null Type") +
+  scale_fill_manual(values = list("Model-Free Shuffle" = "gray70", 
+                                  "Null Model Fit, In-sample Inv Prob" = "coral",
+                                  "Null Model Fit, Out-of-sample Inv Prob" = "dodgerblue",
+                                  "Null Model Fit, Out-of-sample SMOTE" = "green"))
+
+# Out-of-sample inverse probability
+CV_inv_prob_p <- model_free_shuffle_null_res %>%
+  mutate(Null_Type = "Model-Free Shuffle") %>%
+  plyr::rbind.fill(model_permutation_null_inv_prob %>% 
+                     filter(Sample_Type == "Out-of-sample") %>%
+                     mutate(Null_Type = "Null Model Fit, Out-of-sample Inv Prob")) %>%
+  mutate(Null_Type = factor(Null_Type, levels = c("Model-Free Shuffle",
+                                                  "Null Model Fit, In-sample Inv Prob",
+                                                  "Null Model Fit, Out-of-sample Inv Prob",
+                                                  "Null Model Fit, Out-of-sample SMOTE"))) %>%
+  ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
+  geom_histogram(alpha=0.5, 
+                 aes(y=0.5*..density..), 
+                 position="identity",
+                 bins = 50) +
+  scale_x_continuous(limits = c(0.3, 0.8)) +
+  ylab("Scaled Density") +
+  xlab("") +
+  labs(fill = "Null Type") +
+  scale_fill_manual(values = list("Model-Free Shuffle" = "gray70", 
+                                  "Null Model Fit, In-sample Inv Prob" = "coral",
+                                  "Null Model Fit, Out-of-sample Inv Prob" = "dodgerblue",
+                                  "Null Model Fit, Out-of-sample SMOTE" = "green"))
+
+# Out-of-sample SMOTE
+CV_SMOTE_p <- model_free_shuffle_null_res %>%
+  mutate(Null_Type = "Model-Free Shuffle") %>%
+  plyr::rbind.fill(model_permutation_null_SMOTE %>% 
+                     filter(Sample_Type == "Out-of-sample") %>%
+                     mutate(Null_Type = "Null Model Fit, Out-of-sample SMOTE")) %>%
+  mutate(Null_Type = factor(Null_Type, levels = c("Model-Free Shuffle",
+                                                  "Null Model Fit, In-sample Inv Prob",
+                                                  "Null Model Fit, Out-of-sample Inv Prob",
+                                                  "Null Model Fit, Out-of-sample SMOTE"))) %>%
+  ggplot(data=., mapping=aes(x=balanced_accuracy, fill=Null_Type)) +
+  geom_histogram(alpha=0.5, 
+                 aes(y=0.5*..density..), 
+                 position="identity",
+                 bins = 50) +
+  scale_x_continuous(limits = c(0.3, 0.8)) +
+  ylab("") +
+  xlab("Balanced Accuracy") +
+  labs(fill = "Null Type") +
+  scale_fill_manual(values = list("Model-Free Shuffle" = "gray70", 
+                                  "Null Model Fit, In-sample Inv Prob" = "coral",
+                                  "Null Model Fit, Out-of-sample Inv Prob" = "dodgerblue",
+                                  "Null Model Fit, Out-of-sample SMOTE" = "green"))
+
+in_sample_inv_prob_p / CV_inv_prob_p / CV_SMOTE_p  + 
+  plot_annotation(title = "Region-wise Linear SVM Null Distributions by Model Type") + 
+  plot_layout(guides = "collect") & 
+  theme(legend.position = 'bottom',
+        plot.title = element_text(hjust=0.5)) &
+  guides(fill = guide_legend(nrow=2,byrow=TRUE))
+ggsave("plots/Null_Distributions_by_Model_Type_catch22.png",
+       width = 7, height = 7, units = "in", dpi=300)
+```
+
+ 

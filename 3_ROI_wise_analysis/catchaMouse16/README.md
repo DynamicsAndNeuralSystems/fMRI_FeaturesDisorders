@@ -1,4 +1,4 @@
-Step 3: ROI-Wise catch22 Feature Analysis
+Step 3: ROI-Wise catchaMouse16 Feature Analysis
 ================
 
 ### Source functions
@@ -11,7 +11,7 @@ I have chosen to use 10-fold cross validation via manual implementation,
 as the sample reweighting options in caret were limited and difficult to
 interpret.
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 Interestingly, unlike the in-sample results, there is a fair spread of
 accuracy and balanced accuracy values outside of the proportions
@@ -22,7 +22,7 @@ forward with inverse probability reweighting.
 
 ### 10-fold cross-validated linear SVM with inverse probability weighting
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 As with the in-sample results, the accuracy values are negatively
 shifted while the balanced accuracy values are positively shifted after
@@ -32,7 +32,7 @@ applying inverse probability reweighting to the samples.
 
 sa\[’\]
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 As with the in-sample results, the accuracy values are negatively
 shifted while the balanced accuracy values are positively shifted after
@@ -57,14 +57,14 @@ distribution can be used to compare with each brain region separately.
 
 ### Unweighted linear SVM
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 I’ve plotted the distribution of null accuracies (teal) alongside the
 actual accuracies (pink) for the 82 ROIs on the left. Let’s zoom in on
 AROMA+2P and pick the five brain regions with the highest
 cross-validated balanced accuracy:
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -104,10 +104,10 @@ In-sample
 82
 </td>
 <td style="text-align:right;">
-51
+13
 </td>
 <td style="text-align:right;">
-45
+7
 </td>
 </tr>
 <tr>
@@ -118,16 +118,16 @@ AROMA+2P
 Out-of-sample
 </td>
 <td style="text-align:right;">
-68
+81
 </td>
 <td style="text-align:right;">
-68
+81
 </td>
 <td style="text-align:right;">
-7
+5
 </td>
 <td style="text-align:right;">
-4
+0
 </td>
 </tr>
 <tr>
@@ -144,10 +144,10 @@ In-sample
 82
 </td>
 <td style="text-align:right;">
-57
+28
 </td>
 <td style="text-align:right;">
-53
+18
 </td>
 </tr>
 <tr>
@@ -158,16 +158,16 @@ AROMA+2P+GMR
 Out-of-sample
 </td>
 <td style="text-align:right;">
-71
+81
 </td>
 <td style="text-align:right;">
-71
+81
 </td>
 <td style="text-align:right;">
-16
+11
 </td>
 <td style="text-align:right;">
-12
+3
 </td>
 </tr>
 <tr>
@@ -184,10 +184,10 @@ In-sample
 82
 </td>
 <td style="text-align:right;">
-57
+11
 </td>
 <td style="text-align:right;">
-53
+2
 </td>
 </tr>
 <tr>
@@ -198,16 +198,16 @@ AROMA+2P+DiCER
 Out-of-sample
 </td>
 <td style="text-align:right;">
-74
+82
 </td>
 <td style="text-align:right;">
-74
+82
 </td>
 <td style="text-align:right;">
-10
+2
 </td>
 <td style="text-align:right;">
-7
+0
 </td>
 </tr>
 </tbody>
@@ -220,14 +220,14 @@ comparisons with BH-FDR.
 
 ### CV linear SVM – inv prob
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 I’ve plotted the distribution of null accuracies (teal) alongside the
 actual accuracies (pink) for the 82 ROIs on the left. Let’s zoom in on
 AROMA+2P and pick the five brain regions with the highest
 cross-validated balanced accuracy:
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -261,7 +261,170 @@ AROMA+2P
 In-sample
 </td>
 <td style="text-align:right;">
-73
+57
+</td>
+<td style="text-align:right;">
+42
+</td>
+<td style="text-align:right;">
+82
+</td>
+<td style="text-align:right;">
+82
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P
+</td>
+<td style="text-align:left;">
+Out-of-sample
+</td>
+<td style="text-align:right;">
+4
+</td>
+<td style="text-align:right;">
+3
+</td>
+<td style="text-align:right;">
+25
+</td>
+<td style="text-align:right;">
+25
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:left;">
+In-sample
+</td>
+<td style="text-align:right;">
+55
+</td>
+<td style="text-align:right;">
+43
+</td>
+<td style="text-align:right;">
+82
+</td>
+<td style="text-align:right;">
+82
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:left;">
+Out-of-sample
+</td>
+<td style="text-align:right;">
+6
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+36
+</td>
+<td style="text-align:right;">
+36
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:left;">
+In-sample
+</td>
+<td style="text-align:right;">
+48
+</td>
+<td style="text-align:right;">
+20
+</td>
+<td style="text-align:right;">
+82
+</td>
+<td style="text-align:right;">
+82
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:left;">
+Out-of-sample
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+19
+</td>
+<td style="text-align:right;">
+19
+</td>
+</tr>
+</tbody>
+</table>
+
+This table summarises the number of ROIs for which raw accuracy or
+balanced accuracy is significantly greater than the model-free shuffle
+null distribution, both before and after adjusting for multiple
+comparisons with BH-FDR.
+
+### CV linear SVM – SMOTE
+
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+I’ve plotted the distribution of null accuracies (teal) alongside the
+actual accuracies (pink) for the 82 ROIs on the left. Let’s zoom in on
+AROMA+2P and pick the five brain regions with the highest
+cross-validated balanced accuracy:
+
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
+<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+Noise_Proc
+</th>
+<th style="text-align:left;">
+Sample_Type
+</th>
+<th style="text-align:right;">
+num_sig_acc
+</th>
+<th style="text-align:right;">
+num_sig_acc_fdr
+</th>
+<th style="text-align:right;">
+num_sig_bacc
+</th>
+<th style="text-align:right;">
+num_sig_bacc_fdr
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+AROMA+2P
+</td>
+<td style="text-align:left;">
+In-sample
+</td>
+<td style="text-align:right;">
+76
 </td>
 <td style="text-align:right;">
 64
@@ -281,179 +444,16 @@ AROMA+2P
 Out-of-sample
 </td>
 <td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-18
-</td>
-<td style="text-align:right;">
-18
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+GMR
-</td>
-<td style="text-align:left;">
-In-sample
-</td>
-<td style="text-align:right;">
-76
-</td>
-<td style="text-align:right;">
-73
-</td>
-<td style="text-align:right;">
-82
-</td>
-<td style="text-align:right;">
-82
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+GMR
-</td>
-<td style="text-align:left;">
-Out-of-sample
-</td>
-<td style="text-align:right;">
 9
-</td>
-<td style="text-align:right;">
-6
-</td>
-<td style="text-align:right;">
-25
-</td>
-<td style="text-align:right;">
-25
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+DiCER
-</td>
-<td style="text-align:left;">
-In-sample
-</td>
-<td style="text-align:right;">
-77
-</td>
-<td style="text-align:right;">
-72
-</td>
-<td style="text-align:right;">
-82
-</td>
-<td style="text-align:right;">
-82
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+DiCER
-</td>
-<td style="text-align:left;">
-Out-of-sample
-</td>
-<td style="text-align:right;">
-2
-</td>
-<td style="text-align:right;">
-2
-</td>
-<td style="text-align:right;">
-24
-</td>
-<td style="text-align:right;">
-24
-</td>
-</tr>
-</tbody>
-</table>
-
-This table summarises the number of ROIs for which raw accuracy or
-balanced accuracy is significantly greater than the model-free shuffle
-null distribution, both before and after adjusting for multiple
-comparisons with BH-FDR.
-
-### CV linear SVM – SMOTE
-
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
-
-I’ve plotted the distribution of null accuracies (teal) alongside the
-actual accuracies (pink) for the 82 ROIs on the left. Let’s zoom in on
-AROMA+2P and pick the five brain regions with the highest
-cross-validated balanced accuracy:
-
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
-
-<table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
-<thead>
-<tr>
-<th style="text-align:left;">
-Noise_Proc
-</th>
-<th style="text-align:left;">
-Sample_Type
-</th>
-<th style="text-align:right;">
-num_sig_acc
-</th>
-<th style="text-align:right;">
-num_sig_acc_fdr
-</th>
-<th style="text-align:right;">
-num_sig_bacc
-</th>
-<th style="text-align:right;">
-num_sig_bacc_fdr
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-AROMA+2P
-</td>
-<td style="text-align:left;">
-In-sample
-</td>
-<td style="text-align:right;">
-81
-</td>
-<td style="text-align:right;">
-81
-</td>
-<td style="text-align:right;">
-82
-</td>
-<td style="text-align:right;">
-82
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P
-</td>
-<td style="text-align:left;">
-Out-of-sample
 </td>
 <td style="text-align:right;">
 5
 </td>
 <td style="text-align:right;">
-3
+22
 </td>
 <td style="text-align:right;">
-16
-</td>
-<td style="text-align:right;">
-16
+22
 </td>
 </tr>
 <tr>
@@ -464,16 +464,16 @@ AROMA+2P+GMR
 In-sample
 </td>
 <td style="text-align:right;">
-82
+74
 </td>
 <td style="text-align:right;">
-82
+69
 </td>
 <td style="text-align:right;">
-82
+81
 </td>
 <td style="text-align:right;">
-82
+81
 </td>
 </tr>
 <tr>
@@ -484,16 +484,16 @@ AROMA+2P+GMR
 Out-of-sample
 </td>
 <td style="text-align:right;">
-13
+12
 </td>
 <td style="text-align:right;">
-13
+8
 </td>
 <td style="text-align:right;">
-28
+31
 </td>
 <td style="text-align:right;">
-28
+31
 </td>
 </tr>
 <tr>
@@ -504,10 +504,10 @@ AROMA+2P+DiCER
 In-sample
 </td>
 <td style="text-align:right;">
-82
+74
 </td>
 <td style="text-align:right;">
-82
+65
 </td>
 <td style="text-align:right;">
 82
@@ -524,16 +524,16 @@ AROMA+2P+DiCER
 Out-of-sample
 </td>
 <td style="text-align:right;">
-8
+4
 </td>
 <td style="text-align:right;">
-8
+2
 </td>
 <td style="text-align:right;">
-21
+17
 </td>
 <td style="text-align:right;">
-21
+17
 </td>
 </tr>
 </tbody>
@@ -556,13 +556,13 @@ of N=820 data points each, respectively.
 
 ### Unweighted
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 The fitted empirical null model distribution is fairly similar to the
 real accuracy and balanced accuracy values using in-sample linear SVM
 with no reweighting.
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -596,16 +596,16 @@ AROMA+2P
 In-sample
 </td>
 <td style="text-align:right;">
-11
+15
 </td>
 <td style="text-align:right;">
 1
 </td>
 <td style="text-align:right;">
-13
+14
 </td>
 <td style="text-align:right;">
-2
+1
 </td>
 </tr>
 <tr>
@@ -616,73 +616,13 @@ AROMA+2P
 Out-of-sample
 </td>
 <td style="text-align:right;">
-3
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-12
+8
 </td>
 <td style="text-align:right;">
 1
 </td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+GMR
-</td>
-<td style="text-align:left;">
-In-sample
-</td>
 <td style="text-align:right;">
-22
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:right;">
-24
-</td>
-<td style="text-align:right;">
-6
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+GMR
-</td>
-<td style="text-align:left;">
-Out-of-sample
-</td>
-<td style="text-align:right;">
-9
-</td>
-<td style="text-align:right;">
-2
-</td>
-<td style="text-align:right;">
-18
-</td>
-<td style="text-align:right;">
-6
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-AROMA+2P+DiCER
-</td>
-<td style="text-align:left;">
-In-sample
-</td>
-<td style="text-align:right;">
-14
-</td>
-<td style="text-align:right;">
-2
-</td>
-<td style="text-align:right;">
-12
+10
 </td>
 <td style="text-align:right;">
 4
@@ -690,22 +630,82 @@ In-sample
 </tr>
 <tr>
 <td style="text-align:left;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:left;">
+In-sample
+</td>
+<td style="text-align:right;">
+24
+</td>
+<td style="text-align:right;">
+2
+</td>
+<td style="text-align:right;">
+26
+</td>
+<td style="text-align:right;">
+8
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+GMR
+</td>
+<td style="text-align:left;">
+Out-of-sample
+</td>
+<td style="text-align:right;">
+11
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+20
+</td>
+<td style="text-align:right;">
+11
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+AROMA+2P+DiCER
+</td>
+<td style="text-align:left;">
+In-sample
+</td>
+<td style="text-align:right;">
+7
+</td>
+<td style="text-align:right;">
+0
+</td>
+<td style="text-align:right;">
+8
+</td>
+<td style="text-align:right;">
+0
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
 AROMA+2P+DiCER
 </td>
 <td style="text-align:left;">
 Out-of-sample
 </td>
 <td style="text-align:right;">
-6
+7
 </td>
 <td style="text-align:right;">
-2
+0
 </td>
 <td style="text-align:right;">
-14
+7
 </td>
 <td style="text-align:right;">
-3
+0
 </td>
 </tr>
 </tbody>
@@ -713,13 +713,13 @@ Out-of-sample
 
 ### Inverse probability weighted
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 The fitted empirical null model distribution is fairly similar to the
 real accuracy and balanced accuracy values using in-sample linear SVM
 with no reweighting.
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -870,13 +870,13 @@ Out-of-sample
 
 ### SMOTE
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 The fitted empirical null model distribution is fairly similar to the
 real accuracy and balanced accuracy values using in-sample linear SVM
 with no reweighting.
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 <table class="table" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -910,16 +910,16 @@ AROMA+2P
 In-sample
 </td>
 <td style="text-align:right;">
-10
+15
 </td>
 <td style="text-align:right;">
-0
+1
 </td>
 <td style="text-align:right;">
-11
+15
 </td>
 <td style="text-align:right;">
-0
+1
 </td>
 </tr>
 <tr>
@@ -930,13 +930,13 @@ AROMA+2P
 Out-of-sample
 </td>
 <td style="text-align:right;">
-7
+15
 </td>
 <td style="text-align:right;">
 0
 </td>
 <td style="text-align:right;">
-12
+16
 </td>
 <td style="text-align:right;">
 0
@@ -950,16 +950,16 @@ AROMA+2P+GMR
 In-sample
 </td>
 <td style="text-align:right;">
-19
+24
 </td>
 <td style="text-align:right;">
-5
+9
 </td>
 <td style="text-align:right;">
-16
+22
 </td>
 <td style="text-align:right;">
-4
+10
 </td>
 </tr>
 <tr>
@@ -970,13 +970,13 @@ AROMA+2P+GMR
 Out-of-sample
 </td>
 <td style="text-align:right;">
-13
+19
 </td>
 <td style="text-align:right;">
-4
+2
 </td>
 <td style="text-align:right;">
-13
+24
 </td>
 <td style="text-align:right;">
 3
@@ -990,16 +990,16 @@ AROMA+2P+DiCER
 In-sample
 </td>
 <td style="text-align:right;">
-15
+13
 </td>
 <td style="text-align:right;">
-2
+0
 </td>
 <td style="text-align:right;">
 14
 </td>
 <td style="text-align:right;">
-1
+0
 </td>
 </tr>
 <tr>
@@ -1010,16 +1010,16 @@ AROMA+2P+DiCER
 Out-of-sample
 </td>
 <td style="text-align:right;">
-15
+8
 </td>
 <td style="text-align:right;">
-2
+0
 </td>
 <td style="text-align:right;">
-16
+11
 </td>
 <td style="text-align:right;">
-2
+0
 </td>
 </tr>
 </tbody>
@@ -1027,4 +1027,4 @@ Out-of-sample
 
 ## Comparing model-free shuffle with pooled empirical null distributions
 
-![](Step3_catch22_README_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](Step3_catchaMouse16_README_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
