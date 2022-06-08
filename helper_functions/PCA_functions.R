@@ -16,7 +16,8 @@ library(factoextra)
 #-------------------------------------------------------------------------------
 
 run_univ_PCA_by_group_var <- function(feature_matrix,
-                                      grouping_variable) {
+                                      grouping_variable = "Brain_Region",
+                                      feature_var = "names") {
   PCA_object_list <- list()
   PCA_scores_list <- list()
   PCA_eigenvalues_list <- list()
@@ -27,7 +28,12 @@ run_univ_PCA_by_group_var <- function(feature_matrix,
   
   for (this_group in grouping_var_vector) {
     df_for_PCA <- subset(feature_matrix, 
-                         get(grouping_var) == )
+                         get(grouping_variable) == this_group) %>%
+      pivot_wider(id_cols = c(Subject_ID, group, 
+                              grouping_variable),
+                  names_from = get(feature_var),
+                  values_from = values) %>%
+      drop_na()
   }
 }
 

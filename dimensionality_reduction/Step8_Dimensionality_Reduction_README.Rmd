@@ -15,6 +15,7 @@ source(paste0(github_dir, "helper_functions/Linear_SVM.R"))
 source(paste0(github_dir, "helper_functions/Visualization.R"))
 source(paste0(github_dir, "helper_functions/Null_distributions.R"))
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+library(penalizedSVM)
 
 noise_proc = "AROMA+2P"
 noise_label = "AROMA_2P"
@@ -26,8 +27,11 @@ catch22_feature_matrix <- readRDS(paste0(rdata_path,
 
 catchaMouse16_feature_matrix <- readRDS(paste0(rdata_path,
                                                sprintf("UCLA_%s_catchaMouse16_zscored_filtered.Rds",
-                                                       noise_label)))   
+                                                       noise_label)))
+```
 
+
+```{r}
 # Load pyspi data
 study <- "D:/Virtual_Machines/Shared_Folder/PhD_work/"
 SPI_directionality <- read.csv("../6_Pairwise_ROI_analysis/SPI_Direction_Info.csv")
@@ -42,7 +46,39 @@ ROI_index <- read.csv(paste0(study, "data/scz/UCLA/pydata/ROI_info.csv"))
 ### Run PCA
 
 ```{r}
+ROI_PCA_list <- list()
+ROI_PC_scores_list <- list()
+ROI_eigen_list <- list()
 
+for (brain_region in unique(feature_matrix$Brain_Region)) {
+  ROI_data <- subset(ROI_matrix, Brain_Region == brain_region) %>%
+    pivot_wider(id_cols = c(Subject_ID, group, Brain_Region),
+                names_from = names,
+                values_from = values) %>%
+    drop_na()
+  ROI_data_mat <- ROI_data %>%
+    select(-Subject_ID, -group, -Brain_Region) %>%
+    as.matrix()
+  
+  ROI_data_PCA <- prcomp(ROI_data_mat, center = TRUE, scale. = TRUE)
+  ROI_PCA_list[[catch22_feature]] <- ROI_data_PCA
+  
+  ROI_PC_vals <- as.data.frame(ROI_data_PCA$x)
+  ROI_PC_vals$group <- ROI_data$group
+  ROI_PC_vals$feature <- catch22_feature
+  ROI_PC_scores_list <- rlist::list.append(ROI_PC_scores_list, ROI_PC_vals)
+  
+  ROI_eigen  <- get_eig(ROI_data_PCA) %>%
+    mutate(Components = 1:nrow(.)) %>%
+    dplyr::rename("Percent_Variance" = "variance.percent",
+                  "Cumulative_Variance" = "cumulative.variance.percent") %>%
+    mutate(Brain_Region = brain_region)
+  
+  ROI_eigen_list <- rlist::list.append(ROI_eigen_list, ROI_eigen)
+}
+
+ROI_eigen_df <- do.call(plyr::rbind.fill, ROI_eigen_list)
+ROI_PC_scores <- do.call(plyr::rbind.fill, ROI_PC_scores_list)
 
 ```
 
@@ -273,7 +309,8 @@ ggsave("plots/ROI_Wise_PCA_All_Methods_Linear_SVM_Balanced_Accuracy_diffC.png", 
 
 
 
-## Feature-wise
+
+# Feature-wise
 
 ### Run PCA
 ```{r}
@@ -428,12 +465,12 @@ ggsave("plots/Feature_Wise_PCA_All_Methods_Linear_SVM_Balanced_Accuracy.png", wi
 ```
 
 
-## Combo-wise
+# Combo-wise
 
 ### Run PCA
 
 ```{r}
-combo_data <- feature_matrix %>%
+combo_data <- catch22_feature_matrix %>%
   tidyr::unite("Combo", Brain_Region, names, sep="_") %>%
   pivot_wider(id_cols = c(Subject_ID, group),
               names_from = Combo,
@@ -577,6 +614,7 @@ loess_dY2 <- diff(loess_dY)/diff(loess_dX)
 loess_dX2 <- rowMeans(embed(loess_dX, 2))
 
 # Plot loess along with first and second derivatives
+inflection_point_x <- 69
 p_loess <- ggplot(data = data.frame(x = loess_X,
                                     y = loess_Y),
                   mapping = aes(x = x, y = y)) +
@@ -585,7 +623,7 @@ p_loess <- ggplot(data = data.frame(x = loess_X,
   ylab("Loess Fitted Value") +
   xlab("Number of PCs") +
   geom_line() +
-  geom_vline(xintercept = 69, linetype = 2, color = "red") +
+  geom_vline(xintercept = inflection_point_x, linetype = 2, color = "red") +
   theme(plot.title = element_text(hjust=0.5))
 
 p_d1 <- ggplot(data = data.frame(x = loess_dX,
@@ -614,7 +652,11 @@ p_d2 <- data.frame(x = loess_dX2, y = loess_dY2) %>%
   theme(plot.title = element_text(hjust=0.5),
         legend.position = "none")
 
-p_loess + p_d1 + p_d2
+p_loess + p_d1 + p_d2 + plot_annotation(
+  title = 'Loess Smoothing of PCs from Combo-wise catch22\nInverse Probability-Weighted Linear SVM') &
+  theme(plot.title = element_text(hjust=0.5))
+ggsave("plots/Combo_Univariate_Loess_Derivatives.png",
+       width = 13, height = 5, units="in", dpi=300)
 ```
 
 
@@ -623,12 +665,18 @@ Compare results:
 # Compare results using PCs where balanced accuracy first hits 100%
 # With the total number of PCs
 Combo_wise_PCA_res_combined %>%
-  filter(Num_PCs %in% c(total_num_pcs, pcs_with_balanced_accuracy_1),
+  filter(Num_PCs %in% c(total_num_pcs, 
+                        pcs_with_balanced_accuracy_1,
+                        inflection_point_x),
          Sample_Type == "Out-of-sample") %>%
   dplyr::select(Method, Num_PCs, balanced_accuracy, balanced_accuracy_SD) %>%
-  mutate(PC_stop_point = ifelse(Num_PCs == pcs_with_balanced_accuracy_1,
-                                "First In-Sample Balanced Accuracy of 100%",
-                                "Full set of PCs")) %>%
+  mutate(PC_stop_point = case_when(Num_PCs == pcs_with_balanced_accuracy_1 ~ "First In-Sample Balanced Accuracy of 100%",
+                                   Num_PCs == total_num_pcs ~ "Full set of PCs",
+                                   Num_PCs == inflection_point_x ~ "Inflection Point of Loess Curve",
+                                   T ~ "")) %>%
+  mutate(PC_stop_point = factor(PC_stop_point, levels = c("Full set of PCs",
+                                                          "First In-Sample Balanced Accuracy of 100%",
+                                                          "Inflection Point of Loess Curve"))) %>%
   ggplot(data = ., mapping = aes(x = Method, y = balanced_accuracy,
                                  fill = PC_stop_point)) +
   geom_bar(stat = "identity",
@@ -636,8 +684,16 @@ Combo_wise_PCA_res_combined %>%
   geom_errorbar(aes(ymin = balanced_accuracy - balanced_accuracy_SD,
                     ymax = balanced_accuracy + balanced_accuracy_SD,
                     group = PC_stop_point),
-                position = position_dodge(),
-                width = 0)
+                position = position_dodge()) +
+  ggtitle("Evaluating PC Stopping Points for catch22 CV Linear SVM") +
+  ylab("Balanced Accuracy,\n10-fold Out-of-Sample") +
+  xlab("Weighting Method") +
+  labs(fill = "PC Stopping Point") +
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust=0.5)) +
+  guides(fill=guide_legend(nrow=3,byrow=TRUE))
+ggsave("plots/Combo_Univariate_PC_Stop_Point_OOS_Balanced_Accuracy.png",
+       width = 7, height = 6, units="in", dpi=300)
 ```
 
 
@@ -713,7 +769,68 @@ ggsave("plots/Combo_Wise_PCA_All_Methods_Linear_SVM_Balanced_Accuracy_diffC.png"
 
 
 
-## PySPI
+
+## Regularization
+
+### Exploring penalizedSVM
+
+```{r}
+example_ROI <- "ctx-lh-bankssts"
+full_data_for_SVM <- catch22_feature_matrix %>%
+  tidyr::unite("Unique_ID", c(names, Brain_Region), sep="_") %>%
+  pivot_wider(id_cols = c(Subject_ID, group),
+              names_from = Unique_ID,
+              values_from = values) %>%
+  dplyr::select(-Subject_ID) %>%
+  mutate(group = ifelse(group == "Schz", 1, -1)) %>%
+  as.matrix() 
+
+first_20_PCs_for_SVM <- ROI_PC_scores %>%
+  filter(Brain_Region == example_ROI) %>%
+  dplyr::select(group, PC1:PC20)
+
+full_svm <- paste0(rdata_path, "Combo_wise_PCA_linear_SVM_unweighted_catch22.Rds")
+
+first20_pc_svm <- run_SVM_from_PCA(
+    PCA_res = combo_data_PCA,
+    group_vector = combo_data$group,
+    interval = 2,
+    c_values = 1,
+    use_inv_prob_weighting = FALSE,
+    use_SMOTE = FALSE
+  )
+regularized_svm
+
+# train data
+model <- lpsvm(A=full_data_for_SVM[, -1], 
+               d=full_data_for_SVM[,1], 
+               k=5, 
+               nu=0,
+               output=0, 
+               delta=10^-3, 
+               epsi=0.001, 
+               seed=127)
+print(model)
+
+data.frame(terms = names(model$w),
+           coeff = model$w) %>%
+  mutate(terms = fct_reorder(terms, coeff)) %>%
+  ggplot(data=., mapping=aes(x = terms, y = coeff)) +
+  geom_bar(aes(fill = coeff), stat = "identity") +
+  ggtitle("L1-Regularized catch22\nCombo-wise Linear SVM") +
+  scale_fill_gradient2(low = "blue", mid = "gray70", high = "red") +
+  ylab("Hyperplane Coefficients") +
+  xlab("Combo-wise catch22 Terms") +
+  coord_flip() +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5))
+ggsave("plots/L1_Regularized_Combo_Wise_catch22_Linear_SVM_coefficients.png",
+       width=10, height = 6, units="in", dpi=300)
+```
+
+
+
+# Pairwise (pyspi)
 
 Run PCA by pySPI SPI
 ```{r}
@@ -1074,36 +1191,4 @@ ggsave("plots/Pairwise_PCA_All_Methods_Linear_SVM_Balanced_Accuracy.png", width=
 ```
 
 
-
-# Regularization
-
-### Exploring penalizedSVM
-
-```{r}
-example_ROI <- "ctx-lh-bankssts"
-full_data_for_SVM <- feature_matrix %>%
-  filter(Brain_Region == example_ROI) %>%
-  pivot_wider(id_cols = c(Subject_ID, group),
-              names_from = names,
-              values_from = values) %>%
-  dplyr::select(-Subject_ID) %>%
-  mutate(group = ifelse(group == "Schz", 1, -1)) %>%
-  as.matrix() 
-first_20_PCs_for_SVM <- ROI_PC_scores %>%
-  filter(Brain_Region == example_ROI) %>%
-  dplyr::select(group, PC1:PC20)
-
-# train data
-model <- lpsvm(A=full_data_for_SVM[, -1], 
-               d=full_data_for_SVM[,1], 
-               k=5, 
-               nu=0,
-               output=0, 
-               delta=10^-3, 
-               epsi=0.001, 
-               seed=127)
-print(model)
-
-
-```
 

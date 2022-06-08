@@ -7,6 +7,7 @@ library(theft)
 #-------------------------------------------------------------------------------
 # Very simple t-test
 t_test_by_region <- function(rdata_path, 
+                             feature_set  = "catch22",
                              noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"),
                              norm_methods = c("z-score", "RobustSigmoid")) {
   
@@ -18,8 +19,8 @@ t_test_by_region <- function(rdata_path,
     noise_label <- gsub("\\+", "_", noise_proc) 
     
     # Load catch22 feature matrix
-    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_catch22.Rds", 
-                                                         noise_label)))
+    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s.Rds", 
+                                                         noise_label, feature_set)))
     
     # Define non-normalised data
     non_norm_data <- feature_matrix %>%
