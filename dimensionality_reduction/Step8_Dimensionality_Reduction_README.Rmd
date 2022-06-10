@@ -16,18 +16,20 @@ source(paste0(github_dir, "helper_functions/Visualization.R"))
 source(paste0(github_dir, "helper_functions/Null_distributions.R"))
 rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 library(penalizedSVM)
+library(factoextra)
+library(FactoMineR)
 
 noise_proc = "AROMA+2P"
 noise_label = "AROMA_2P"
 
 # Load catch22 data for current noise processing method
 catch22_feature_matrix <- readRDS(paste0(rdata_path, 
-                                         sprintf("UCLA_%s_catch22_zscored_filtered.Rds", 
+                                         sprintf("UCLA_%s_catch22_filtered_zscored.Rds", 
                                                              noise_label)))     
 
-catchaMouse16_feature_matrix <- readRDS(paste0(rdata_path,
-                                               sprintf("UCLA_%s_catchaMouse16_zscored_filtered.Rds",
-                                                       noise_label)))
+# catchaMouse16_feature_matrix <- readRDS(paste0(rdata_path,
+#                                                sprintf("UCLA_%s_catchaMouse16_zscored_filtered.Rds",
+#                                                        noise_label)))
 ```
 
 
@@ -477,7 +479,7 @@ combo_data <- catch22_feature_matrix %>%
               values_from = values) %>%
   drop_na() 
 combo_data_mat <- combo_data %>%
-  select(-Subject_ID, -group) %>%
+  dplyr::select(-Subject_ID, -group) %>%
   as.matrix()
 
 combo_data_PCA <- prcomp(combo_data_mat, center = TRUE, scale. = TRUE)
@@ -512,7 +514,7 @@ ggsave("plots/Combo_Wise_PCA_Cumulative_Variance.png", width=6, height=4,
 #### Unweighted
 ```{r}
 # Run in-sample linear SVM for each number of PCs from 1 to 167
-if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_unweighted_catch22.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_CV_linear_SVM_unweighted_catch22.Rds"))) {
   Combo_wise_PCA_linear_SVM_unweighted <- run_SVM_from_PCA(
     PCA_res = combo_data_PCA,
     group_vector = combo_data$group,
@@ -521,9 +523,9 @@ if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_unweighted_catch2
     use_inv_prob_weighting = FALSE,
     use_SMOTE = FALSE
   )
-  saveRDS(Combo_wise_PCA_linear_SVM_unweighted, paste0(rdata_path, "Combo_wise_PCA_linear_SVM_unweighted_catch22.Rds"))
+  saveRDS(Combo_wise_PCA_linear_SVM_unweighted, paste0(rdata_path, "Combo_wise_PCA_CV_linear_SVM_unweighted_catch22.Rds"))
 } else {
-  Combo_wise_PCA_linear_SVM_unweighted <- readRDS(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_unweighted_catch22.Rds"))
+  Combo_wise_PCA_linear_SVM_unweighted <- readRDS(paste0(rdata_path, "Combo_wise_PCA_CV_linear_SVM_unweighted_catch22.Rds"))
 }
 ```
 
@@ -531,7 +533,7 @@ if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_unweighted_catch2
 
 ```{r}
 # Run in-sample linear SVM with inverse probability weighting for each number of PCs from 1-167
-if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_inv_prob_catch22.Rds"))) {
+if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_CV_linear_SVM_inv_prob_catch22.Rds"))) {
    
   Combo_wise_PCA_linear_SVM_inv_prob <- run_SVM_from_PCA(
     PCA_res = combo_data_PCA,
@@ -541,9 +543,9 @@ if (!file.exists(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_inv_prob_catch22.
     use_inv_prob_weighting = TRUE,
     use_SMOTE = FALSE
   )
-  saveRDS(Combo_wise_PCA_linear_SVM_inv_prob, paste0(rdata_path, "Combo_wise_PCA_linear_SVM_inv_prob_catch22.Rds"))
+  saveRDS(Combo_wise_PCA_linear_SVM_inv_prob, paste0(rdata_path, "Combo_wise_PCA_CV_linear_SVM_inv_prob_catch22.Rds"))
 } else {
-  Combo_wise_PCA_linear_SVM_inv_prob <- readRDS(paste0(rdata_path, "Combo_wise_PCA_linear_SVM_inv_prob_catch22.Rds"))
+  Combo_wise_PCA_linear_SVM_inv_prob <- readRDS(paste0(rdata_path, "Combo_wise_PCA_CV_linear_SVM_inv_prob_catch22.Rds"))
 }
 ```
 
@@ -595,15 +597,64 @@ Combo_wise_PCA_linear_SVM_inv_prob %>%
 Stop PCs when there is an inflection point in the in-sample balanced accuracy:
 
 ```{r}
+# Raw data
+X <- Combo_wise_PCA_linear_SVM_inv_prob %>% 
+  filter(Sample_Type=="In-sample") %>%
+  pull(Num_PCs)
+Y <- Combo_wise_PCA_linear_SVM_inv_prob %>% filter(Sample_Type == "In-sample") %>% pull(balanced_accuracy)
+
+dY <- diff(Y)/diff(X)
+X_for_dY <- X[-1]
+dY2 <- diff(dY)/diff(X_for_dY)
+X_for_dY2 <- X_for_dY[-1]
+
+# Loess-smoothed data
 in_sample_balanced_accuracy_loess <- loess(balanced_accuracy ~ Num_PCs,
                                            data = subset(Combo_wise_PCA_linear_SVM_inv_prob,
                                                          Sample_Type == "In-sample"),
                                            span = 0.75)
 
-loess_X <- Combo_wise_PCA_linear_SVM_inv_prob %>% 
+X <- Combo_wise_PCA_linear_SVM_inv_prob %>% 
   filter(Sample_Type=="In-sample") %>%
   pull(Num_PCs)
-loess_Y <- in_sample_balanced_accuracy_loess$fitted
+Y_loess <- in_sample_balanced_accuracy_loess$fitted
+
+dY_loess <- diff(Y_loess)/diff(X)
+X_for_dY_loess <- X[-1]
+dY2_loess <- diff(dY_loess)/diff(X_for_dY)
+X_for_dY2_loess <- X_for_dY_loess[-1]
+
+data.frame(X = rep(c(X, X_for_dY, X_for_dY2), 2),
+           Y = c(Y, dY, dY2, Y_loess, dY_loess, dY2_loess),
+           method = rep(c(rep("Original", length(X)),
+                      rep("First Deriv", length(dY)),
+                      rep("Second Deriv", length(dY2))), 2),
+           measure = c(rep("Raw", length(c(X, X_for_dY, X_for_dY2))),
+                       rep("Loess", length(c(X, X_for_dY, X_for_dY2))))) %>%
+  mutate(method = factor(method, levels = c("Original",
+                                            "First Deriv",
+                                            "Second Deriv")),
+         measure = factor(measure, levels = c("Raw", "Loess"))) %>%
+  mutate(chosen_num_PCs = unique(X[Y == min(dY2_loess, na.rm=T)])) %>%
+  ggplot(data=., mapping = aes(x = X, y = Y)) +
+  geom_line(aes(group = method, color = method)) +
+  geom_vline(aes(xintercept = chosen_num_PCs)) +
+  facet_wrap(method ~ measure, nrow = 2, scales = "free_y", dir = "v") +
+  ggtitle("Combo-wise Univariate PCA: Finding\nInflection Point in In-Sample Balanced Accuracy") +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5))
+```
+
+
+```{r}
+in_sample_balanced_accuracy_loess <- loess(balanced_accuracy ~ Num_PCs,
+                                           data = subset(Combo_wise_PCA_linear_SVM_inv_prob,
+                                                         Sample_Type == "In-sample"),
+                                           span = 0.75)
+
+
+
+
 
 # Take first derivative
 loess_dY <- diff(loess_Y)/diff(loess_X)  # the derivative of your function

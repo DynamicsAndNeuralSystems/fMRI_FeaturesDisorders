@@ -21,6 +21,8 @@ output_data_path <- paste0(study, "data/scz/UCLA/pydata/R_files/")
 subject_csv <- read.csv(paste0(study, "data/scz/UCLA/participants.csv"))
 ```
 
+
+
 ```{r}
 if (!file.exists(paste0(pydata_path, "UCLA_AROMA_2P_pyspi_res.Rds"))) {
   pyspi_data_AROMA_2P_list <- list()

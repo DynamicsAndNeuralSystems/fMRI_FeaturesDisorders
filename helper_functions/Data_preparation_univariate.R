@@ -12,9 +12,6 @@
 require(plyr)
 library(tidyverse)
 library(R.matlab)
-library(theft)
-library(cowplot) 
-theme_set(theme_cowplot())
 
 #-------------------------------------------------------------------------------
 
@@ -122,93 +119,3 @@ load_mat_data <- function(mat_file, subject_csv, rdata_path, overwrite=F) {
   }
 }
 
-
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-# Get breakdown of control vs schizophrenia subjects in cohort
-
-get_dx_breakdown <- function(subject_csv) {
-  dx_data <- read.csv(subject_csv) %>%
-    mutate(diagnosis = str_to_sentence(diagnosis)) %>%
-    filter(diagnosis %in% c("Control", "Schz"))
-  num_total <- nrow(dx_data)
-  num_scz <- nrow(filter(dx_data, diagnosis=="Schz"))
-  num_ctrl <- nrow(filter(dx_data, diagnosis=="Control"))
-  scz2ctrl <- num_scz/num_ctrl
-  
-  res_df <- data.frame(var1 = num_ctrl,
-                       var2 = num_scz,
-                       var3 = num_total,
-                       var4 = scz2ctrl)
-  colnames(res_df) <- c("Control", "Schizophrenia", "Total", "SCZ2Ctrl")
-  print(res_df)
-}
-
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-# Plot subject count by diagnosis vs. sex
-plot_dx_vs_sex_count <- function(subject_csv) {
-  subject_data <- read.csv(subject_csv) %>%
-    mutate(diagnosis = str_to_sentence(diagnosis)) %>%
-    filter(diagnosis %in% c("Control", "Schz"))
-  
-  subject_data %>%
-    group_by(gender, diagnosis) %>%
-    count() %>%
-    ggplot(data=., mapping=aes(x=gender, fill=gender, y=n)) +
-    geom_bar(stat="identity") +
-    geom_text(aes(label=n), vjust=-0.5) +
-    facet_grid(diagnosis ~ ., switch="both") +
-    scale_y_continuous(expand=c(0,0,0.15,0)) +
-    ggtitle("Subject Breakdown by\nSex vs. Diagnosis") +
-    ylab("# Subjects") +
-    xlab("Sex") +
-    theme(legend.position="none",
-          plot.title = element_text(hjust=0.5),
-          strip.placement = "outside")
-}
-
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-# Plot age by diagnosis vs. sex
-plot_dx_vs_sex_age <- function(subject_csv) {
-  subject_data <- read.csv(subject_csv) %>%
-    mutate(diagnosis = str_to_sentence(diagnosis)) %>%
-    filter(diagnosis %in% c("Control", "Schz"))
-  
-  subject_data %>%
-    ggplot(data=., mapping=aes(x=gender, y=age, fill=gender)) +
-    geom_boxplot() +
-    facet_grid(diagnosis ~ ., switch="both") +
-    ggtitle("Subject Breakdown by\nAge vs. Diagnosis") +
-    ylab("Age") +
-    xlab("Sex") +
-    theme(legend.position="none",
-          plot.title = element_text(hjust=0.5),
-          strip.placement = "outside")
-}
-
-#-------------------------------------------------------------------------------
-
-#-------------------------------------------------------------------------------
-# catch22 for all regions
-
-catch22_all_regions <- function(TS_df) {
-  # Create a new ID that contains both subject ID and brain region
-  TS_df$unique_ID <- paste(TS_df$Subject_ID, TS_df$Brain_Region, sep="_")
-  
-  # Run catch22 using theft
-  feature_matrix <- theft::calculate_features(data = TS_df, 
-                                              id_var = "unique_ID", 
-                                              time_var = "timepoint", 
-                                              values_var = "value", 
-                                              group_var = "diagnosis", 
-                                              feature_set = "catch22",
-                                              catch24 = F) %>%
-    tidyr::separate(id, into=c("Subject_ID", "Brain_Region"), sep="_")
-  
-  return(feature_matrix)
-}

@@ -106,27 +106,7 @@ ggsave("plots/Subjects_Retained_by_FD_Threshold.png",
 ```
 
 ```{r}
-fd_thresh_list <- list()
-for (fd_threshold in seq(0, 1, by=0.01)) {
-  num_ctrl = nrow(subset(movement_data, FD <= fd_threshold & diagnosis=="CONTROL"))
-  num_schz = nrow(subset(movement_data, FD <= fd_threshold & diagnosis=="SCHZ"))
-  thresh_df <- data.frame(FD_Threshold = fd_threshold,
-                          Control = num_ctrl,
-                          Schizophrenia = num_schz)
-  fd_thresh_list <- rlist::list.append(fd_thresh_list, thresh_df)
-}
-threshold_data <- do.call(plyr::rbind.fill, fd_thresh_list) %>%
-  mutate(SCZ_to_CTRL = Schizophrenia / Control)
-
-threshold_data %>%
-  ggplot(data=., mapping=aes(x=FD_Threshold, y=SCZ_to_CTRL)) +
-  geom_line(size=2) +
-  ylab("SCZ:CTRL Ratoi") +
-  xlab("FD Threshold") +
-  scale_x_reverse() +
-  ggtitle("Ratio of SCZ:CTRL Subjects Retained\nby FD Threshold") +
-  theme(legend.position="bottom",
-        plot.title=element_text(hjust=0.5))
+plot_schz_ctrl_ratio_per_fd_threshold(movement_data)
 
 ggsave("plots/SCZ_to_CTRL_Retained_by_FD_Threshold.png",
        width=5, height=4, units="in", dpi=300)

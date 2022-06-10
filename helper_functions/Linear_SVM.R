@@ -172,7 +172,7 @@ run_cv_svm_by_input_var <- function(rdata_path,
     
     # Load z-scored feature data for current noise processing method and
     # time-series feature set
-    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s_zscored_filtered.Rds", 
+    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s_filtered_zscored.Rds", 
                                                          noise_label, feature_set)))      
     
     if (svm_feature_var == "Feature") {
