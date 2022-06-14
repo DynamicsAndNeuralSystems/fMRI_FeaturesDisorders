@@ -83,26 +83,30 @@ run_null_model_n_permutations <- function(rdata_path,
 }
 
 # Pairwise
-run_null_model_n_permutations_pairwise <- function(rdata_path,
+run_null_model_n_permutations_pairwise <- function(pairwise_data,
                                                    noise_proc = "AROMA+2P+GMR",
                                                    feature_set = "catch22",
                                                    test_package = "e1071",
                                                    svm_kernel = "linear",
+                                                   grouping_var = "SPI",
+                                                   svm_feature_var = "region_pair",
                                                    SPI_directionality,
                                                    num_permutations = 50,
                                                    use_inv_prob_weighting = FALSE,
                                                    use_SMOTE = FALSE) {
   
   nullOuts <- 1:num_permutations %>%
-    purrr::map_df( ~ run_pairwise_SVM_by_SPI(pairwise_data = pyspi_data_pearson,
-                                             SPI_directionality = SPI_directionality,
-                                             svm_kernel = svm_kernel,
-                                             test_package = test_package,
-                                             noise_proc = noise_proc,
-                                             return_all_fold_metrics = TRUE,
-                                             use_inv_prob_weighting = use_inv_prob_weighting,
-                                             use_SMOTE = use_SMOTE,
-                                             shuffle_labels = T))
+    purrr::map_df( ~ run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
+                                                      SPI_directionality = SPI_directionality,
+                                                      svm_kernel = svm_kernel,
+                                                      grouping_var = grouping_var,
+                                                      svm_feature_var = svm_feature_var,
+                                                      test_package = test_package,
+                                                      noise_proc = noise_proc,
+                                                      return_all_fold_metrics = TRUE,
+                                                      use_inv_prob_weighting = use_inv_prob_weighting,
+                                                      use_SMOTE = use_SMOTE,
+                                                      shuffle_labels = TRUE))
   
   
   null_res <- nullOuts %>%

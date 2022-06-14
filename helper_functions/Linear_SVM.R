@@ -270,7 +270,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   # Combine region pair names
   pairwise_data <- pairwise_data %>%
     left_join(., SPI_directionality) %>%
-    group_by(SPI) %>%
+    rowwise() %>%
     mutate(region_pair = case_when(Direction == "Undirected" ~ ifelse(brain_region_1 < brain_region_2,
                                                                       paste0(brain_region_1, "_", brain_region_2),
                                                                       paste0(brain_region_2, "_", brain_region_1)),
@@ -295,7 +295,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   
   
   # Reshape data from long to wide for SVM
-  for (group_var in unique(grouping_var_vector)[1:10]) {
+  for (group_var in unique(grouping_var_vector)) {
     if (grouping_var == "Combo") {
       data_for_SVM <- feature_matrix %>%
         dplyr::select(Subject_ID, group, Combo, value) %>%
