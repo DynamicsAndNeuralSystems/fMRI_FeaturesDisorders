@@ -82,12 +82,43 @@ run_null_model_n_permutations <- function(rdata_path,
   
 }
 
+# Pairwise
+run_null_model_n_permutations_pairwise <- function(rdata_path,
+                                                   noise_proc = "AROMA+2P+GMR",
+                                                   feature_set = "catch22",
+                                                   test_package = "e1071",
+                                                   svm_kernel = "linear",
+                                                   SPI_directionality,
+                                                   num_permutations = 50,
+                                                   use_inv_prob_weighting = FALSE,
+                                                   use_SMOTE = FALSE) {
+  
+  nullOuts <- 1:num_permutations %>%
+    purrr::map_df( ~ run_pairwise_SVM_by_SPI(pairwise_data = pyspi_data_pearson,
+                                             SPI_directionality = SPI_directionality,
+                                             svm_kernel = svm_kernel,
+                                             test_package = test_package,
+                                             noise_proc = noise_proc,
+                                             return_all_fold_metrics = TRUE,
+                                             use_inv_prob_weighting = use_inv_prob_weighting,
+                                             use_SMOTE = use_SMOTE,
+                                             shuffle_labels = T))
+  
+  
+  null_res <- nullOuts %>%
+    dplyr::mutate(Type = "null")
+  
+  return(null_res)
+  
+}
+
 #-------------------------------------------------------------------------------
 # Helper function to calculate empirical p-values based on null distribution
 #-------------------------------------------------------------------------------
 
 calc_empirical_nulls <- function(class_res,
                                  null_data,
+                                 is_data_averaged = TRUE,
                                  grouping_var = "Brain_Region") {
   merged_list <- list()
   
@@ -97,6 +128,22 @@ calc_empirical_nulls <- function(class_res,
     null_out <- null_data %>%
       mutate(Sample_Type = "Out-of-sample")
     null_data <- plyr::rbind.fill(null_in, null_out)
+  }
+  
+  if (!is_data_averaged) {
+    class_res <- class_res %>%
+      group_by(Sample_Type, SPI, Noise_Proc, use_inv_prob_weighting, use_SMOTE) %>%
+      summarise(accuracy_avg = mean(accuracy, na.rm=T),
+                accuracy_SD = sd(accuracy, na.rm=T),
+                balanced_accuracy_avg = mean(balanced_accuracy, na.rm=T),
+                balanced_accuracy_SD = sd(balanced_accuracy, na.rm=T)) %>%
+      dplyr::rename("accuracy"="accuracy_avg",
+                    "balanced_accuracy"="balanced_accuracy_avg")
+  }
+    
+  if (!("grouping_var" %in% colnames(class_res))) {
+    class_res <- class_res %>%
+      dplyr::rename("grouping_var" = grouping_var)
   }
   
   main_res <- class_res %>%

@@ -250,97 +250,95 @@ run_cv_svm_by_input_var <- function(rdata_path,
 }
 
 #-------------------------------------------------------------------------------
-# Run simple pairwise PYSPI in-sample multi-feature linear SVM by given grouping var
+# Run simple pairwise PYSPI in-sample multi-feature linear SVM by SPI
 #-------------------------------------------------------------------------------
-run_pairwise_SVM_by_SPI <- function(pairwise_data,
-                                    svm_kernel = "linear",
-                                    test_package = "e1071",
-                                    noise_proc = "AROMA+2P",
-                                    return_all_fold_metrics = FALSE,
-                                    use_inv_prob_weighting = FALSE,
-                                    use_SMOTE = FALSE,
-                                    shuffle_labels = FALSE) {
+run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
+                                             SPI_directionality,
+                                             svm_kernel = "linear",
+                                             grouping_var = "SPI",
+                                             svm_feature_var = "region_var",
+                                             test_package = "e1071",
+                                             noise_proc = "AROMA+2P+GMR",
+                                             return_all_fold_metrics = FALSE,
+                                             use_inv_prob_weighting = FALSE,
+                                             use_SMOTE = FALSE,
+                                             shuffle_labels = FALSE) {
   
-  # Initialize results list for SPI-wise in-sample linear SVM
+  # Initialize results list for SVM
   class_res_list <- list()
   
-  # Iterate over each PYSPI SPI
-  for (this_SPI in unique(all_pyspi_data$SPI)) {
-    # Identify whether current SPI is directed or undirected
-    directionality <- SPI_directionality %>% filter(SPI == this_SPI) %>% pull(Direction)
+  # Combine region pair names
+  pairwise_data <- pairwise_data %>%
+    left_join(., SPI_directionality) %>%
+    group_by(SPI) %>%
+    mutate(region_pair = case_when(Direction == "Undirected" ~ ifelse(brain_region_1 < brain_region_2,
+                                                                      paste0(brain_region_1, "_", brain_region_2),
+                                                                      paste0(brain_region_2, "_", brain_region_1)),
+                                   Direction == "Directed" ~ paste0(brain_region_1, "_", brain_region_2))) %>%
+    dplyr::select(-brain_region_1, -brain_region_2)  %>%
+    distinct(Subject_ID, SPI, region_pair, .keep_all = T)
+  
+  if (svm_feature_var == "region_pair") {
+    svm_feature_var_name = svm_feature_var
+    grouping_var_name = "SPI"
+    grouping_var_vector <- unique(pairwise_data$SPI)
     
-    # Reshape SPI data to contain brain region names
-    SPI_data <- subset(all_pyspi_data, SPI == this_SPI)  %>%
-      mutate(comparison = row_number()) %>%
-      pivot_longer(cols = c(brain_region_1,
-                            brain_region_2),
-                   names_to = "Region_Number",
-                   values_to = "Index") %>%
-      left_join(ROI_index) %>%
-      dplyr::select(-Index) %>%
-      pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
-                  names_from = "Region_Number",
-                  values_from = "ROI") %>%
-      dplyr::select(-comparison) 
+  } else {
+    svm_feature_var_name = "Combo"
+    grouping_var_name = "Group_Var"
     
-    # Combine brain regions into new pairwise column depending on directionality
-    if (directionality == "Undirected") {
-      SPI_data <- SPI_data %>%
-        mutate(region_pair = ifelse(brain_region_1 < brain_region_2,
-                                    paste0(brain_region_1, "_", brain_region_2),
-                                    paste0(brain_region_2, "_", brain_region_1)))
-    } else if (directionality == "Directed") {
-      SPI_data <- SPI_data %>%
-        mutate(region_pair = paste0(brain_region_1, "_", brain_region_2))
-    }
+    pairwise_data <- pairwise_data %>%
+      unite("Combo", c("region_pair", "SPI"), sep="_", remove=F)
     
-    # Pivot data from long to wide for SVM
-    data_for_SVM <- SPI_data %>%
-      dplyr::select(Subject_ID, group, region_pair, value) %>%
-      mutate(value = round(value, 8)) %>%
-      distinct() %>%
-      pivot_wider(id_cols = c(Subject_ID, group),
-                  names_from = region_pair, 
-                  values_from = value) %>%
-      dplyr::select(-Subject_ID) %>%
-      drop_na()
-    
-    # Get sample weights if inverse probability weighting flag is applied
-    if (use_inv_prob_weighting) {
-      # Get control/schz proportions
-      sample_props <- data_for_SVM %>%
-        ungroup() %>%
-        dplyr::summarise(control_prop = sum(group=="CONTROL") / n(),
-                         schz_prop = sum(group=="SCHZ")/n())
+    grouping_var_vector <- c("All")
+  }
+  
+  
+  # Reshape data from long to wide for SVM
+  for (group_var in unique(grouping_var_vector)[1:10]) {
+    if (grouping_var == "Combo") {
+      data_for_SVM <- feature_matrix %>%
+        dplyr::select(Subject_ID, group, Combo, value) %>%
+        tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                           names_from = Combo,
+                           values_from 
+                           = value) %>%
+        dplyr::select(-Subject_ID) %>%
+        # Drop columns that are all NA/NAN
+        dplyr::select(where(function(x) any(!is.na(x)))) %>%
+        # Drop rows with NA for one or more column
+        drop_na()
       
-      # Convert to sample weights based on inverse of probability
-      sample_wts <- list("CONTROL" = 1/sample_props$control_prop,
-                         "SCHZ" = 1/sample_props$schz_prop)
     } else {
-      sample_wts <- list("CONTROL" = 1,
-                         "SCHZ" = 1)
+      # Otherwise iterate over each separate group
+      data_for_SVM <- subset(pairwise_data, get(grouping_var_name) == group_var) %>%
+        dplyr::ungroup() %>%
+        dplyr::select(Subject_ID, group, svm_feature_var_name, value) %>%
+        tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                           names_from = svm_feature_var_name,
+                           values_from 
+                           = value) %>%
+        dplyr::select(-Subject_ID) %>%
+        # Drop columns that are all NA/NAN
+        dplyr::select(where(function(x) any(!is.na(x)))) %>%
+        # Drop rows with NA for one or more column
+        drop_na()
     }
     
     # Pass data_for_SVM to in_sample_linear_SVM
-    if (nrow(data_for_SVM ) > 0) {
-      
-      cat("\nNow running linear SVM for", this_SPI, "\n")
-      SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
-                                          k = 10,
-                                          svm_kernel = svm_kernel,
-                                          sample_wts = sample_wts,
-                                          use_SMOTE = use_SMOTE,
-                                          return_all_fold_metrics = return_all_fold_metrics,
-                                          shuffle_labels = shuffle_labels)
-    }
-    SVM_results <- SVM_results %>%
-      mutate(SPI = this_SPI,
-             Noise_Proc = noise_proc,
-             use_inv_prob_weighting = use_inv_prob_weighting,
-             use_SMOTE = use_SMOTE)
+    SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
+                                        k = 10,
+                                        svm_kernel = svm_kernel,
+                                        sample_wts = sample_wts,
+                                        use_SMOTE = use_SMOTE,
+                                        shuffle_labels = shuffle_labels) %>%
+      dplyr::mutate(grouping_var = group_var,
+                    Noise_Proc = noise_proc)
     
     # Append results to list
-    class_res_list <- rlist::list.append(class_res_list, SVM_results)
+    class_res_list <- rlist::list.append(class_res_list,
+                                         SVM_results)
+    
   }
   
   # Combine results from all regions into a dataframe
