@@ -86,6 +86,8 @@ merge_pyspi_res_for_study <- function(data_path,
       all_pyspi_data <- do.call(plyr::rbind.fill, subj_data_list)  %>%
         mutate(comparison = row_number(),
                group = stringr::str_to_sentence(group)) %>%
+        # Remove rows where brain_region_1 = brain_region_2
+        dplyr::filter(brain_region_1 != brain_region_2) %>%
         pivot_longer(cols = c(brain_region_1,
                               brain_region_2),
                      names_to = "Region_Number",

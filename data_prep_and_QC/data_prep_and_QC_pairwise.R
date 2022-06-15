@@ -59,11 +59,12 @@ merge_pyspi_res_for_study(data_path = pydata_path,
                           noise_procs = noise_procs)
 
 ################################################################################
-# QC for pyspi res
+# QC for pyspi res -- AROMA+2P+GMR
 ################################################################################
 
-aroma_2P_GMR_pyspi <- readRDS(paste0(pydata_path, "UCLA_all_subject_pyspi_AROMA_2P_GMR.Rds"))
-
+aroma_2P_GMR_pyspi <- readRDS(paste0(pydata_path, 
+                                     "UCLA_all_subject_pyspi_AROMA_2P_GMR.Rds"))
+  
 ### Number of NA Values by ROI Pair
 aroma_2P_GMR_pyspi %>%
   tidyr::unite("ROI_pair", c(brain_region_1, brain_region_2), sep="_") %>%
