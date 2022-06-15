@@ -38,7 +38,7 @@ kernel = "linear"
 ################################################################################
 pyspi_data <- readRDS(paste0(pydata_path, "UCLA_all_subject_pyspi_AROMA_2P_GMR_filtered_zscored.Rds")) %>%
   mutate(group = stringr::str_to_sentence(group))
-SPI_directionality <- read.csv("SPI_Direction_Info.csv")
+SPI_directionality <- read.csv(paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"))
 
 ################################################################################
 # Generate model-free shuffle null distribution
