@@ -90,6 +90,9 @@ merge_pyspi_res_for_study <- function(data_path,
                               brain_region_2),
                      names_to = "Region_Number",
                      values_to = "Index") %>%
+        # Convert Index to number and add 1 since python is base 0
+        # While R is base 1
+        mutate(Index = 1 + as.numeric(gsub("proc-", "", Index))) %>%
         left_join(ROI_index) %>%
         dplyr::select(-Index) %>%
         pivot_wider(id_cols = c("Subject_ID", "group", "SPI", "value", "comparison"),
