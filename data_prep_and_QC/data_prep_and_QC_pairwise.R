@@ -1,12 +1,13 @@
 # TODO: convert to argparse
 python_to_use <- "/home/osboxes/anaconda3/envs/pyspi/bin/python3"
 
-github_dir <- "/media/sf_Shared_Folder/github/fMRI_FeaturesDisorders/"
-study <- "/media/sf_Shared_Folder/PhD_work/"
-# github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
-# study <- "D:/Virtual_Machines/Shared_Folder/PhD_work/"
+# github_dir <- "/media/sf_Shared_Folder/github/fMRI_FeaturesDisorders/"
+# study <- "/media/sf_Shared_Folder/PhD_work/"
+github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
+study <- "D:/Virtual_Machines/Shared_Folder/PhD_work/"
 data_path <- paste0(study, "data/scz/UCLA/")
-pydata_path <- paste0(study, "data/scz/UCLA/pydata/")
+rdata_path <- paste0(data_path, "Rdata/")
+pydata_path <- paste0(data_path, "pydata/")
 output_data_path <- paste0(study, "data/scz/UCLA/pydata/R_files/")
 
 # load libraries
@@ -33,6 +34,7 @@ system(sprintf("python3 %s/helper_functions/split_MTS_into_npy.py",
 ################################################################################
 
 ### See github_dir/pyspi_files/call_pyspi_on_cluster.sh
+feature_set = "pyspi_19"
 
 ################################################################################
 # Read pyspi calc.pkl files into R for each subject -- LOCAL ON UBUNTU
@@ -120,8 +122,13 @@ original_TS_data %>%
 aroma_2P_GMR_pyspi_filtered <- aroma_2P_GMR_pyspi %>%
   filter(!(Subject_ID %in% pyspi_all_NA_subjects))
 
-saveRDS(aroma_2P_GMR_pyspi_filtered, 
-        file=paste0(pydata_path, "UCLA_all_subject_pyspi_AROMA_2P_GMR_filtered.Rds"))
+saveRDS(aroma_2P_GMR_pyspi_filtered, file=paste0(pydata_path, "UCLA_all_subject_pyspi_AROMA_2P_GMR_filtered.Rds"))
+
+# Save subject info
+filtered_subject_info <- aroma_2P_GMR_pyspi_filtered %>%
+  distinct(Subject_ID, group)
+saveRDS(filtered_subject_info, file=paste0(rdata_path, sprintf("Filtered_subject_info_%s.Rds",
+                                                               feature_set)))
 
 ################################################################################
 # Z-score normalisation

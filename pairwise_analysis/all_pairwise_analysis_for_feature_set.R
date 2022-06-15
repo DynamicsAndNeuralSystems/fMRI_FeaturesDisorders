@@ -2,9 +2,9 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
-parser$add_argument("--github_dir", default="/home/abry4213/github/")
-parser$add_argument("--rdata_path", default="/home/abry4213/data/scz/UCLA/Rdata/")
-parser$add_argument("--pydata_path", default="/home/abry4213/data/scz/UCLA/pydata/")
+parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
+parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
+parser$add_argument("--pydata_path", default="/project/hctsa/annie/data/scz/UCLA/pydata/")
 parser$add_argument("--feature_set", default="pyspi_19")
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
 # rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
@@ -33,11 +33,13 @@ noise_proc = "AROMA+2P+GMR"
 test_package = "e1071"
 kernel = "linear"
 
-################################################################################
+# ###############################################################################
 # Load pyspi data
-################################################################################
-pyspi_data <- readRDS(paste0(pydata_path, "UCLA_all_subject_pyspi_AROMA_2P_GMR_filtered_zscored.Rds")) %>%
+# ###############################################################################
+pyspi_data_file <- paste0(pydata_path, "UCLA_all_subject_pyspi_AROMA_2P_GMR_filtered_zscored.Rds")
+pyspi_data <- readRDS(pyspi_data_file) %>%
   mutate(group = stringr::str_to_sentence(group))
+
 SPI_directionality <- read.csv(paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"))
 
 ################################################################################
@@ -69,12 +71,12 @@ weighting_param_df <- data.frame(name = c("unweighted", "inv_prob", "SMOTE"),
 ################################################################################
 
 #### 10-fold linear SVM with different weights
-# Iterate over weighting_param_df 
+# Iterate over weighting_param_df
 for (i in 1:nrow(weighting_param_df)) {
   weighting_name <- weighting_param_df$name[i]
   use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[i]
   use_SMOTE <- weighting_param_df$use_SMOTE[i]
-  
+
   # Run given weighting for 10-fold CV linear SVM
   if (!file.exists(paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_%s_%s.Rds",
                                               feature_set, weighting_name)))) {
@@ -89,7 +91,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                             use_inv_prob_weighting = use_inv_prob_weighting,
                                                                             use_SMOTE = use_SMOTE,
                                                                             shuffle_labels = FALSE)
-    saveRDS(pyspi_SPI_pairwise_SVM_CV_weighting, file=paste0(rdata_path, 
+    saveRDS(pyspi_SPI_pairwise_SVM_CV_weighting, file=paste0(rdata_path,
                                                            sprintf("pyspi_SPI_pairwise_CV_linear_SVM_%s_%s.Rds",
                                                                    feature_set, weighting_name)))
   }

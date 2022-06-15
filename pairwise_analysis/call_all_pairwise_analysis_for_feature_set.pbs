@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -P hctsa
 #PBS -N pairwise_pyspi19_analysis
-#PBS -o /home/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pairwise_pyspi19_analysis_out.txt
+#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/pairwise_pyspi19_analysis_out.txt
 #PBS -j oe
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=40:00:00
@@ -13,11 +13,13 @@ cd "$PBS_O_WORKDIR"
 # Load R
 module load R/4.1.1
 
-github_dir=/home/abry4213/github/fMRI_FeaturesDisorders/
-rdata_path=/home/abry4213/data/scz/UCLA/Rdata/
-pydata_path=/home/abry4213/data/scz/UCLA/pydata/
+project_dir=/project/hctsa/annie
+github_dir=${project_dir}/github/fMRI_FeaturesDisorders/
+rdata_path=${project_dir}/data/scz/UCLA/Rdata/
+pydata_path=${project_dir}/data/scz/UCLA/pydata/
+mkdir -p $github_dir/cluster_output/
 
-Rscript all_pairwise_analysis_for_feature_set.R \
+Rscript ${github_dir}/pairwise_analysis/all_pairwise_analysis_for_feature_set.R \
 --github_dir $github_dir \
 --rdata_path $rdata_path \
 --pydata_path $pydata_path \

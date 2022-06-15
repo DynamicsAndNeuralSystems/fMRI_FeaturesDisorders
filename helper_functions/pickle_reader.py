@@ -4,34 +4,23 @@ import dill
 def extract_df_from_pkl(pkl_file):
     
     with open(pkl_file,'rb') as f:
-      calc = dill.load(f)
-      
-    sample_dict = {}
-      
-    # Iterate over each SPI
-    for SPI in calc._spis:
-        res = calc.table[SPI]
-        res.reset_index(level=0, inplace=True)
-        res = res.rename(columns={"index": "brain_region_1"})
-        
-        # Convert dataframe from wide to long
-        res_long = pd.melt(res, id_vars='brain_region_1')
-        res_long = res_long.rename(columns={"process": "brain_region_2"})
-        
-        # Set SPI and subject ID
-        res_long["SPI"] = SPI
-        
-        res_long["brain_region_1"] = res_long["brain_region_1"].replace("proc-", "", regex=True).astype(int) + 1
-        res_long["brain_region_2"] = res_long["brain_region_2"].replace("proc-", "", regex=True).astype(int) + 1
-        
-        # Omit pairs where the two brain regions are the same
-        res_long = res_long[res_long["brain_region_1"] != res_long["brain_region_2"]]
-        
-        # add results to the subject's dictionary
-        sample_dict[SPI] = res_long
+        SPI_res = dill.load(f)
     
-    # Combine dictionary of SPI dataframes into one dataframe
-    sample_df = pd.concat(sample_dict, axis=0)
+    # Iterate over each SPI
+    SPI_res.columns = SPI_res.columns.to_flat_index()
+      
+    # Convert index to column
+    SPI_res.reset_index(level=0, inplace=True)
+      
+    # Rename index as first brain region
+    SPI_res = SPI_res.rename(columns={"index": "brain_region_1"})
+      
+    # Pivot data from wide to long
+    SPI_res_long = pd.melt(SPI_res, id_vars="brain_region_1")
+    SPI_res_long['SPI'], SPI_res_long['brain_region_2'] = SPI_res_long.variable.str
+    
+    # Remove variable column
+    SPI_res_long = SPI_res_long.drop("variable", 1)
     
     # Return end dictionary
-    return(sample_df)
+    return(SPI_res_long)
