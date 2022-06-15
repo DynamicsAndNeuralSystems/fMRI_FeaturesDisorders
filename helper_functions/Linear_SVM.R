@@ -145,6 +145,7 @@ run_cv_svm_by_input_var <- function(rdata_path,
                                     noise_procs = c("AROMA+2P", 
                                                     "AROMA+2P+GMR", 
                                                     "AROMA+2P+DiCER"),
+                                    return_all_fold_metrics = FALSE,
                                     use_inv_prob_weighting = FALSE,
                                     use_SMOTE = FALSE,
                                     shuffle_labels = FALSE) {
@@ -232,7 +233,8 @@ run_cv_svm_by_input_var <- function(rdata_path,
                                           svm_kernel = svm_kernel,
                                           sample_wts = sample_wts,
                                           use_SMOTE = use_SMOTE,
-                                          shuffle_labels = shuffle_labels) %>%
+                                          shuffle_labels = shuffle_labels,
+                                          return_all_fold_metrics = return_all_fold_metrics) %>%
         dplyr::mutate(grouping_var = group_var,
                       Noise_Proc = noise_proc)
       
@@ -256,7 +258,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                              SPI_directionality,
                                              svm_kernel = "linear",
                                              grouping_var = "SPI",
-                                             svm_feature_var = "region_var",
+                                             svm_feature_var = "region_pair",
                                              test_package = "e1071",
                                              noise_proc = "AROMA+2P+GMR",
                                              return_all_fold_metrics = FALSE,
@@ -297,7 +299,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   # Reshape data from long to wide for SVM
   for (group_var in unique(grouping_var_vector)) {
     if (grouping_var == "Combo") {
-      data_for_SVM <- feature_matrix %>%
+      data_for_SVM <- pairwise_data %>%
         dplyr::select(Subject_ID, group, Combo, value) %>%
         tidyr::pivot_wider(id_cols = c(Subject_ID, group),
                            names_from = Combo,
@@ -325,15 +327,27 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
         drop_na()
     }
     
+    # Define sample weights
+    # Default is 1 and 1 if use_inv_prob_weighting is not included
+    if (use_inv_prob_weighting) {
+      # Get control/schz proportions
+      sample_wts <- as.list(1/prop.table(table(data_for_SVM$group)))
+    } else {
+      sample_wts <- list("Control" = 1, "Schz" = 1)
+    }
+    
     # Pass data_for_SVM to in_sample_linear_SVM
     SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
                                         k = 10,
                                         svm_kernel = svm_kernel,
                                         sample_wts = sample_wts,
                                         use_SMOTE = use_SMOTE,
-                                        shuffle_labels = shuffle_labels) %>%
+                                        shuffle_labels = shuffle_labels,
+                                        return_all_fold_metrics = return_all_fold_metrics) %>%
       dplyr::mutate(grouping_var = group_var,
-                    Noise_Proc = noise_proc)
+                    Noise_Proc = noise_proc,
+                    use_inv_prob_weighting = use_inv_prob_weighting,
+                    use_SMOTE = use_SMOTE)
     
     # Append results to list
     class_res_list <- rlist::list.append(class_res_list,

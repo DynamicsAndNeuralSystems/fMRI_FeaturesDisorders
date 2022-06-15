@@ -90,6 +90,7 @@ run_null_model_n_permutations_pairwise <- function(pairwise_data,
                                                    svm_kernel = "linear",
                                                    grouping_var = "SPI",
                                                    svm_feature_var = "region_pair",
+                                                   return_all_fold_metrics = FALSE,
                                                    SPI_directionality,
                                                    num_permutations = 50,
                                                    use_inv_prob_weighting = FALSE,
@@ -103,7 +104,7 @@ run_null_model_n_permutations_pairwise <- function(pairwise_data,
                                                       svm_feature_var = svm_feature_var,
                                                       test_package = test_package,
                                                       noise_proc = noise_proc,
-                                                      return_all_fold_metrics = TRUE,
+                                                      return_all_fold_metrics = return_all_fold_metrics,
                                                       use_inv_prob_weighting = use_inv_prob_weighting,
                                                       use_SMOTE = use_SMOTE,
                                                       shuffle_labels = TRUE))
@@ -122,6 +123,7 @@ run_null_model_n_permutations_pairwise <- function(pairwise_data,
 
 calc_empirical_nulls <- function(class_res,
                                  null_data,
+                                 feature_set,
                                  is_data_averaged = TRUE,
                                  grouping_var = "Brain_Region") {
   merged_list <- list()
@@ -136,7 +138,7 @@ calc_empirical_nulls <- function(class_res,
   
   if (!is_data_averaged) {
     class_res <- class_res %>%
-      group_by(Sample_Type, SPI, Noise_Proc, use_inv_prob_weighting, use_SMOTE) %>%
+      group_by(Sample_Type, grouping_var, Noise_Proc, use_inv_prob_weighting, use_SMOTE) %>%
       summarise(accuracy_avg = mean(accuracy, na.rm=T),
                 accuracy_SD = sd(accuracy, na.rm=T),
                 balanced_accuracy_avg = mean(balanced_accuracy, na.rm=T),
@@ -199,10 +201,11 @@ calc_empirical_nulls <- function(class_res,
   }
   main_p_values <- do.call(plyr::rbind.fill, merged_list) %>%
     ungroup() %>%
-    mutate(Noise_Proc = factor(Noise_Proc, levels = noise_procs)) %>%
+    mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"))) %>%
     group_by(Noise_Proc) %>%
     mutate(acc_p_adj = p.adjust(acc_p, method="BH"),
-           bal_acc_p_adj = p.adjust(bal_acc_p, method="BH")) %>%
+           bal_acc_p_adj = p.adjust(bal_acc_p, method="BH"),
+           feature_set = feature_set) %>%
     arrange(Noise_Proc)
   
   return(main_p_values)
