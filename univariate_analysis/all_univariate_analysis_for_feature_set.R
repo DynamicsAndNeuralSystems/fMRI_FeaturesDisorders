@@ -96,7 +96,7 @@ for (weighting_name in unique(weighting_param_df$name)) {
     pvalues <- calc_empirical_nulls(class_res = region_wise_SVM_CV_weighting,
                                     null_data = model_free_shuffle_null_res,
 				    feature_set = feature_set,
-				    is_averaged = TRUE,
+				    is_data_averaged = TRUE,
                                     grouping_var = "Brain_Region")
     
     saveRDS(pvalues, file=paste0(rdata_path, sprintf("ROI_wise_CV_linear_SVM_%s_%s_model_free_shuffle_pvals.Rds",
@@ -137,7 +137,7 @@ for (i in 1:nrow(weighting_param_df)) {
     pvalues <- calc_empirical_nulls(class_res = region_wise_SVM_CV_weighting,
                                     null_data = model_permutation_null_weighting,
 				    feature_set = feature_set,
-				    is_averaged = TRUE,
+				    is_data_averaged = TRUE,
                                     grouping_var = "Brain_Region")
     
     saveRDS(pvalues, file=paste0(rdata_path, sprintf("ROI_wise_CV_linear_SVM_%s_%s_null_model_fit_pvals.Rds",
