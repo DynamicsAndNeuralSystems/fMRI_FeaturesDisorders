@@ -63,16 +63,16 @@ run_null_model_n_permutations <- function(rdata_path,
                                           use_SMOTE = FALSE) {
   
   nullOuts <- 1:num_permutations %>%
-    purrr::map_df( ~ run_cv_svm_by_input_var(rdata_path = rdata_path,
-                                             svm_kernel = svm_kernel,
-                                             feature_set = feature_set,
-                                             test_package = test_package,
-                                             grouping_var = grouping_var,
-                                             svm_feature_var = svm_feature_var,
-                                             noise_procs = noise_procs,
-                                             use_inv_prob_weighting = use_inv_prob_weighting,
-                                             use_SMOTE = use_SMOTE,
-                                             shuffle_labels = T))
+    purrr::map_df( ~ run_univariate_cv_svm_by_input_var(rdata_path = rdata_path,
+                                                        svm_kernel = svm_kernel,
+                                                        feature_set = feature_set,
+                                                        test_package = test_package,
+                                                        grouping_var = grouping_var,
+                                                        svm_feature_var = svm_feature_var,
+                                                        noise_procs = noise_procs,
+                                                        use_inv_prob_weighting = use_inv_prob_weighting,
+                                                        use_SMOTE = use_SMOTE,
+                                                        shuffle_labels = T))
   
   
   null_res <- nullOuts %>%
@@ -146,7 +146,7 @@ calc_empirical_nulls <- function(class_res,
       dplyr::rename("accuracy"="accuracy_avg",
                     "balanced_accuracy"="balanced_accuracy_avg")
   }
-    
+  
   if (!("grouping_var" %in% colnames(class_res))) {
     class_res <- class_res %>%
       dplyr::rename("grouping_var" = grouping_var)
@@ -170,7 +170,7 @@ calc_empirical_nulls <- function(class_res,
     # If null dataset is specific to each noise-processing method
     if ("Noise_Proc" %in% colnames(group_null)) {
       p_value_res <- plyr::rbind.fill(group_main,
-                                       group_null) %>%
+                                      group_null) %>%
         group_by(grouping_var, Noise_Proc, Sample_Type) %>%
         dplyr::summarise(main_accuracy = unique(accuracy[Type=="main"]),
                          main_balanced_accuracy = unique(balanced_accuracy[Type=="main"]),
