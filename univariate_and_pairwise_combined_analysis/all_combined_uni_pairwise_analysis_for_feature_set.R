@@ -95,6 +95,7 @@ weighting_param_df <- data.frame(name = c("unweighted", "inv_prob", "SMOTE"),
 # All catch22 features + pearson correlation
 ################################################################################
 pairwise_pearson_data <- pairwise_data %>% filter(SPI == "cov_EmpiricalCovariance")
+pairwise_feature_set = "pyspi_Pearson"
 
 #### 10-fold linear SVM with different weights
 # Iterate over weighting_param_df
@@ -109,7 +110,7 @@ for (i in 1:nrow(weighting_param_df)) {
     univariate_pairwise_SVM_CV_weighting <- run_combined_uni_pairwise_cv_svm_by_input_var(univariate_data = univariate_data,
                                                                                           univariate_feature_set = univariate_feature_set,
                                                                                           pairwise_data = pairwise_pearson_data,
-                                                                                          pairwise_feature_set = "pyspi_Pearson",
+                                                                                          pairwise_feature_set = pairwise_feature_set,
                                                                                           SPI_directionality = SPI_directionality,
                                                                                           svm_kernel = "linear",
                                                                                           test_package = "e1071",
