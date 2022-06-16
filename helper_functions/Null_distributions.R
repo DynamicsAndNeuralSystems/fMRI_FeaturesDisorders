@@ -175,6 +175,11 @@ calc_empirical_nulls <- function(class_res,
     null_data <- plyr::rbind.fill(null_in, null_out)
   }
   
+  if (!("grouping_var" %in% colnames(class_res))) {
+    class_res <- class_res %>%
+      dplyr::rename("grouping_var" = grouping_var)
+  }
+  
   if (!is_data_averaged) {
     class_res <- class_res %>%
       group_by(Sample_Type, grouping_var, Noise_Proc, use_inv_prob_weighting, use_SMOTE) %>%
@@ -185,12 +190,7 @@ calc_empirical_nulls <- function(class_res,
       dplyr::rename("accuracy"="accuracy_avg",
                     "balanced_accuracy"="balanced_accuracy_avg")
   }
-  
-  if (!("grouping_var" %in% colnames(class_res))) {
-    class_res <- class_res %>%
-      dplyr::rename("grouping_var" = grouping_var)
-  }
-  
+
   main_res <- class_res %>%
     dplyr::select(grouping_var, Sample_Type, Noise_Proc, accuracy, balanced_accuracy) %>%
     mutate(Type = "main") %>%
