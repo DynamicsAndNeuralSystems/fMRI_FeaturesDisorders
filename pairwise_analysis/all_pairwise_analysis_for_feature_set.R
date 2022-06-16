@@ -135,7 +135,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                                svm_feature_var = "region_pair",
                                                                                return_all_fold_metrics = FALSE,
                                                                                SPI_directionality = SPI_directionality,
-                                                                               num_permutations = 40,
+                                                                               num_permutations = 5,
                                                                                use_inv_prob_weighting = use_inv_prob_weighting,
                                                                                use_SMOTE = use_SMOTE)
 
@@ -234,7 +234,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                                svm_feature_var = "Combo",
                                                                                return_all_fold_metrics = FALSE,
                                                                                SPI_directionality = SPI_directionality,
-                                                                               num_permutations = 100,
+                                                                               num_permutations = 5,
                                                                                use_inv_prob_weighting = use_inv_prob_weighting,
                                                                                use_SMOTE = use_SMOTE)
 

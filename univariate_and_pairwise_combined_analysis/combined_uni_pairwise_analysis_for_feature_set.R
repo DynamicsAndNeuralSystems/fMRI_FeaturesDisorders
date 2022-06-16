@@ -161,7 +161,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                                                 svm_kernel = "linear",
                                                                                                 test_package = "e1071",
                                                                                                 noise_proc = "AROMA+2P+GMR",
-                                                                                                num_permutations = 40,
+                                                                                                num_permutations = 5,
                                                                                                 return_all_fold_metrics = TRUE,
                                                                                                 use_inv_prob_weighting = use_inv_prob_weighting,
                                                                                                 use_SMOTE = use_SMOTE)
