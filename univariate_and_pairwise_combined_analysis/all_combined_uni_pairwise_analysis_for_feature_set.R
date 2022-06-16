@@ -105,7 +105,7 @@ for (i in 1:nrow(weighting_param_df)) {
   use_SMOTE <- weighting_param_df$use_SMOTE[i]
   
   # Run given weighting for 10-fold CV linear SVM
-  if (!file.exists(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_%s.Rds",
+  if (!file.exists(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s.Rds",
                                               univariate_feature_set, pairwise_feature_set, weighting_name)))) {
     univariate_pairwise_SVM_CV_weighting <- run_combined_uni_pairwise_cv_svm_by_input_var(univariate_data = univariate_data,
                                                                                           univariate_feature_set = univariate_feature_set,
@@ -120,7 +120,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                                           use_SMOTE = use_SMOTE,
                                                                                           shuffle_labels = FALSE)
     saveRDS(univariate_pairwise_SVM_CV_weighting, file=paste0(rdata_path,
-                                                              sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_%s.Rds",
+                                                              sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s.Rds",
                                                                       univariate_feature_set, pairwise_feature_set, weighting_name)))
   }
 }
