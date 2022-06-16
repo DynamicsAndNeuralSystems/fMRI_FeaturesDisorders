@@ -122,9 +122,9 @@ k_fold_CV_linear_SVM <- function(input_data,
     df_res_avg <- df_res %>%
       dplyr::group_by(Sample_Type, c_value) %>%
       dplyr::summarise(accuracy_avg = mean(accuracy, na.rm=T),
-                balanced_accuracy_avg = mean(balanced_accuracy, na.rm=T),
-                accuracy_SD = sd(accuracy, na.rm=T),
-                balanced_accuracy_SD = sd(balanced_accuracy, na.rm=T)) %>%
+                       balanced_accuracy_avg = mean(balanced_accuracy, na.rm=T),
+                       accuracy_SD = sd(accuracy, na.rm=T),
+                       balanced_accuracy_SD = sd(balanced_accuracy, na.rm=T)) %>%
       dplyr::rename("accuracy" = "accuracy_avg",
                     "balanced_accuracy" = "balanced_accuracy_avg")
     
@@ -194,7 +194,7 @@ run_cv_svm_by_input_var <- function(rdata_path,
       
       grouping_var_vector <- c("All")
     }
-  
+    
     
     # Reshape data from long to wide for SVM
     for (group_var in grouping_var_vector) {
@@ -336,23 +336,26 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
       sample_wts <- list("Control" = 1, "Schz" = 1)
     }
     
-    # Pass data_for_SVM to in_sample_linear_SVM
-    SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
-                                        k = 10,
-                                        svm_kernel = svm_kernel,
-                                        sample_wts = sample_wts,
-                                        use_SMOTE = use_SMOTE,
-                                        shuffle_labels = shuffle_labels,
-                                        return_all_fold_metrics = return_all_fold_metrics) %>%
-      dplyr::mutate(grouping_var = group_var,
-                    Noise_Proc = noise_proc,
-                    use_inv_prob_weighting = use_inv_prob_weighting,
-                    use_SMOTE = use_SMOTE)
-    
-    # Append results to list
-    class_res_list <- rlist::list.append(class_res_list,
-                                         SVM_results)
-    
+    if (nrow(data_for_SVM) > 0) {
+      # Run k-fold linear SVM
+      SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
+                                          k = 10,
+                                          svm_kernel = svm_kernel,
+                                          sample_wts = sample_wts,
+                                          use_SMOTE = use_SMOTE,
+                                          shuffle_labels = shuffle_labels,
+                                          return_all_fold_metrics = return_all_fold_metrics) %>%
+        dplyr::mutate(grouping_var = group_var,
+                      Noise_Proc = noise_proc,
+                      use_inv_prob_weighting = use_inv_prob_weighting,
+                      use_SMOTE = use_SMOTE)
+      
+      # Append results to list
+      class_res_list <- rlist::list.append(class_res_list,
+                                           SVM_results)
+    } else {
+      cat("\nNo observations available for", group_var, "after filtering.\n")
+    }
   }
   
   # Combine results from all regions into a dataframe
@@ -384,8 +387,8 @@ run_SVM_from_PCA <- function(PCA_res,
   # Increasingly iterate over each PCs
   for (i in seq(starting_i, total_n_PCs, by = interval)) {
     svm_for_pc <- as.data.frame(cbind(group, PCA_res$x[, 1:i])) %>%
-        mutate_at(vars(contains("V")), as.numeric) %>%
-        mutate_at(vars(starts_with("PC")), as.numeric) 
+      mutate_at(vars(contains("V")), as.numeric) %>%
+      mutate_at(vars(starts_with("PC")), as.numeric) 
     
     if (use_inv_prob_weighting) {
       sample_props <- svm_for_pc %>%
@@ -408,7 +411,7 @@ run_SVM_from_PCA <- function(PCA_res,
                                    use_SMOTE = FALSE,
                                    shuffle_labels = FALSE,
                                    return_all_fold_metrics = return_all_fold_metrics)
-  
+    
     df_res$Num_PCs <- i
     
     # Append results to list
