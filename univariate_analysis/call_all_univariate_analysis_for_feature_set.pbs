@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -P hctsa
-#PBS -N univariate_in_sample_catch22_analysis
-#PBS -o /home/abry4213/github/fMRI_FeaturesDisorders/cluster_output/univariate_in_sample_catch22_analysis_out.txt
+#PBS -N univariate_catch22_analysis
+#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/univariate_catch22_analysis_out.txt
 #PBS -j oe
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=40:00:00
@@ -13,8 +13,9 @@ cd "$PBS_O_WORKDIR"
 # Load R
 module load R/4.1.1
 
-github_dir=/home/abry4213/github/fMRI_FeaturesDisorders/
-rdata_path=/home/abry4213/data/scz/UCLA/Rdata/
+project_dir=/project/hctsa/annie
+github_dir=${project_dir}/github/fMRI_FeaturesDisorders/
+rdata_path=${project_dir}/data/scz/UCLA/Rdata/
 
 Rscript all_univariate_analysis_for_feature_set.R \
 --github_dir $github_dir \

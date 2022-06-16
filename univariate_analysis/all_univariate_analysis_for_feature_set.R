@@ -2,8 +2,8 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
-parser$add_argument("--github_dir", default="/home/abry4213/github/")
-parser$add_argument("--rdata_path", default="/home/abry4213/data/scz/UCLA/Rdata/")
+parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
+parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
 parser$add_argument("--feature_set", default="catch22")
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
 # rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
