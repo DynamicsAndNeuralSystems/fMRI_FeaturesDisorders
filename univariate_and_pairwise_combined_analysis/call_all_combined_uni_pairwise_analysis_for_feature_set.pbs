@@ -3,7 +3,7 @@
 #PBS -N pairwise_pyspi19_analysis
 #PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/pairwise_pyspi19_analysis_out.txt
 #PBS -j oe
-#PBS -l select=1:ncpus=1:mem=20GB
+#PBS -l select=1:ncpus=2:mem=40GB
 #PBS -l walltime=40:00:00
 #PBS -m abe
 #PBS -M abry4213@uni.sydney.edu.au
@@ -19,10 +19,12 @@ rdata_path=${project_dir}/data/scz/UCLA/Rdata/
 pydata_path=${project_dir}/data/scz/UCLA/pydata/
 mkdir -p $github_dir/cluster_output/
 
-Rscript ${github_dir}/pairwise_analysis/all_pairwise_analysis_for_feature_set.R \
+Rscript ${github_dir}/univariate_and_pairwise_combined_analysis/all_combined_uni_pairwise_analysis_for_feature_set.R \
 --github_dir $github_dir \
 --rdata_path $rdata_path \
 --pydata_path $pydata_path \
---feature_set pyspi_19
+--noise_proc AROMA+2P+GMR \
+--univariate_feature_set catch22 \
+--pairwise_feature_set pyspi_19
 
 exit
