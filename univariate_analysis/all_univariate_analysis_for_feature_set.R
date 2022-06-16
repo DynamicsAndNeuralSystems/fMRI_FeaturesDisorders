@@ -69,7 +69,7 @@ for (i in 1:nrow(weighting_param_df)) {
   # Run given weighting for 10-fold CV linear SVM
   if (!file.exists(paste0(rdata_path, sprintf("ROI_wise_CV_linear_SVM_%s_%s.Rds",
                                               feature_set, weighting_name)))) {
-    region_wise_SVM_CV_weighting <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+    region_wise_SVM_CV_weighting <- run_univariate_cv_svm_by_input_var(rdata_path = rdata_path,
                                                              feature_set = feature_set,
                                                              test_package = test_package,
                                                              svm_kernel = kernel,
@@ -156,7 +156,7 @@ for (i in 1:nrow(weighting_param_df)) {
   # Run given weighting for 10-fold CV linear SVM
   if (!file.exists(paste0(rdata_path, sprintf("Feature_wise_CV_linear_SVM_%s_%s.Rds",
                                               feature_set, weighting_name)))) {
-    feature_wise_SVM_CV_weighting <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+    feature_wise_SVM_CV_weighting <- run_univariate_cv_svm_by_input_var(rdata_path = rdata_path,
                                                             feature_set = feature_set,
                                                             test_package = test_package,
                                                             svm_kernel = kernel,
@@ -242,7 +242,7 @@ for (i in 1:nrow(weighting_param_df)) {
   # Run given weighting for 10-fold CV linear SVM
   if (!file.exists(paste0(rdata_path, sprintf("Combo_wise_CV_linear_SVM_%s_%s.Rds",
                                               feature_set, weighting_name)))) {
-    combo_wise_SVM_CV_weighting <- run_cv_svm_by_input_var(rdata_path = rdata_path,
+    combo_wise_SVM_CV_weighting <- run_univariate_cv_svm_by_input_var(rdata_path = rdata_path,
                                                              feature_set = feature_set,
                                                              test_package = test_package,
                                                              svm_kernel = kernel,

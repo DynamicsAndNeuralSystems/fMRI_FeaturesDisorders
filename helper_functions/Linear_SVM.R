@@ -136,19 +136,19 @@ k_fold_CV_linear_SVM <- function(input_data,
 # Run 10-fold cross-validated multi-feature linear SVM by given grouping var
 #-------------------------------------------------------------------------------
 
-run_cv_svm_by_input_var <- function(rdata_path,
-                                    svm_kernel = "linear",
-                                    feature_set = "catch22",
-                                    test_package = "e1071",
-                                    grouping_var = "Brain_Region",
-                                    svm_feature_var = "Feature",
-                                    noise_procs = c("AROMA+2P", 
-                                                    "AROMA+2P+GMR", 
-                                                    "AROMA+2P+DiCER"),
-                                    return_all_fold_metrics = FALSE,
-                                    use_inv_prob_weighting = FALSE,
-                                    use_SMOTE = FALSE,
-                                    shuffle_labels = FALSE) {
+run_univariate_cv_svm_by_input_var <- function(rdata_path,
+                                               svm_kernel = "linear",
+                                               feature_set = "catch22",
+                                               test_package = "e1071",
+                                               grouping_var = "Brain_Region",
+                                               svm_feature_var = "Feature",
+                                               noise_procs = c("AROMA+2P", 
+                                                               "AROMA+2P+GMR", 
+                                                               "AROMA+2P+DiCER"),
+                                               return_all_fold_metrics = FALSE,
+                                               use_inv_prob_weighting = FALSE,
+                                               use_SMOTE = FALSE,
+                                               shuffle_labels = FALSE) {
   
   # Define sample weights
   # Default is 1 and 1 if use_inv_prob_weighting is not included
@@ -252,7 +252,7 @@ run_cv_svm_by_input_var <- function(rdata_path,
 }
 
 #-------------------------------------------------------------------------------
-# Run simple pairwise PYSPI in-sample multi-feature linear SVM by SPI
+# Run pairwise PYSPI multi-feature linear SVM by input feature
 #-------------------------------------------------------------------------------
 run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                              SPI_directionality,
@@ -294,6 +294,125 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     
     grouping_var_vector <- c("All")
   }
+  
+  
+  # Reshape data from long to wide for SVM
+  for (group_var in unique(grouping_var_vector)) {
+    if (grouping_var == "Combo") {
+      data_for_SVM <- pairwise_data %>%
+        dplyr::select(Subject_ID, group, Combo, value) %>%
+        tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                           names_from = Combo,
+                           values_from 
+                           = value) %>%
+        dplyr::select(-Subject_ID) %>%
+        # Drop columns that are all NA/NAN
+        dplyr::select(where(function(x) any(!is.na(x)))) %>%
+        # Drop rows with NA for one or more column
+        drop_na()
+      
+    } else {
+      # Otherwise iterate over each separate group
+      data_for_SVM <- subset(pairwise_data, get(grouping_var_name) == group_var) %>%
+        dplyr::ungroup() %>%
+        dplyr::select(Subject_ID, group, svm_feature_var_name, value) %>%
+        tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                           names_from = svm_feature_var_name,
+                           values_from 
+                           = value) %>%
+        dplyr::select(-Subject_ID) %>%
+        # Drop columns that are all NA/NAN
+        dplyr::select(where(function(x) any(!is.na(x)))) %>%
+        # Drop rows with NA for one or more column
+        drop_na()
+    }
+    
+    # Define sample weights
+    # Default is 1 and 1 if use_inv_prob_weighting is not included
+    if (use_inv_prob_weighting) {
+      # Get control/schz proportions
+      sample_wts <- as.list(1/prop.table(table(data_for_SVM$group)))
+    } else {
+      sample_wts <- list("Control" = 1, "Schz" = 1)
+    }
+    
+    if (nrow(data_for_SVM) > 0) {
+      # Run k-fold linear SVM
+      SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
+                                          k = 10,
+                                          svm_kernel = svm_kernel,
+                                          sample_wts = sample_wts,
+                                          use_SMOTE = use_SMOTE,
+                                          shuffle_labels = shuffle_labels,
+                                          return_all_fold_metrics = return_all_fold_metrics) %>%
+        dplyr::mutate(grouping_var = group_var,
+                      Noise_Proc = noise_proc,
+                      use_inv_prob_weighting = use_inv_prob_weighting,
+                      use_SMOTE = use_SMOTE)
+      
+      # Append results to list
+      class_res_list <- rlist::list.append(class_res_list,
+                                           SVM_results)
+    } else {
+      cat("\nNo observations available for", group_var, "after filtering.\n")
+    }
+  }
+  
+  # Combine results from all regions into a dataframe
+  class_res_df <- do.call(plyr::rbind.fill, class_res_list)
+  
+  # Return dataframe
+  return(class_res_df)
+}
+
+#-------------------------------------------------------------------------------
+# Run combined univaraite theft plus pairwise PYSPI 
+# multi-feature linear SVM by input feature
+#-------------------------------------------------------------------------------
+run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
+                                                          pairwise_data,
+                                                          SPI_directionality,
+                                                          svm_kernel = "linear",
+                                                          test_package = "e1071",
+                                                          noise_proc = "AROMA+2P+GMR",
+                                                          return_all_fold_metrics = FALSE,
+                                                          use_inv_prob_weighting = FALSE,
+                                                          use_SMOTE = FALSE,
+                                                          shuffle_labels = FALSE) {
+  
+  # Initialize results list for SVM
+  class_res_list <- list()
+  
+  # Combine region pair names
+  pairwise_data <- pairwise_data %>%
+    left_join(., SPI_directionality) %>%
+    rowwise() %>%
+    mutate(region_pair = case_when(Direction == "Undirected" ~ ifelse(brain_region_1 < brain_region_2,
+                                                                      paste0(brain_region_1, "_", brain_region_2),
+                                                                      paste0(brain_region_2, "_", brain_region_1)),
+                                   Direction == "Directed" ~ paste0(brain_region_1, "_", brain_region_2))) %>%
+    dplyr::select(-brain_region_1, -brain_region_2)  %>%
+    distinct(Subject_ID, SPI, region_pair, .keep_all = T)
+  
+  # Merge ROI plus theft feature for univariate
+  univariate_combo <- univariate_data %>%
+    tidyr::unique("Unique_ID", c("names", "Brain_Region"), sep="_")
+  
+  # Merge region-pair plus SPI data for pairwise
+  pairwise_combo <- pairwise_data %>%
+    unite("Unique_ID", c("region_pair", "SPI"), sep="_")
+    
+  data_for_SVM <- pairwise_data %>%
+    dplyr::select(Subject_ID, group, Combo, value) %>%
+    tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                       names_from = Combo,
+                       values_from 
+                       = value) %>%
+    dplyr::select(-Subject_ID) %>%
+    # Drop columns that are all NA/NAN
+    dplyr::select(where(function(x) any(!is.na(x)))) %>%
+    # Drop rows with NA for one or more column
+    drop_na()
   
   
   # Reshape data from long to wide for SVM
