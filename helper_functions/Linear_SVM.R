@@ -370,7 +370,9 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
 # multi-feature linear SVM by input feature
 #-------------------------------------------------------------------------------
 run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
+                                                          univariate_feature_set,
                                                           pairwise_data,
+                                                          pairwise_feature_set,
                                                           SPI_directionality,
                                                           svm_kernel = "linear",
                                                           test_package = "e1071",
@@ -416,67 +418,37 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
     # Drop rows with NA for one or more column
     drop_na()
   
+  # Define sample weights
+  # Default is 1 and 1 if use_inv_prob_weighting is not included
+  if (use_inv_prob_weighting) {
+    # Get control/schz proportions
+    sample_wts <- as.list(1/prop.table(table(combined_data_for_SVM$group)))
+  } else {
+    sample_wts <- list("Control" = 1, "Schz" = 1)
+  }
   
-  # Reshape data from long to wide for SVM
-  for (group_var in unique(grouping_var_vector)) {
-    if (grouping_var == "Combo") {
-      data_for_SVM <- pairwise_data %>%
-        dplyr::select(Subject_ID, group, Combo, value) %>%
-        tidyr::pivot_wider(id_cols = c(Subject_ID, group),
-                           names_from = Combo,
-                           values_from 
-                           = value) %>%
-        dplyr::select(-Subject_ID) %>%
-        # Drop columns that are all NA/NAN
-        dplyr::select(where(function(x) any(!is.na(x)))) %>%
-        # Drop rows with NA for one or more column
-        drop_na()
-      
-    } else {
-      # Otherwise iterate over each separate group
-      data_for_SVM <- subset(pairwise_data, get(grouping_var_name) == group_var) %>%
-        dplyr::ungroup() %>%
-        dplyr::select(Subject_ID, group, svm_feature_var_name, value) %>%
-        tidyr::pivot_wider(id_cols = c(Subject_ID, group),
-                           names_from = svm_feature_var_name,
-                           values_from 
-                           = value) %>%
-        dplyr::select(-Subject_ID) %>%
-        # Drop columns that are all NA/NAN
-        dplyr::select(where(function(x) any(!is.na(x)))) %>%
-        # Drop rows with NA for one or more column
-        drop_na()
-    }
+  if (nrow(combined_data_for_SVM) > 0) {
+    # Run k-fold linear SVM
+    SVM_results <- k_fold_CV_linear_SVM(input_data = combined_data_for_SVM,
+                                        k = 10,
+                                        svm_kernel = svm_kernel,
+                                        sample_wts = sample_wts,
+                                        use_SMOTE = use_SMOTE,
+                                        shuffle_labels = shuffle_labels,
+                                        return_all_fold_metrics = return_all_fold_metrics) %>%
+      dplyr::mutate(univariate_feature_set = univariate_feature_set,
+                    pairwise_feature_set = pairwise_feature_set,
+                    Noise_Proc = noise_proc,
+                    use_inv_prob_weighting = use_inv_prob_weighting,
+                    use_SMOTE = use_SMOTE)
     
-    # Define sample weights
-    # Default is 1 and 1 if use_inv_prob_weighting is not included
-    if (use_inv_prob_weighting) {
-      # Get control/schz proportions
-      sample_wts <- as.list(1/prop.table(table(data_for_SVM$group)))
-    } else {
-      sample_wts <- list("Control" = 1, "Schz" = 1)
-    }
+    # Append results to list
+    class_res_list <- rlist::list.append(class_res_list,
+                                         SVM_results)
+  } else {
+    cat("\nNo observations available for", univariate_feautre_set, "with", 
+        pairwise_feature_set, "after filtering.\n")
     
-    if (nrow(data_for_SVM) > 0) {
-      # Run k-fold linear SVM
-      SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
-                                          k = 10,
-                                          svm_kernel = svm_kernel,
-                                          sample_wts = sample_wts,
-                                          use_SMOTE = use_SMOTE,
-                                          shuffle_labels = shuffle_labels,
-                                          return_all_fold_metrics = return_all_fold_metrics) %>%
-        dplyr::mutate(grouping_var = group_var,
-                      Noise_Proc = noise_proc,
-                      use_inv_prob_weighting = use_inv_prob_weighting,
-                      use_SMOTE = use_SMOTE)
-      
-      # Append results to list
-      class_res_list <- rlist::list.append(class_res_list,
-                                           SVM_results)
-    } else {
-      cat("\nNo observations available for", group_var, "after filtering.\n")
-    }
   }
   
   # Combine results from all regions into a dataframe
