@@ -453,7 +453,7 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
       class_res_list <- rlist::list.append(class_res_list,
                                            SVM_results)
     } else {
-      cat("\nNo observations available for", SPI, "after filtering.\n")
+      cat("\nNo observations available for", this_SPI, "after filtering.\n")
       
     }
   }
