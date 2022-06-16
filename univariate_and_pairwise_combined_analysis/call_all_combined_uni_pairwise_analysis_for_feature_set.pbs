@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -P hctsa
-#PBS -N pairwise_pyspi19_analysis
-#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/pairwise_pyspi19_analysis_out.txt
+#PBS -N combined_univariate_pairwise_analysis
+#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/combined_univariate_pairwise_analysis.txt
 #PBS -j oe
 #PBS -l select=1:ncpus=2:mem=40GB
 #PBS -l walltime=40:00:00
