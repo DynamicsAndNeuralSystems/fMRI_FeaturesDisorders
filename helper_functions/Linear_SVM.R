@@ -396,18 +396,20 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
   
   # Merge ROI plus theft feature for univariate
   univariate_combo <- univariate_data %>%
-    tidyr::unique("Unique_ID", c("names", "Brain_Region"), sep="_")
+    tidyr::unite("Unique_ID", c("names", "Brain_Region"), sep="_") %>%
+    dplyr::select(Subject_ID, group, Unique_ID, values)
   
   # Merge region-pair plus SPI data for pairwise
   pairwise_combo <- pairwise_data %>%
-    unite("Unique_ID", c("region_pair", "SPI"), sep="_")
-    
-  data_for_SVM <- pairwise_data %>%
-    dplyr::select(Subject_ID, group, Combo, value) %>%
+    tidyr::unite("Unique_ID", c("SPI", "region_pair"), sep="_") %>%
+    dplyr::select(Subject_ID, group, Unique_ID, value) %>%
+    dplyr::rename("values"="value")
+  
+  # Combine univariate + pairwise data for SVM
+  combined_data_for_SVM <- plyr::rbind.fill(univariate_combo, pairwise_combo) %>%
     tidyr::pivot_wider(id_cols = c(Subject_ID, group),
-                       names_from = Combo,
-                       values_from 
-                       = value) %>%
+                       names_from = Unique_ID, 
+                       values_from = values) %>%
     dplyr::select(-Subject_ID) %>%
     # Drop columns that are all NA/NAN
     dplyr::select(where(function(x) any(!is.na(x)))) %>%

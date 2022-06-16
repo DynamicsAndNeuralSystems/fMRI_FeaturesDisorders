@@ -58,9 +58,14 @@ combined_subjects <- inner_join(univariate_subjects, pairwise_subjects)
 univariate_data <- univariate_data %>% semi_join(combined_subjects)
 pairwise_subjects <- pairwise_subjects %>% semi_join(combined_subjects)
 
-saveRDS(combined_subjects, file=paste0(rdata_path, "Filtered_subject_info_", 
-                                       uni_feature_set, "_",
-                                       pairwise_feature_set, ".Rds"))
+if (!file.exists(paste0(rdata_path, "Filtered_subject_info_", 
+                        uni_feature_set, "_",
+                        pairwise_feature_set, ".Rds"))) {
+  saveRDS(combined_subjects, file=paste0(rdata_path, "Filtered_subject_info_", 
+                                         uni_feature_set, "_",
+                                         pairwise_feature_set, ".Rds"))
+}
+
 
 ################################################################################
 # Generate model-free shuffle null distribution
@@ -82,7 +87,6 @@ if (!file.exists(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_combined_%
 ################################################################################
 # Define weighting parameters
 ################################################################################
-
 weighting_param_df <- data.frame(name = c("unweighted", "inv_prob", "SMOTE"),
                                  use_inv_prob_weighting = c(FALSE, TRUE, FALSE),
                                  use_SMOTE = c(FALSE, FALSE, TRUE))

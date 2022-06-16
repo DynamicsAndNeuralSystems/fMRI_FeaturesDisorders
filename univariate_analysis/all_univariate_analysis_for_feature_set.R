@@ -95,8 +95,8 @@ for (weighting_name in unique(weighting_param_df$name)) {
     # Calculate p-values
     pvalues <- calc_empirical_nulls(class_res = region_wise_SVM_CV_weighting,
                                     null_data = model_free_shuffle_null_res,
-				    feature_set = feature_set,
-				    is_data_averaged = TRUE,
+                                    feature_set = feature_set,
+                                    is_data_averaged = TRUE,
                                     grouping_var = "Brain_Region")
     
     saveRDS(pvalues, file=paste0(rdata_path, sprintf("ROI_wise_CV_linear_SVM_%s_%s_model_free_shuffle_pvals.Rds",
@@ -136,8 +136,8 @@ for (i in 1:nrow(weighting_param_df)) {
     # Calculate p-values
     pvalues <- calc_empirical_nulls(class_res = region_wise_SVM_CV_weighting,
                                     null_data = model_permutation_null_weighting,
-				    feature_set = feature_set,
-				    is_data_averaged = TRUE,
+                                    feature_set = feature_set,
+                                    is_data_averaged = TRUE,
                                     grouping_var = "Brain_Region")
     
     saveRDS(pvalues, file=paste0(rdata_path, sprintf("ROI_wise_CV_linear_SVM_%s_%s_null_model_fit_pvals.Rds",
@@ -186,7 +186,9 @@ for (weighting_name in unique(weighting_param_df$name)) {
     # Calculate p-values
     pvalues <- calc_empirical_nulls(class_res = feature_wise_SVM_CV_weighting,
                                     null_data = model_free_shuffle_null_res,
-                                    grouping_var = "Brain_Region")
+                                    feature_set = feature_set,
+                                    is_data_averaged = TRUE,
+                                    grouping_var = "names")
     
     saveRDS(pvalues, file=paste0(rdata_path, sprintf("Feature_wise_CV_linear_SVM_%s_%s_model_free_shuffle_pvals.Rds",
                                                      feature_set, weighting_name)))
@@ -225,7 +227,9 @@ for (i in 1:nrow(weighting_param_df)) {
     # Calculate p-values
     pvalues <- calc_empirical_nulls(class_res = feature_wise_SVM_CV_weighting,
                                     null_data = model_permutation_null_weighting,
-                                    grouping_var = "Brain_Region")
+                                    feature_set = feature_set,
+                                    is_data_averaged = TRUE,
+                                    grouping_var = "names")
     
     saveRDS(pvalues, file=paste0(rdata_path, sprintf("Feature_wise_CV_linear_SVM_%s_%s_null_model_fit_pvals.Rds",
                                                      feature_set, weighting_name)))
@@ -272,7 +276,9 @@ for (weighting_name in unique(weighting_param_df$name)) {
     # Calculate p-values
     pvalues <- calc_empirical_nulls(class_res = combo_wise_SVM_CV_weighting,
                                     null_data = model_free_shuffle_null_res,
-                                    grouping_var = "Brain_Region")
+                                    feature_set = feature_set,
+                                    is_data_averaged = TRUE,
+                                    grouping_var = "Combo")
     
     saveRDS(pvalues, file=paste0(rdata_path, sprintf("Combo_wise_CV_linear_SVM_%s_%s_model_free_shuffle_pvals.Rds",
                                                      feature_set, weighting_name)))
@@ -311,7 +317,9 @@ for (i in 1:nrow(weighting_param_df)) {
     # Calculate p-values
     pvalues <- calc_empirical_nulls(class_res = combo_wise_SVM_CV_weighting,
                                     null_data = model_permutation_null_weighting,
-                                    grouping_var = "Brain_Region")
+                                    feature_set = feature_set,
+                                    is_data_averaged = TRUE,
+                                    grouping_var = "Combo")
     
     saveRDS(pvalues, file=paste0(rdata_path, sprintf("Combo_wise_CV_linear_SVM_%s_%s_null_model_fit_pvals.Rds",
                                                      feature_set, weighting_name)))
