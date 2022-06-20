@@ -127,7 +127,7 @@ for (i in 1:nrow(grouping_param_df)) {
     use_SMOTE <- weighting_param_df$use_SMOTE[i]
     
     # Generate null-model fits distribution
-    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s_%s.Rds",
+    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s_%sperm.Rds",
                                                 grouping_type,
                                                 feature_set,
                                                 weighting_name,
