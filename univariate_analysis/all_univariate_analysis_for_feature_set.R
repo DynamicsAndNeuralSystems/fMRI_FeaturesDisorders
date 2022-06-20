@@ -114,20 +114,21 @@ for (i in 1:nrow(weighting_param_df)) {
   if (!file.exists(paste0(rdata_path, sprintf("ROI_wise_model_permutation_null_%s_%s.Rds",
                                               feature_set, weighting_name)))) {
     model_permutation_null_weighting <- run_null_model_n_permutations(rdata_path,
-                                                                       feature_set = feature_set,
-                                                                       noise_procs = noise_procs,
-                                                                       grouping_var = "Brain_Region",
-                                                                       svm_feature_var = "Feature",
-                                                                       num_permutations = 10,
-                                                                       use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                       use_SMOTE = use_SMOTE)
+                                                                      feature_set = feature_set,
+                                                                      noise_procs = noise_procs,
+                                                                      grouping_var = "Brain_Region",
+                                                                      svm_feature_var = "Feature",
+                                                                      num_permutations = 10,
+                                                                      use_inv_prob_weighting = use_inv_prob_weighting,
+                                                                      use_SMOTE = use_SMOTE)
     
-    saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("ROI_wise_model_permutation_null_%s_%s.Rds",
-                                                                               feature_set, weighting_name)))
+    saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("ROI_wise_model_permutation_null_%s_%s_10perm.Rds",
+                                                                              feature_set, 
+                                                                              weighting_name)))
   }
   
   # Empirically derive p-values based on null model fits distribution
-  if (!file.exists(paste0(rdata_path, sprintf("ROI_wise_CV_linear_SVM_%s_%s_null_model_fit_pvals.Rds",
+  if (!file.exists(paste0(rdata_path, sprintf("ROI_wise_CV_linear_SVM_model_permutation_null_%s_%s_10perm_pvals.Rds",
                                               feature_set, weighting_name)))) {
     region_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path, 
                                                    sprintf("ROI_wise_CV_linear_SVM_%s_%s.Rds",
@@ -140,7 +141,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                     is_data_averaged = TRUE,
                                     grouping_var = "Brain_Region")
     
-    saveRDS(pvalues, file=paste0(rdata_path, sprintf("ROI_wise_CV_linear_SVM_%s_%s_null_model_fit_pvals.Rds",
+    saveRDS(pvalues, file=paste0(rdata_path, sprintf("ROI_wise_CV_linear_SVM_model_permutation_null_%s_%s_10perm_pvals.Rds",
                                                      feature_set, weighting_name)))
   }
 }
@@ -202,7 +203,7 @@ for (i in 1:nrow(weighting_param_df)) {
   use_SMOTE <- weighting_param_df$use_SMOTE[i]
   
   # Generate null-model fits distribution
-  if (!file.exists(paste0(rdata_path, sprintf("Feature_wise_model_permutation_null_%s_%s.Rds",
+  if (!file.exists(paste0(rdata_path, sprintf("Feature_wise_model_permutation_null_%s_%s_40perm.Rds",
                                               feature_set, weighting_name)))) {
     model_permutation_null_weighting <- run_null_model_n_permutations(rdata_path,
                                                                       feature_set = feature_set,
@@ -213,12 +214,12 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                       use_inv_prob_weighting = use_inv_prob_weighting,
                                                                       use_SMOTE = use_SMOTE)
     
-    saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("Feature_wise_model_permutation_null_%s_%s.Rds",
+    saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("Feature_wise_model_permutation_null_%s_%s_40perm.Rds",
                                                                               feature_set, weighting_name)))
   }
   
   # Empirically derive p-values based on null model fits distribution
-  if (!file.exists(paste0(rdata_path, sprintf("Feature_wise_CV_linear_SVM_%s_%s_null_model_fit_pvals.Rds",
+  if (!file.exists(paste0(rdata_path, sprintf("Feature_wise_model_permutation_null_%s_%s_40perm_pvals.Rds",
                                               feature_set, weighting_name)))) {
     feature_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path, 
                                                    sprintf("Feature_wise_CV_linear_SVM_%s_%s.Rds",
@@ -231,7 +232,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                     is_data_averaged = TRUE,
                                     grouping_var = "names")
     
-    saveRDS(pvalues, file=paste0(rdata_path, sprintf("Feature_wise_CV_linear_SVM_%s_%s_null_model_fit_pvals.Rds",
+    saveRDS(pvalues, file=paste0(rdata_path, sprintf("Feature_wise_model_permutation_null_%s_%s_40perm_pvals.Rds",
                                                      feature_set, weighting_name)))
   }
 }
@@ -299,16 +300,16 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                       noise_procs = noise_procs,
                                                                       grouping_var = "Combo",
                                                                       svm_feature_var = "Combo",
-                                                                      num_permutations = 100,
+                                                                      num_permutations = 800,
                                                                       use_inv_prob_weighting = use_inv_prob_weighting,
                                                                       use_SMOTE = use_SMOTE)
     
-    saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("Combo_wise_model_permutation_null_%s_%s.Rds",
+    saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("Combo_wise_model_permutation_null_%s_%s_800perm.Rds",
                                                                               feature_set, weighting_name)))
   }
   
   # Empirically derive p-values based on null model fits distribution
-  if (!file.exists(paste0(rdata_path, sprintf("Combo_wise_CV_linear_SVM_%s_%s_null_model_fit_pvals.Rds",
+  if (!file.exists(paste0(rdata_path, sprintf("Combo_wise_CV_linear_SVM_model_permutation_null_%s_%s_800perm_pvals.Rds",
                                               feature_set, weighting_name)))) {
     combo_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path, 
                                                     sprintf("Combo_wise_CV_linear_SVM_%s_%s.Rds",
@@ -321,7 +322,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                     is_data_averaged = TRUE,
                                     grouping_var = "Combo")
     
-    saveRDS(pvalues, file=paste0(rdata_path, sprintf("Combo_wise_CV_linear_SVM_%s_%s_null_model_fit_pvals.Rds",
+    saveRDS(pvalues, file=paste0(rdata_path, sprintf("Combo_wise_CV_linear_SVM_model_permutation_null_%s_%s_800perm_pvals.Rds",
                                                      feature_set, weighting_name)))
   }
 }

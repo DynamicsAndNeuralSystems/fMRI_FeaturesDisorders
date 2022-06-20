@@ -119,6 +119,7 @@ z_score_feature_matrix <- function(rdata_path,
 
 plot_NA_subject_ts <- function(rdata_path, 
                                input_dataset_name = "UCLA",
+                               feature_set,
                                NA_subject_IDs,
                                noise_procs = c("AROMA+2P",
                                                "AROMA+2P+GMR",
@@ -140,10 +141,13 @@ plot_NA_subject_ts <- function(rdata_path,
   p <- ts_data%>%
     filter(Subject_ID %in% NA_subject_IDs) %>%
     ggplot(data=., mapping=aes(x=timepoint, y=value, color=Brain_Region)) +
+    ggtitle(sprintf("Raw BOLD Signal for %s\nNA subjects with %s",
+                    input_dataset_name, feature_set)) +
     geom_line(alpha=0.6) +
     facet_grid(Subject_ID ~ noise_proc, switch="y") +
     theme(legend.position="none",
-          strip.text.y.left = element_text(angle=0))
+          strip.text.y.left = element_text(angle=0),
+          plot.title = element_text(hjust=0.5))
   
   return(p)
 }
@@ -213,13 +217,14 @@ compile_movement_data <- function(fd_path,
 #-------------------------------------------------------------------------------
 # Plot FD values by diagnosis boxplot
 #-------------------------------------------------------------------------------
-plot_FD_vs_diagnosis <- function(movement_data) {
+plot_FD_vs_diagnosis <- function(movement_data, input_dataset_name) {
   movement_data %>%
     ggplot(data=., mapping=aes(x=diagnosis, y=FD, fill=diagnosis)) +
     geom_boxplot() +
     ylab("Fractional Displacement (FD)") +
     xlab("Diagnosis") +
-    ggtitle("Subject Movement by Diagnosis") +
+    ggtitle(sprintf("%s Subject Movement by Diagnosis",
+                    input_dataset_name)) +
     theme(legend.position="none",
           plot.title=element_text(hjust=0.5)) 
 }
@@ -227,7 +232,8 @@ plot_FD_vs_diagnosis <- function(movement_data) {
 #-------------------------------------------------------------------------------
 # Plot the number of control vs. schizophrenia subjects retained per FD threshold
 #-------------------------------------------------------------------------------
-plot_subjects_per_fd_threshold <- function(movement_data) {
+plot_subjects_per_fd_threshold <- function(movement_data,
+                                           input_dataset_name) {
   fd_thresh_list <- list()
   for (fd_threshold in seq(0, 1, by=0.01)) {
     num_ctrl = nrow(subset(movement_data, FD <= fd_threshold & diagnosis=="CONTROL"))
@@ -242,14 +248,19 @@ plot_subjects_per_fd_threshold <- function(movement_data) {
   threshold_data %>%
     pivot_longer(cols=c(-FD_Threshold),
                  names_to="Group",
-                 values_to="n") %>%
-    ggplot(data=., mapping=aes(x=FD_Threshold, y=n, color=Group, group=Group)) +
+                 values_to="# Subjects") %>%
+    group_by(Group) %>%
+    mutate(`% Subjects` = `# Subjects` / max(`# Subjects`, na.rm=T)) %>%
+    pivot_longer(cols = c(`# Subjects`, `% Subjects`)) %>%
+    ggplot(data=., mapping=aes(x=FD_Threshold, y=value, color=Group, group=Group)) +
     geom_line(size=2) +
-    ylab("# Subjects") +
     xlab("FD Threshold") +
     scale_x_reverse() +
-    ggtitle("Number of Subjects Retained\nby FD Threshold") +
+    facet_grid(name ~ ., scales="free", switch="both") +
+    ggtitle(sprintf("%s Subjects\nRetained by FD Threshold",
+                    input_dataset_name)) +
     theme(legend.position="bottom",
+          strip.placement = "outside",
           plot.title=element_text(hjust=0.5))
 }
 
@@ -257,7 +268,8 @@ plot_subjects_per_fd_threshold <- function(movement_data) {
 # Plot the ratio of schizophrenia:control subjects retained per FD threshold
 #-------------------------------------------------------------------------------
 
-plot_schz_ctrl_ratio_per_fd_threshold <- function(movement_data) {
+plot_schz_ctrl_ratio_per_fd_threshold <- function(movement_data,
+                                                  input_dataset_name) {
   fd_thresh_list <- list()
   for (fd_threshold in seq(0, 1, by=0.01)) {
     num_ctrl = nrow(subset(movement_data, 
@@ -275,10 +287,11 @@ plot_schz_ctrl_ratio_per_fd_threshold <- function(movement_data) {
   threshold_data %>%
     ggplot(data=., mapping=aes(x=FD_Threshold, y=SCZ_to_CTRL)) +
     geom_line(size=2) +
-    ylab("SCZ:CTRL Ratoi") +
+    ylab("SCZ:CTRL Ratio") +
     xlab("FD Threshold") +
     scale_x_reverse() +
-    ggtitle("Ratio of SCZ:CTRL Subjects Retained\nby FD Threshold") +
+    ggtitle(sprintf("Ratio of SCZ:CTRL %s Subjects\nRetained by FD Threshold",
+            input_dataset_name)) +
     theme(legend.position="bottom",
           plot.title=element_text(hjust=0.5))
 }

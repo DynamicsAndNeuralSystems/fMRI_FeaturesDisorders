@@ -15,55 +15,93 @@ library(factoextra)
 # NA for all brain regions are given.
 #-------------------------------------------------------------------------------
 
-run_univ_PCA_by_group_var <- function(feature_matrix,
+run_PCA_by_group_var <- function(feature_matrix,
                                       grouping_variable = "Brain_Region",
                                       feature_var = "names") {
-  PCA_object_list <- list()
-  PCA_scores_list <- list()
-  PCA_eigenvalues_list <- list()
   
-  grouping_var_vector <- feature_matrix %>%
-    dplyr::pull(get(grouping_variable)) %>%
-    unique()
-  
+  if (grouping_variable == "Combo") {
+    grouping_var_vector <- c("Combo")
+    feature_matrix$Combo <- "Combo"
+  } else{
+    grouping_var_vector <- feature_matrix %>%
+      dplyr::pull(get(grouping_variable)) %>%
+      unique()
+  }
+
+  PCA_res_list <- list()
   for (this_group in grouping_var_vector) {
-    df_for_PCA <- subset(feature_matrix, 
+    data_for_PCA <- subset(feature_matrix, 
                          get(grouping_variable) == this_group) %>%
-      pivot_wider(id_cols = c(Subject_ID, group, 
-                              grouping_variable),
-                  names_from = get(feature_var),
+      pivot_wider(id_cols = c(Subject_ID, group),
+                  names_from = feature_var,
                   values_from = values) %>%
       drop_na()
+    
+    data_for_PCA_mat <- data_for_PCA %>%
+      dplyr::select(-Subject_ID, -group) %>%
+      as.matrix()
+    
+    PCA_res <- prcomp(data_for_PCA_mat, center = TRUE, scale. = TRUE)
+    PCA_res_list[[this_group]] <- PCA_res
   }
+  return(PCA_res_list)
 }
 
+#-------------------------------------------------------------------------------
+# Function to run linear SVM with increasing number of PCs
+#-------------------------------------------------------------------------------
 
-for (this_ROI in unique(feature_matrix$Brain_Region)) {
-  ROI_data <- subset(feature_matrix, Brain_Region == this_ROI) %>%
-    pivot_wider(id_cols = c(Subject_ID, group, Brain_Region),
-                names_from = names,
-                values_from = values) %>%
-    drop_na()
-  ROI_data_mat <- ROI_data %>%
-    select(-Subject_ID, -group, -Brain_Region) %>%
-    as.matrix()
+run_SVM_from_PCA <- function(list_of_PCA_res,
+                             subject_dx_list,
+                             c_values = c(1),
+                             interval = 1,
+                             use_inv_prob_weighting = FALSE,
+                             use_SMOTE = FALSE,
+                             return_all_fold_metrics = FALSE) {
   
-  ROI_data_PCA <- prcomp(ROI_data_mat, center = TRUE, scale. = TRUE)
-  ROI_PCA_list[[this_ROI]] <- ROI_data_PCA
+  # Initialize results list
+  PCA_SVM_res_list <- list()
   
-  ROI_PC_vals <- as.data.frame(ROI_data_PCA$x)
-  ROI_PC_vals$group <- ROI_data$group
-  ROI_PC_vals$Brain_Region <- this_ROI
-  ROI_PC_scores_list <- rlist::list.append(ROI_PC_scores_list, ROI_PC_vals)
+  # Get names of groups to iterate over
+  grouping_var_vector <- names(list_of_PCA_res)
   
-  ROI_eigen  <- get_eig(ROI_data_PCA) %>%
-    mutate(Components = 1:nrow(.)) %>%
-    dplyr::rename("Percent_Variance" = "variance.percent",
-                  "Cumulative_Variance" = "cumulative.variance.percent") %>%
-    mutate(Brain_Region = this_ROI)
-  
-  ROI_eigen_list <- rlist::list.append(ROI_eigen_list, ROI_eigen)
+  # Iterate over each grouping variable
+  for (group in grouping_var_vector) {
+    PCA_res <- list_of_PCA_res[[group]]
+    total_n_PCs <- length(PCA_res$sdev)
+    
+    # Start from 2 if using SMOTE
+    starting_i <- ifelse(use_SMOTE, 2, 1)
+    
+    # Increasingly iterate over each PCs
+    for (i in seq(starting_i, total_n_PCs, by = interval)) {
+      svm_for_pc <- as.data.frame(cbind(group = subject_dx_list, PCA_res$x[, 1:i])) %>%
+        mutate_at(vars(contains("V")), as.numeric) %>%
+        mutate_at(vars(starts_with("PC")), as.numeric) 
+      
+      if (use_inv_prob_weighting) {
+        sample_wts <- 1/prop.table(table(subject_dx_list))
+      } else {
+        sample_wts <- list("Control" = 1, "Schz" = 1)
+      }
+      
+      # Compile results into a dataframe
+      df_res <- k_fold_CV_linear_SVM(input_data = svm_for_pc,
+                                     k = 10,
+                                     c_values = c_values,
+                                     svm_kernel = "linear",
+                                     sample_wts = sample_wts,
+                                     use_SMOTE = FALSE,
+                                     shuffle_labels = FALSE,
+                                     return_all_fold_metrics = return_all_fold_metrics)
+      
+      df_res$Num_PCs <- i
+      df_res$grouping_var <- group
+      
+      # Append results to list
+      PCA_SVM_res_list <- rlist::list.append(PCA_SVM_res_list, df_res)
+    }
+  }
+  PCA_SVM_res <- do.call(plyr::rbind.fill, PCA_SVM_res_list)
+  return(PCA_SVM_res)
 }
-
-ROI_eigen_df <- do.call(plyr::rbind.fill, ROI_eigen_list)
-ROI_PC_scores <- do.call(plyr::rbind.fill, ROI_PC_scores_list)
