@@ -77,14 +77,14 @@ for (i in 1:nrow(grouping_param_df)) {
     if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
                                                 grouping_type, feature_set, weighting_name)))) {
       group_wise_SVM_CV_weighting <- run_univariate_cv_svm_by_input_var(rdata_path = rdata_path,
-                                                                         feature_set = feature_set,
-                                                                         test_package = test_package,
-                                                                         svm_kernel = kernel,
-                                                                         grouping_var = grouping_var,
-                                                                         svm_feature_var = SVM_feature_var,
-                                                                         use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                         use_SMOTE = use_SMOTE,
-                                                                         noise_procs = noise_procs)
+                                                                        feature_set = feature_set,
+                                                                        test_package = test_package,
+                                                                        svm_kernel = kernel,
+                                                                        grouping_var = grouping_var,
+                                                                        svm_feature_var = SVM_feature_var,
+                                                                        use_inv_prob_weighting = use_inv_prob_weighting,
+                                                                        use_SMOTE = use_SMOTE,
+                                                                        noise_procs = noise_procs)
       saveRDS(region_wise_SVM_CV_weighting, file=paste0(rdata_path, 
                                                         sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
                                                                 grouping_type,
@@ -101,10 +101,10 @@ for (i in 1:nrow(grouping_param_df)) {
                                                 weighting_name)))) {
       
       grouping_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path, 
-                                                     sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
-                                                             grouping_type,
-                                                             feature_set, 
-                                                             weighting_name)))
+                                                       sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
+                                                               grouping_type,
+                                                               feature_set, 
+                                                               weighting_name)))
       
       # Calculate p-values
       pvalues <- calc_empirical_nulls(class_res = grouping_wise_SVM_CV_weighting,
@@ -146,6 +146,12 @@ for (i in 1:nrow(grouping_param_df)) {
                                                                                 feature_set, 
                                                                                 weighting_name,
                                                                                 num_perm)))
+    } else {
+      model_permutation_null_weighting <- readRDS(paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s_%sperm.Rds",
+                                                                             grouping_type,
+                                                                             feature_set, 
+                                                                             weighting_name,
+                                                                             num_perm)))
     }
     
     # Empirically derive p-values based on null model fits distribution
@@ -155,10 +161,10 @@ for (i in 1:nrow(grouping_param_df)) {
                                                 weighting_name,
                                                 num_perm)))) {
       group_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path, 
-                                                     sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
-                                                             grouping_type,
-                                                             feature_set, 
-                                                             weighting_name)))
+                                                    sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
+                                                            grouping_type,
+                                                            feature_set, 
+                                                            weighting_name)))
       
       # Calculate p-values
       pvalues <- calc_empirical_nulls(class_res = group_wise_SVM_CV_weighting,
