@@ -83,73 +83,25 @@ if (!file.exists(paste0(rdata_path, sprintf("Feature_wise_PCA_CV_linear_SVM_%s_%
 }
 
 ###### Combo-wise ###### 
-# Prep combo-wise data for PCA
-combo_data <- catch22_feature_matrix %>%
-  tidyr::unite("Unique_ID", c("names", "Brain_Region")) %>%
-  pivot_wider(id_cols = c(Subject_ID, group),
-              names_from = Unique_ID,
-              values_from = values)
+Combo_wise_PCA_list <- run_PCA_by_group_var(feature_matrix = catch22_feature_matrix,
+                                              grouping_variable = "Combo",
+                                              feature_var = "Combo")
 
-combo_data_mat <- combo_data %>%
-  dplyr::select(-Subject_ID, -group) %>%
-  as.matrix()
-
-# Run PCA after centering and scaling data
-combo_data_PCA <- prcomp(combo_data_mat, center = TRUE, scale. = TRUE)
-
-# Extract eigenvalues
-combo_eigen  <- get_eig(combo_data_PCA) %>%
-  mutate(Components = 1:nrow(.)) %>%
-  dplyr::rename("Percent_Variance" = "variance.percent",
-                "Cumulative_Variance" = "cumulative.variance.percent")
-
-# Extract PC scores
-combo_PC_vals <- as.data.frame(combo_data_PCA$x)
-combo_PC_vals$group <- combo_data$group
-
-# Plot the cumulative variance
-combo_eigen %>%
-  ggplot(data = ., mapping = aes(x=Components, y=Cumulative_Variance)) +
-  geom_point() +
-  geom_line() +
-  ylab("Cumulative Variance") +
-  xlab("Number of PCs") +
-  ggtitle("Combo-wise PCA Cumulative Variance") +
-  theme(plot.title = element_text(hjust = 0.5))
-
-# Run SVM with increasing number of PCs
+# Run linear SVM with increasing # PCs
 weighting_name = "inv_prob"
 if (!file.exists(paste0(rdata_path, sprintf("Combo_wise_PCA_CV_linear_SVM_%s_%s.Rds",
                                             univariate_feature_set, weighting_name)))) {
-  Combo_wise_PCA_res = run_SVM_from_PCA(PCA_res = combo_data_PCA,
-    group_vector = combo_data$group,
-    interval = 2,
-    c_values = 1,
-    use_inv_prob_weighting = TRUE,
-    use_SMOTE = FALSE ) 
+  Combo_wise_PCA_linear_SVM_res <- run_SVM_from_PCA(list_of_PCA_res = Combo_wise_PCA_list,
+                                                      subject_dx_list = group_vector,
+                                                      c_values = 1,
+                                                      interval = 2,
+                                                      use_inv_prob_weighting = TRUE,
+                                                      use_SMOTE = FALSE,
+                                                      return_all_fold_metrics = FALSE) 
   
-  saveRDS(Combo_wise_PCA_res, file=paste0(rdata_path, sprintf("Combo_wise_PCA_CV_linear_SVM_%s_%s.Rds",
-                                                       univariate_feature_set, weighting_name)))
+  save(Combo_wise_PCA_linear_SVM_res, file = paste0(rdata_path, sprintf("Combo_wise_PCA_CV_linear_SVM_%s_%s.Rds",
+                                                                          univariate_feature_set, weighting_name)))
 } else {
-  Combo_wise_PCA_res <- readRDS(paste0(rdata_path, sprintf("Combo_wise_PCA_CV_linear_SVM_%s_%s.Rds",
-                                                           univariate_feature_set, weighting_name)))
+  Combo_wise_PCA_linear_SVM_res <- readRDS(paste0(rdata_path, sprintf("Combo_wise_PCA_CV_linear_SVM_%s_%s.Rds",
+                                                                        univariate_feature_set, weighting_name)))
 }
-
-# Plot balanced accuracy as a function of # PCs supplied to linear SVM
-Combo_wise_PCA_res %>%
-  ggplot(data=., mapping = aes(x = Num_PCs, y = balanced_accuracy)) +
-  geom_line(aes(group = Sample_Type), color="gray70", alpha=0.2) +
-  stat_smooth(geom = "line", 
-              method = "loess",
-              aes(group = Sample_Type, color = Sample_Type), 
-              span = 0.2,
-              size=1.5) +
-  ggtitle(paste0("Balanced Accuracy for Combined ROI +\n",
-          univariate_feature_set,
-          " Feature-wise Linear SVM by # PCs")) +
-  ylab("Balanced Accuracy") +
-  xlab("Number of PCs") +
-  labs(color = "Classification\nMethod") +
-  guides(color = guide_legend(nrow = 1, byrow = T)) +
-  theme(plot.title = element_text(hjust=0.5),
-        legend.position = "bottom")

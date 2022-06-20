@@ -160,7 +160,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                     is_data_averaged = FALSE,
                                     grouping_var = "SPI")
 
-    saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_null_model_fit_pvals_%s_%s_40perm.Rds",
+    saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_null_m'odel_fit_pvals_%s_%s_40perm.Rds",
                                                      feature_set, weighting_name)))
   }
 }

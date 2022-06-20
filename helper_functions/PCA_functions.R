@@ -20,18 +20,24 @@ run_PCA_by_group_var <- function(feature_matrix,
                                       feature_var = "names") {
   
   if (grouping_variable == "Combo") {
-    grouping_var_vector <- c("Combo")
-    feature_matrix$Combo <- "Combo"
+    grouping_var_vector <- c("All")
+    feature_matrix <- feature_matrix %>%
+      tidyr::unite("feature_var", c(names, Brain_Region), sep="_") %>%
+      mutate(grouping_variable = "Combo")
   } else{
     grouping_var_vector <- feature_matrix %>%
       dplyr::pull(get(grouping_variable)) %>%
       unique()
+    
+    feature_matrix <- feature_matrix %>%
+      dplyr::rename("grouping_variable" = grouping_variable,
+                    "feature_var" = feature_var)
   }
 
   PCA_res_list <- list()
-  for (this_group in grouping_var_vector) {
+  for (this_group in unique(feature_matrix$grouping_variable)) {
     data_for_PCA <- subset(feature_matrix, 
-                         get(grouping_variable) == this_group) %>%
+                           grouping_variable == this_group) %>%
       pivot_wider(id_cols = c(Subject_ID, group),
                   names_from = feature_var,
                   values_from = values) %>%
