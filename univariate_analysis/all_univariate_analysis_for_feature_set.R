@@ -127,10 +127,11 @@ for (i in 1:nrow(grouping_param_df)) {
     use_SMOTE <- weighting_param_df$use_SMOTE[i]
     
     # Generate null-model fits distribution
-    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s.Rds",
+    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s_%s.Rds",
                                                 grouping_type,
                                                 feature_set,
-                                                weighting_name)))) {
+                                                weighting_name,
+                                                num_perm)))) {
       model_permutation_null_weighting <- run_null_model_n_permutations(rdata_path,
                                                                         feature_set = feature_set,
                                                                         noise_procs = noise_procs,
@@ -140,10 +141,11 @@ for (i in 1:nrow(grouping_param_df)) {
                                                                         use_inv_prob_weighting = use_inv_prob_weighting,
                                                                         use_SMOTE = use_SMOTE)
       
-      saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s_10perm.Rds",
+      saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s_%sperm.Rds",
                                                                                 grouping_type,
                                                                                 feature_set, 
-                                                                                weighting_name)))
+                                                                                weighting_name,
+                                                                                num_perm)))
     }
     
     # Empirically derive p-values based on null model fits distribution
