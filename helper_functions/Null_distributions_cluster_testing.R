@@ -2,7 +2,7 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
-pairwise_data_file="/project/hctsa/annie/github/"
+pairwise_data_file="/project/hctsa/annie/data/scz/UCLA/Rdata/pyspi_SPI_pairwise_CV_linear_SVM_pyspi_19_inv_prob.Rds"
 SPI_directionality_file="/project/hctsa/annie/github/"
 rdata_path="/project/hctsa/annie/data/scz/UCLA/Rdata/"
 github_dir="/project/hctsa/annie/github/fMRI_FeaturesDisorders/"
