@@ -38,17 +38,96 @@ icesTAF::mkdir(output_dir)
 
 # Run null iteration
 cat("\nNow running null iteration:\n")
-null_out <- run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
-                                             SPI_directionality = SPI_directionality,
-                                             svm_kernel = svm_kernel,
-                                             grouping_var = grouping_var,
-                                             svm_feature_var = svm_feature_var,
-                                             test_package = test_package,
-                                             noise_proc = noise_proc,
-                                             return_all_fold_metrics = return_all_fold_metrics,
-                                             use_inv_prob_weighting = use_inv_prob_weighting,
-                                             use_SMOTE = use_SMOTE,
-                                             shuffle_labels = TRUE)
+# null_out <- run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
+#                                              SPI_directionality = SPI_directionality,
+#                                              svm_kernel = svm_kernel,
+#                                              grouping_var = grouping_var,
+#                                              svm_feature_var = svm_feature_var,
+#                                              test_package = test_package,
+#                                              noise_proc = noise_proc,
+#                                              return_all_fold_metrics = return_all_fold_metrics,
+#                                              use_inv_prob_weighting = use_inv_prob_weighting,
+#                                              use_SMOTE = use_SMOTE,
+#                                              shuffle_labels = TRUE)
+svm_feature_var_name = svm_feature_var
+grouping_var_name = "SPI"
+grouping_var_vector <- unique(pairwise_data$SPI)
+
+# Filter by directionality
+pairwise_data <- pairwise_data %>%
+  left_join(., SPI_directionality) %>%
+  rowwise() %>%
+  mutate(region_pair = case_when(Direction == "Undirected" ~ ifelse(brain_region_1 < brain_region_2,
+                                                                    paste0(brain_region_1, "_", brain_region_2),
+                                                                    paste0(brain_region_2, "_", brain_region_1)),
+                                 Direction == "Directed" ~ paste0(brain_region_1, "_", brain_region_2))) %>%
+  dplyr::select(-brain_region_1, -brain_region_2)  %>%
+  distinct(Subject_ID, SPI, region_pair, .keep_all = T)
+
+
+for (group_var in unique(grouping_var_vector)) {
+  if (grouping_var == "Combo") {
+    data_for_SVM <- pairwise_data %>%
+      dplyr::select(Subject_ID, group, Combo, value) %>%
+      tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                         names_from = Combo,
+                         values_from 
+                         = value) %>%
+      dplyr::select(-Subject_ID) %>%
+      # Drop columns that are all NA/NAN
+      dplyr::select(where(function(x) any(!is.na(x)))) %>%
+      # Drop rows with NA for one or more column
+      drop_na()
+    
+  } else {
+    # Otherwise iterate over each separate group
+    data_for_SVM <- subset(pairwise_data, get(grouping_var_name) == group_var) %>%
+      dplyr::ungroup() %>%
+      dplyr::select(Subject_ID, group, svm_feature_var_name, value) %>%
+      tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                         names_from = svm_feature_var_name,
+                         values_from 
+                         = value) %>%
+      dplyr::select(-Subject_ID) %>%
+      # Drop columns that are all NA/NAN
+      dplyr::select(where(function(x) any(!is.na(x)))) %>%
+      # Drop rows with NA for one or more column
+      drop_na()
+  }
+  
+  # Define sample weights
+  # Default is 1 and 1 if use_inv_prob_weighting is not included
+  if (use_inv_prob_weighting) {
+    # Get control/schz proportions
+    sample_wts <- as.list(1/prop.table(table(data_for_SVM$group)))
+  } else {
+    sample_wts <- list("Control" = 1, "Schz" = 1)
+  }
+  
+  if (nrow(data_for_SVM) > 0) {
+    # Run k-fold linear SVM
+    SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
+                                        k = 10,
+                                        svm_kernel = svm_kernel,
+                                        sample_wts = sample_wts,
+                                        use_SMOTE = use_SMOTE,
+                                        shuffle_labels = TRUE,
+                                        return_all_fold_metrics = return_all_fold_metrics) %>%
+      dplyr::mutate(grouping_var = group_var,
+                    Noise_Proc = noise_proc,
+                    use_inv_prob_weighting = use_inv_prob_weighting,
+                    use_SMOTE = use_SMOTE)
+    
+    # Append results to list
+    class_res_list <- rlist::list.append(class_res_list,
+                                         SVM_results)
+  } else {
+    cat("\nNo observations available for", group_var, "after filtering.\n")
+  }
+}
+
+# Combine results from all regions into a dataframe
+null_out <- do.call(plyr::rbind.fill, class_res_list)
 
 # Save null results to RDS
 if (use_inv_prob_weighting) {
