@@ -9,7 +9,7 @@
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -V
 
-cd $$PBS_O_WORKDIR
+cd "$PBS_O_WORKDIR"
 
 # Load R
 module load R/4.1.1
