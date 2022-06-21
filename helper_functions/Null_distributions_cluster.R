@@ -36,6 +36,9 @@ use_SMOTE <- args$use_SMOTE
 pairwise_data <- readRDS(pairwise_data_file)
 SPI_directionality <- read.csv(SPI_directionality_file)
 
+# Source linear SVM functions
+source(paste0(github_dir, "helper_functions/Linear_SVM.R"))
+
 # Define output directory
 if (use_inv_prob_weighting) {
   output_dir <- paste0(rdata_path, sprintf("Pairwise_%s_inv_prob_null_model_fits/",
