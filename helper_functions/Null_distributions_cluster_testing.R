@@ -53,6 +53,12 @@ svm_feature_var_name = svm_feature_var
 grouping_var_name = "SPI"
 grouping_var_vector <- unique(pairwise_data$SPI)
 
+cat("\nHead of pairwise data:\n")
+head(pairwise_data)
+
+cat("\n\nHead of SPI directionality data:\n")
+head(SPI_directionality)
+
 # Filter by directionality
 pairwise_data <- pairwise_data %>%
   left_join(., SPI_directionality) %>%
