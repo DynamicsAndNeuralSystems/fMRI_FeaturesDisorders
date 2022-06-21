@@ -47,8 +47,6 @@ if (use_inv_prob_weighting) {
 
 icesTAF::mkdir(output_dir)
 
-
-
 # Run null iteration
 null_out <- run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
                                              SPI_directionality = SPI_directionality,
@@ -62,12 +60,11 @@ null_out <- run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
                                              use_SMOTE = use_SMOTE,
                                              shuffle_labels = TRUE)
 
-
 # Save null results to RDS
 if (use_inv_prob_weighting) {
-  saveRDS(null_out, file=sprintf("Pairwise_%s_inv_prob_null_model_fit_iter_%s.Rds",
-                                 feature_set, null_iter_number))
+  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_inv_prob_null_model_fit_iter_%s.Rds",
+                                 output_dir, feature_set, null_iter_number))
 } else {
-  saveRDS(null_out, file=sprintf("Pairwise_%s_unweighted_null_model_fit_iter_%s.Rds",
-                                 feature_set, null_iter_number))
+  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_unweighted_null_model_fit_iter_%s.Rds",
+                                 output_dir, feature_set, null_iter_number))
 }
