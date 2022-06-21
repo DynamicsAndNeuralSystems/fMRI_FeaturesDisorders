@@ -2,37 +2,20 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
-parser$add_argument("--pairwise_data_file")
-parser$add_argument("--SPI_directionality_file", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/pairwise_analysis/SPI_Direction_Info.csv")
-parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
-parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/")
-parser$add_argument("--null_iter_number", default=1)
-parser$add_argument("--feature_set", default="pyspi_19")
-parser$add_argument("--svm_kernel", default="linear")
-parser$add_argument("--grouping_var", default="region_pair")
-parser$add_argument("--svm_feature_var", default="SPI")
-parser$add_argument("--test_package", default="e1071")
-parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
-parser$add_argument("--return_all_fold_metrics", action='store_true', default=TRUE)
-parser$add_argument("--use_inv_prob_weighting", action='store_true', default=TRUE)
-parser$add_argument("--use_SMOTE", action='store_true', default=FALSE)
-
-# Parse input arguments
-args <- parser$parse_args()
-pairwise_data_file <- args$pairwise_data_file
-SPI_directionality_file <- args$SPI_directionality_file
-rdata_path <- args$rdata_path
-github_dir <- args$github_dir
-null_iter_number <- args$null_iter_number
-feature_set <- args$feature_set
-svm_kernel <- args$svm_kernel
-grouping_var <- args$grouping_var
-svm_feature_var <- args$svm_feature_var
-test_package <- args$test_package
-noise_proc <- args$noise_proc
-return_all_fold_metrics <- args$return_all_fold_metrics
-use_inv_prob_weighting <- args$use_inv_prob_weighting
-use_SMOTE <- args$use_SMOTE
+pairwise_data_file="/project/hctsa/annie/github/"
+SPI_directionality_file="/project/hctsa/annie/github/"
+rdata_path="/project/hctsa/annie/data/scz/UCLA/Rdata/"
+github_dir="/project/hctsa/annie/github/fMRI_FeaturesDisorders/"
+null_iter_number=1
+feature_set="pyspi_19"
+svm_kernel="linear"
+grouping_var="region_pair"
+svm_feature_var="SPI"
+test_package="e1071"
+noise_proc="AROMA+2P+GMR"
+return_all_fold_metrics=TRUE
+use_inv_prob_weighting=TRUE
+use_SMOTE=FALSE
 
 # Load data
 pairwise_data <- readRDS(pairwise_data_file)
