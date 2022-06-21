@@ -37,4 +37,4 @@ Rscript ${github_dir}/helper_functions/Null_distributions_cluster.R --pairwise_d
 --SPI_directionality_file ${SPI_directionality_file} \
 --rdata_path ${rdata_path} --null_iter_number ${i} --feature_set ${feature_set} \
 --svm_kernel linear --grouping_var SPI --svm_feature_var region_pair --test_package e1071 \
---noise_proc AROMA+2P+GMR --use_inv_prob_weighting --shuffle_labels
+--noise_proc AROMA+2P+GMR --use_inv_prob_weighting
