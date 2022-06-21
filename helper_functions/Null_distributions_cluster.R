@@ -5,6 +5,7 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 parser$add_argument("--pairwise_data_file", default="/project/hctsa/annie/github/")
 parser$add_argument("--SPI_directionality_file", default="/project/hctsa/annie/github/")
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
+parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/")
 parser$add_argument("--null_iter_number", default=1)
 parser$add_argument("--feature_set", default="pyspi_19")
 parser$add_argument("--svm_kernel", default="linear")
@@ -21,6 +22,7 @@ args <- parser$parse_args()
 pairwise_data_file <- args$pairwise_data_file
 SPI_directionality_file <- args$SPI_directionality_file
 rdata_path <- args$rdata_path
+github_dir <- args$github_dir
 null_iter_number <- args$null_iter_number
 feature_set <- args$feature_set
 svm_kernel <- args$svm_kernel

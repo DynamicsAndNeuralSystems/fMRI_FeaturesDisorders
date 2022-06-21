@@ -35,6 +35,7 @@ hostname
 # Change to relevant directory and run our compute script
 Rscript ${github_dir}/helper_functions/Null_distributions_cluster.R --pairwise_data_file ${pairwise_data_file} \
 --SPI_directionality_file ${SPI_directionality_file} \
---rdata_path ${rdata_path} --null_iter_number ${i} --feature_set ${feature_set} \
+--rdata_path ${rdata_path} --github_dir ${github_dir} \
+--null_iter_number ${i} --feature_set ${feature_set} \
 --svm_kernel linear --grouping_var SPI --svm_feature_var region_pair --test_package e1071 \
 --noise_proc AROMA+2P+GMR --use_inv_prob_weighting
