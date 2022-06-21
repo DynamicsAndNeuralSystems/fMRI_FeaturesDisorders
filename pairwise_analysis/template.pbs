@@ -1,4 +1,5 @@
 #!/bin/bash
+#PBS -P hctsa
 #PBS -N ${name}
 #PBS -j oe
 #PBS -o ${github_dir}/cluster_output/${name}_out.txt

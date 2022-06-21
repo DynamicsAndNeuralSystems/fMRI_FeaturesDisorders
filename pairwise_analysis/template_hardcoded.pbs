@@ -1,4 +1,5 @@
 #!/bin/bash
+#PBS -P hctsa
 #PBS -N pyspi_pairwise_null_model_fit_iteri
 #PBS -j oe
 #PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/pyspi_pairwise_null_model_fit_iteri_out.txt

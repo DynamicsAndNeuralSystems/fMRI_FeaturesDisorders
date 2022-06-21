@@ -124,6 +124,7 @@ for (weighting_name in unique(weighting_param_df$name)) {
 }
 
 # template file
+num_permutations <- 5
 template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_hardcoded.pbs")
 #### Generate empirical null model distributions per SPI
 for (i in 1:nrow(weighting_param_df)) {
