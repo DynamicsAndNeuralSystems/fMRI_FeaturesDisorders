@@ -1,14 +1,14 @@
 # Parse arguments
 
-pairwise_data_file="/project/hctsa/annie/data/scz/UCLA/Rdata/pyspi_SPI_pairwise_CV_linear_SVM_pyspi_19_inv_prob_small.Rds"
+pairwise_data_file="/project/hctsa/annie/data/scz/UCLA/Rdata/pyspi_SPI_pairwise_CV_linear_SVM_pyspi_19_inv_prob.Rds"
 SPI_directionality_file="/project/hctsa/annie/github/fMRI_FeaturesDisorders/pairwise_analysis/SPI_Direction_Info.csv"
 rdata_path="/project/hctsa/annie/data/scz/UCLA/Rdata/"
 github_dir="/project/hctsa/annie/github/fMRI_FeaturesDisorders/"
 null_iter_number=1
 feature_set="pyspi_19"
 svm_kernel="linear"
-grouping_var="region_pair"
-svm_feature_var="SPI"
+grouping_var="SPI"
+svm_feature_var="region_pair"
 test_package="e1071"
 noise_proc="AROMA+2P+GMR"
 return_all_fold_metrics=TRUE
@@ -50,11 +50,11 @@ null_out <- run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
                                              use_SMOTE = use_SMOTE,
                                              shuffle_labels = TRUE)
 
-# # Save null results to RDS
-# if (use_inv_prob_weighting) {
-#   saveRDS(null_out, file=sprintf("%s/Pairwise_%s_inv_prob_null_model_fit_iter_%s.Rds",
-#                                  output_dir, feature_set, null_iter_number))
-# } else {
-#   saveRDS(null_out, file=sprintf("%s/Pairwise_%s_unweighted_null_model_fit_iter_%s.Rds",
-#                                  output_dir, feature_set, null_iter_number))
-# }
+# Save null results to RDS
+if (use_inv_prob_weighting) {
+  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_inv_prob_null_model_fit_iter_%s.Rds",
+                                 output_dir, feature_set, null_iter_number))
+} else {
+  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_unweighted_null_model_fit_iter_%s.Rds",
+                                 output_dir, feature_set, null_iter_number))
+}

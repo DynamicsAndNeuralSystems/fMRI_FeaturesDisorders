@@ -291,7 +291,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   } else if (svm_feature_var == "SPI") {
     svm_feature_var_name = svm_feature_var
     grouping_var_name = "region_pair"
-    grouping_var_vector <- unique(pairwise_data$region)
+    grouping_var_vector <- unique(pairwise_data$region_pair)
     
     # Don't want to filter by directionality
     pairwise_data <- pairwise_data %>%
