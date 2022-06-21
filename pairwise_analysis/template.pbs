@@ -21,21 +21,16 @@ rdata_path=${project_dir}/data/scz/UCLA/Rdata/
 pydata_path=${project_dir}/data/scz/UCLA/pydata/
 mkdir -p $github_dir/cluster_output/
 
-Rscript ${github_dir}/pairwise_analysis/all_pairwise_analysis_for_feature_set.R \
---github_dir ${github_dir} \
---rdata_path ${rdata_path} \
---pydata_path ${pydata_path} \
---feature_set ${feature_set}
+# Change to relevant directory and run our compute script
+Rscript ${github_dir}/helper_functions/Null_distributions_cluster.R --pairwise_data_file ${pairwise_data_file} \
+--SPI_directionality_file ${SPI_directionality_file} \
+--rdata_path ${rdata_path} --pydata_path ${pydata_path} --github_dir ${github_dir} \
+--null_iter_number ${i} --feature_set ${feature_set} \
+--svm_kernel linear --grouping_var SPI --svm_feature_var region_pair --test_package e1071 \
+--noise_proc AROMA+2P+GMR --use_inv_prob_weighting
 
 exit
 
 # Verify the host on which the job ran
 hostname
 
-# Change to relevant directory and run our compute script
-Rscript ${github_dir}/helper_functions/Null_distributions_cluster.R --pairwise_data_file ${pairwise_data_file} \
---SPI_directionality_file ${SPI_directionality_file} \
---rdata_path ${rdata_path} --github_dir ${github_dir} \
---null_iter_number ${i} --feature_set ${feature_set} \
---svm_kernel linear --grouping_var SPI --svm_feature_var region_pair --test_package e1071 \
---noise_proc AROMA+2P+GMR --use_inv_prob_weighting

@@ -5,7 +5,7 @@
 #PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/pyspi_pairwise_null_model_fit_1_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=1:00:00
-#PBS -m abe
+#PBS -m a
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -V
 
@@ -23,9 +23,9 @@ mkdir -p $github_dir/cluster_output/
 
 # Change to relevant directory and run our compute script
 Rscript ${github_dir}/helper_functions/Null_distributions_cluster.R \
---pairwise_data_file ${rdata_path}/pyspi_SPI_pairwise_CV_linear_SVM_pyspi_19_inv_prob.Rds \
+--pairwise_data_file ${pydata_path}/UCLA_all_subject_pyspi_19_AROMA_2P_GMR_filtered_zscored.Rds \
 --SPI_directionality_file ${github_dir}/pairwise_analysis/SPI_Direction_Info.csv \
---rdata_path ${rdata_path} --github_dir ${github_dir} \
+--rdata_path ${rdata_path} --pydata_path ${pydata_path} --github_dir ${github_dir} \
 --null_iter_number 1 --feature_set pyspi_19 \
 --svm_kernel linear --grouping_var SPI --svm_feature_var region_pair --test_package e1071 \
 --noise_proc AROMA+2P+GMR --use_inv_prob_weighting

@@ -56,25 +56,25 @@ cat("\nHead of pairwise data:\n")
 head(pairwise_data)
 cat("\nHead of SPI directionality data:\n")
 head(SPI_directionality)
-# 
-# # Run null iteration
-# null_out <- run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
-#                                              SPI_directionality = SPI_directionality,
-#                                              svm_kernel = svm_kernel,
-#                                              grouping_var = grouping_var,
-#                                              svm_feature_var = svm_feature_var,
-#                                              test_package = test_package,
-#                                              noise_proc = noise_proc,
-#                                              return_all_fold_metrics = return_all_fold_metrics,
-#                                              use_inv_prob_weighting = use_inv_prob_weighting,
-#                                              use_SMOTE = use_SMOTE,
-#                                              shuffle_labels = TRUE)
-# 
-# # Save null results to RDS
-# if (use_inv_prob_weighting) {
-#   saveRDS(null_out, file=sprintf("%s/Pairwise_%s_inv_prob_null_model_fit_iter_%s.Rds",
-#                                  output_dir, feature_set, null_iter_number))
-# } else {
-#   saveRDS(null_out, file=sprintf("%s/Pairwise_%s_unweighted_null_model_fit_iter_%s.Rds",
-#                                  output_dir, feature_set, null_iter_number))
-# }
+
+# Run null iteration
+null_out <- run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
+                                             SPI_directionality = SPI_directionality,
+                                             svm_kernel = svm_kernel,
+                                             grouping_var = grouping_var,
+                                             svm_feature_var = svm_feature_var,
+                                             test_package = test_package,
+                                             noise_proc = noise_proc,
+                                             return_all_fold_metrics = return_all_fold_metrics,
+                                             use_inv_prob_weighting = use_inv_prob_weighting,
+                                             use_SMOTE = use_SMOTE,
+                                             shuffle_labels = TRUE)
+
+# Save null results to RDS
+if (use_inv_prob_weighting) {
+  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_inv_prob_null_model_fit_iter_%s.Rds",
+                                 output_dir, feature_set, null_iter_number))
+} else {
+  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_unweighted_null_model_fit_iter_%s.Rds",
+                                 output_dir, feature_set, null_iter_number))
+}
