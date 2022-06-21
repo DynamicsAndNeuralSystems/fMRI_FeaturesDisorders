@@ -36,7 +36,7 @@ kernel = "linear"
 # ###############################################################################
 # Load pyspi data
 # ###############################################################################
-pyspi_data_file <- paste0(pydata_path, "UCLA_all_subject_pyspi_AROMA_2P_GMR_filtered_zscored.Rds")
+pyspi_data_file <- paste0(pydata_path, "UCLA_all_subject_pyspi_19_AROMA_2P_GMR_filtered_zscored.Rds")
 pyspi_data <- readRDS(pyspi_data_file) %>%
   mutate(group = stringr::str_to_sentence(group))
 
@@ -65,6 +65,12 @@ if (!file.exists(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
 weighting_param_df <- data.frame(name = c("inv_prob"),
                                  use_inv_prob_weighting = c(TRUE),
                                  use_SMOTE = c(FALSE))
+
+################################################################################
+# Per ROI pair
+################################################################################
+
+
 
 ################################################################################
 # Per-feature, all ROI pair combinations
@@ -117,51 +123,34 @@ for (weighting_name in unique(weighting_param_df$name)) {
   }
 }
 
+# template file
+template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_hardcoded.pbs")
 #### Generate empirical null model distributions per SPI
 for (i in 1:nrow(weighting_param_df)) {
   weighting_name <- weighting_param_df$name[i]
   use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[i]
   use_SMOTE <- weighting_param_df$use_SMOTE[i]
 
-  # Generate null-model fits distribution
-  if (!file.exists(paste0(rdata_path, sprintf("pyspi_SPI_pairwise_model_permutation_null_%s_%s.Rds",
-                                              feature_set, weighting_name)))) {
-    model_permutation_null_weighting <- run_null_model_n_permutations_pairwise(pairwise_data = pyspi_data,
-                                                                               noise_proc = "AROMA+2P+GMR",
-                                                                               feature_set = feature_set,
-                                                                               test_package = "e1071",
-                                                                               svm_kernel = "linear",
-                                                                               grouping_var = "SPI",
-                                                                               svm_feature_var = "region_pair",
-                                                                               return_all_fold_metrics = FALSE,
-                                                                               SPI_directionality = SPI_directionality,
-                                                                               num_permutations = 40,
-                                                                               use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                               use_SMOTE = use_SMOTE)
+  # Define pairwise data file
+  pairwise_data_file <- paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_model_free_shuffle_pvals_%s_%s.Rds",
+                                                     feature_set, weighting_name))
 
-    saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("pyspi_SPI_pairwise_model_permutation_null_%s_%s_40perm.Rds",
-                                                                              feature_set, weighting_name)))
-  } else {
-    model_permutation_null_weighting <- readRDS(paste0(rdata_path, sprintf("pyspi_SPI_pairwise_model_permutation_null_%s_%s_40perm.Rds",
-                                                                           feature_set, weighting_name)))
-  }
+  SPI_directionality_file <- paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv")
+  
+  output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits/",
+                                           weighting_name, feature_set))
+  
+  output_scripts_dir <- paste0(github_dir, sprintf("pairwise_analysis/Pairwise_%s_%s_null_model_fits/",
+                                                   weighting_name, feature_set))
+  icesTAF::mkdir(output_data_dir)
+  icesTAF::mkdir(output_scripts_dir)
 
-  # Empirically derive p-values based on null model fits distribution
-  if (!file.exists(paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_null_model_fit_pvals_%s_%s_40perm.Rds",
-                                              feature_set, weighting_name)))) {
-    pyspi_SPI_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
-                                                   sprintf("pyspi_SPI_pairwise_CV_linear_SVM_%s_%s.Rds",
-                                                           feature_set, weighting_name)))
-
-    # Calculate p-values
-    pvalues <- calc_empirical_nulls(class_res = pyspi_SPI_pairwise_SVM_CV_weighting,
-                                    null_data = model_permutation_null_weighting,
-                                    feature_set = feature_set,
-                                    is_data_averaged = FALSE,
-                                    grouping_var = "SPI")
-
-    saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_null_m'odel_fit_pvals_%s_%s_40perm.Rds",
-                                                     feature_set, weighting_name)))
+  for (i in 1:num_permutations) {
+    new_pbs_file <- readLines(template_pbs_file)
+    pbs_text_replaced  <- gsub(pattern = "iteri", replace = i, x = new_pbs_file)
+    output_pbs_file <- writeLines(pbs_text_replaced, 
+                                  paste0(output_scripts_dir, 
+                                         "null_iter_", i, ".pbs"))
   }
 }
 
@@ -180,16 +169,16 @@ for (i in 1:nrow(weighting_param_df)) {
   if (!file.exists(paste0(rdata_path, sprintf("pyspi_Combo_pairwise_CV_linear_SVM_%s_%s.Rds",
                                               feature_set, weighting_name)))) {
     pyspi_combo_pairwise_SVM_CV_weighting <- run_pairwise_cv_svm_by_input_var(pairwise_data = pyspi_data,
-                                                                    SPI_directionality = SPI_directionality,
-                                                                    svm_kernel = "linear",
-                                                                    grouping_var = "Combo",
-                                                                    svm_feature_var = "Combo",
-                                                                    test_package = "e1071",
-                                                                    noise_proc = "AROMA+2P+GMR",
-                                                                    return_all_fold_metrics = TRUE,
-                                                                    use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                    use_SMOTE = use_SMOTE,
-                                                                    shuffle_labels = FALSE)
+                                                                              SPI_directionality = SPI_directionality,
+                                                                              svm_kernel = "linear",
+                                                                              grouping_var = "Combo",
+                                                                              svm_feature_var = "Combo",
+                                                                              test_package = "e1071",
+                                                                              noise_proc = "AROMA+2P+GMR",
+                                                                              return_all_fold_metrics = TRUE,
+                                                                              use_inv_prob_weighting = use_inv_prob_weighting,
+                                                                              use_SMOTE = use_SMOTE,
+                                                                              shuffle_labels = FALSE)
     saveRDS(pyspi_combo_pairwise_SVM_CV_weighting, file=paste0(rdata_path,
                                                        sprintf("pyspi_Combo_pairwise_CV_linear_SVM_%s_%s.Rds",
                                                                feature_set, weighting_name)))

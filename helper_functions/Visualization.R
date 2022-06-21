@@ -253,6 +253,79 @@ plot_top_6_vars_main_vs_null <- function(class_res_pvals,
 
 
 #-------------------------------------------------------------------------------
+# Plot density distribution of main vs null results given a dataset
+#-------------------------------------------------------------------------------
+
+plot_main_vs_null_bal_acc_density <- function(main_res, null_res, pvals,
+                                              grouping_type, result_color,
+                                              line_only = FALSE) {
+
+  
+  # Density plot
+  p <- main_res %>%
+    filter(Sample_Type == "Out-of-sample",
+           Noise_Proc == "AROMA+2P+GMR") %>%
+    left_join(., pvals) %>%
+    ungroup() %>%
+    ggplot(data=., mapping=aes(x = balanced_accuracy)) +
+    ggtitle(grouping_type) +
+    xlab("10-Fold CV Balanced Accuracy") +
+    ylab("Density") 
+  
+  if (line_only) {
+    raw_bal_acc_vector <- null_res %>%
+      dplyr::filter(Sample_Type == "Out-of-sample" &
+                      Noise_Proc == "AROMA+2P+GMR") %>%
+      pull(balanced_accuracy)
+    
+    raw_p_thresh <- quantile(raw_bal_acc_vector, probs = c(0.95))
+    
+    p <- p +
+      geom_density(data = subset(null_res,
+                                 Sample_Type == "Out-of-sample" &
+                                   Noise_Proc == "AROMA+2P+GMR"),
+                   aes(fill = "Null"),
+                   alpha = 0.7) +
+      geom_vline(aes(xintercept = balanced_accuracy,
+                     fill = "Main"),
+                 color = result_color, size = 1.6) +
+      geom_vline(aes(xintercept = raw_p_thresh),
+                 color = "black", size = 1.2,
+                 linetype = 2)
+  } else {
+    # Find cutoff value for BH-adjusted significance for group-wise results
+    group_wise_bal_acc_threshold <- main_res %>%
+      filter(Sample_Type == "Out-of-sample",
+             Noise_Proc == "AROMA+2P+GMR") %>%
+      left_join(., pvals) %>%
+      ungroup() %>%
+      arrange(bal_acc_p_adj) %>%
+      mutate(is_sig = bal_acc_p_adj < 0.05) %>%
+      distinct(is_sig, .keep_all = T) %>%
+      filter(!is_sig)
+    
+    p <- p +
+      geom_density(aes(fill = "Main")) +
+      geom_density(data = subset(null_res,
+                                 Sample_Type == "Out-of-sample" &
+                                   Noise_Proc == "AROMA+2P+GMR"),
+                   aes(fill = "Null"),
+                   alpha = 0.7) +
+      geom_vline(data = group_wise_bal_acc_threshold,
+                 mapping = aes(xintercept = balanced_accuracy),
+                 linetype = 2, size=1.2)
+  }
+
+  p <- p +
+    labs(fill = "Result") +
+    scale_fill_manual(values = c(result_color, "gray40")) +
+    theme(legend.position = "bottom",
+          plot.title = element_text(hjust = 0.5))
+  
+  return(p)
+}
+
+#-------------------------------------------------------------------------------
 # Visualise t-stat histograms for non-normalised and 
 # normalised data across all ROIs
 #-------------------------------------------------------------------------------

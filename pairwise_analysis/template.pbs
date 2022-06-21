@@ -1,0 +1,39 @@
+#!/bin/bash
+#PBS -N ${name}
+#PBS -j oe
+#PBS -o ${github_dir}/cluster_output/${name}_out.txt
+#PBS -l select=1:ncpus=${cpu}:mem=${mem}GB
+#PBS -l walltime=${walltime_hrs}:00:00
+#PBS -m ${pbs_notify}
+#PBS -M ${user_email}
+#PBS -V
+
+cd $$PBS_O_WORKDIR
+
+# Load R
+module load R/4.1.1
+
+# Define directories
+# project_dir=/project/hctsa/annie
+# github_dir=${project_dir}/github/fMRI_FeaturesDisorders/
+rdata_path=${project_dir}/data/scz/UCLA/Rdata/
+pydata_path=${project_dir}/data/scz/UCLA/pydata/
+mkdir -p $github_dir/cluster_output/
+
+Rscript ${github_dir}/pairwise_analysis/all_pairwise_analysis_for_feature_set.R \
+--github_dir ${github_dir} \
+--rdata_path ${rdata_path} \
+--pydata_path ${pydata_path} \
+--feature_set ${feature_set}
+
+exit
+
+# Verify the host on which the job ran
+hostname
+
+# Change to relevant directory and run our compute script
+Rscript ${github_dir}/Null_distributions_cluster.R --pairwise_data_file ${pairwise_data_file} \
+--SPI_directionality_file ${SPI_directionality_file} \
+--rdata_path ${rdata_path} --null_iter_number ${i} --feature_set ${feature_set} \
+--svm_kernel linear --grouping_var SPI --svm_feature_var region_pair --test_package e1071 \
+--noise_proc AROMA+2P+GMR --use_inv_prob_weighting --shuffle_labels
