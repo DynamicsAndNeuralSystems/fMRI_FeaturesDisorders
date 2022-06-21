@@ -12,9 +12,9 @@ parser$add_argument("--grouping_var", default="region_pair")
 parser$add_argument("--svm_feature_var", default="SPI")
 parser$add_argument("--test_package", default="e1071")
 parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
-parser$add_argument("--return_all_fold_metrics", type="logical", default=TRUE)
-parser$add_argument("--use_inv_prob_weighting", type="logical", default=TRUE)
-parser$add_argument("--use_SMOTE", type="logical", default=FALSE)
+parser$add_argument("--return_all_fold_metrics", action='store_true', default=TRUE)
+parser$add_argument("--use_inv_prob_weighting", action='store_true', default=TRUE)
+parser$add_argument("--use_SMOTE", action='store_true', default=FALSE)
 
 # Parse input arguments
 args <- parser$parse_args()

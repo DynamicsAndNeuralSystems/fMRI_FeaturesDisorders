@@ -5,7 +5,7 @@
 #PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/pyspi_pairwise_null_model_fit_1_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=1:00:00
-#PBS -m a
+#PBS -m abe
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -V
 
