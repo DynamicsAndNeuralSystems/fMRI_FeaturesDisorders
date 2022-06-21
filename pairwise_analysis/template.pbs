@@ -33,7 +33,7 @@ exit
 hostname
 
 # Change to relevant directory and run our compute script
-Rscript ${github_dir}/Null_distributions_cluster.R --pairwise_data_file ${pairwise_data_file} \
+Rscript ${github_dir}/helper_functions/Null_distributions_cluster.R --pairwise_data_file ${pairwise_data_file} \
 --SPI_directionality_file ${SPI_directionality_file} \
 --rdata_path ${rdata_path} --null_iter_number ${i} --feature_set ${feature_set} \
 --svm_kernel linear --grouping_var SPI --svm_feature_var region_pair --test_package e1071 \
