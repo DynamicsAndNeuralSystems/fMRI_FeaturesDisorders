@@ -126,7 +126,8 @@ for (weighting_name in unique(weighting_param_df$name)) {
 }
 
 # template file
-num_permutations <- 800
+num_permutations <- 200
+nperm_per_iter <- 5
 template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_null_model_fit.pbs")
 
 lookup_list <- list("PROJECT_NAME" = "hctsa", 
@@ -137,9 +138,10 @@ lookup_list <- list("PROJECT_NAME" = "hctsa",
                     "PROJECT_DIR" = project_path,
                     "EMAIL" = "abry4213@uni.sydney.edu.au",
                     "PBS_NOTIFY" = "a",
-                    "WALL_HRS" = "1",
+                    "WALL_HRS" = "2",
                     "PAIRWISE_DATA_FILE" = paste0(pydata_path, "UCLA_all_subject_pyspi_19_AROMA_2P_GMR_filtered_zscored.Rds"),
                     "SPI_DIRECTIONALITY_FILE" = paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"),
+                    "NUM_PERMS_PER_ITER" = nperm_per_iter,
                     "FEATURE_SET" = "pyspi_19",
                     "GROUPING_VAR" = "SPI",
                     "SVM_FEATURE_VAR" = "region_pair",
