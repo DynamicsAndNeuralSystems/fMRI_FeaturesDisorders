@@ -146,12 +146,12 @@ for (i in 1:nrow(weighting_param_df)) {
   icesTAF::mkdir(output_data_dir)
   icesTAF::mkdir(output_scripts_dir)
 
-  for (i in 1:num_permutations) {
+  for (j in 1:num_permutations) {
     new_pbs_file <- readLines(template_pbs_file)
-    pbs_text_replaced  <- gsub(pattern = "iteri", replace = i, x = new_pbs_file)
+    pbs_text_replaced  <- gsub(pattern = "iteri", replace = j, x = new_pbs_file)
     output_pbs_file <- writeLines(pbs_text_replaced, 
                                   paste0(output_scripts_dir, 
-                                         "null_iter_", i, ".pbs"))
+                                         "null_iter_", j, ".pbs"))
   }
 }
 

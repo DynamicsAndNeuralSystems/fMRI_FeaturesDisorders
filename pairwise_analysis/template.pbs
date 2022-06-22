@@ -15,8 +15,6 @@ cd "$PBS_O_WORKDIR"
 module load R/4.1.1
 
 # Define directories
-# project_dir=/project/hctsa/annie
-# github_dir=${project_dir}/github/fMRI_FeaturesDisorders/
 rdata_path=${project_dir}/data/scz/UCLA/Rdata/
 pydata_path=${project_dir}/data/scz/UCLA/pydata/
 mkdir -p $github_dir/cluster_output/
