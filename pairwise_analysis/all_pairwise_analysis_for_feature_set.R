@@ -177,6 +177,8 @@ for (i in 1:nrow(weighting_param_df)) {
     output_pbs_file <- writeLines(pbs_text_replaced, 
                                   paste0(output_scripts_dir, 
                                          "null_iter_", j, ".pbs"))
+    
+    System("qsub ", paste0(output_scripts_dir, "null_iter_", j, ".pbs"))
   }
 }
 
