@@ -311,13 +311,8 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     
     # Filter by directionality
     pairwise_data <- pairwise_data %>%
-      left_join(., SPI_directionality) %>%
       rowwise() %>%
-      mutate(region_pair = case_when(Direction == "Undirected" ~ ifelse(brain_region_1 < brain_region_2,
-                                                                        paste0(brain_region_1, "_", brain_region_2),
-                                                                        paste0(brain_region_2, "_", brain_region_1)),
-                                     Direction == "Directed" ~ paste0(brain_region_1, "_", brain_region_2))) %>%
-      dplyr::select(-brain_region_1, -brain_region_2)  %>%
+      tidyr::unite("region_pair", c(brain_region_1, brain_region_2), sep="_") %>%
       distinct(Subject_ID, SPI, region_pair, .keep_all = T) %>%
       unite("Combo", c("region_pair", "SPI"), sep="_", remove=F)
     
