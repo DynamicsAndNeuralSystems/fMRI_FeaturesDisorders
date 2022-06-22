@@ -178,7 +178,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                   paste0(output_scripts_dir, 
                                          "null_iter_", j, ".pbs"))
     
-    System("qsub ", paste0(output_scripts_dir, "null_iter_", j, ".pbs"))
+    system("qsub ", paste0(output_scripts_dir, "null_iter_", j, ".pbs"))
   }
 }
 
