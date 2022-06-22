@@ -3,7 +3,7 @@ library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--project_path", default="/project/hctsa/annie/")
-parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
+parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/")
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
 parser$add_argument("--pydata_path", default="/project/hctsa/annie/data/scz/UCLA/pydata/")
 parser$add_argument("--feature_set", default="pyspi_19")
