@@ -58,16 +58,16 @@ kernel = "linear"
 #   model_free_shuffle_null_res <- readRDS(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
 #                                                                     feature_set)))
 # }
-# 
-# 
-# ################################################################################
-# # Define weighting parameters
-# ################################################################################
-# 
-# weighting_param_df <- data.frame(name = c("inv_prob"),
-#                                  use_inv_prob_weighting = c(TRUE),
-#                                  use_SMOTE = c(FALSE))
-# 
+
+
+################################################################################
+# Define weighting parameters
+################################################################################
+
+weighting_param_df <- data.frame(name = c("inv_prob"),
+                                 use_inv_prob_weighting = c(TRUE),
+                                 use_SMOTE = c(FALSE))
+
 # ################################################################################
 # # Per ROI pair
 # ################################################################################
