@@ -177,7 +177,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                                          feature_set, weighting_name))
    
   # Run null perm iterations if overall null distribution data file doesn't exist
-  # if (!file.exists(weighting_null_dist_file)) {
+  if (!file.exists(weighting_null_dist_file)) {
     # Output script dir
     output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits/", 
                                                   feature_set, weighting_name))
@@ -240,8 +240,7 @@ for (i in 1:nrow(weighting_param_df)) {
       purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
     saveRDS(results, paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits.Rds",
                                                 feature_set, weighting_name)))
-  # }
-  
+  }
 }
 
 ################################################################################
