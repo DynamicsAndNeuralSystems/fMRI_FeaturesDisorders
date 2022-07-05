@@ -64,7 +64,8 @@ null_out <- 1:num_perms_for_iter %>%
                                                     use_inv_prob_weighting = use_inv_prob_weighting,
                                                     use_SMOTE = use_SMOTE,
                                                     shuffle_labels = TRUE) %>%
-                   mutate(Null_Iter_Number = . * (null_iter_number - 1)))
+                   # Keep track of which null iteration this is
+                   mutate(Null_Iter_Number = . + (. * (null_iter_number - 1))))
 
 # Save null results to RDS
 saveRDS(null_out, file=sprintf("%s/Pairwise_%s_null_model_fit_iter_%s.Rds",
