@@ -175,8 +175,8 @@ for (i in 1:nrow(weighting_param_df)) {
 # # num_k_folds <- 10
 # # template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_null_model_fit.pbs")
 # # 
-# # output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_inv_prob_null_model_fits/",
-# #                                               feature_set))
+# # output_data_dir <- paste0(rdata_path, sprintf("pyspi_%s_wise_%s_inv_prob_null_model_fits/",
+# #                                               grouping_var, feature_set))
 # # 
 # # #### Generate empirical null model distributions per SPI
 # # for (i in 1:nrow(weighting_param_df)) {

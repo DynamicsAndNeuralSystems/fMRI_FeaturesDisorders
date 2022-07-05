@@ -2,7 +2,7 @@
 #PBS -P PROJECT_NAME
 #PBS -N iterj_NAME
 #PBS -j oe
-#PBS -o GITHUB_DIR/cluster_output/pyspi_pairwise_null_model_fit_iterj_out.txt
+#PBS -o GITHUB_DIR/cluster_output/univariate_WEIGHTING_null_model_fit_iterj_out.txt
 #PBS -l select=1:ncpus=NCPUS:mem=MEMNUMGB
 #PBS -l walltime=WALL_HRS:00:00
 #PBS -m PBS_NOTIFY
@@ -30,7 +30,7 @@ Rscript ${github_dir}/helper_functions/Null_distributions_cluster.R \
 --output_data_dir OUTPUT_DATA_DIR --null_iter_number iterj \
 --num_perms_for_iter NUM_PERMS_PER_ITER --feature_set FEATURE_SET \
 --svm_kernel linear --grouping_var GROUPING_VAR --svm_feature_var SVM_FEATURE_VAR \
---test_package e1071 --noise_proc NOISE_PROC --weighting_name WEIGHTING_NAME --use_inv_prob_weighting
+--test_package e1071 --noise_proc NOISE_PROC --use_inv_prob_weighting
 
 exit
 
