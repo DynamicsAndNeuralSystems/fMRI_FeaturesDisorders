@@ -81,7 +81,7 @@ for (i in 1:nrow(weighting_param_df)) {
   # Run given weighting for 10-fold CV linear SVM
   if (!file.exists(paste0(rdata_path, sprintf("pyspi_region_pairwise_CV_linear_SVM_%s_%s.Rds",
                                               feature_set, weighting_name)))) {
-    tryCatch({pyspi_SPI_pairwise_SVM_CV_weighting <- run_pairwise_cv_svm_by_input_var(pairwise_data = pyspi_data,
+    tryCatch({pyspi_region_pairwise_SVM_CV_weighting <- run_pairwise_cv_svm_by_input_var(pairwise_data = pyspi_data,
                                                                                       SPI_directionality = SPI_directionality,
                                                                                       svm_kernel = "linear",
                                                                                       grouping_var = "region_pair",
@@ -92,7 +92,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                                       use_inv_prob_weighting = use_inv_prob_weighting,
                                                                                       use_SMOTE = use_SMOTE,
                                                                                       shuffle_labels = FALSE)
-    saveRDS(pyspi_SPI_pairwise_SVM_CV_weighting, file=paste0(rdata_path,
+    saveRDS(pyspi_region_pairwise_SVM_CV_weighting, file=paste0(rdata_path,
                                                              sprintf("pyspi_region_pairwise_CV_linear_SVM_%s_%s.Rds",
                                                                      feature_set, weighting_name)))
     }, error = function(e) {
@@ -102,6 +102,25 @@ for (i in 1:nrow(weighting_param_df)) {
   }
 }
 
+#### Calculate p values from model-free shuffle null distribution
+# for (weighting_name in unique(weighting_param_df$name)) {
+#   if (!file.exists(paste0(rdata_path, sprintf("pyspi_region_pairwise_CV_linear_SVM_model_free_shuffle_pvals_%s_%s.Rds",
+#                                               feature_set, weighting_name)))) {
+#     pyspi_region_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
+#                                                           sprintf("pyspi_region_pairwise_CV_linear_SVM_%s_%s.Rds",
+#                                                                   feature_set, weighting_name)))
+#     
+#     # Calculate p-values
+#     pvalues <- calc_empirical_nulls(class_res = pyspi_region_pairwise_SVM_CV_weighting,
+#                                     null_data = model_free_shuffle_null_res,
+#                                     feature_set = feature_set,
+#                                     is_main_data_averaged = FALSE,
+#                                     grouping_var = "region_pair")
+#     
+#     saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_region_pairwise_CV_linear_SVM_model_free_shuffle_pvals_%s_%s.Rds",
+#                                                      feature_set, weighting_name)))
+#   }
+# }
 
 ################################################################################
 # Per-feature, all ROI pair combinations
