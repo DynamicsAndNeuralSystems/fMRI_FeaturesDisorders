@@ -7,6 +7,7 @@ parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_Fe
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
 parser$add_argument("--pydata_path", default="/project/hctsa/annie/data/scz/UCLA/pydata/")
 parser$add_argument("--feature_set", default="pyspi_19")
+# project_path <- "D:/Virtual_Machines/Shared_Folder/"
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
 # rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 # pydata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/pydata/"
@@ -158,8 +159,9 @@ for (weighting_name in unique(weighting_param_df$name)) {
 }
 
 # template file
-num_permutations <- 200
-nperm_per_iter <- 5
+# num_permutations <- 100
+num_permutations <- 1
+nperm_per_iter <- 10
 template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_null_model_fit.pbs")
 
 output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_inv_prob_null_model_fits/",
@@ -173,7 +175,7 @@ lookup_list <- list("PROJECT_NAME" = "hctsa",
                     "PROJECT_DIR" = project_path,
                     "EMAIL" = "abry4213@uni.sydney.edu.au",
                     "PBS_NOTIFY" = "a",
-                    "WALL_HRS" = "2",
+                    "WALL_HRS" = "4",
                     "PAIRWISE_DATA_FILE" = paste0(pydata_path, sprintf("UCLA_all_subject_%s_AROMA_2P_GMR_filtered_zscored.Rds",
                                                                        feature_set)),
                     "SPI_DIRECTIONALITY_FILE" = paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"),
@@ -237,6 +239,13 @@ for (i in 1:nrow(weighting_param_df)) {
     }
     
     # Concatenate null results and save to RDS file
+    # results <- 1:length(list.files(output_data_dir, pattern="Rds")) %>%
+    #   purrr::map_df( ~ readRDS())
+    # 
+    # results <- list.files(output_data_dir, pattern="Rds")[1:4] %>%
+    #   purrr::map_df(~ readRDS(paste0(output_data_dir, .)))
+    # saveRDS(results, paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits.Rds",
+    #                                             feature_set, weighting_name)))
   }
   
 }

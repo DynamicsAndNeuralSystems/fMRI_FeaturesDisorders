@@ -63,14 +63,9 @@ null_out <- 1:num_perms_for_iter %>%
                                                     return_all_fold_metrics = return_all_fold_metrics,
                                                     use_inv_prob_weighting = use_inv_prob_weighting,
                                                     use_SMOTE = use_SMOTE,
-                                                    shuffle_labels = TRUE))
-
+                                                    shuffle_labels = TRUE) %>%
+                   mutate(Null_Iter_Number = . * (null_iter_number - 1)))
 
 # Save null results to RDS
-if (use_inv_prob_weighting) {
-  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_null_model_fit_iter_%s.Rds",
+saveRDS(null_out, file=sprintf("%s/Pairwise_%s_null_model_fit_iter_%s.Rds",
                                  output_data_dir, feature_set, null_iter_number))
-} else {
-  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_null_model_fit_iter_%s.Rds",
-                                 output_data_dir, feature_set, null_iter_number))
-}
