@@ -192,44 +192,53 @@ for (i in 1:nrow(weighting_param_df)) {
   use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[i]
   use_SMOTE <- weighting_param_df$use_SMOTE[i]
   
-  # Output script dir
-  output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits/", 
-                                                feature_set, weighting))
-  output_scripts_dir <- paste0(github_dir, sprintf("pairwise_analysis/Pairwise_%s_%s_null_model_fits/",
-                                                   weighting_name, feature_set))
-  icesTAF::mkdir(output_scripts_dir)
-  
-  # Define output data directory that is specific to weighting
-  lookup_list_weighting <- list("OUTPUT_DATA_DIR" = output_data_dir)
-  to_be_replaced_weighting <- names(lookup_list_weighting)
-  replacement_values_weighting <- unlist(unname(lookup_list_weighting))
-  
-  for (j in 1:num_permutations) {
+  weighting_null_dist_file <- paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits.Rds",
+                                                         feature_set, weighting_name))
+   
+  # Run null perm iterations if overall null distribution data file doesn't exist
+  if (!file.exists(weighting_null_dist_file)) {
+    # Output script dir
+    output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits/", 
+                                                  feature_set, weighting_name))
+    output_scripts_dir <- paste0(github_dir, sprintf("pairwise_analysis/Pairwise_%s_%s_null_model_fits/",
+                                                     weighting_name, feature_set))
+    icesTAF::mkdir(output_scripts_dir)
     
+    # Define output data directory that is specific to weighting
+    lookup_list_weighting <- list("OUTPUT_DATA_DIR" = output_data_dir)
+    to_be_replaced_weighting <- names(lookup_list_weighting)
+    replacement_values_weighting <- unlist(unname(lookup_list_weighting))
     
-    # Run command if null file doesn't exist 
-    if (!file.exists(sprintf("%s/Pairwise_%s_inv_prob_null_model_fit_iter_%s.Rds",
-                             output_data_dir, feature_set, j))) {
-      new_pbs_file <- readLines(template_pbs_file)
+    for (j in 1:num_permutations) {
       
-      # Replace file paths
-      pbs_text_replaced <- mgsub::mgsub(new_pbs_file,
-                                        to_be_replaced,
-                                        replacement_values)
-      pbs_text_replaced <- mgsub::mgsub(pbs_text_replaced, to_be_replaced_weighting, replacement_values_weighting)
       
-      # Replace null iteration number
-      pbs_text_replaced <- gsub("iterj", j, pbs_text_replaced)
-      
-      # Write updated PBS script to file
-      output_pbs_file <- writeLines(pbs_text_replaced, 
-                                    paste0(output_scripts_dir, 
-                                           "null_iter_", j, ".pbs"))
-      
-      system(paste0("qsub ", output_scripts_dir, "null_iter_", j, ".pbs"))
-      
+      # Run command if null file doesn't exist 
+      if (!file.exists(sprintf("%s/Pairwise_%s_inv_prob_null_model_fit_iter_%s.Rds",
+                               output_data_dir, feature_set, j))) {
+        new_pbs_file <- readLines(template_pbs_file)
+        
+        # Replace file paths
+        pbs_text_replaced <- mgsub::mgsub(new_pbs_file,
+                                          to_be_replaced,
+                                          replacement_values)
+        pbs_text_replaced <- mgsub::mgsub(pbs_text_replaced, to_be_replaced_weighting, replacement_values_weighting)
+        
+        # Replace null iteration number
+        pbs_text_replaced <- gsub("iterj", j, pbs_text_replaced)
+        
+        # Write updated PBS script to file
+        output_pbs_file <- writeLines(pbs_text_replaced, 
+                                      paste0(output_scripts_dir, 
+                                             "null_iter_", j, ".pbs"))
+        
+        system(paste0("qsub ", output_scripts_dir, "null_iter_", j, ".pbs"))
+        
+      }
     }
+    
+    # Concatenate null results and save to RDS file
   }
+  
 }
 
 ################################################################################
