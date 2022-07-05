@@ -374,7 +374,8 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
         dplyr::mutate(grouping_var = group_var,
                       Noise_Proc = noise_proc,
                       use_inv_prob_weighting = use_inv_prob_weighting,
-                      use_SMOTE = use_SMOTE)
+                      use_SMOTE = use_SMOTE,
+                      num_k_folds = k)
       
       # Append results to list
       class_res_list <- rlist::list.append(class_res_list,

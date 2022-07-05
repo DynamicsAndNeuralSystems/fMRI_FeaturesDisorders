@@ -159,10 +159,8 @@ for (weighting_name in unique(weighting_param_df$name)) {
 }
 
 # template file
-# num_permutations <- 100
-num_permutations <- 1
-# nperm_per_iter <- 10
-nperm_per_iter <- 2
+num_permutations <- 100
+nperm_per_iter <- 10
 num_k_folds <- 10
 template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_null_model_fit.pbs")
 
@@ -194,7 +192,7 @@ for (i in 1:nrow(weighting_param_df)) {
                         "GITHUB_DIR" = github_dir,
                         "PROJECT_DIR" = project_path,
                         "EMAIL" = "abry4213@uni.sydney.edu.au",
-                        "PBS_NOTIFY" = "abe",
+                        "PBS_NOTIFY" = "a",
                         "WALL_HRS" = "4",
                         "PAIRWISE_DATA_FILE" = paste0(pydata_path, sprintf("UCLA_all_subject_%s_AROMA_2P_GMR_filtered_zscored.Rds",
                                                                            feature_set)),
@@ -238,10 +236,10 @@ for (i in 1:nrow(weighting_param_df)) {
     }
     
     ## Concatenate null results and save to RDS file
-    # results <- list.files(output_data_dir, pattern="Rds") %>%
-    #   purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
-    # saveRDS(results, paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits.Rds",
-    #                                             feature_set, weighting_name)))
+    results <- list.files(output_data_dir, pattern="Rds") %>%
+      purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
+    saveRDS(results, paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits.Rds",
+                                                feature_set, weighting_name)))
   # }
   
 }
