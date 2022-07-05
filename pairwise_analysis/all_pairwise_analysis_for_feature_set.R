@@ -107,7 +107,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                           feature_set, 
                                                                           weighting_name)))
       }, error = function(e) {
-        cat("\nCould not run", grouping_var "wise analysis:\n")
+        cat("\nCould not run", grouping_var, "wise analysis:\n")
         print(e)
       })
     }
