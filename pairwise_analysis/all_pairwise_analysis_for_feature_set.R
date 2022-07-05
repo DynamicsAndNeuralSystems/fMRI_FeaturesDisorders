@@ -167,27 +167,6 @@ template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_null_model_f
 output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_inv_prob_null_model_fits/",
                                               feature_set))
 
-lookup_list <- list("PROJECT_NAME" = "hctsa", 
-                    "NAME" = "pyspi_SPIwise_null_model_fit",
-                    "MEMNUM" = "20",
-                    "NCPUS" = "1",
-                    "GITHUB_DIR" = github_dir,
-                    "PROJECT_DIR" = project_path,
-                    "EMAIL" = "abry4213@uni.sydney.edu.au",
-                    "PBS_NOTIFY" = "abe",
-                    "WALL_HRS" = "4",
-                    "PAIRWISE_DATA_FILE" = paste0(pydata_path, sprintf("UCLA_all_subject_%s_AROMA_2P_GMR_filtered_zscored.Rds",
-                                                                       feature_set)),
-                    "SPI_DIRECTIONALITY_FILE" = paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"),
-                    "NUM_PERMS_PER_ITER" = nperm_per_iter,
-                    "FEATURE_SET" = "pyspi_19",
-                    "GROUPING_VAR" = "SPI",
-                    "SVM_FEATURE_VAR" = "region_pair",
-                    "NOISE_PROC" = noise_proc)
-
-to_be_replaced <- names(lookup_list)
-replacement_values <- unlist(unname(lookup_list))
-
 #### Generate empirical null model distributions per SPI
 for (i in 1:nrow(weighting_param_df)) {
   weighting_name <- weighting_param_df$name[i]
@@ -206,10 +185,27 @@ for (i in 1:nrow(weighting_param_df)) {
                                                      weighting_name, feature_set))
     icesTAF::mkdir(output_scripts_dir)
     
-    # Define output data directory that is specific to weighting
-    lookup_list_weighting <- list("OUTPUT_DATA_DIR" = output_data_dir)
-    to_be_replaced_weighting <- names(lookup_list_weighting)
-    replacement_values_weighting <- unlist(unname(lookup_list_weighting))
+    lookup_list <- list("PROJECT_NAME" = "hctsa", 
+                        "NAME" = "pyspi_SPIwise_null_model_fit",
+                        "MEMNUM" = "20",
+                        "NCPUS" = "1",
+                        "GITHUB_DIR" = github_dir,
+                        "PROJECT_DIR" = project_path,
+                        "EMAIL" = "abry4213@uni.sydney.edu.au",
+                        "PBS_NOTIFY" = "abe",
+                        "WALL_HRS" = "4",
+                        "PAIRWISE_DATA_FILE" = paste0(pydata_path, sprintf("UCLA_all_subject_%s_AROMA_2P_GMR_filtered_zscored.Rds",
+                                                                           feature_set)),
+                        "SPI_DIRECTIONALITY_FILE" = paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"),
+                        "NUM_PERMS_PER_ITER" = nperm_per_iter,
+                        "OUTPUT_DATA_DIR" = output_data_dir,
+                        "FEATURE_SET" = "pyspi_19",
+                        "GROUPING_VAR" = "SPI",
+                        "SVM_FEATURE_VAR" = "region_pair",
+                        "NOISE_PROC" = noise_proc)
+    
+    to_be_replaced <- names(lookup_list)
+    replacement_values <- unlist(unname(lookup_list))
     
     for (j in 1:num_permutations) {
       
@@ -224,7 +220,6 @@ for (i in 1:nrow(weighting_param_df)) {
         pbs_text_replaced <- mgsub::mgsub(new_pbs_file,
                                           to_be_replaced,
                                           replacement_values)
-        pbs_text_replaced <- mgsub::mgsub(pbs_text_replaced, to_be_replaced_weighting, replacement_values_weighting)
         
         # Replace null iteration number
         pbs_text_replaced <- gsub("iterj", j, pbs_text_replaced)

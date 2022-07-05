@@ -51,22 +51,22 @@ head(pairwise_data)
 cat("\nHead of SPI directionality data:\n")
 head(SPI_directionality)
 
-# # Run null iteration
-# null_out <- 1:num_perms_for_iter %>%
-#   purrr::map_df( ~ run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
-#                                                     SPI_directionality = SPI_directionality,
-#                                                     svm_kernel = svm_kernel,
-#                                                     grouping_var = grouping_var,
-#                                                     svm_feature_var = svm_feature_var,
-#                                                     test_package = test_package,
-#                                                     noise_proc = noise_proc,
-#                                                     return_all_fold_metrics = return_all_fold_metrics,
-#                                                     use_inv_prob_weighting = use_inv_prob_weighting,
-#                                                     use_SMOTE = use_SMOTE,
-#                                                     shuffle_labels = TRUE)) #%>%
-#                    # Keep track of which null iteration this is
-#                    # mutate(Null_Iter_Number = .x + (.x * (null_iter_number - 1))))
-# 
-# # Save null results to RDS
-# saveRDS(null_out, file=sprintf("%s/Pairwise_%s_null_model_fit_iter_%s.Rds",
-#                                  output_data_dir, feature_set, null_iter_number))
+# Run null iteration
+null_out <- 1:num_perms_for_iter %>%
+  purrr::map_df( ~ run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
+                                                    SPI_directionality = SPI_directionality,
+                                                    svm_kernel = svm_kernel,
+                                                    grouping_var = grouping_var,
+                                                    svm_feature_var = svm_feature_var,
+                                                    test_package = test_package,
+                                                    noise_proc = noise_proc,
+                                                    return_all_fold_metrics = return_all_fold_metrics,
+                                                    use_inv_prob_weighting = use_inv_prob_weighting,
+                                                    use_SMOTE = use_SMOTE,
+                                                    shuffle_labels = TRUE) %>%
+                   # Keep track of which null iteration this is
+                   mutate(Null_Iter_Number = .x + (.x * (null_iter_number - 1))))
+
+# Save null results to RDS
+saveRDS(null_out, file=sprintf("%s/Pairwise_%s_null_model_fit_iter_%s.Rds",
+                                 output_data_dir, feature_set, null_iter_number))
