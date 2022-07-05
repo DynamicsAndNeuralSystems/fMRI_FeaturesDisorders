@@ -161,7 +161,7 @@ for (weighting_name in unique(weighting_param_df$name)) {
 # template file
 # num_permutations <- 100
 num_permutations <- 1
-nperm_per_iter <- 3
+nperm_per_iter <- 2
 template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_null_model_fit.pbs")
 
 output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_inv_prob_null_model_fits/",
