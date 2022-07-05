@@ -7,6 +7,7 @@ parser$add_argument("--SPI_directionality_file", default="/project/hctsa/annie/g
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
 parser$add_argument("--output_data_dir", default="/project/hctsa/annie/data/scz/UCLA/Rdata/Pairwise_pyspi_19_inv_prob_null_model_fits/")
 parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/")
+parser$add_argument("--grouping_var", default="SPI")
 parser$add_argument("--num_k_folds", default=10)
 parser$add_argument("--null_iter_number", default=1)
 parser$add_argument("--num_perms_for_iter", default=1)
@@ -27,6 +28,7 @@ SPI_directionality_file <- args$SPI_directionality_file
 rdata_path <- args$rdata_path
 output_data_dir <- args$output_data_dir
 github_dir <- args$github_dir
+grouping_var <- args$grouping_var
 num_k_folds <- as.numeric(args$num_k_folds)
 null_iter_number <- args$null_iter_number
 num_perms_for_iter <- args$num_perms_for_iter
@@ -75,5 +77,5 @@ null_out <- 1:num_perms_for_iter %>%
                    mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
 
 # Save null results to RDS
-saveRDS(null_out, file=sprintf("%s/Pairwise_%s_null_model_fit_iter_%s.Rds",
-                                 output_data_dir, feature_set, null_iter_number))
+saveRDS(null_out, file=sprintf("%s/pyspi_%s_pairwise_%s_null_model_fit_iter_%s.Rds",
+                                 output_data_dir, grouping_var, feature_set, null_iter_number))
