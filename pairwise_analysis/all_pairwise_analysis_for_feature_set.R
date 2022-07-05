@@ -161,7 +161,10 @@ for (weighting_name in unique(weighting_param_df$name)) {
 # template file
 # num_permutations <- 100
 num_permutations <- 1
+# nperm_per_iter <- 10
 nperm_per_iter <- 2
+# num_k_folds <- 10
+num_k_folds <- 2
 template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_null_model_fit.pbs")
 
 output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_inv_prob_null_model_fits/",
@@ -197,6 +200,7 @@ for (i in 1:nrow(weighting_param_df)) {
                         "PAIRWISE_DATA_FILE" = paste0(pydata_path, sprintf("UCLA_all_subject_%s_AROMA_2P_GMR_filtered_zscored.Rds",
                                                                            feature_set)),
                         "SPI_DIRECTIONALITY_FILE" = paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"),
+                        "NUM_K_FOLDS" = num_k_folds,
                         "NUM_PERMS_PER_ITER" = nperm_per_iter,
                         "OUTPUT_DATA_DIR" = output_data_dir,
                         "FEATURE_SET" = "pyspi_19",

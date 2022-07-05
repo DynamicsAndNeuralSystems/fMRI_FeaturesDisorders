@@ -7,6 +7,7 @@ parser$add_argument("--SPI_directionality_file", default="/project/hctsa/annie/g
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
 parser$add_argument("--output_data_dir", default="/project/hctsa/annie/data/scz/UCLA/Rdata/Pairwise_pyspi_19_inv_prob_null_model_fits/")
 parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/")
+parser$add_argument("--num_k_folds", default=10)
 parser$add_argument("--null_iter_number", default=1)
 parser$add_argument("--num_perms_for_iter", default=1)
 parser$add_argument("--feature_set", default="pyspi_19")
@@ -26,6 +27,7 @@ SPI_directionality_file <- args$SPI_directionality_file
 rdata_path <- args$rdata_path
 output_data_dir <- args$output_data_dir
 github_dir <- args$github_dir
+num_k_folds <- args$num_k_folds
 null_iter_number <- args$null_iter_number
 num_perms_for_iter <- args$num_perms_for_iter
 feature_set <- args$feature_set
@@ -52,6 +54,8 @@ head(pairwise_data)
 cat("\nHead of SPI directionality data:\n")
 head(SPI_directionality)
 
+cat("\nNum permutations per iteration:", num_perms_for_iter, "\n")
+cat("\nData type:", typeof(num_perms_for_iter), "\n")
 # Run null iteration
 null_out <- 1:num_perms_for_iter %>%
   purrr::map_df( ~ run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
@@ -59,6 +63,7 @@ null_out <- 1:num_perms_for_iter %>%
                                                     svm_kernel = svm_kernel,
                                                     grouping_var = grouping_var,
                                                     svm_feature_var = svm_feature_var,
+                                                    k = num_k_folds,
                                                     test_package = test_package,
                                                     noise_proc = noise_proc,
                                                     return_all_fold_metrics = return_all_fold_metrics,
