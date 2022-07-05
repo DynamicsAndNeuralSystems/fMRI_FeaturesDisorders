@@ -163,7 +163,8 @@ run_null_model_n_permutations_univariate_pairwise_combo <- function(univariate_d
 calc_empirical_nulls <- function(class_res,
                                  null_data,
                                  feature_set,
-                                 is_data_averaged = TRUE,
+                                 is_main_data_averaged = TRUE,
+                                 is_null_data_averaged = TRUE,
                                  grouping_var = "Brain_Region") {
   merged_list <- list()
   
@@ -180,7 +181,7 @@ calc_empirical_nulls <- function(class_res,
       dplyr::rename("grouping_var" = grouping_var)
   }
   
-  if (!is_data_averaged) {
+  if (!is_main_data_averaged) {
     class_res <- class_res %>%
       group_by(Sample_Type, grouping_var, Noise_Proc, use_inv_prob_weighting, use_SMOTE) %>%
       summarise(accuracy_avg = mean(accuracy, na.rm=T),
@@ -189,7 +190,7 @@ calc_empirical_nulls <- function(class_res,
                 balanced_accuracy_SD = sd(balanced_accuracy, na.rm=T)) %>%
       dplyr::rename("accuracy"="accuracy_avg",
                     "balanced_accuracy"="balanced_accuracy_avg")
-  }
+  } 
 
   main_res <- class_res %>%
     dplyr::select(grouping_var, Sample_Type, Noise_Proc, accuracy, balanced_accuracy) %>%
@@ -203,8 +204,16 @@ calc_empirical_nulls <- function(class_res,
   
   for (group_var in unique(class_res$grouping_var)) {
     
-    group_null <- null_data %>% mutate(grouping_var = group_var)
+    if ("grouping_var" %in% colnames(null_data)) {
+      group_null <- null_data %>%
+        dplyr::filter(grouping_var == group_var)
+    } else {
+      group_null <- null_data %>% 
+        dplyr::mutate(grouping_var = group_var)
+    }
+    
     group_main <- subset(main_res, grouping_var == group_var)
+    group_null$Type <- "null"
     
     # If null dataset is specific to each noise-processing method
     if ("Noise_Proc" %in% colnames(group_null)) {
@@ -213,8 +222,8 @@ calc_empirical_nulls <- function(class_res,
         group_by(grouping_var, Noise_Proc, Sample_Type) %>%
         dplyr::summarise(main_accuracy = unique(accuracy[Type=="main"]),
                          main_balanced_accuracy = unique(balanced_accuracy[Type=="main"]),
-                         acc_p = 1 - stats::ecdf(accuracy[Type=="null"])(accuracy[Type=="main"]),
-                         bal_acc_p = 1 - stats::ecdf(balanced_accuracy[Type=="null"])(balanced_accuracy[Type=="main"]),
+                         acc_p = 1 - stats::ecdf(accuracy[Type=="null"])(main_accuracy),
+                         bal_acc_p = 1 - stats::ecdf(balanced_accuracy[Type=="null"])(main_balanced_accuracy),
         ) %>%
         ungroup() %>%
         distinct() %>%
