@@ -5,6 +5,7 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 parser$add_argument("--pairwise_data_file")
 parser$add_argument("--SPI_directionality_file", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/pairwise_analysis/SPI_Direction_Info.csv")
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
+parser$add_arguemtn("--output_data_dir", default="/project/hctsa/annie/data/scz/UCLA/Rdata/Pairwise_pyspi_19_inv_prob_null_model_fits/")
 parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/")
 parser$add_argument("--null_iter_number", default=1)
 parser$add_argument("--num_perms_for_iter", default=1)
@@ -43,16 +44,7 @@ SPI_directionality <- read.csv(SPI_directionality_file)
 # Source linear SVM functions
 source(paste0(github_dir, "helper_functions/Linear_SVM.R"))
 
-# Define output directory
-if (use_inv_prob_weighting) {
-  output_dir <- paste0(rdata_path, sprintf("Pairwise_%s_inv_prob_null_model_fits/",
-                                           feature_set))
-} else {
-  output_dir <- paste0(rdata_path, sprintf("Pairwise_%s_unweighted_null_model_fits/",
-                                           feature_set))
-}
-
-icesTAF::mkdir(output_dir)
+icesTAF::mkdir(output_data_dir)
 
 cat("\nHead of pairwise data:\n")
 head(pairwise_data)
@@ -76,9 +68,9 @@ null_out <- 1:num_perms_for_iter %>%
 
 # Save null results to RDS
 if (use_inv_prob_weighting) {
-  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_inv_prob_null_model_fit_iter_%s.Rds",
-                                 output_dir, feature_set, null_iter_number))
+  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_null_model_fit_iter_%s.Rds",
+                                 output_data_dir, feature_set, null_iter_number))
 } else {
-  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_unweighted_null_model_fit_iter_%s.Rds",
-                                 output_dir, feature_set, null_iter_number))
+  saveRDS(null_out, file=sprintf("%s/Pairwise_%s_null_model_fit_iter_%s.Rds",
+                                 output_data_dir, feature_set, null_iter_number))
 }

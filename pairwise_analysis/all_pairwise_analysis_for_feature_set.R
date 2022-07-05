@@ -158,9 +158,20 @@ for (weighting_name in unique(weighting_param_df$name)) {
 }
 
 # template file
-num_permutations <- 200
-nperm_per_iter <- 5
+# num_permutations <- 200
+num_permutations <- 5
+# nperm_per_iter <- 5
+nperm_per_iter <- 1
+weighting <- "inv_prob"
 template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_null_model_fit.pbs")
+
+output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_inv_prob_null_model_fits/",
+                                              feature_set))
+
+
+output_scripts_dir <- paste0(github_dir, sprintf("pairwise_analysis/Pairwise_%s_%s_null_model_fits/",
+                                                 weighting_name, feature_set))
+icesTAF::mkdir(output_scripts_dir)
 
 lookup_list <- list("PROJECT_NAME" = "hctsa", 
                     "NAME" = "pyspi_SPIwise_null_model_fit",
@@ -171,7 +182,8 @@ lookup_list <- list("PROJECT_NAME" = "hctsa",
                     "EMAIL" = "abry4213@uni.sydney.edu.au",
                     "PBS_NOTIFY" = "a",
                     "WALL_HRS" = "2",
-                    "PAIRWISE_DATA_FILE" = paste0(pydata_path, "UCLA_all_subject_pyspi_19_AROMA_2P_GMR_filtered_zscored.Rds"),
+                    "PAIRWISE_DATA_FILE" = paste0(pydata_path, sprintf("UCLA_all_subject_%s_AROMA_2P_GMR_filtered_zscored.Rds",
+                                                                       feature_set)),
                     "SPI_DIRECTIONALITY_FILE" = paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"),
                     "NUM_PERMS_PER_ITER" = nperm_per_iter,
                     "FEATURE_SET" = "pyspi_19",
@@ -188,31 +200,36 @@ for (i in 1:nrow(weighting_param_df)) {
   use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[i]
   use_SMOTE <- weighting_param_df$use_SMOTE[i]
   
-  output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits/",
-                                                weighting_name, feature_set))
-  
-  output_scripts_dir <- paste0(github_dir, sprintf("pairwise_analysis/Pairwise_%s_%s_null_model_fits/",
-                                                   weighting_name, feature_set))
-  icesTAF::mkdir(output_data_dir)
-  icesTAF::mkdir(output_scripts_dir)
+  # Define output data directory that is specific to weighting
+  lookup_list_weighting <- list("OUTPUT_DATA_DIR" = paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits/", feature_set, weighting)))
+  to_be_replaced_weighting <- names(lookup_list_weighting)
+  replacement_values_weighting <- unlist(unname(lookup_list_weighting))
   
   for (j in 1:num_permutations) {
-    new_pbs_file <- readLines(template_pbs_file)
     
-    # Replace file paths
-    pbs_text_replaced <- mgsub::mgsub(new_pbs_file,
-                                      to_be_replaced,
-                                      replacement_values)
     
-    # Replace null iteration number
-    pbs_text_replaced <- gsub("iteri", j, pbs_text_replaced)
-    
-    # Write updated PBS script to file
-    output_pbs_file <- writeLines(pbs_text_replaced, 
-                                  paste0(output_scripts_dir, 
-                                         "null_iter_", j, ".pbs"))
-    
-    system(paste0("qsub ", output_scripts_dir, "null_iter_", j, ".pbs"))
+    # Run command if null file doesn't exist 
+    if (!file.exists(sprintf("%s/Pairwise_%s_inv_prob_null_model_fit_iter_%s.Rds",
+                             output_data_dir, feature_set, j))) {
+      new_pbs_file <- readLines(template_pbs_file)
+      
+      # Replace file paths
+      pbs_text_replaced <- mgsub::mgsub(new_pbs_file,
+                                        to_be_replaced,
+                                        replacement_values)
+      pbs_text_replaced <- mgsub::mgsub(pbs_text_replaced, to_be_replaced_weighting, replacement_values_weighting)
+      
+      # Replace null iteration number
+      pbs_text_replaced <- gsub("iterj", j, pbs_text_replaced)
+      
+      # Write updated PBS script to file
+      output_pbs_file <- writeLines(pbs_text_replaced, 
+                                    paste0(output_scripts_dir, 
+                                           "null_iter_", j, ".pbs"))
+      
+      system(paste0("qsub ", output_scripts_dir, "null_iter_", j, ".pbs"))
+      
+    }
   }
 }
 
@@ -222,54 +239,54 @@ for (i in 1:nrow(weighting_param_df)) {
 
 #### 10-fold linear SVM with different weights
 # Iterate over weighting_param_df
-for (i in 1:nrow(weighting_param_df)) {
-  weighting_name <- weighting_param_df$name[i]
-  use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[i]
-  use_SMOTE <- weighting_param_df$use_SMOTE[i]
-  
-  # Run given weighting for 10-fold CV linear SVM
-  if (!file.exists(paste0(rdata_path, sprintf("pyspi_Combo_pairwise_CV_linear_SVM_%s_%s.Rds",
-                                              feature_set, weighting_name)))) {
-    tryCatch({pyspi_combo_pairwise_SVM_CV_weighting <- run_pairwise_cv_svm_by_input_var(pairwise_data = pyspi_data,
-                                                                                        SPI_directionality = SPI_directionality,
-                                                                                        svm_kernel = "linear",
-                                                                                        grouping_var = "Combo",
-                                                                                        svm_feature_var = "Combo",
-                                                                                        test_package = "e1071",
-                                                                                        noise_proc = "AROMA+2P+GMR",
-                                                                                        return_all_fold_metrics = TRUE,
-                                                                                        use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                                        use_SMOTE = use_SMOTE,
-                                                                                        shuffle_labels = FALSE)
-    saveRDS(pyspi_combo_pairwise_SVM_CV_weighting, file=paste0(rdata_path,
-                                                               sprintf("pyspi_Combo_pairwise_CV_linear_SVM_%s_%s.Rds",
-                                                                       feature_set, weighting_name)))
-    }, error = function(e) {
-      cat("\nCould not run combo-wise analysis:\n")
-      print(e)
-    })
-  }
-}
-
-#### Calculate p values from model-free shuffle null distribution
-for (weighting_name in unique(weighting_param_df$name)) {
-  if (!file.exists(paste0(rdata_path, sprintf("pyspi_Combo_pairwise_CV_linear_SVM_model_free_shuffle_pvals_%s_%s.Rds",
-                                              feature_set, weighting_name)))) {
-    pyspi_combo_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
-                                                            sprintf("pyspi_Combo_pairwise_CV_linear_SVM_%s_%s.Rds",
-                                                                    feature_set, weighting_name)))
-    
-    # Calculate p-values
-    pvalues <- calc_empirical_nulls(class_res = pyspi_combo_pairwise_SVM_CV_weighting,
-                                    null_data = model_free_shuffle_null_res,
-                                    feature_set = feature_set,
-                                    is_data_averaged = FALSE,
-                                    grouping_var = "Combo")
-    
-    saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_Combo_pairwise_CV_linear_SVM_model_free_shuffle_pvals_%s_%s.Rds",
-                                                     feature_set, weighting_name)))
-  }
-}
+# for (i in 1:nrow(weighting_param_df)) {
+#   weighting_name <- weighting_param_df$name[i]
+#   use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[i]
+#   use_SMOTE <- weighting_param_df$use_SMOTE[i]
+#   
+#   # Run given weighting for 10-fold CV linear SVM
+#   if (!file.exists(paste0(rdata_path, sprintf("pyspi_Combo_pairwise_CV_linear_SVM_%s_%s.Rds",
+#                                               feature_set, weighting_name)))) {
+#     tryCatch({pyspi_combo_pairwise_SVM_CV_weighting <- run_pairwise_cv_svm_by_input_var(pairwise_data = pyspi_data,
+#                                                                                         SPI_directionality = SPI_directionality,
+#                                                                                         svm_kernel = "linear",
+#                                                                                         grouping_var = "Combo",
+#                                                                                         svm_feature_var = "Combo",
+#                                                                                         test_package = "e1071",
+#                                                                                         noise_proc = "AROMA+2P+GMR",
+#                                                                                         return_all_fold_metrics = TRUE,
+#                                                                                         use_inv_prob_weighting = use_inv_prob_weighting,
+#                                                                                         use_SMOTE = use_SMOTE,
+#                                                                                         shuffle_labels = FALSE)
+#     saveRDS(pyspi_combo_pairwise_SVM_CV_weighting, file=paste0(rdata_path,
+#                                                                sprintf("pyspi_Combo_pairwise_CV_linear_SVM_%s_%s.Rds",
+#                                                                        feature_set, weighting_name)))
+#     }, error = function(e) {
+#       cat("\nCould not run combo-wise analysis:\n")
+#       print(e)
+#     })
+#   }
+# }
+# 
+# #### Calculate p values from model-free shuffle null distribution
+# for (weighting_name in unique(weighting_param_df$name)) {
+#   if (!file.exists(paste0(rdata_path, sprintf("pyspi_Combo_pairwise_CV_linear_SVM_model_free_shuffle_pvals_%s_%s.Rds",
+#                                               feature_set, weighting_name)))) {
+#     pyspi_combo_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
+#                                                             sprintf("pyspi_Combo_pairwise_CV_linear_SVM_%s_%s.Rds",
+#                                                                     feature_set, weighting_name)))
+#     
+#     # Calculate p-values
+#     pvalues <- calc_empirical_nulls(class_res = pyspi_combo_pairwise_SVM_CV_weighting,
+#                                     null_data = model_free_shuffle_null_res,
+#                                     feature_set = feature_set,
+#                                     is_data_averaged = FALSE,
+#                                     grouping_var = "Combo")
+#     
+#     saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_Combo_pairwise_CV_linear_SVM_model_free_shuffle_pvals_%s_%s.Rds",
+#                                                      feature_set, weighting_name)))
+#   }
+# }
 
 # #### Generate empirical null model distributions per brain region
 # for (i in 1:nrow(weighting_param_df)) {
