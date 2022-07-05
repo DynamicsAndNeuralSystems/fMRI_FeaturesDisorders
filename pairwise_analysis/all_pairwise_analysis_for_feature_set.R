@@ -158,20 +158,12 @@ for (weighting_name in unique(weighting_param_df$name)) {
 }
 
 # template file
-# num_permutations <- 200
-num_permutations <- 5
-# nperm_per_iter <- 5
-nperm_per_iter <- 1
-weighting <- "inv_prob"
+num_permutations <- 200
+nperm_per_iter <- 5
 template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_null_model_fit.pbs")
 
 output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_inv_prob_null_model_fits/",
                                               feature_set))
-
-
-output_scripts_dir <- paste0(github_dir, sprintf("pairwise_analysis/Pairwise_%s_%s_null_model_fits/",
-                                                 weighting_name, feature_set))
-icesTAF::mkdir(output_scripts_dir)
 
 lookup_list <- list("PROJECT_NAME" = "hctsa", 
                     "NAME" = "pyspi_SPIwise_null_model_fit",
@@ -200,8 +192,15 @@ for (i in 1:nrow(weighting_param_df)) {
   use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[i]
   use_SMOTE <- weighting_param_df$use_SMOTE[i]
   
+  # Output script dir
+  output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits/", 
+                                                feature_set, weighting))
+  output_scripts_dir <- paste0(github_dir, sprintf("pairwise_analysis/Pairwise_%s_%s_null_model_fits/",
+                                                   weighting_name, feature_set))
+  icesTAF::mkdir(output_scripts_dir)
+  
   # Define output data directory that is specific to weighting
-  lookup_list_weighting <- list("OUTPUT_DATA_DIR" = paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits/", feature_set, weighting)))
+  lookup_list_weighting <- list("OUTPUT_DATA_DIR" = output_data_dir)
   to_be_replaced_weighting <- names(lookup_list_weighting)
   replacement_values_weighting <- unlist(unname(lookup_list_weighting))
   
