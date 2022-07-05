@@ -78,12 +78,15 @@ for (i in 1:nrow(weighting_param_df)) {
   use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[i]
   use_SMOTE <- weighting_param_df$use_SMOTE[i]
   
+  pairwise_data = pyspi_data %>% ungroup() %>% filter(brain_region_1 == "ctx-lh-bankssts", brain_region_2 == "ctx-rh-bankssts")
+  
   # Run given weighting for 10-fold CV linear SVM
   if (!file.exists(paste0(rdata_path, sprintf("pyspi_region_pairwise_CV_linear_SVM_%s_%s.Rds",
                                               feature_set, weighting_name)))) {
-    tryCatch({pyspi_region_pairwise_SVM_CV_weighting <- run_pairwise_cv_svm_by_input_var(pairwise_data = pyspi_data,
+    tryCatch({pyspi_region_pairwise_SVM_CV_weighting <- run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
                                                                                       SPI_directionality = SPI_directionality,
                                                                                       svm_kernel = "linear",
+                                                                                      k = 10,
                                                                                       grouping_var = "region_pair",
                                                                                       svm_feature_var = "SPI",
                                                                                       test_package = "e1071",
