@@ -24,6 +24,7 @@ args <- parser$parse_args()
 pairwise_data_file <- args$pairwise_data_file
 SPI_directionality_file <- args$SPI_directionality_file
 rdata_path <- args$rdata_path
+output_data_dir <- args$output_data_dir
 github_dir <- args$github_dir
 null_iter_number <- args$null_iter_number
 num_perms_for_iter <- args$num_perms_for_iter

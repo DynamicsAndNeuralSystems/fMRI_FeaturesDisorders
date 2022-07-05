@@ -235,10 +235,7 @@ for (i in 1:nrow(weighting_param_df)) {
     }
     
     # Concatenate null results and save to RDS file
-    # results <- 1:length(list.files(output_data_dir, pattern="Rds")) %>%
-    #   purrr::map_df( ~ readRDS())
-    # 
-    # results <- list.files(output_data_dir, pattern="Rds")[1:4] %>%
+    # results <- list.files(output_data_dir, pattern="Rds") %>%
     #   purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
     # saveRDS(results, paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits.Rds",
     #                                             feature_set, weighting_name)))
