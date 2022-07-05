@@ -27,7 +27,7 @@ SPI_directionality_file <- args$SPI_directionality_file
 rdata_path <- args$rdata_path
 output_data_dir <- args$output_data_dir
 github_dir <- args$github_dir
-num_k_folds <- args$num_k_folds
+num_k_folds <- as.numeric(args$num_k_folds)
 null_iter_number <- args$null_iter_number
 num_perms_for_iter <- args$num_perms_for_iter
 feature_set <- args$feature_set
@@ -54,6 +54,7 @@ head(pairwise_data)
 cat("\nHead of SPI directionality data:\n")
 head(SPI_directionality)
 
+cat("\nNumber of k-folds:", num_k_folds, "\n")
 cat("\nNum permutations per iteration:", num_perms_for_iter, "\n")
 cat("\nData type:", typeof(num_perms_for_iter), "\n")
 # Run null iteration
