@@ -163,8 +163,7 @@ for (weighting_name in unique(weighting_param_df$name)) {
 num_permutations <- 1
 # nperm_per_iter <- 10
 nperm_per_iter <- 2
-# num_k_folds <- 10
-num_k_folds <- 2
+num_k_folds <- 10
 template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_null_model_fit.pbs")
 
 output_data_dir <- paste0(rdata_path, sprintf("Pairwise_%s_inv_prob_null_model_fits/",
@@ -239,10 +238,10 @@ for (i in 1:nrow(weighting_param_df)) {
     }
     
     # Concatenate null results and save to RDS file
-    # results <- list.files(output_data_dir, pattern="Rds") %>%
-    #   purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
-    # saveRDS(results, paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits.Rds",
-    #                                             feature_set, weighting_name)))
+    results <- list.files(output_data_dir, pattern="Rds") %>%
+      purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
+    saveRDS(results, paste0(rdata_path, sprintf("Pairwise_%s_%s_null_model_fits.Rds",
+                                                feature_set, weighting_name)))
   # }
   
 }
