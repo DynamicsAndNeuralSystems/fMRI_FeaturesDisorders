@@ -145,7 +145,11 @@ for (i in 1:nrow(weighting_param_df)) {
       icesTAF::mkdir(output_scripts_dir)
       # template file for null distributions
       num_permutations <- 100
-      nperm_per_iter <- 10
+      if (grouping_var == "SPI") {
+        nperm_per_iter <- 10
+      } else {
+        nperm_per_iter <- 1
+      }
       num_k_folds <- 10
       template_pbs_file <- paste0(github_dir, "pairwise_analysis/template_null_model_fit.pbs")
       
