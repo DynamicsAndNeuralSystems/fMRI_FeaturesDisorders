@@ -197,7 +197,7 @@ for (i in 1:nrow(weighting_param_df)) {
                         "PROJECT_DIR" = project_path,
                         "EMAIL" = "abry4213@uni.sydney.edu.au",
                         "PBS_NOTIFY" = "abe",
-                        "WALL_HRS" = "8",
+                        "WALL_HRS" = "12",
                         "UNIVARIATE_DATA_FILE" = univariate_data_file,
                         "PAIRWISE_DATA_FILE" = pairwise_data_file,
                         "SPI_DIRECTIONALITY_FILE" = paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"),
