@@ -20,6 +20,7 @@ pydata_path=${project_dir}/data/scz/UCLA/pydata/
 mkdir -p $github_dir/cluster_output/
 
 Rscript ${github_dir}/univariate_and_pairwise_combined_analysis/combined_uni_pairwise_analysis_for_feature_set.R \
+--project_path $project_dir \
 --github_dir $github_dir \
 --rdata_path $rdata_path \
 --pydata_path $pydata_path \
