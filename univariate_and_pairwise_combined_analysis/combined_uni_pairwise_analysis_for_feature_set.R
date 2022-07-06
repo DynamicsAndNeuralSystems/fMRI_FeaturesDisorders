@@ -297,11 +297,11 @@ if (!file.exists(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA_CV_li
                                                                use_SMOTE = FALSE,
                                                                return_all_fold_metrics = FALSE) 
   
-  save(combined_uni_pairwise_PCA_linear_SVM_res, file = paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA_CV_linear_SVM_%s.Rds",
+  saveRDS(combined_uni_pairwise_PCA_linear_SVM_res, file = paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA_CV_linear_SVM_%s.Rds",
                                                                       univariate_feature_set, pairwise_feature_set,
                                                                       weighting_name)))
 } else {
-  combined_uni_pairwise_PCA_linear_SVM_res <- readRDS(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA_CV_linear_SVM_%s.Rds",
-                                                                                 univariate_feature_set, pairwise_feature_set,
-                                                                                 weighting_name)))
+  combined_uni_pairwise_PCA_linear_SVM_res <- readRDS(file=paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA_CV_linear_SVM_%s.Rds",
+                                                                                      univariate_feature_set, pairwise_feature_set,
+                                                                                      weighting_name)))
 }
