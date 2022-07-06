@@ -5,12 +5,14 @@ library(FactoMineR)
 
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
+parser$add_argument("--project_path", default="/project/hctsa/annie/")
 parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
 parser$add_argument("--pydata_path", default="/project/hctsa/annie/data/scz/UCLA/pydata/")
 parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--pairwise_feature_set", default="pyspi_19")
+# project_path <- ""
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
 # rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 # pydata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/pydata/"
@@ -20,6 +22,7 @@ parser$add_argument("--pairwise_feature_set", default="pyspi_19")
 
 # Parse input arguments
 args <- parser$parse_args()
+project_path <- args$project_path
 github_dir <- args$github_dir
 rdata_path <- args$rdata_path
 pydata_path <- args$pydata_path
