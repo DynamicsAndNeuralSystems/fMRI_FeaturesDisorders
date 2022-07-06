@@ -168,7 +168,7 @@ for (i in 1:nrow(weighting_param_df)) {
     univariate_data_file = paste0(rdata_path, "univariate_data_for_combined_uni_pairwise.Rds")
     saveRDS(univariate_data, file = univariate_data_file)
     
-    pairwise_data_file = paste0(rdata_path, "pairwise_data_for_combined_uni_pairwise.Rdata")
+    pairwise_data_file = paste0(rdata_path, "pairwise_data_for_combined_uni_pairwise.Rds")
     saveRDS(pairwise_data, file = pairwise_data_file)
     
     icesTAF::mkdir(output_data_dir)
