@@ -53,10 +53,9 @@ if (!file.exists(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
 # Define weighting parameters
 ################################################################################
 
-grouping_param_df <- data.frame(grouping = c("ROI", "Feature", "Combo"),
-                                num_perm = c(10, 40, 500),
-                                grouping_var = c("Brain_Region", "Feature", "Combo"),
-                                SVM_feature_var = c("Feature", "Brain_Region", "Combo")) 
+grouping_param_df <- data.frame(grouping_type = c("ROI", "Feature"),
+                                grouping_var = c("Brain_Region", "Feature"),
+                                SVM_feature_var = c("Feature", "Brain_Region")) 
 
 weighting_param_df <- data.frame(name = c("inv_prob"),
                                  use_inv_prob_weighting = c(TRUE),
@@ -68,8 +67,7 @@ weighting_param_df <- data.frame(name = c("inv_prob"),
 
 
 for (i in 1:nrow(grouping_param_df)) {
-  grouping_type = grouping_param_df$grouping[i]
-  num_perm = grouping_param_df$num_perm[i]
+  grouping_type = grouping_param_df$grouping_type[i]
   grouping_var = grouping_param_df$grouping_var[i]
   SVM_feature_var = grouping_param_df$SVM_feature_var[i]
   
