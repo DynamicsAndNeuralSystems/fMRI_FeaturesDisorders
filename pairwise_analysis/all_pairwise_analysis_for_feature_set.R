@@ -111,6 +111,26 @@ for (i in 1:nrow(weighting_param_df)) {
         print(e)
       })
     }
+    
+    #### Calculate p values from model-free shuffle null distribution
+      if (!file.exists(paste0(rdata_path, sprintf("pyspi_%s_pairwise_CV_linear_SVM_model_free_shuffle_pvals_%s_%s.Rds",
+                                                  grouping_var, feature_set, weighting_name)))) {
+        pyspi_region_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
+                                                                 sprintf("pyspi_%s_pairwise_CV_linear_SVM_%s_%s.Rds",
+                                                                         grouping_var,
+                                                                         feature_set, 
+                                                                         weighting_name)))
+
+        # Calculate p-values
+        pvalues <- calc_empirical_nulls(class_res = pyspi_region_pairwise_SVM_CV_weighting,
+                                        null_data = model_free_shuffle_null_res,
+                                        feature_set = feature_set,
+                                        is_main_data_averaged = FALSE,
+                                        grouping_var = grouping_var)
+
+        saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_%s_pairwise_CV_linear_SVM_model_free_shuffle_pvals_%s_%s.Rds",
+                                                         grouping_var, feature_set, weighting_name)))
+    }
   }
   
 }
