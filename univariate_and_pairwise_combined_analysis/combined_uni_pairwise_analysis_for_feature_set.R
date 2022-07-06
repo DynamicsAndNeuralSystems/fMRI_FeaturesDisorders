@@ -199,8 +199,8 @@ for (i in 1:nrow(weighting_param_df)) {
 #### PCA Analysis
 if (!file.exists(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA.Rds",
                                             univariate_feature_set, pairwise_feature_set)))) {
-  combined_uni_pairwise_PCA_list <- run_PCA_for_uni_pairwise_combo(univariate_data = univariate_data_small,
-                                                                   pairwise_data = pairwise_data_small)
+  combined_uni_pairwise_PCA_list <- run_PCA_for_uni_pairwise_combo(univariate_data = univariate_data,
+                                                                   pairwise_data = pairwise_data)
   saveRDS(combined_uni_pairwise_PCA_list, file=paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA.Rds",
                                                                           univariate_feature_set, pairwise_feature_set)))
   
