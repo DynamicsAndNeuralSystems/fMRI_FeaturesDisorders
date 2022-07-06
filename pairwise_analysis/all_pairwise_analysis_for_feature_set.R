@@ -69,8 +69,8 @@ weighting_param_df <- data.frame(name = c("inv_prob"),
                                  use_inv_prob_weighting = c(TRUE),
                                  use_SMOTE = c(FALSE))
 
-SVM_grouping_params <- data.frame(grouping_var = c("SPI", "region_pair"),
-                                  SVM_feature_var = c("region_pair", "SPI"))
+SVM_grouping_params <- data.frame(grouping_var = c("SPI", "region_pair", "Combo"),
+                                  SVM_feature_var = c("region_pair", "SPI", "Combo"))
 
 
 ################################################################################
