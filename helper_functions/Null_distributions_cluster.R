@@ -129,19 +129,18 @@ if (uni_and_pairwise) {
   
   # Run null iteration
   null_out <- 1:num_perms_for_iter %>%
-    purrr::map_df( ~ run_null_model_n_permutations_univariate_pairwise_combo(univariate_data = univariate_data,
-                                                                             univariate_feature_set = "catch22",
-                                                                             pairwise_data = pairwise_data,
-                                                                             pairwise_feature_set = "pyspi_19",
-                                                                             noise_proc = noise_proc,
-                                                                             test_package = test_package,
-                                                                             svm_kernel = svm_kernel,
-                                                                             grouping_var = grouping_var,
-                                                                             svm_feature_var = SVM_feature_var,
-                                                                             SPI_directionality,
-                                                                             use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                             return_all_fold_metrics = FALSE,
-                                                                             use_SMOTE = FALSE) %>%
+    purrr::map_df( ~ run_combined_uni_pairwise_cv_svm_by_input_var(univariate_data = univariate_data,
+                                                                   univariate_feature_set = "catch22",
+                                                                   pairwise_data = pairwise_data,
+                                                                   pairwise_feature_set = "pyspi_19",
+                                                                   SPI_directionality = SPI_directionality,
+                                                                   svm_kernel = svm_kernel,
+                                                                   test_package = test_package,
+                                                                   noise_proc = noise_proc,
+                                                                   return_all_fold_metrics = return_all_fold_metrics,
+                                                                   use_inv_prob_weighting = use_inv_prob_weighting,
+                                                                   use_SMOTE = use_SMOTE,
+                                                                   shuffle_labels = TRUE) %>%
                      # Keep track of which null iteration this is
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
   
