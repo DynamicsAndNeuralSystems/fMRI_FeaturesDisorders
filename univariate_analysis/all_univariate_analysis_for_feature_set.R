@@ -66,7 +66,7 @@ weighting_param_df <- data.frame(name = c("inv_prob"),
 #                                  use_SMOTE = c(FALSE, FALSE, TRUE))
 
 
-for (i in 1:nrow(grouping_param_df)[1]) {
+for (i in 1:nrow(grouping_param_df)) {
   grouping_type = grouping_param_df$grouping_type[i]
   grouping_var = grouping_param_df$grouping_var[i]
   SVM_feature_var = grouping_param_df$SVM_feature_var[i]
