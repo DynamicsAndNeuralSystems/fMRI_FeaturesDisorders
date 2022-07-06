@@ -196,7 +196,7 @@ for (i in 1:nrow(weighting_param_df)) {
                         "GITHUB_DIR" = github_dir,
                         "PROJECT_DIR" = project_path,
                         "EMAIL" = "abry4213@uni.sydney.edu.au",
-                        "PBS_NOTIFY" = "abe",
+                        "PBS_NOTIFY" = "a",
                         "WALL_HRS" = "12",
                         "UNIVARIATE_DATA_FILE" = univariate_data_file,
                         "PAIRWISE_DATA_FILE" = pairwise_data_file,
@@ -300,4 +300,8 @@ if (!file.exists(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA_CV_li
   save(combined_uni_pairwise_PCA_linear_SVM_res, file = paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA_CV_linear_SVM_%s.Rds",
                                                                       univariate_feature_set, pairwise_feature_set,
                                                                       weighting_name)))
+} else {
+  combined_uni_pairwise_PCA_linear_SVM_res <- readRDS(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA_CV_linear_SVM_%s.Rds",
+                                                                                 univariate_feature_set, pairwise_feature_set,
+                                                                                 weighting_name)))
 }
