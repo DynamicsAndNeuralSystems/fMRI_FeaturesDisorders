@@ -210,24 +210,24 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                grouping_var, feature_set, weighting_name)))
     }
     
-    #### Calculate p-values from empirical model null distributions
-    if (!file.exists(paste0(rdata_path, sprintf("pyspi_%s_pairwise_CV_linear_SVM_null_model_fits_pvals_%s_%s.Rds",
-                                                grouping_var, feature_set, weighting_name)))) {
-      pyspi_SPI_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
-                                                            sprintf("pyspi_%s_pairwise_CV_linear_SVM_%s_%s.Rds",
-                                                                    grouping_var, feature_set, weighting_name)))
-      
-      # Calculate p-values
-      pvalues <- calc_empirical_nulls(class_res = pyspi_SPI_pairwise_SVM_CV_weighting,
-                                      null_data = null_model_fit_res,
-                                      feature_set = feature_set,
-                                      is_main_data_averaged = FALSE,
-                                      is_null_data_averaged = TRUE,
-                                      grouping_var = grouping_var)
-      
-      saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_%s_pairwise_CV_linear_SVM_null_model_fits_pvals_%s_%s.Rds",
-                                                       grouping_var, feature_set, weighting_name)))
-    }
+    # #### Calculate p-values from empirical model null distributions
+    # if (!file.exists(paste0(rdata_path, sprintf("pyspi_%s_pairwise_CV_linear_SVM_null_model_fits_pvals_%s_%s.Rds",
+    #                                             grouping_var, feature_set, weighting_name)))) {
+    #   pyspi_SPI_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
+    #                                                         sprintf("pyspi_%s_pairwise_CV_linear_SVM_%s_%s.Rds",
+    #                                                                 grouping_var, feature_set, weighting_name)))
+    #   
+    #   # Calculate p-values
+    #   pvalues <- calc_empirical_nulls(class_res = pyspi_SPI_pairwise_SVM_CV_weighting,
+    #                                   null_data = null_model_fit_res,
+    #                                   feature_set = feature_set,
+    #                                   is_main_data_averaged = FALSE,
+    #                                   is_null_data_averaged = TRUE,
+    #                                   grouping_var = grouping_var)
+    #   
+    #   saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_%s_pairwise_CV_linear_SVM_null_model_fits_pvals_%s_%s.Rds",
+    #                                                    grouping_var, feature_set, weighting_name)))
+    # }
   }
 }
 
