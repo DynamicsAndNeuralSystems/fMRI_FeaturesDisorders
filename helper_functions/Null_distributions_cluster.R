@@ -17,6 +17,7 @@ parser$add_argument("--svm_feature_var", default="region_pair")
 parser$add_argument("--test_package", default="e1071")
 parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--return_all_fold_metrics", action='store_true', default=FALSE)
+parser$add_argument("--weighting_name", default="unweighted")
 parser$add_argument("--use_inv_prob_weighting", action='store_true', default=FALSE)
 parser$add_argument("--use_SMOTE", action='store_true', default=FALSE)
 parser$add_argument("--univariate", action='store_true', default=FALSE)
@@ -40,6 +41,7 @@ svm_feature_var <- args$svm_feature_var
 test_package <- args$test_package
 noise_proc <- args$noise_proc
 return_all_fold_metrics <- args$return_all_fold_metrics
+weighting_name <- args$weighting_name
 use_inv_prob_weighting <- args$use_inv_prob_weighting
 use_SMOTE <- args$use_SMOTE
 univariate <- args$univariate
