@@ -32,6 +32,7 @@ pairwise_feature_set <- args$pairwise_feature_set
 source(paste0(github_dir, "helper_functions/Linear_SVM.R"))
 source(paste0(github_dir, "helper_functions/Visualization.R"))
 source(paste0(github_dir, "helper_functions/Null_distributions.R"))
+source(paste0(github_dir, "helper_functions/PCA_functions.R"))
 
 set.seed(127)
 noise_label = gsub("\\+", "_", noise_proc)
