@@ -130,9 +130,11 @@ for (i in 1:nrow(grouping_param_df)[1]) {
     #                                             num_perm)))) {
       
       # template file
-      num_permutations <- 1
-      nperm_per_iter <- 2
-      num_k_folds <- 2
+    if (grouping_type %in% c("ROI", "Feature")) {
+      num_permutations <- 50
+      nperm_per_iter <- 20
+    }
+      num_k_folds <- 10
       template_pbs_file <- paste0(github_dir, "univariate_analysis/template_null_model_fit.pbs")
       
       output_data_dir <- paste0(rdata_path, sprintf("%s_wise_%s_%s_null_model_fits/",
