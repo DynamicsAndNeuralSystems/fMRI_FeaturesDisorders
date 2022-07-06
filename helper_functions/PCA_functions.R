@@ -16,8 +16,8 @@ library(factoextra)
 #-------------------------------------------------------------------------------
 
 run_PCA_by_group_var <- function(feature_matrix,
-                                      grouping_variable = "Brain_Region",
-                                      feature_var = "names") {
+                                 grouping_variable = "Brain_Region",
+                                 feature_var = "names") {
   
   if (grouping_variable == "Combo") {
     grouping_var_vector <- c("All")
@@ -33,7 +33,7 @@ run_PCA_by_group_var <- function(feature_matrix,
       dplyr::rename("grouping_variable" = grouping_variable,
                     "feature_var" = feature_var)
   }
-
+  
   PCA_res_list <- list()
   for (this_group in unique(feature_matrix$grouping_variable)) {
     data_for_PCA <- subset(feature_matrix, 
@@ -49,6 +49,65 @@ run_PCA_by_group_var <- function(feature_matrix,
     
     PCA_res <- prcomp(data_for_PCA_mat, center = TRUE, scale. = TRUE)
     PCA_res_list[[this_group]] <- PCA_res
+  }
+  return(PCA_res_list)
+}
+
+run_PCA_for_uni_pairwise_combo <- function(univariate_data,
+                                           pairwise_data) {
+  
+  # Merge ROI plus theft feature for univariate
+  univariate_combo <- univariate_data %>%
+    tidyr::unite("Unique_ID", c("names", "Brain_Region"), sep="_") %>%
+    dplyr::select(Subject_ID, group, Unique_ID, values)
+  
+  # Combine region pair names
+  # Filter by directionality
+  pairwise_data <- pairwise_data %>%
+    dplyr::rename("group_SPI" = "SPI") %>%
+    group_by(group_SPI) %>%
+    mutate(Direction = SPI_directionality %>% 
+             filter(SPI == unique(group_SPI)) %>% 
+             distinct(Direction) %>%
+             pull(Direction)) %>%
+    dplyr::rename("SPI" = "group_SPI") %>%
+    mutate(region_pair = case_when(Direction == "Undirected" ~ ifelse(brain_region_1 < brain_region_2,
+                                                                      paste0(brain_region_1, "_", brain_region_2),
+                                                                      paste0(brain_region_2, "_", brain_region_1)),
+                                   Direction == "Directed" ~ paste0(brain_region_1, "_", brain_region_2))) %>%
+    dplyr::select(-brain_region_1, -brain_region_2)  %>%
+    distinct(Subject_ID, SPI, region_pair, .keep_all = T)
+  
+  PCA_res_list <- list()
+  for (this_SPI in unique(pairwise_data$SPI)) {
+    # Merge region-pair plus SPI data for pairwise
+    pairwise_combo <- pairwise_data %>%
+      filter(SPI == this_SPI) %>%
+      tidyr::unite("Unique_ID", c("SPI", "region_pair"), sep="_") %>%
+      dplyr::select(Subject_ID, group, Unique_ID, value) %>%
+      dplyr::rename("values"="value")
+    
+    # Combine univariate + pairwise data for PCA
+    combined_data_for_PCA <- plyr::rbind.fill(univariate_combo, pairwise_combo) %>%
+      tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+                         names_from = Unique_ID, 
+                         values_from = values) %>%
+      # Drop columns that are all NA/NAN
+      dplyr::select(where(function(x) any(!is.na(x)))) %>%
+      # Drop rows with NA for one or more column
+      drop_na()
+    
+    if (nrow(combined_data_for_PCA > 0)) {
+      data_for_PCA_mat <- combined_data_for_PCA %>%
+        dplyr::select(-group, -Subject_ID) %>%
+        as.matrix()
+      
+      PCA_res <- prcomp(data_for_PCA_mat, center = F, scale. = F)
+      PCA_res_list[[this_SPI]] <- PCA_res
+    } else {
+      cat("\nNo available data for", this_SPI, "\n")
+    }
+    
   }
   return(PCA_res_list)
 }

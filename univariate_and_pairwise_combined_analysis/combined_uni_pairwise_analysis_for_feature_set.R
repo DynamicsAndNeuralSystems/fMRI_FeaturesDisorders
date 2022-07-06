@@ -1,5 +1,8 @@
 # Parse arguments
 library(argparse)
+library(factoextra)
+library(FactoMineR)
+
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
@@ -190,4 +193,35 @@ for (i in 1:nrow(weighting_param_df)) {
   #   saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_null_model_fit_pvals_%s_%s.Rds",
   #                                                    feature_set, weighting_name)))
   # }
+}
+
+#### PCA Analysis
+if (!file.exists(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA.Rds",
+                                            univariate_feature_set, pairwise_feature_set)))) {
+  combined_uni_pairwise_PCA_list <- run_PCA_for_uni_pairwise_combo(univariate_data = univariate_data_small,
+                                                                   pairwise_data = pairwise_data_small)
+  saveRDS(combined_uni_pairwise_PCA_list, file=paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA.Rds",
+                                                                          univariate_feature_set, pairwise_feature_set)))
+  
+} else {
+  combined_uni_pairwise_PCA_list <- readRDS(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA.Rds",
+                                                                       univariate_feature_set, pairwise_feature_set)))
+}
+
+# Run linear SVM with increasing # PCs
+weighting_name = "inv_prob"
+if (!file.exists(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA_CV_linear_SVM_%s.Rds",
+                                            univariate_feature_set, pairwise_feature_set,
+                                            weighting_name)))) {
+  combined_uni_pairwise_PCA_linear_SVM_res <- run_SVM_from_PCA(list_of_PCA_res = combined_uni_pairwise_PCA_list,
+                                                               subject_dx_list = combined_subjects$group,
+                                                               c_values = 1,
+                                                               interval = 2,
+                                                               use_inv_prob_weighting = TRUE,
+                                                               use_SMOTE = FALSE,
+                                                               return_all_fold_metrics = FALSE) 
+  
+  save(combined_uni_pairwise_PCA_linear_SVM_res, file = paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA_CV_linear_SVM_%s.Rds",
+                                                                      univariate_feature_set, pairwise_feature_set,
+                                                                      weighting_name)))
 }
