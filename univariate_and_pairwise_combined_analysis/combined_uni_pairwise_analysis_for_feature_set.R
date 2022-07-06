@@ -184,9 +184,9 @@ for (i in 1:nrow(weighting_param_df)) {
     icesTAF::mkdir(output_data_dir)
     icesTAF::mkdir(output_scripts_dir)
     
-    num_permutations <- 1
-    nperm_per_iter <- 2
-    num_k_folds <- 2
+    num_permutations <- 180
+    nperm_per_iter <- 3
+    num_k_folds <- 10
     template_pbs_file <- paste0(github_dir, "univariate_and_pairwise_combined_analysis/template_null_model_fit.pbs")
     
     lookup_list <- list("PROJECT_NAME" = "hctsa",
@@ -197,7 +197,7 @@ for (i in 1:nrow(weighting_param_df)) {
                         "PROJECT_DIR" = project_path,
                         "EMAIL" = "abry4213@uni.sydney.edu.au",
                         "PBS_NOTIFY" = "abe",
-                        "WALL_HRS" = "4",
+                        "WALL_HRS" = "8",
                         "UNIVARIATE_DATA_FILE" = univariate_data_file,
                         "PAIRWISE_DATA_FILE" = pairwise_data_file,
                         "SPI_DIRECTIONALITY_FILE" = paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"),
