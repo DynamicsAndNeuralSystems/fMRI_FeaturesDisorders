@@ -2,7 +2,7 @@
 #PBS -P PROJECT_NAME
 #PBS -N iterj_NAME
 #PBS -j oe
-#PBS -o GITHUB_DIR/cluster_output/pyspi_pairwise_null_model_fit_iterj_out.txt
+#PBS -o GITHUB_DIR/cluster_output/NAME_iterj_out.txt
 #PBS -l select=1:ncpus=NCPUS:mem=MEMNUMGB
 #PBS -l walltime=WALL_HRS:00:00
 #PBS -m PBS_NOTIFY
