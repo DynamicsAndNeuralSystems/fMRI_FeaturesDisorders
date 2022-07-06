@@ -311,9 +311,15 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     
     # Filter by directionality
     pairwise_data <- pairwise_data %>%
+      # Special cases
+      filter(SPI != "sgc_nonparametric_mean_fs-1_fmin-0_fmax-0-5",
+             !(Subject_ID == "sub-10171" & SPI == "di_gaussian")) %>%
       rowwise() %>%
       tidyr::unite("region_pair", c(brain_region_1, brain_region_2), sep="_") %>%
       distinct(Subject_ID, SPI, region_pair, .keep_all = T) %>%
+      group_by(SPI, region_pair) %>%
+      filter(!all(is.na(value))) %>%
+      dplyr::select(where(function(x) any(!is.na(x)))) %>%
       unite("Combo", c("region_pair", "SPI"), sep="_", remove=F)
     
     grouping_var_vector <- c("All")
@@ -325,6 +331,9 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   for (group_var in unique(grouping_var_vector)) {
     if (grouping_var == "Combo") {
       data_for_SVM <- pairwise_data %>%
+        # Impute missing data with the mean
+        group_by(group, Combo) %>%
+        mutate(value = ifelse(is.na(value), mean(value, na.rm=T), value)) %>%
         dplyr::select(Subject_ID, group, Combo, value) %>%
         tidyr::pivot_wider(id_cols = c(Subject_ID, group),
                            names_from = Combo,
