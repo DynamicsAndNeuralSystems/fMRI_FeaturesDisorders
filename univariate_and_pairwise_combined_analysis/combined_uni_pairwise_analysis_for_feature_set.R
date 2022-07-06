@@ -139,7 +139,7 @@ for (weighting_name in unique(weighting_param_df$name)) {
     pvalues <- calc_empirical_nulls(class_res = univariate_pairwise_SVM_CV_weighting,
                                     null_data = model_free_shuffle_null_res,
                                     feature_set = combined_feature_set,
-                                    is_data_averaged = FALSE,
+                                    is_main_data_averaged = FALSE,
                                     grouping_var = "SPI")
 
     saveRDS(pvalues, file=paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_model_free_shuffle_pvals.Rds",
@@ -187,7 +187,7 @@ for (i in 1:nrow(weighting_param_df)) {
   #   pvalues <- calc_empirical_nulls(class_res = pyspi_SPI_pairwise_SVM_CV_weighting,
   #                                   null_data = model_permutation_null_weighting,
   #                                   feature_set = feature_set,
-  #                                   is_data_averaged = FALSE,
+  #                                   is_main_data_averaged = FALSE,
   #                                   grouping_var = "SPI")
   # 
   #   saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_null_model_fit_pvals_%s_%s.Rds",
