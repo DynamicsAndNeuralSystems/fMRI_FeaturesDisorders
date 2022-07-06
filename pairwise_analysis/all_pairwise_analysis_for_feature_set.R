@@ -200,11 +200,11 @@ for (i in 1:nrow(weighting_param_df)) {
         }
       }
       
-      ## Concatenate null results and save to RDS file
-      null_model_fit_res <- list.files(output_data_dir, pattern="Rds") %>%
-        purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
-      saveRDS(null_model_fit_res, paste0(rdata_path, sprintf("pyspi_%s_pairwise_%s_%s_null_model_fits.Rds",
-                                                             grouping_var, feature_set, weighting_name)))
+      # ## Concatenate null results and save to RDS file
+      # null_model_fit_res <- list.files(output_data_dir, pattern="Rds") %>%
+      #   purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
+      # saveRDS(null_model_fit_res, paste0(rdata_path, sprintf("pyspi_%s_pairwise_%s_%s_null_model_fits.Rds",
+      #                                                        grouping_var, feature_set, weighting_name)))
     } else {
       null_model_fit_res <- readRDS(paste0(rdata_path, sprintf("pyspi_%s_pairwise_%s_%s_null_model_fits.Rds",
                                                                grouping_var, feature_set, weighting_name)))
