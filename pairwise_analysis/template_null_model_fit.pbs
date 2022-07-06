@@ -26,7 +26,7 @@ Rscript ${github_dir}/helper_functions/Null_distributions_cluster.R \
 --pairwise_data_file PAIRWISE_DATA_FILE \
 --SPI_directionality_file SPI_DIRECTIONALITY_FILE \
 --rdata_path ${rdata_path} --github_dir ${github_dir} \
---num_k_folds NUM_K_FOLDS \
+--pairwise --num_k_folds NUM_K_FOLDS \
 --output_data_dir OUTPUT_DATA_DIR --null_iter_number iterj \
 --num_perms_for_iter NUM_PERMS_PER_ITER --feature_set FEATURE_SET \
 --svm_kernel linear --grouping_var GROUPING_VAR --svm_feature_var SVM_FEATURE_VAR \

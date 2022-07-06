@@ -96,7 +96,7 @@ weighting_param_df <- data.frame(name = c("unweighted", "inv_prob", "SMOTE"),
                                  use_SMOTE = c(FALSE, FALSE, TRUE))
 
 ################################################################################
-# All catch22 features + pearson correlation
+# All catch22 features with each SPI individually
 ################################################################################
 
 #### 10-fold linear SVM with different weights
@@ -125,16 +125,14 @@ for (i in 1:nrow(weighting_param_df)) {
                                                               sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s.Rds",
                                                                       univariate_feature_set, pairwise_feature_set, weighting_name)))
   }
-}
-
-#### Calculate p values from model-free shuffle null distribution
-for (weighting_name in unique(weighting_param_df$name)) {
+  
+  #### Calculate p values from model-free shuffle null distribution
   if (!file.exists(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_model_free_shuffle_pvals.Rds",
                                               univariate_feature_set, pairwise_feature_set, weighting_name)))) {
     univariate_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
                                                            sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s.Rds",
                                                                    univariate_feature_set, pairwise_feature_set, weighting_name)))
-
+    
     combined_feature_set = paste0(univariate_feature_set, "_", pairwise_feature_set)
     # Calculate p-values
     pvalues <- calc_empirical_nulls(class_res = univariate_pairwise_SVM_CV_weighting,
@@ -142,21 +140,27 @@ for (weighting_name in unique(weighting_param_df$name)) {
                                     feature_set = combined_feature_set,
                                     is_main_data_averaged = FALSE,
                                     grouping_var = "SPI")
-
+    
     saveRDS(pvalues, file=paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_model_free_shuffle_pvals.Rds",
                                                      univariate_feature_set, pairwise_feature_set, weighting_name)))
   }
-}
-
-#### Generate empirical null model distributions per SPI
-for (i in 1:nrow(weighting_param_df)) {
-  weighting_name <- weighting_param_df$name[i]
-  use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[i]
-  use_SMOTE <- weighting_param_df$use_SMOTE[i]
+  
+  #### Generate empirical null model distributions per SPI
+  weighting_null_dist_file <- paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_model_permutation_null.Rds",
+                                                         univariate_feature_set, pairwise_feature_set, weighting_name))
+  
 
   # Generate null-model fits distribution
-  if (!file.exists(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_model_permutation_null.Rds",
-                                              univariate_feature_set, pairwise_feature_set, weighting_name)))) {
+  if (!file.exists(weighting_null_dist_file)) {
+    # Output script dir
+    output_data_dir <- paste0(rdata_path, sprintf("univariate_and_SPI_pairwise%s_null_model_fits/",
+                                                  weighting_name))
+    output_scripts_dir <- paste0(github_dir, sprintf("univariate_and_pairwise_combined_analysis/univariate_and_SPI_wise_%s_null_model_fits/",
+                                                     weighting_name))
+    
+    icesTAF::mkdir(output_data_dir)
+    icesTAF::mkdir(output_scripts_dir)
+    
     model_permutation_null_weighting <- run_null_model_n_permutations_univariate_pairwise_combo(univariate_data = univariate_data,
                                                                                                 univariate_feature_set = univariate_feature_set,
                                                                                                 pairwise_data = pairwise_data,
@@ -169,7 +173,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                                                 return_all_fold_metrics = TRUE,
                                                                                                 use_inv_prob_weighting = use_inv_prob_weighting,
                                                                                                 use_SMOTE = use_SMOTE)
-
+    
     saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_model_permutation_null.Rds",
                                                                               univariate_feature_set, pairwise_feature_set, weighting_name)))
   } else {
@@ -177,24 +181,29 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                            univariate_feature_set, pairwise_feature_set, weighting_name)))
   }
 
-  # # Empirically derive p-values based on null model fits distribution
-  # if (!file.exists(paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_null_model_fit_pvals_%s_%s.Rds",
-  #                                             feature_set, weighting_name)))) {
-  #   pyspi_SPI_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
-  #                                                  sprintf("pyspi_SPI_pairwise_CV_linear_SVM_%s_%s.Rds",
-  #                                                          feature_set, weighting_name)))
-  # 
-  #   # Calculate p-values
-  #   pvalues <- calc_empirical_nulls(class_res = pyspi_SPI_pairwise_SVM_CV_weighting,
-  #                                   null_data = model_permutation_null_weighting,
-  #                                   feature_set = feature_set,
-  #                                   is_main_data_averaged = FALSE,
-  #                                   grouping_var = "SPI")
-  # 
-  #   saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_null_model_fit_pvals_%s_%s.Rds",
-  #                                                    feature_set, weighting_name)))
-  # }
+  # Empirically derive p-values based on null model fits distribution
+  if (!file.exists(paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_null_model_fit_pvals_%s_%s.Rds",
+                                              feature_set, weighting_name)))) {
+    pyspi_SPI_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
+                                                   sprintf("pyspi_SPI_pairwise_CV_linear_SVM_%s_%s.Rds",
+                                                           feature_set, weighting_name)))
+
+    # Calculate p-values
+    pvalues <- calc_empirical_nulls(class_res = pyspi_SPI_pairwise_SVM_CV_weighting,
+                                    null_data = model_permutation_null_weighting,
+                                    feature_set = feature_set,
+                                    is_main_data_averaged = FALSE,
+                                    grouping_var = "SPI")
+
+    saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_null_model_fit_pvals_%s_%s.Rds",
+                                                     feature_set, weighting_name)))
+  }
+  
 }
+
+################################################################################
+# PCA dimensionality reduction
+################################################################################
 
 #### PCA Analysis
 if (!file.exists(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_PCA.Rds",

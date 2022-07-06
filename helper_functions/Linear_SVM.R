@@ -103,12 +103,12 @@ k_fold_CV_linear_SVM <- function(input_data,
     
   } 
   
-  df_res_in_sample <- data.frame(Null_Iteration = rep(1:k, length(c_values)),
+  df_res_in_sample <- data.frame(k_fold_iteration = rep(1:k, length(c_values)),
                                  c_value = unlist(c_value_list),
                                  accuracy = unlist(in_accuracy_list),
                                  balanced_accuracy = unlist(in_balanced_accuracy_list),
                                  Sample_Type = "In-sample")
-  df_res_out_sample <- data.frame(Null_Iteration = rep(1:k, length(c_values)),
+  df_res_out_sample <- data.frame(k_fold_iteration = rep(1:k, length(c_values)),
                                   c_value = unlist(c_value_list),
                                   accuracy = unlist(out_accuracy_list),
                                   balanced_accuracy = unlist(out_balanced_accuracy_list),

@@ -2,7 +2,7 @@
 #PBS -P PROJECT_NAME
 #PBS -N iterj_NAME
 #PBS -j oe
-#PBS -o GITHUB_DIR/cluster_output/univariate_WEIGHTING_null_model_fit_iterj_out.txt
+#PBS -o GITHUB_DIR/cluster_output/univariate_WEIGHTING_NAME_null_model_fit_iterj_out.txt
 #PBS -l select=1:ncpus=NCPUS:mem=MEMNUMGB
 #PBS -l walltime=WALL_HRS:00:00
 #PBS -m PBS_NOTIFY
@@ -22,9 +22,9 @@ pydata_path=${project_dir}/data/scz/UCLA/pydata/
 mkdir -p $github_dir/cluster_output/
 
 # Change to relevant directory and run our compute script
-Rscript ${github_dir}/helper_functions/Null_distributions_cluster_univariate.R \
+Rscript ${github_dir}/helper_functions/Null_distributions_cluster.R \
 --rdata_path ${rdata_path} --github_dir ${github_dir} \
---num_k_folds NUM_K_FOLDS \
+--univariate --num_k_folds NUM_K_FOLDS \
 --output_data_dir OUTPUT_DATA_DIR --null_iter_number iterj \
 --num_perms_for_iter NUM_PERMS_PER_ITER --feature_set FEATURE_SET \
 --svm_kernel linear --grouping_var GROUPING_VAR --svm_feature_var SVM_FEATURE_VAR \
