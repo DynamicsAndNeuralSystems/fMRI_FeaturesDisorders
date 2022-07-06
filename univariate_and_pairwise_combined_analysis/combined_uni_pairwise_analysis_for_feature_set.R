@@ -95,6 +95,9 @@ weighting_param_df <- data.frame(name = c("unweighted", "inv_prob", "SMOTE"),
                                  use_inv_prob_weighting = c(FALSE, TRUE, FALSE),
                                  use_SMOTE = c(FALSE, FALSE, TRUE))
 
+grouping_df <- data.frame(grouping_var = "SPI",
+                          SVM_feature_var = "region_pair")
+
 ################################################################################
 # All catch22 features with each SPI individually
 ################################################################################
@@ -105,6 +108,9 @@ for (i in 1:nrow(weighting_param_df)) {
   weighting_name <- weighting_param_df$name[i]
   use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[i]
   use_SMOTE <- weighting_param_df$use_SMOTE[i]
+  
+  grouping_var <- grouping_df$grouping_var
+  SVM_feature_var <- grouping_df$SVM_feature_var
   
   # Run given weighting for 10-fold CV linear SVM
   if (!file.exists(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s.Rds",
@@ -151,35 +157,82 @@ for (i in 1:nrow(weighting_param_df)) {
   
 
   # Generate null-model fits distribution
-  if (!file.exists(weighting_null_dist_file)) {
+  # if (!file.exists(weighting_null_dist_file)) {
     # Output script dir
-    output_data_dir <- paste0(rdata_path, sprintf("univariate_and_SPI_pairwise%s_null_model_fits/",
+    output_data_dir <- paste0(rdata_path, sprintf("univariate_and_SPI_pairwise_%s_null_model_fits/",
                                                   weighting_name))
     output_scripts_dir <- paste0(github_dir, sprintf("univariate_and_pairwise_combined_analysis/univariate_and_SPI_wise_%s_null_model_fits/",
                                                      weighting_name))
     
+    # save preprocessed univariate and pairwise data to files
+    saveRDS(univariate_data, file = paste0(rdata_path, "univariate_data_for_combined_uni_pairwise.Rdata"))
+    saveRDS(pairwise_data, file = paste0(rdata_path, "pairwise_data_for_combined_uni_pairwise.Rdata"))
+    
     icesTAF::mkdir(output_data_dir)
     icesTAF::mkdir(output_scripts_dir)
     
-    model_permutation_null_weighting <- run_null_model_n_permutations_univariate_pairwise_combo(univariate_data = univariate_data,
-                                                                                                univariate_feature_set = univariate_feature_set,
-                                                                                                pairwise_data = pairwise_data,
-                                                                                                pairwise_feature_set = pairwise_feature_set,
-                                                                                                SPI_directionality = SPI_directionality,
-                                                                                                svm_kernel = "linear",
-                                                                                                test_package = "e1071",
-                                                                                                noise_proc = "AROMA+2P+GMR",
-                                                                                                num_permutations = 5,
-                                                                                                return_all_fold_metrics = TRUE,
-                                                                                                use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                                                use_SMOTE = use_SMOTE)
+    num_permutations <- 1
+    nperm_per_iter <- 2
+    num_k_folds <- 2
+    template_pbs_file <- paste0(github_dir, "univariate_and_pairwise_combined_analysis/template_null_model_fit.pbs")
     
-    saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_model_permutation_null.Rds",
-                                                                              univariate_feature_set, pairwise_feature_set, weighting_name)))
-  } else {
-    model_permutation_null_weighting <- readRDS(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_model_permutation_null.Rds",
-                                                                           univariate_feature_set, pairwise_feature_set, weighting_name)))
-  }
+    lookup_list <- list("PROJECT_NAME" = "hctsa",
+                        "NAME" = "univariate_pairwise_combined_SPI_wise_null_model_fit",
+                        "MEMNUM" = "20",
+                        "NCPUS" = "1",
+                        "GITHUB_DIR" = github_dir,
+                        "PROJECT_DIR" = project_path,
+                        "EMAIL" = "abry4213@uni.sydney.edu.au",
+                        "PBS_NOTIFY" = "a",
+                        "WALL_HRS" = "4",
+                        "UNIVARIATE_DATA_FILE" = paste0(rdata_path, "univariate_data_for_combined_uni_pairwise.Rds"),
+                        "PAIRWISE_DATA_FILE" = paste0(rdata_path, "pairwise_data_for_combined_uni_pairwise.Rds"),
+                        "SPI_DIRECTIONALITY_FILE" = paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"),
+                        "NUM_K_FOLDS" = num_k_folds,
+                        "NUM_PERMS_PER_ITER" = nperm_per_iter,
+                        "OUTPUT_DATA_DIR" = output_data_dir,
+                        "FEATURE_SET" = "pyspi_19",
+                        "GROUPING_VAR" = grouping_var,
+                        "SVM_FEATURE_VAR" = SVM_feature_var,
+                        "NOISE_PROC" = noise_proc)
+    
+    to_be_replaced <- names(lookup_list)
+    replacement_values <- unlist(unname(lookup_list))
+    
+    for (p in 1:num_permutations) {
+      
+      
+      # Run command if null file doesn't exist
+      if (!file.exists(sprintf("%s/Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_null_model_fit_iter_%s.Rds",
+                               output_data_dir, univariate_feature_set, 
+                               pairwise_feature_set, weighting_name, p))) {
+        cat("\nNow running null perms for iteration", p, "\n")
+        new_pbs_file <- readLines(template_pbs_file)
+        
+        # Replace file paths
+        pbs_text_replaced <- mgsub::mgsub(new_pbs_file,
+                                          to_be_replaced,
+                                          replacement_values)
+        
+        # Replace null iteration number
+        pbs_text_replaced <- gsub("iterj", p, pbs_text_replaced)
+        
+        # Write updated PBS script to file
+        output_pbs_file <- writeLines(pbs_text_replaced,
+                                      paste0(output_scripts_dir,
+                                             "null_iter_", p, ".pbs"))
+        
+        system(paste0("qsub ", output_scripts_dir, "null_iter_", p, ".pbs"))
+        
+      }
+    }
+    
+    # saveRDS(model_permutation_null_weighting, file=paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_model_permutation_null.Rds",
+    #                                                                           univariate_feature_set, pairwise_feature_set, weighting_name)))
+  # } else {
+  #   model_permutation_null_weighting <- readRDS(paste0(rdata_path, sprintf("Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_model_permutation_null.Rds",
+  #                                                                          univariate_feature_set, pairwise_feature_set, weighting_name)))
+  # }
 
   # Empirically derive p-values based on null model fits distribution
   if (!file.exists(paste0(rdata_path, sprintf("pyspi_SPI_pairwise_CV_linear_SVM_null_model_fit_pvals_%s_%s.Rds",

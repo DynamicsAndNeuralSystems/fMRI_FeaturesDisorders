@@ -6,6 +6,7 @@ parser$add_argument("--project_path", default="/project/hctsa/annie/")
 parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
 parser$add_argument("--feature_set", default="catch22")
+# project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
 # rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
 # feature_set <- "catch22"
@@ -123,17 +124,16 @@ for (i in 1:nrow(grouping_param_df)) {
     }
     
     # Generate null-model fits distribution
-    # if (!file.exists(paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s_%sperm.Rds",
-    #                                             grouping_type,
-    #                                             feature_set,
-    #                                             weighting_name,
-    #                                             num_perm)))) {
+    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s.Rds",
+                                                grouping_type,
+                                                feature_set,
+                                                weighting_name)))) {
       
       # template file
-    if (grouping_type %in% c("ROI", "Feature")) {
-      num_permutations <- 50
-      nperm_per_iter <- 20
-    }
+      if (grouping_type %in% c("ROI", "Feature")) {
+        num_permutations <- 50
+        nperm_per_iter <- 20
+      }
       num_k_folds <- 10
       template_pbs_file <- paste0(github_dir, "univariate_analysis/template_null_model_fit.pbs")
       
@@ -192,46 +192,42 @@ for (i in 1:nrow(grouping_param_df)) {
         }
       }
       
-      # ## Concatenate null results and save to RDS file
-      # null_model_fit_res <- list.files(output_data_dir, pattern="Rds") %>%
-      #   purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
-      # saveRDS(null_model_fit_res, paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s_%sperm.Rds",
-      #                                                        grouping_type,
-      #                                                        feature_set, 
-      #                                                        weighting_name,
-      #                                                        num_perm)))
-    # } else {
-    #   model_permutation_null_weighting <- readRDS(paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s_%sperm.Rds",
-    #                                                                          grouping_type,
-    #                                                                          feature_set, 
-    #                                                                          weighting_name,
-    #                                                                          num_perm)))
-    # }
+      ## Concatenate null results and save to RDS file
+      model_permutation_null_weighting <- list.files(output_data_dir, pattern="Rds") %>%
+        purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
+      saveRDS(model_permutation_null_weighting, paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s.Rds",
+                                                             grouping_type,
+                                                             feature_set,
+                                                             weighting_name)))
+    } else {
+      model_permutation_null_weighting <- readRDS(paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s.Rds",
+                                                                             grouping_type,
+                                                                             feature_set,
+                                                                             weighting_name)))
+    }
     
-    # # Empirically derive p-values based on null model fits distribution
-    # if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_model_permutation_null_%s_%s_%sperm_pvals.Rds",
-    #                                             grouping_type,
-    #                                             feature_set, 
-    #                                             weighting_name,
-    #                                             num_perm)))) {
-    #   group_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path, 
-    #                                                 sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
-    #                                                         grouping_type,
-    #                                                         feature_set, 
-    #                                                         weighting_name)))
-    #   
-    #   # Calculate p-values
-    #   pvalues <- calc_empirical_nulls(class_res = group_wise_SVM_CV_weighting,
-    #                                   null_data = model_permutation_null_weighting,
-    #                                   feature_set = feature_set,
-    #                                   is_data_averaged = TRUE,
-    #                                   grouping_var = grouping_var)
-    #   
-    #   saveRDS(pvalues, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_model_permutation_null_%s_%s_%sperm_pvals.Rds",
-    #                                                    grouping_type,
-    #                                                    feature_set, 
-    #                                                    weighting_name,
-    #                                                    num_perm)))
-    # }
+    # Empirically derive p-values based on null model fits distribution
+    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_model_permutation_null_%s_%s_pvals.Rds",
+                                                grouping_type,
+                                                feature_set,
+                                                weighting_name)))) {
+      group_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
+                                                    sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
+                                                            grouping_type,
+                                                            feature_set,
+                                                            weighting_name)))
+      
+      # Calculate p-values
+      pvalues <- calc_empirical_nulls(class_res = group_wise_SVM_CV_weighting,
+                                      null_data = model_permutation_null_weighting,
+                                      feature_set = feature_set,
+                                      is_main_data_averaged = TRUE,
+                                      grouping_var = grouping_var)
+      
+      saveRDS(pvalues, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_model_permutation_null_%s_%s_pvals.Rds",
+                                                       grouping_type,
+                                                       feature_set,
+                                                       weighting_name)))
+    }
   }
 }
