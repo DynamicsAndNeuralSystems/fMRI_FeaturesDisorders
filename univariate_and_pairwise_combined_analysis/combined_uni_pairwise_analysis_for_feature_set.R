@@ -94,9 +94,12 @@ if (!file.exists(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_combined_%
 ################################################################################
 # Define weighting parameters
 ################################################################################
-weighting_param_df <- data.frame(name = c("unweighted", "inv_prob", "SMOTE"),
-                                 use_inv_prob_weighting = c(FALSE, TRUE, FALSE),
-                                 use_SMOTE = c(FALSE, FALSE, TRUE))
+# weighting_param_df <- data.frame(name = c("unweighted", "inv_prob", "SMOTE"),
+#                                  use_inv_prob_weighting = c(FALSE, TRUE, FALSE),
+#                                  use_SMOTE = c(FALSE, FALSE, TRUE))
+weighting_param_df <- data.frame(name = c("inv_prob"),
+                                 use_inv_prob_weighting = c(TRUE),
+                                 use_SMOTE = c(FALSE))
 
 grouping_df <- data.frame(grouping_var = "SPI",
                           SVM_feature_var = "region_pair")

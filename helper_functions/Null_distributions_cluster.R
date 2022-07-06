@@ -59,7 +59,6 @@ icesTAF::mkdir(output_data_dir)
 
 cat("\nNumber of k-folds:", num_k_folds, "\n")
 cat("\nNum permutations per iteration:", num_perms_for_iter, "\n")
-cat("\nData type:", typeof(num_perms_for_iter), "\n")
 
 if (univariate) {
   # Run null iteration
