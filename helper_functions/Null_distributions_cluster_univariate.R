@@ -13,7 +13,6 @@ parser$add_argument("--feature_set", default="catch22")
 parser$add_argument("--svm_kernel", default="linear")
 parser$add_argument("--svm_feature_var", default="Brain_Region")
 parser$add_argument("--test_package", default="e1071")
-parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--return_all_fold_metrics", action='store_true', default=FALSE)
 parser$add_argument("--weighting_name", default="unweighted")
 parser$add_argument("--use_inv_prob_weighting", action='store_true', default=FALSE)
@@ -33,7 +32,6 @@ svm_kernel <- args$svm_kernel
 grouping_var <- args$grouping_var
 svm_feature_var <- args$svm_feature_var
 test_package <- args$test_package
-noise_proc <- args$noise_proc
 return_all_fold_metrics <- args$return_all_fold_metrics
 weighting_name <- args$weighting_name
 use_inv_prob_weighting <- args$use_inv_prob_weighting
@@ -55,7 +53,8 @@ null_out <- 1:num_perms_for_iter  %>%
                                                       test_package = test_package,
                                                       grouping_var = grouping_var,
                                                       svm_feature_var = svm_feature_var,
-                                                      noise_procs = noise_procs,
+                                                      noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"),
+                                                      num_k_folds = num_k_folds,
                                                       use_inv_prob_weighting = use_inv_prob_weighting,
                                                       use_SMOTE = use_SMOTE,
                                                       shuffle_labels = T) %>%

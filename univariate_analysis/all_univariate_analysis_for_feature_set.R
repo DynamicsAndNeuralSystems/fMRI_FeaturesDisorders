@@ -161,7 +161,6 @@ for (i in 1:nrow(grouping_param_df)) {
                           "FEATURE_SET" = "catch22",
                           "GROUPING_VAR" = grouping_var,
                           "SVM_FEATURE_VAR" = SVM_feature_var,
-                          "NOISE_PROC" = noise_proc,
                           "WEIGHTING_NAME" = weighting_name)
       
       to_be_replaced <- names(lookup_list)
