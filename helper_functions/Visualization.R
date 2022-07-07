@@ -258,6 +258,7 @@ plot_top_6_vars_main_vs_null <- function(class_res_pvals,
 
 plot_main_vs_null_bal_acc_density <- function(main_res, null_res, pvals,
                                               grouping_type, result_color,
+                                              xmin = NULL, xmax = NULL,
                                               line_only = FALSE) {
 
   
@@ -269,7 +270,7 @@ plot_main_vs_null_bal_acc_density <- function(main_res, null_res, pvals,
     ungroup() %>%
     ggplot(data=., mapping=aes(x = balanced_accuracy)) +
     ggtitle(grouping_type) +
-    xlab("10-Fold CV Balanced Accuracy") +
+    xlab("Balanced Accuracy\n(10-Fold CV)") +
     ylab("Density") 
   
   if (line_only) {
@@ -321,6 +322,11 @@ plot_main_vs_null_bal_acc_density <- function(main_res, null_res, pvals,
     scale_fill_manual(values = c(result_color, "gray40")) +
     theme(legend.position = "bottom",
           plot.title = element_text(hjust = 0.5))
+  
+  if (!is.null(xmin) & !is.null(xmax)) {
+    p <- p + 
+      scale_x_continuous(limits = c(xmin, xmax))
+  }
   
   return(p)
 }
