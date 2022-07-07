@@ -54,9 +54,9 @@ if (!file.exists(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
 # Define weighting parameters
 ################################################################################
 
-grouping_param_df <- data.frame(grouping_type = c("ROI", "Feature"),
-                                grouping_var = c("Brain_Region", "Feature"),
-                                SVM_feature_var = c("Feature", "Brain_Region")) 
+grouping_param_df <- data.frame(grouping_type = c("ROI", "Feature", "Combo"),
+                                grouping_var = c("Brain_Region", "Feature", "Combo"),
+                                SVM_feature_var = c("Feature", "Brain_Region", "Combo")) 
 
 weighting_param_df <- data.frame(name = c("inv_prob"),
                                  use_inv_prob_weighting = c(TRUE),
@@ -133,6 +133,9 @@ for (i in 1:nrow(grouping_param_df)) {
       if (grouping_type %in% c("ROI", "Feature")) {
         num_permutations <- 50
         nperm_per_iter <- 20
+      } else if (grouping_type == "Combo") {
+        num_permutations <- 10
+        nperm_per_iter <- 100
       }
       num_k_folds <- 10
       template_pbs_file <- paste0(github_dir, "univariate_analysis/template_null_model_fit.pbs")
