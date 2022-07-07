@@ -191,7 +191,7 @@ for (i in 1:nrow(weighting_param_df)) {
     
     lookup_list <- list("PROJECT_NAME" = "hctsa",
                         "NAME" = "univariate_pairwise_combined_SPI_wise_null_model_fit",
-                        "MEMNUM" = "30",
+                        "MEMNUM" = "20",
                         "NCPUS" = "1",
                         "GITHUB_DIR" = github_dir,
                         "PROJECT_DIR" = project_path,
