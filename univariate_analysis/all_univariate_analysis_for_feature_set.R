@@ -157,7 +157,7 @@ for (i in 1:nrow(grouping_param_df)) {
                           "PROJECT_DIR" = project_path,
                           "EMAIL" = "abry4213@uni.sydney.edu.au",
                           "PBS_NOTIFY" = "a",
-                          "WALL_HRS" = "6",
+                          "WALL_HRS" = "4",
                           "NUM_K_FOLDS" = num_k_folds,
                           "NUM_PERMS_PER_ITER" = nperm_per_iter,
                           "OUTPUT_DATA_DIR" = output_data_dir,
