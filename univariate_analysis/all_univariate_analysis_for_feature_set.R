@@ -135,7 +135,7 @@ for (i in 1:nrow(grouping_param_df)) {
         nperm_per_iter <- 20
       } else if (grouping_type == "Combo") {
         num_permutations <- 180
-        nperm_per_iter <- 5
+        nperm_per_iter <- 100
       }
       num_k_folds <- 10
       template_pbs_file <- paste0(github_dir, "univariate_analysis/template_null_model_fit.pbs")
