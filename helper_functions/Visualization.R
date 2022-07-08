@@ -256,10 +256,11 @@ plot_top_6_vars_main_vs_null <- function(class_res_pvals,
 # Plot density distribution of main vs null results given a dataset
 #-------------------------------------------------------------------------------
 
-plot_main_vs_null_bal_acc_density <- function(main_res, null_res, pvals,
-                                              grouping_type, result_color,
-                                              xmin = NULL, xmax = NULL,
-                                              line_only = FALSE) {
+plot_main_vs_null_bal_acc <- function(main_res, null_res, pvals,
+                                      plot_type = "histogram",
+                                      grouping_type, result_color,
+                                      xmin = NULL, xmax = NULL,
+                                      line_only = FALSE) {
 
   
   # Density plot
@@ -273,51 +274,61 @@ plot_main_vs_null_bal_acc_density <- function(main_res, null_res, pvals,
     xlab("Balanced Accuracy\n(10-Fold CV)") +
     ylab("Density") 
   
+  # Add data distribution if not only one line
+  if (plot_type == "density" & !(line_only)) {
+    p <- p + geom_density(aes(fill = "Main"))
+  } else if (plot_type == "histogram" & !(line_only)) {
+    p <- p + geom_histogram(bins = 50, aes(fill = "Main", y=..density..))
+  }
+  
+  # Add null distribution according to plot type
+  if (plot_type == "density") {
+    p <- p + geom_density(data = subset(null_res,
+                                        Sample_Type == "Out-of-sample" &
+                                          Noise_Proc == "AROMA+2P+GMR"),
+                          aes(fill = "Null"),
+                          alpha = 0.7)
+    
+  } else if (plot_type == "histogram") {
+    p <- p + geom_histogram(data = subset(null_res,
+                                          Sample_Type == "Out-of-sample" &
+                                            Noise_Proc == "AROMA+2P+GMR"),
+                            aes(fill = "Null", y=..density..),
+                            bins = 50,
+                            alpha = 0.7)
+  }
+  
+  # Find line to plot if only line
   if (line_only) {
-    raw_bal_acc_vector <- null_res %>%
+    raw_bal_acc_vector <-  null_res %>%
       dplyr::filter(Sample_Type == "Out-of-sample" &
                       Noise_Proc == "AROMA+2P+GMR") %>%
       pull(balanced_accuracy)
-    
-    raw_p_thresh <- quantile(raw_bal_acc_vector, probs = c(0.95))
+    dotted_line_val <- quantile(raw_bal_acc_vector, probs = c(0.95))
     
     p <- p +
-      geom_density(data = subset(null_res,
-                                 Sample_Type == "Out-of-sample" &
-                                   Noise_Proc == "AROMA+2P+GMR"),
-                   aes(fill = "Null"),
-                   alpha = 0.7) +
       geom_vline(aes(xintercept = balanced_accuracy,
                      fill = "Main"),
-                 color = result_color, size = 1.6) +
-      geom_vline(aes(xintercept = raw_p_thresh),
-                 color = "black", size = 1.2,
-                 linetype = 2)
+                 color = result_color, size = 1.6) 
+    
   } else {
-    # Find cutoff value for BH-adjusted significance for group-wise results
-    group_wise_bal_acc_threshold <- main_res %>%
+    dotted_line_val <- main_res %>%
       filter(Sample_Type == "Out-of-sample",
              Noise_Proc == "AROMA+2P+GMR") %>%
       left_join(., pvals) %>%
       ungroup() %>%
       arrange(bal_acc_p_adj) %>%
       mutate(is_sig = bal_acc_p_adj < 0.05) %>%
-      distinct(is_sig, .keep_all = T) %>%
-      filter(!is_sig)
-    
-    p <- p +
-      geom_density(aes(fill = "Main")) +
-      geom_density(data = subset(null_res,
-                                 Sample_Type == "Out-of-sample" &
-                                   Noise_Proc == "AROMA+2P+GMR"),
-                   aes(fill = "Null"),
-                   alpha = 0.7) +
-      geom_vline(data = group_wise_bal_acc_threshold,
-                 mapping = aes(xintercept = balanced_accuracy),
-                 linetype = 2, size=1.2)
+      group_by(is_sig) %>%
+      filter(balanced_accuracy == min(balanced_accuracy)) %>%
+      ungroup() %>%
+      filter(is_sig) %>%
+      pull(balanced_accuracy)
   }
-
-  p <- p +
+  
+  p <- p + geom_vline(aes(xintercept = dotted_line_val),
+                       color = "black", size = 1.2,
+                       linetype = 2) +
     labs(fill = "Result") +
     scale_fill_manual(values = c(result_color, "gray40")) +
     theme(legend.position = "bottom",
