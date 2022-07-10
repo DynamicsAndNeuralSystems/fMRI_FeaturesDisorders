@@ -163,6 +163,7 @@ run_null_model_n_permutations_univariate_pairwise_combo <- function(univariate_d
 calc_empirical_nulls <- function(class_res,
                                  null_data,
                                  feature_set,
+                                 use_pooled_null = TRUE,
                                  is_main_data_averaged = TRUE,
                                  is_null_data_averaged = TRUE,
                                  grouping_var = "Brain_Region") {
@@ -191,7 +192,7 @@ calc_empirical_nulls <- function(class_res,
       dplyr::rename("accuracy"="accuracy_avg",
                     "balanced_accuracy"="balanced_accuracy_avg")
   } 
-
+  
   main_res <- class_res %>%
     dplyr::select(grouping_var, Sample_Type, Noise_Proc, accuracy, balanced_accuracy) %>%
     mutate(Type = "main") %>%
@@ -204,7 +205,8 @@ calc_empirical_nulls <- function(class_res,
   
   for (group_var in unique(class_res$grouping_var)) {
     
-    if ("grouping_var" %in% colnames(null_data)) {
+    # Only filter by grouping variable if use_pooled_null = FALSE
+    if ("grouping_var" %in% colnames(null_data) & !(use_pooled_null)) {
       group_null <- null_data %>%
         dplyr::filter(grouping_var == group_var)
     } else {
@@ -216,34 +218,26 @@ calc_empirical_nulls <- function(class_res,
     group_null$Type <- "null"
     
     # If null dataset is specific to each noise-processing method
-    if ("Noise_Proc" %in% colnames(group_null)) {
-      p_value_res <- plyr::rbind.fill(group_main,
-                                      group_null) %>%
-        group_by(grouping_var, Noise_Proc, Sample_Type) %>%
-        dplyr::summarise(main_accuracy = unique(accuracy[Type=="main"]),
-                         main_balanced_accuracy = unique(balanced_accuracy[Type=="main"]),
-                         acc_p = 1 - stats::ecdf(accuracy[Type=="null"])(main_accuracy),
-                         bal_acc_p = 1 - stats::ecdf(balanced_accuracy[Type=="null"])(main_balanced_accuracy),
-        ) %>%
-        ungroup() %>%
-        distinct() %>%
-        dplyr::rename("accuracy" = "main_accuracy",
-                      "balanced_accuracy" = "main_balanced_accuracy") 
-    } else {
-      null_accuracy <- group_null$accuracy
-      null_balanced_accuracy <- group_null$balanced_accuracy
-      p_value_res <- group_main %>%
-        group_by(grouping_var, Noise_Proc, Sample_Type) %>%
-        dplyr::summarise(main_accuracy = accuracy,
-                         main_balanced_accuracy = balanced_accuracy,
-                         acc_p = 1 - stats::ecdf(null_accuracy)(main_accuracy),
-                         bal_acc_p = 1 - stats::ecdf(null_balanced_accuracy)(main_balanced_accuracy),
-        ) %>%
-        ungroup() %>%
-        distinct() %>%
-        dplyr::rename("accuracy" = "main_accuracy",
-                      "balanced_accuracy" = "main_balanced_accuracy") 
+    if (!("Noise_Proc" %in% colnames(group_null))) {
+      group_null <- plyr::rbind.fill(group_null %>% mutate(Noise_Proc = "AROMA+2P"),
+                                     group_null %>% mutate(Noise_Proc = "AROMA+2P+GMR")) %>%
+        plyr::rbind.fill(., group_null %>% mutate(Noise_Proc = "AROMA+2P+DiCER"))
     }
+    p_value_res <- plyr::rbind.fill(group_main,
+                                    group_null) %>%
+      group_by(grouping_var, Noise_Proc, Sample_Type) %>%
+      dplyr::summarise(num_null_obs = sum(Type == "null"),
+                       main_accuracy = unique(accuracy[Type=="main"]),
+                       main_balanced_accuracy = unique(balanced_accuracy[Type=="main"]),
+                       num_main_acc_greater = sum(main_accuracy > accuracy[Type=="null"]),
+                       num_main_bal_acc_greater = sum(main_balanced_accuracy > balanced_accuracy[Type=="null"])) %>%
+      ungroup() %>%
+      distinct() %>%
+      mutate(acc_p = 1 - (num_main_acc_greater) / num_null_obs,
+             bal_acc_p = 1 - (num_main_bal_acc_greater) / num_null_obs) %>%
+      dplyr::rename("accuracy" = "main_accuracy",
+                    "balanced_accuracy" = "main_balanced_accuracy") 
+    
     
     merged_list <- rlist::list.append(merged_list, p_value_res)
   }

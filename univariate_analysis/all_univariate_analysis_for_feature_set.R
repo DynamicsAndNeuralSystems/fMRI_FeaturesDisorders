@@ -114,7 +114,8 @@ for (i in 1:nrow(grouping_param_df)) {
       pvalues <- calc_empirical_nulls(class_res = grouping_wise_SVM_CV_weighting,
                                       null_data = model_free_shuffle_null_res,
                                       feature_set = feature_set,
-                                      is_data_averaged = TRUE,
+                                      use_pooled_null = TRUE,
+                                      is_main_data_averaged = TRUE,
                                       grouping_var = grouping_var)
       
       saveRDS(pvalues, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_model_free_shuffle_pvals.Rds",
@@ -219,13 +220,14 @@ for (i in 1:nrow(grouping_param_df)) {
                                                             grouping_type,
                                                             feature_set,
                                                             weighting_name)))
-
+      
       # Calculate p-values
       pvalues <- calc_empirical_nulls(class_res = group_wise_SVM_CV_weighting,
-                                      null_data = model_permutation_null_weighting,
-                                      feature_set = feature_set,
-                                      is_main_data_averaged = TRUE,
-                                      grouping_var = grouping_var)
+                                           null_data = model_permutation_null_weighting,
+                                           feature_set = feature_set,
+                                           use_pooled_null = TRUE,
+                                           is_main_data_averaged = TRUE,
+                                           grouping_var = grouping_var)
 
       saveRDS(pvalues, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_model_permutation_null_%s_%s_pvals.Rds",
                                                        grouping_type,
