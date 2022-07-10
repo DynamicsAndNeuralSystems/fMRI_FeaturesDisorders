@@ -125,6 +125,7 @@ for (i in 1:nrow(weighting_param_df)) {
       pvalues <- calc_empirical_nulls(class_res = pyspi_pairwise_SVM_CV_weighting,
                                       null_data = model_free_shuffle_null_res,
                                       feature_set = feature_set,
+                                      use_pooled_null = TRUE,
                                       is_main_data_averaged = FALSE,
                                       grouping_var = grouping_var)
       
@@ -228,6 +229,7 @@ for (i in 1:nrow(weighting_param_df)) {
       pvalues <- calc_empirical_nulls(class_res = pyspi_pairwise_SVM_CV_weighting,
                                       null_data = null_model_fit_res,
                                       feature_set = feature_set,
+                                      use_pooled_null = TRUE,
                                       is_main_data_averaged = FALSE,
                                       is_null_data_averaged = TRUE,
                                       grouping_var = grouping_var)
