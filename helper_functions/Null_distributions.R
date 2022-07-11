@@ -244,7 +244,7 @@ calc_empirical_nulls <- function(class_res,
   main_p_values <- do.call(plyr::rbind.fill, merged_list) %>%
     ungroup() %>%
     mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"))) %>%
-    group_by(Noise_Proc) %>%
+    group_by(Sample_Type, Noise_Proc) %>%
     mutate(acc_p_adj = p.adjust(acc_p, method="BH"),
            bal_acc_p_adj = p.adjust(bal_acc_p, method="BH"),
            feature_set = feature_set) %>%
