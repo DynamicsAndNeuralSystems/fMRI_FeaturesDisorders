@@ -256,7 +256,10 @@ plot_top_6_vars_main_vs_null <- function(class_res_pvals,
 # Plot density distribution of main vs null results given a dataset
 #-------------------------------------------------------------------------------
 
-plot_main_vs_null_bal_acc <- function(main_res, null_res, pvals,
+plot_main_vs_null_bal_acc <- function(main_res, 
+                                      null_res, 
+                                      pvals,
+                                      noise_proc = "AROMA+2P+GMR",
                                       plot_type = "histogram",
                                       grouping_type, result_color,
                                       xmin = NULL, xmax = NULL,
@@ -266,7 +269,7 @@ plot_main_vs_null_bal_acc <- function(main_res, null_res, pvals,
   # Density plot
   p <- main_res %>%
     filter(Sample_Type == "Out-of-sample",
-           Noise_Proc == "AROMA+2P+GMR") %>%
+           Noise_Proc == noise_proc) %>%
     left_join(., pvals) %>%
     ungroup() %>%
     ggplot(data=., mapping=aes(x = balanced_accuracy)) +
@@ -285,14 +288,14 @@ plot_main_vs_null_bal_acc <- function(main_res, null_res, pvals,
   if (plot_type == "density") {
     p <- p + geom_density(data = subset(null_res,
                                         Sample_Type == "Out-of-sample" &
-                                          Noise_Proc == "AROMA+2P+GMR"),
+                                          Noise_Proc == noise_proc),
                           aes(fill = "Null"),
                           alpha = 0.7)
     
   } else if (plot_type == "histogram") {
     p <- p + geom_histogram(data = subset(null_res,
                                           Sample_Type == "Out-of-sample" &
-                                            Noise_Proc == "AROMA+2P+GMR"),
+                                            Noise_Proc == noise_proc),
                             aes(fill = "Null", y=..density..),
                             bins = 50,
                             alpha = 0.7)
@@ -302,7 +305,7 @@ plot_main_vs_null_bal_acc <- function(main_res, null_res, pvals,
   if (line_only) {
     raw_bal_acc_vector <-  null_res %>%
       dplyr::filter(Sample_Type == "Out-of-sample" &
-                      Noise_Proc == "AROMA+2P+GMR") %>%
+                      Noise_Proc == noise_proc) %>%
       pull(balanced_accuracy)
     dotted_line_val <- quantile(raw_bal_acc_vector, probs = c(0.95))
     
@@ -314,7 +317,7 @@ plot_main_vs_null_bal_acc <- function(main_res, null_res, pvals,
   } else {
     dotted_line_val <- main_res %>%
       filter(Sample_Type == "Out-of-sample",
-             Noise_Proc == "AROMA+2P+GMR") %>%
+             Noise_Proc == noise_proc) %>%
       left_join(., pvals) %>%
       ungroup() %>%
       arrange(bal_acc_p_adj) %>%
