@@ -276,31 +276,7 @@ plot_main_vs_null_bal_acc <- function(main_res,
     ggtitle(grouping_type) +
     xlab("Balanced Accuracy\n(10-Fold CV)") +
     ylab("Density") 
-  
-  # Add data distribution if not only one line
-  if (plot_type == "density" & !(line_only)) {
-    p <- p + geom_density(aes(fill = "Main"))
-  } else if (plot_type == "histogram" & !(line_only)) {
-    p <- p + geom_histogram(bins = 50, aes(fill = "Main", y=..density..))
-  }
-  
-  # Add null distribution according to plot type
-  if (plot_type == "density") {
-    p <- p + geom_density(data = subset(null_res,
-                                        Sample_Type == "Out-of-sample" &
-                                          Noise_Proc == noise_proc),
-                          aes(fill = "Null"),
-                          alpha = 0.7)
-    
-  } else if (plot_type == "histogram") {
-    p <- p + geom_histogram(data = subset(null_res,
-                                          Sample_Type == "Out-of-sample" &
-                                            Noise_Proc == noise_proc),
-                            aes(fill = "Null", y=..density..),
-                            bins = 50,
-                            alpha = 0.7)
-  }
-  
+
   # Find line to plot if only line
   if (line_only) {
     raw_bal_acc_vector <-  null_res %>%
@@ -336,6 +312,30 @@ plot_main_vs_null_bal_acc <- function(main_res,
     scale_fill_manual(values = c(result_color, "gray40")) +
     theme(legend.position = "bottom",
           plot.title = element_text(hjust = 0.5))
+  
+  # Add data distribution if not only one line
+  if (plot_type == "density" & !(line_only)) {
+    p <- p + geom_density(aes(fill = "Main"))
+  } else if (plot_type == "histogram" & !(line_only)) {
+    p <- p + geom_histogram(bins = 50, aes(fill = "Main", y=..density..))
+  }
+  
+  # Add null distribution according to plot type
+  if (plot_type == "density") {
+    p <- p + geom_density(data = subset(null_res,
+                                        Sample_Type == "Out-of-sample" &
+                                          Noise_Proc == noise_proc),
+                          aes(fill = "Null"),
+                          alpha = 0.7)
+    
+  } else if (plot_type == "histogram") {
+    p <- p + geom_histogram(data = subset(null_res,
+                                          Sample_Type == "Out-of-sample" &
+                                            Noise_Proc == noise_proc),
+                            aes(fill = "Null", y=..density..),
+                            bins = 50,
+                            alpha = 0.7)
+  }
   
   if (!is.null(xmin) & !is.null(xmax)) {
     p <- p + 
