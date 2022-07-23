@@ -17,9 +17,16 @@ project_dir=/project/hctsa/annie
 github_dir=${project_dir}/github/fMRI_FeaturesDisorders/
 rdata_path=${project_dir}/data/scz/UCLA/Rdata/
 
-Rscript all_univariate_analysis_for_feature_set.R \
+# catch22
+Rscript main_univariate_analysis_for_feature_set.R \
 --github_dir $github_dir \
 --rdata_path $rdata_path \
 --feature_set catch22
+
+# catchaMouse16
+Rscript main_univariate_analysis_for_feature_set.R \
+--github_dir $github_dir \
+--rdata_path $rdata_path \
+--feature_set catchaMouse16
 
 exit
