@@ -4,7 +4,7 @@
 #PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/univariate_catch22_analysis_out.txt
 #PBS -j oe
 #PBS -l select=1:ncpus=1:mem=20GB
-#PBS -l walltime=40:00:00
+#PBS -l walltime=20:00:00
 #PBS -m abe
 #PBS -M abry4213@uni.sydney.edu.au
 
