@@ -9,7 +9,7 @@ parser$add_argument("--feature_set", default="catch22")
 # project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
 # rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
-# feature_set <- "catch22"
+# feature_set <- "catchaMouse16"
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -91,7 +91,7 @@ for (i in 1:nrow(grouping_param_df)) {
                                                                         use_inv_prob_weighting = use_inv_prob_weighting,
                                                                         use_SMOTE = use_SMOTE,
                                                                         noise_procs = noise_procs)
-      saveRDS(region_wise_SVM_CV_weighting, file=paste0(rdata_path, 
+      saveRDS(group_wise_SVM_CV_weighting, file=paste0(rdata_path, 
                                                         sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
                                                                 grouping_type,
                                                                 feature_set, 

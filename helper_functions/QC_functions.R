@@ -119,8 +119,8 @@ z_score_feature_matrix <- function(rdata_path,
 
 plot_NA_subject_ts <- function(rdata_path, 
                                input_dataset_name = "UCLA",
-                               feature_set,
-                               NA_subject_IDs,
+                               feature_set = "catch22",
+                               NA_subject_IDs = c(),
                                noise_procs = c("AROMA+2P",
                                                "AROMA+2P+GMR",
                                                "AROMA+2P+DiCER")) {
@@ -159,7 +159,8 @@ plot_NA_subject_ts <- function(rdata_path,
 remove_subjects_from_feature_matrix <- function(rdata_path, 
                                                 input_dataset_name = "UCLA",
                                                 feature_set = "catch22",
-                                                subject_IDs_to_drop,
+                                                subject_IDs_to_drop = c(),
+                                                overwrite = F,
                                                 noise_procs = c("AROMA+2P",
                                                                 "AROMA+2P+GMR",
                                                                 "AROMA+2P+DiCER")) {
@@ -169,13 +170,48 @@ remove_subjects_from_feature_matrix <- function(rdata_path,
                             sprintf("%s_%s_%s_filtered.Rds",
                                     input_dataset_name,
                                     noise_label,
-                                    feature_set)))) {
+                                    feature_set))) | overwrite) {
       TS_feature_df_filtered <- readRDS(paste0(rdata_path, sprintf("%s_%s_%s.Rds",
                                                                    input_dataset_name,
                                                                    noise_label,
                                                                    feature_set))) %>%
         dplyr::mutate(Noise_Proc = noise_proc) %>%
         dplyr::filter(!(Subject_ID %in% subject_IDs_to_drop))
+      
+      saveRDS(TS_feature_df_filtered, file = paste0(rdata_path, 
+                                                    sprintf("%s_%s_%s_filtered.Rds",
+                                                            input_dataset_name,
+                                                            noise_label,
+                                                            feature_set)))
+    }
+  }
+}
+
+#-------------------------------------------------------------------------------
+# Function to drop a feature(s) from the given feature matrix
+#-------------------------------------------------------------------------------
+
+remove_feature_from_feature_matrix <- function(rdata_path, 
+                                               input_dataset_name = "UCLA",
+                                               feature_set = "catch22",
+                                               features_to_drop = c(),
+                                               overwrite = F,
+                                               noise_procs = c("AROMA+2P",
+                                                               "AROMA+2P+GMR",
+                                                               "AROMA+2P+DiCER")) {
+  for (noise_proc in noise_procs) {
+    noise_label <- gsub("\\+", "_", noise_proc)
+    if (!file.exists(paste0(rdata_path, 
+                            sprintf("%s_%s_%s_filtered.Rds",
+                                    input_dataset_name,
+                                    noise_label,
+                                    feature_set))) | overwrite) {
+      TS_feature_df_filtered <- readRDS(paste0(rdata_path, sprintf("%s_%s_%s.Rds",
+                                                                   input_dataset_name,
+                                                                   noise_label,
+                                                                   feature_set))) %>%
+        dplyr::mutate(Noise_Proc = noise_proc) %>%
+        dplyr::filter(!(names %in% features_to_drop))
       
       saveRDS(TS_feature_df_filtered, file = paste0(rdata_path, 
                                                     sprintf("%s_%s_%s_filtered.Rds",

@@ -35,7 +35,8 @@ source(paste0(github_dir, "helper_functions/TS_feature_extraction.R"))
 ### Define noise-processing methods
 noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-catch22_all_regions(rdata_path = rdata_path, input_dataset = "UCLA",
+catch22_all_regions(rdata_path = rdata_path, 
+                    input_dataset = "UCLA",
                     noise_procs = noise_procs)
 
 ################################################################################
@@ -124,6 +125,7 @@ UCLA_catchaMouse16_NA_subjects
 # view the raw values for these subjects
 plot_NA_subject_ts(rdata_path = rdata_path, 
                    input_dataset_name = input_dataset_name,
+                   feature_set = "catchaMouse16",
                    NA_subject_IDs = UCLA_catchaMouse16_NA_subjects$Subject_ID,
                    noise_procs = noise_procs)
 
@@ -132,9 +134,27 @@ remove_subjects_from_feature_matrix(rdata_path,
                                     input_dataset_name = input_dataset_name,
                                     feature_set = feature_set,
                                     subject_IDs_to_drop = UCLA_catchaMouse16_NA_subjects$Subject_ID,
+                                    overwrite = T,
                                     noise_procs = c("AROMA+2P",
                                                     "AROMA+2P+GMR",
                                                     "AROMA+2P+DiCER"))
+
+# Also remove the feature(s) that had no non-NA values for each noise-processing method
+remove_feature_from_feature_matrix(rdata_path, 
+                                   input_dataset_name = input_dataset_name,
+                                   feature_set = feature_set,
+                                   features_to_drop = unique(UCLA_catchaMouse16_NA_features$names),
+                                   overwrite = T,
+                                   noise_procs = c("AROMA+2P",
+                                                   "AROMA+2P+GMR",
+                                                   "AROMA+2P+DiCER"))
+
+# Lastly, we can z-score normalize the filtered catchaMouse16 feature matrix
+z_score_feature_matrix(rdata_path = rdata_path,
+                       input_dataset_name = input_dataset_name,
+                       feature_set = feature_set,
+                       noise_procs = noise_procs)
+
 
 # We can save a dataframe containing the filtered subjects and their diagnoses:
 noise_label = "AROMA_2P"

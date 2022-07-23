@@ -237,6 +237,7 @@ run_univariate_cv_svm_by_input_var <- function(rdata_path,
                                           shuffle_labels = shuffle_labels,
                                           return_all_fold_metrics = return_all_fold_metrics) %>%
         dplyr::mutate(grouping_var = group_var,
+                      feature_set = feature_set,
                       Noise_Proc = noise_proc)
       
       # Append results to list
