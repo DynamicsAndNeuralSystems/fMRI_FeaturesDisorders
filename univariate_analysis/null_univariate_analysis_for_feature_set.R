@@ -84,14 +84,12 @@ for (i in 1:nrow(grouping_param_df)) {
                                                 grouping_type,
                                                 feature_set,
                                                 weighting_name)))) {
-      group_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
-                                                    sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
-                                                            grouping_type,
-                                                            feature_set,
-                                                            weighting_name)))
+      group_wise_SVM_balanced_accuracy <- readRDS(paste0(rdata_path, 
+                                                         sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
+                                                                             grouping_type, feature_set, weighting_name)))
       
       # Calculate p-values
-      pvalues <- calc_empirical_nulls(class_res = group_wise_SVM_CV_weighting,
+      pvalues <- calc_empirical_nulls(class_res = group_wise_SVM_balanced_accuracy,
                                       null_data = model_permutation_null_weighting,
                                       feature_set = feature_set,
                                       use_pooled_null = TRUE,

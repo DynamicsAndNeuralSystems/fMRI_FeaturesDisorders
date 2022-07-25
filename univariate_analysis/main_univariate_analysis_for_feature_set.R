@@ -6,10 +6,10 @@ parser$add_argument("--project_path", default="/project/hctsa/annie/")
 parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
 parser$add_argument("--feature_set", default="catch22")
-project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
-github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
-rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
-feature_set <- "catchaMouse16"
+# project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
+# github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
+# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+# feature_set <- "catchaMouse16"
 
 # Parse input arguments
 args <- parser$parse_args()
