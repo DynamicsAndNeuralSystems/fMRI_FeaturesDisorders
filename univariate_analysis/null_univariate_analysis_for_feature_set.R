@@ -42,9 +42,13 @@ grouping_param_df <- data.frame(grouping_type = c("ROI", "Feature", "Combo"),
                                 grouping_var = c("Brain_Region", "Feature", "Combo"),
                                 SVM_feature_var = c("Feature", "Brain_Region", "Combo")) 
 
-weighting_param_df <- data.frame(name = c("unweighted", "inv_prob"),
-                                 use_inv_prob_weighting = c(FALSE, TRUE),
-                                 use_SMOTE = c(FALSE, FALSE))
+weighting_param_df <- data.frame(name = c("inv_prob"),
+                                 use_inv_prob_weighting = c(TRUE),
+                                 use_SMOTE = c(FALSE))
+
+# weighting_param_df <- data.frame(name = c("unweighted", "inv_prob"),
+#                                  use_inv_prob_weighting = c(FALSE, TRUE),
+#                                  use_SMOTE = c(FALSE, FALSE))
 
 
 for (i in 1:nrow(grouping_param_df)) {
