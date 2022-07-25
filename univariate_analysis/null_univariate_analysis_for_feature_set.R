@@ -65,6 +65,10 @@ for (i in 1:nrow(grouping_param_df)) {
                                                 grouping_type,
                                                 feature_set,
                                                 weighting_name)))) {
+      # Define data directory
+      output_data_dir <- paste0(rdata_path, sprintf("%s_wise_%s_%s_null_model_fits/",
+                                                    grouping_type, feature_set, weighting_name))
+      
       ## Concatenate null results and save to RDS file
       model_permutation_null_weighting <- list.files(output_data_dir, pattern="Rds") %>%
         purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
