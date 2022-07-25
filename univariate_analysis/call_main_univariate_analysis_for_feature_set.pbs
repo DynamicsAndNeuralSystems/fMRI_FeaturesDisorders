@@ -24,9 +24,9 @@ Rscript main_univariate_analysis_for_feature_set.R \
 --feature_set catch22
 
 # catchaMouse16
-Rscript main_univariate_analysis_for_feature_set.R \
---github_dir $github_dir \
---rdata_path $rdata_path \
---feature_set catchaMouse16
+# Rscript main_univariate_analysis_for_feature_set.R \
+# --github_dir $github_dir \
+# --rdata_path $rdata_path \
+# --feature_set catchaMouse16
 
 exit

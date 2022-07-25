@@ -71,11 +71,18 @@ if (univariate) {
                                                         svm_feature_var = svm_feature_var,
                                                         noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"),
                                                         num_k_folds = num_k_folds,
+                                                        out_of_sample_only = TRUE,
                                                         use_inv_prob_weighting = use_inv_prob_weighting,
                                                         use_SMOTE = use_SMOTE,
                                                         shuffle_labels = T) %>%
                      # Keep track of which null iteration this is
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
+  
+  null_out <- null_out %>% 
+    group_by(grouping_var, Noise_Proc, Sample_Type, Null_Iter_Number) %>%
+    summarise(accuracy = sum(Prediction_Correct) / n(),
+              balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
+                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
   
   # Save null results to RDS
   saveRDS(null_out, file=sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",

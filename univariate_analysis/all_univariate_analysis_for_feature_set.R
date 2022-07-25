@@ -6,10 +6,10 @@ parser$add_argument("--project_path", default="/project/hctsa/annie/")
 parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
 parser$add_argument("--feature_set", default="catch22")
-project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
-github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
-rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
-feature_set <- "catchaMouse16"
+# project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
+# github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
+# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+# feature_set <- "catchaMouse16"
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -49,23 +49,6 @@ if (!file.exists(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
                                                                     feature_set)))
 }
 
-################################################################################
-# Create ten folds to use for all analyses
-################################################################################
-
-subjects_to_use <- readRDS(paste0(rdata_path, "UCLA_Subjects_with_Univariate_and_Pairwise.Rds"))
-
-if (!file.exists(paste0(rdata_path, "Subjects_per_10_folds.Rds"))) {
-  # Make folds
-  set.seed(127)
-  k = 10
-  subject_folds <- caret::createFolds(subjects_to_use$group, k = k, list = TRUE, returnTrain = FALSE)
-  
-  # Save to Rds file
-  saveRDS(subject_folds, file=paste0(rdata_path, "Subjects_per_10_folds.Rds"))
-} else {
-  subject_folds <- readRDS(paste0(rdata_path, "Subjects_per_10_folds.Rds"))
-}
 
 ################################################################################
 # Define weighting parameters
@@ -79,9 +62,9 @@ weighting_param_df <- data.frame(name = c("inv_prob"),
                                  use_inv_prob_weighting = c(TRUE),
                                  use_SMOTE = c(FALSE))
 
-# weighting_param_df <- data.frame(name = c("unweighted", "inv_prob"),
-#                                  use_inv_prob_weighting = c(FALSE, TRUE),
-#                                  use_SMOTE = c(FALSE, FALSE))
+# weighting_param_df <- data.frame(name = c("unweighted", "inv_prob", "SMOTE"),
+#                                  use_inv_prob_weighting = c(FALSE, TRUE, FALSE),
+#                                  use_SMOTE = c(FALSE, FALSE, TRUE))
 
 
 for (i in 1:nrow(grouping_param_df)) {
@@ -104,30 +87,15 @@ for (i in 1:nrow(grouping_param_df)) {
                                                                         test_package = test_package,
                                                                         svm_kernel = kernel,
                                                                         grouping_var = grouping_var,
-                                                                        flds = subject_folds,
                                                                         svm_feature_var = SVM_feature_var,
-                                                                        out_of_sample_only = TRUE,
                                                                         use_inv_prob_weighting = use_inv_prob_weighting,
                                                                         use_SMOTE = use_SMOTE,
                                                                         noise_procs = noise_procs)
       saveRDS(group_wise_SVM_CV_weighting, file=paste0(rdata_path, 
-                                                       sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
-                                                               grouping_type,
-                                                               feature_set, 
-                                                               weighting_name)))
-    }
-    
-    #### Calculate balanced accuracy across all folds
-    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
-                                                grouping_type, feature_set, weighting_name)))) {
-      group_wise_SVM_balanced_accuracy <- group_wise_SVM_CV_weighting %>%
-        group_by(grouping_var, Noise_Proc, Sample_Type) %>%
-        summarise(accuracy = sum(Prediction_Correct) / n(),
-                    balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
-                                                               reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
-      
-      saveRDS(group_wise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
-                                                                                grouping_type, feature_set, weighting_name)))
+                                                        sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
+                                                                grouping_type,
+                                                                feature_set, 
+                                                                weighting_name)))
     }
     
     #### Calculate p values from model-free shuffle null distribution
@@ -136,11 +104,14 @@ for (i in 1:nrow(grouping_param_df)) {
                                                 feature_set, 
                                                 weighting_name)))) {
       
-      group_wise_SVM_balanced_accuracy <- readRDS(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
-                                                                             grouping_type, feature_set, weighting_name)))
+      grouping_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path, 
+                                                       sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
+                                                               grouping_type,
+                                                               feature_set, 
+                                                               weighting_name)))
       
       # Calculate p-values
-      pvalues <- calc_empirical_nulls(class_res = group_wise_SVM_balanced_accuracy,
+      pvalues <- calc_empirical_nulls(class_res = grouping_wise_SVM_CV_weighting,
                                       null_data = model_free_shuffle_null_res,
                                       feature_set = feature_set,
                                       use_pooled_null = TRUE,
@@ -163,11 +134,9 @@ for (i in 1:nrow(grouping_param_df)) {
       if (grouping_type %in% c("ROI", "Feature")) {
         num_permutations <- 50
         nperm_per_iter <- 20
-        wall_hrs <- "6"
       } else if (grouping_type == "Combo") {
-        num_permutations <- 75
-        nperm_per_iter <- 150
-        wall_hrs <- "12"
+        num_permutations <- 180
+        nperm_per_iter <- 100
       }
       num_k_folds <- 10
       template_pbs_file <- paste0(github_dir, "univariate_analysis/template_null_model_fit.pbs")
@@ -189,7 +158,7 @@ for (i in 1:nrow(grouping_param_df)) {
                           "PROJECT_DIR" = project_path,
                           "EMAIL" = "abry4213@uni.sydney.edu.au",
                           "PBS_NOTIFY" = "a",
-                          "WALL_HRS" = wall_hrs,
+                          "WALL_HRS" = "6",
                           "NUM_K_FOLDS" = num_k_folds,
                           "NUM_PERMS_PER_ITER" = nperm_per_iter,
                           "OUTPUT_DATA_DIR" = output_data_dir,
@@ -227,7 +196,43 @@ for (i in 1:nrow(grouping_param_df)) {
         }
       }
       
+        ## Concatenate null results and save to RDS file
+        model_permutation_null_weighting <- list.files(output_data_dir, pattern="Rds") %>%
+          purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
+        saveRDS(model_permutation_null_weighting, paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s.Rds",
+                                                               grouping_type,
+                                                               feature_set,
+                                                               weighting_name)))
+      } else {
+        model_permutation_null_weighting <- readRDS(paste0(rdata_path, sprintf("%s_wise_model_permutation_null_%s_%s.Rds",
+                                                                               grouping_type,
+                                                                               feature_set,
+                                                                               weighting_name)))
     }
     
+    # Empirically derive p-values based on null model fits distribution
+    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_model_permutation_null_%s_%s_pvals.Rds",
+                                                grouping_type,
+                                                feature_set,
+                                                weighting_name)))) {
+      group_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
+                                                    sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
+                                                            grouping_type,
+                                                            feature_set,
+                                                            weighting_name)))
+      
+      # Calculate p-values
+      pvalues <- calc_empirical_nulls(class_res = group_wise_SVM_CV_weighting,
+                                           null_data = model_permutation_null_weighting,
+                                           feature_set = feature_set,
+                                           use_pooled_null = TRUE,
+                                           is_main_data_averaged = TRUE,
+                                           grouping_var = grouping_var)
+
+      saveRDS(pvalues, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_model_permutation_null_%s_%s_pvals.Rds",
+                                                       grouping_type,
+                                                       feature_set,
+                                                       weighting_name)))
+    }
   }
 }

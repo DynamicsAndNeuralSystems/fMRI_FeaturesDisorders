@@ -22,14 +22,15 @@ theme_set(theme_cowplot())
 # k-fold CV SVM with option to use inverse probability weighting or SMOTE
 #-------------------------------------------------------------------------------
 k_fold_CV_linear_SVM <- function(input_data,
-                                 k = 10,
+                                 flds = NULL,
+                                 k = k,
                                  c_values = c(1),
                                  svm_kernel = "linear",
                                  sample_wts = list("Control" = 1,
                                                    "Schz" = 1),
+                                 out_of_sample_only = TRUE,
                                  use_SMOTE = FALSE,
-                                 shuffle_labels = FALSE,
-                                 return_all_fold_metrics = FALSE) {
+                                 shuffle_labels = FALSE) {
   
   # Shuffle labels if specified
   if (shuffle_labels) {
@@ -39,15 +40,15 @@ k_fold_CV_linear_SVM <- function(input_data,
   # Specify that group is a factor so that createFolds creates stratified folds
   input_data$group <- factor(input_data$group)
   
-  # Create train/test data folds
-  flds <- caret::createFolds(input_data$group, k = k, list = TRUE, returnTrain = FALSE)
+  # Use pre-specified folds if passed in,
+  # Otherwise create train/test data folds
+  if (is.null(flds)) {
+    flds <- caret::createFolds(input_data$group, k = k, list = TRUE, returnTrain = FALSE)
+  }
   
-  # Initialize list for performance metrics
-  c_value_list <- list()
-  in_accuracy_list <- list()
-  in_balanced_accuracy_list <- list()
-  out_accuracy_list <- list()
-  out_balanced_accuracy_list <- list()
+  # Create dataframe to store subject IDs and whether or not they were properly classified
+  subject_classification_list <- list()
+  
   
   # Iterate over folds 1 through k
   for (i in 1:k) {
@@ -56,15 +57,18 @@ k_fold_CV_linear_SVM <- function(input_data,
     test_i <- flds[[i]]
     train_i <- setdiff(1:nrow(input_data), test_i)
     
-    train_data <- input_data[train_i, ]
-    test_data <- input_data[test_i, ]
+    train_subjects <- input_data$Subject_ID[train_i]
+    test_subjects <- input_data$Subject_ID[test_i]
+    
+    train_data <- input_data[train_i, ] %>% dplyr::select(-Subject_ID)
+    test_data <- input_data[test_i, ] %>% dplyr::select(-Subject_ID)
     
     # Apply SMOTE to training data only if indicated
     if (use_SMOTE) {
       train_data <- smotefamily::SMOTE(train_data[,-1], train_data$group, K = 5)$data %>%
         dplyr::rename("group" = "class")
     }
-    
+
     # Run linear SVM on fold
     
     # Iterate over each value of c
@@ -79,57 +83,44 @@ k_fold_CV_linear_SVM <- function(input_data,
       in_sample_pred <- predict(svmModel, train_data)
       train_data$group <- factor(train_data$group, levels = levels(in_sample_pred))
       
-      # Calculate accuracy and balanced accuracy
-      in_accuracy <- sum(in_sample_pred == train_data$group)/length(in_sample_pred)
-      in_balanced_accuracy <- caret::confusionMatrix(reference=train_data$group, 
-                                                     data=in_sample_pred)$byClass[["Balanced Accuracy"]]
+      # Create dataframe containing subject ID and whether out-of-sample prediction was correct
+      in_fold_predictions_by_subject <- data.frame(Subject_ID = train_subjects,
+                                                   Sample_Type = "In-sample",
+                                                   fold_number = i,
+                                                   Actual_Diagnosis = train_data$group,
+                                                   Predicted_Diagnosis = in_sample_pred) %>%
+        mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
+      subject_classification_list <- rlist::list.append(subject_classification_list,
+                                                           in_fold_predictions_by_subject)
       
       # Generate out-of-sample predictions based on SVM model
       out_sample_pred <- predict(svmModel, test_data)
       test_data$group <- factor(test_data$group, levels = levels(out_sample_pred))
       
-      # Calculate accuracy and balanced accuracy
-      out_accuracy <- sum(out_sample_pred == test_data$group)/length(out_sample_pred)
-      out_balanced_accuracy <- caret::confusionMatrix(reference=test_data$group, 
-                                                      data=out_sample_pred)$byClass[["Balanced Accuracy"]]
+      # Create dataframe containing subject ID and whether out-of-sample prediction was correct
+      out_fold_predictions_by_subject <- data.frame(Subject_ID = test_subjects,
+                                                    Sample_Type = "Out-of-sample",
+                                                fold_number = i,
+                                                Actual_Diagnosis = test_data$group,
+                                                Predicted_Diagnosis = out_sample_pred) %>%
+        mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
+      subject_classification_list <- rlist::list.append(subject_classification_list,
+                                                        out_fold_predictions_by_subject)
       
-      # Append results to list for given fold
-      c_value_list <- rlist::list.append(c_value_list, c)
-      in_accuracy_list <- rlist::list.append(in_accuracy_list, in_accuracy)
-      in_balanced_accuracy_list <- rlist::list.append(in_balanced_accuracy_list, in_balanced_accuracy)
-      out_accuracy_list <- rlist::list.append(out_accuracy_list, out_accuracy)
-      out_balanced_accuracy_list <- rlist::list.append(out_balanced_accuracy_list, out_balanced_accuracy)
     }
-    
   } 
   
-  df_res_in_sample <- data.frame(k_fold_iteration = rep(1:k, length(c_values)),
-                                 c_value = unlist(c_value_list),
-                                 accuracy = unlist(in_accuracy_list),
-                                 balanced_accuracy = unlist(in_balanced_accuracy_list),
-                                 Sample_Type = "In-sample")
-  df_res_out_sample <- data.frame(k_fold_iteration = rep(1:k, length(c_values)),
-                                  c_value = unlist(c_value_list),
-                                  accuracy = unlist(out_accuracy_list),
-                                  balanced_accuracy = unlist(out_balanced_accuracy_list),
-                                  Sample_Type = "Out-of-sample")
+  # Compile classification res
+  classification_res <- do.call(plyr::rbind.fill, subject_classification_list)
   
-  df_res <- plyr::rbind.fill(df_res_in_sample, df_res_out_sample)
-  
-  if (return_all_fold_metrics) {
-    return(df_res)
-  } else {
-    df_res_avg <- df_res %>%
-      dplyr::group_by(Sample_Type, c_value) %>%
-      dplyr::summarise(accuracy_avg = mean(accuracy, na.rm=T),
-                       balanced_accuracy_avg = mean(balanced_accuracy, na.rm=T),
-                       accuracy_SD = sd(accuracy, na.rm=T),
-                       balanced_accuracy_SD = sd(balanced_accuracy, na.rm=T)) %>%
-      dplyr::rename("accuracy" = "accuracy_avg",
-                    "balanced_accuracy" = "balanced_accuracy_avg")
-    
-    return(df_res_avg)
+  # Subset to just out-of-sample data if requested
+  if (out_of_sample_only) {
+    classification_res <- classification_res %>%
+      filter(Sample_Type == "Out-of-sample")
   }
+  
+  # Return results 
+  return(classification_res)
 }
 
 #-------------------------------------------------------------------------------
@@ -145,8 +136,9 @@ run_univariate_cv_svm_by_input_var <- function(rdata_path,
                                                noise_procs = c("AROMA+2P", 
                                                                "AROMA+2P+GMR", 
                                                                "AROMA+2P+DiCER"),
+                                               flds = NULL,
                                                num_k_folds = 10,
-                                               return_all_fold_metrics = FALSE,
+                                               out_of_sample_only = TRUE,
                                                use_inv_prob_weighting = FALSE,
                                                use_SMOTE = FALSE,
                                                shuffle_labels = FALSE) {
@@ -206,7 +198,6 @@ run_univariate_cv_svm_by_input_var <- function(rdata_path,
                              names_from = Combo,
                              values_from 
                              = values) %>%
-          dplyr::select(-Subject_ID) %>%
           # Drop columns that are all NA/NAN
           dplyr::select(where(function(x) any(!is.na(x)))) %>%
           # Drop rows with NA for one or more column
@@ -221,7 +212,6 @@ run_univariate_cv_svm_by_input_var <- function(rdata_path,
                              names_from = svm_feature_var_name,
                              values_from 
                              = values) %>%
-          dplyr::select(-Subject_ID) %>%
           # Drop columns that are all NA/NAN
           dplyr::select(where(function(x) any(!is.na(x)))) %>%
           # Drop rows with NA for one or more column
@@ -230,12 +220,13 @@ run_univariate_cv_svm_by_input_var <- function(rdata_path,
       
       # Pass data_for_SVM to in_sample_linear_SVM
       SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
+                                          flds = flds,
                                           k = num_k_folds,
                                           svm_kernel = svm_kernel,
                                           sample_wts = sample_wts,
                                           use_SMOTE = use_SMOTE,
                                           shuffle_labels = shuffle_labels,
-                                          return_all_fold_metrics = return_all_fold_metrics) %>%
+                                          out_of_sample_only = out_of_sample_only) %>%
         dplyr::mutate(grouping_var = group_var,
                       feature_set = feature_set,
                       Noise_Proc = noise_proc)
@@ -264,6 +255,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                              test_package = "e1071",
                                              noise_proc = "AROMA+2P+GMR",
                                              k = 10,
+                                             flds = NULL,
                                              return_all_fold_metrics = FALSE,
                                              use_inv_prob_weighting = FALSE,
                                              use_SMOTE = FALSE,
@@ -340,7 +332,6 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                            names_from = Combo,
                            values_from 
                            = value) %>%
-        dplyr::select(-Subject_ID) %>%
         # Drop columns that are all NA/NAN
         dplyr::select(where(function(x) any(!is.na(x)))) %>%
         # Drop rows with NA for one or more column
@@ -355,7 +346,6 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                            names_from = svm_feature_var_name,
                            values_from 
                            = value) %>%
-        dplyr::select(-Subject_ID) %>%
         # Drop columns that are all NA/NAN
         dplyr::select(where(function(x) any(!is.na(x)))) %>%
         # Drop rows with NA for one or more column
@@ -374,6 +364,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     if (nrow(data_for_SVM) > 0) {
       # Run k-fold linear SVM
       SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
+                                          flds = flds,
                                           k = k,
                                           svm_kernel = svm_kernel,
                                           sample_wts = sample_wts,
@@ -411,6 +402,7 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
                                                           pairwise_feature_set,
                                                           SPI_directionality,
                                                           num_k_folds = 10,
+                                                          flds = NULL,
                                                           svm_kernel = "linear",
                                                           test_package = "e1071",
                                                           noise_proc = "AROMA+2P+GMR",
@@ -455,7 +447,6 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
       tidyr::pivot_wider(id_cols = c(Subject_ID, group),
                          names_from = Unique_ID, 
                          values_from = values) %>%
-      dplyr::select(-Subject_ID) %>%
       # Drop columns that are all NA/NAN
       dplyr::select(where(function(x) any(!is.na(x)))) %>%
       # Drop rows with NA for one or more column
@@ -474,6 +465,7 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
       # Run k-fold linear SVM
       SVM_results <- k_fold_CV_linear_SVM(input_data = combined_data_for_SVM,
                                           k = num_k_folds,
+                                          flds = flds,
                                           svm_kernel = svm_kernel,
                                           sample_wts = sample_wts,
                                           use_SMOTE = use_SMOTE,
@@ -508,6 +500,7 @@ run_SVM_from_PCA <- function(PCA_res,
                              group_vector,
                              c_values = c(1),
                              interval = 1,
+                             flds = NULL,
                              use_inv_prob_weighting = FALSE,
                              use_SMOTE = FALSE,
                              return_all_fold_metrics = FALSE) {
@@ -541,6 +534,7 @@ run_SVM_from_PCA <- function(PCA_res,
     # Compile results into a dataframe
     df_res <- k_fold_CV_linear_SVM(input_data = svm_for_pc,
                                    k = 10,
+                                   flds = flds,
                                    c_values = c_values,
                                    svm_kernel = "linear",
                                    sample_wts = sample_wts,
