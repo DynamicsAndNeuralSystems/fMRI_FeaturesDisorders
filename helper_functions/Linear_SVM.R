@@ -57,11 +57,20 @@ k_fold_CV_linear_SVM <- function(input_data,
     test_i <- flds[[i]]
     train_i <- setdiff(1:nrow(input_data), test_i)
     
-    train_subjects <- input_data$Subject_ID[train_i]
-    test_subjects <- input_data$Subject_ID[test_i]
+    # Training data
+    train_data <- input_data[train_i, ] %>%
+      filter(!is.na(group))
+    train_subjects <- train_data$Subject_ID
     
-    train_data <- input_data[train_i, ] %>% dplyr::select(-Subject_ID)
-    test_data <- input_data[test_i, ] %>% dplyr::select(-Subject_ID)
+    train_data <- train_data %>% dplyr::select(-Subject_ID) 
+    
+    # Testing data
+    test_data <- input_data[test_i, ] %>%
+      filter(!is.na(group))
+    test_subjects <- test_data$Subject_ID
+    
+    test_data <- test_data %>% dplyr::select(-Subject_ID) 
+    
     
     # Apply SMOTE to training data only if indicated
     if (use_SMOTE) {

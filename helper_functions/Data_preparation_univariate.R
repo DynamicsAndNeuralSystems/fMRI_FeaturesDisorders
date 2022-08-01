@@ -6,7 +6,7 @@
 
 #--------------------------------------
 # Author: Trent Henderson, 9 March 2021
-# Updated: Annie Bryant, 23 March 2022
+# Updated: Annie Bryant, 1 August 2022
 #--------------------------------------
 
 require(plyr)
@@ -93,29 +93,12 @@ load_mat_data <- function(mat_file, subject_csv, rdata_path, overwrite=F) {
     dplyr::select(-noiseOptions, -Subject_Index, -ROI_Index) %>%
     filter(diagnosis %in% c("Schz", "Control"))
   
-  #-----------------------------------------------------------------------------
-  
-  #-----------------------------------------------------------------------------
-  # Split data by noise processing
-  TS_data_split <- split(TS_data_full, TS_data_full$noise_proc)
-  
-  #-----------------------------------------------------------------------------
-  
-  #-----------------------------------------------------------------------------
-  # Save each dataframe to an Rds object
-  for (noise_proc in names(TS_data_split)) {
-    tmp <- TS_data_split[[noise_proc]]
-    noise_label <- gsub("\\+", "_", noise_proc)
-    if (!file.exists(paste0(rdata_path, 
-                            sprintf("UCLA_%s.Rds", noise_label))) | 
-        overwrite) {
-      cat("\nWriting UCLA", noise_proc, "data to Rds object.", "\n")
-      saveRDS(tmp, 
-              file=paste0(rdata_path, sprintf("UCLA_%s.Rds", noise_label)))
-      
-    } else {
-      cat("\nUCLA", noise_proc, "Rds object already exists and --overwrite was not specified. Not writing new Rds object.\n")
-    }
+  if (!file.exists(paste0(rdata_path, "UCLA_fMRI_TimeSeries.Rds")) | overwrite) {
+    cat("\nWriting UCLA fMRI time-series data to Rds object.", "\n")
+    saveRDS(TS_data_full,  file=paste0(rdata_path, "UCLA_fMRI_TimeSeries.Rds"))
+    
+  } else {
+    cat("\nUCLA_fMRI_TimeSeries.Rds object already exists and --overwrite was not specified. Not writing new Rds object.\n")
   }
 }
 
