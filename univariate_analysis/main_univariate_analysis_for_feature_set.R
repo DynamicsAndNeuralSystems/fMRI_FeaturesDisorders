@@ -9,7 +9,7 @@ parser$add_argument("--feature_set", default="catch22")
 # project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
 # rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
-# feature_set <- "catchaMouse16"
+# feature_set <- "catch22"
 
 # Parse input arguments
 args <- parser$parse_args()

@@ -60,6 +60,24 @@ if (!file.exists(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
                                                                     feature_set)))
 }
 
+################################################################################
+# Create ten folds to use for all analyses
+################################################################################
+
+subjects_to_use <- readRDS(paste0(rdata_path, "UCLA_Subjects_with_Univariate_and_Pairwise.Rds"))
+
+if (!file.exists(paste0(rdata_path, "Subjects_per_10_folds.Rds"))) {
+  # Make folds
+  set.seed(127)
+  k = 10
+  subject_folds <- caret::createFolds(subjects_to_use$group, k = k, list = TRUE, returnTrain = FALSE)
+  
+  # Save to Rds file
+  saveRDS(subject_folds, file=paste0(rdata_path, "Subjects_per_10_folds.Rds"))
+} else {
+  subject_folds <- readRDS(paste0(rdata_path, "Subjects_per_10_folds.Rds"))
+}
+
 
 ################################################################################
 # Define weighting parameters
@@ -69,8 +87,8 @@ weighting_param_df <- data.frame(name = c("inv_prob"),
                                  use_inv_prob_weighting = c(TRUE),
                                  use_SMOTE = c(FALSE))
 
-SVM_grouping_params <- data.frame(grouping_var = c("SPI", "region_pair"),
-                                  SVM_feature_var = c("region_pair", "SPI"))
+SVM_grouping_params <- data.frame(grouping_var = c("SPI"),
+                                  SVM_feature_var = c("region_pair"))
 
 
 ################################################################################
@@ -93,6 +111,7 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                                            SPI_directionality = SPI_directionality,
                                                                                            svm_kernel = "linear",
                                                                                            k = 10,
+                                                                                           flds = subject_folds,
                                                                                            grouping_var = grouping_var,
                                                                                            svm_feature_var = SVM_feature_var,
                                                                                            test_package = "e1071",
@@ -146,8 +165,8 @@ for (i in 1:nrow(weighting_param_df)) {
       icesTAF::mkdir(output_scripts_dir)
       # template file for null distributions
       if (grouping_var == "SPI") {
-        num_permutations <- 100
-        nperm_per_iter <- 10
+        num_permutations <- 150
+        nperm_per_iter <- 7
       } else {
         num_permutations <- 10
         nperm_per_iter <- 1
@@ -205,37 +224,6 @@ for (i in 1:nrow(weighting_param_df)) {
           
         }
       }
-      
-      # ## Concatenate null results and save to RDS file
-      null_model_fit_res <- list.files(output_data_dir, pattern="Rds") %>%
-        purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
-      saveRDS(null_model_fit_res, paste0(rdata_path, sprintf("pyspi_%s_pairwise_%s_%s_null_model_fits.Rds",
-                                                             grouping_var, feature_set, weighting_name)))
-    } else {
-      null_model_fit_res <- readRDS(paste0(rdata_path, sprintf("pyspi_%s_pairwise_%s_%s_null_model_fits.Rds",
-                                                               grouping_var, feature_set, weighting_name)))
-    }
-    
-    #### Calculate p-values from empirical model null distributions
-    if (!file.exists(paste0(rdata_path, sprintf("pyspi_%s_pairwise_CV_linear_SVM_null_model_fits_pvals_%s_%s.Rds",
-                                                grouping_var, feature_set, weighting_name)))) {
-      pyspi_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
-                                                        sprintf("pyspi_%s_pairwise_CV_linear_SVM_%s_%s.Rds",
-                                                                grouping_var,
-                                                                feature_set, 
-                                                                weighting_name)))
-
-      # Calculate p-values
-      pvalues <- calc_empirical_nulls(class_res = pyspi_pairwise_SVM_CV_weighting,
-                                      null_data = null_model_fit_res,
-                                      feature_set = feature_set,
-                                      use_pooled_null = TRUE,
-                                      is_main_data_averaged = FALSE,
-                                      is_null_data_averaged = TRUE,
-                                      grouping_var = grouping_var)
-
-      saveRDS(pvalues, file=paste0(rdata_path, sprintf("pyspi_%s_pairwise_CV_linear_SVM_null_model_fits_pvals_%s_%s.Rds",
-                                                       grouping_var, feature_set, weighting_name)))
     }
   }
 }

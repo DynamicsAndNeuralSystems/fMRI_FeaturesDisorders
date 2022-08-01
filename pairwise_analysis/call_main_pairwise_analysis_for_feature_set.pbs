@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -P hctsa
-#PBS -N pairwise_pyspi19_analysis
-#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/pairwise_pyspi19_analysis_out.txt
+#PBS -N pairwise_pyspi19_analysis_main
+#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/pairwise_pyspi19_analysis_main_out.txt
 #PBS -j oe
 #PBS -l select=1:ncpus=2:mem=40GB
 #PBS -l walltime=40:00:00
@@ -19,7 +19,7 @@ rdata_path=${project_dir}/data/scz/UCLA/Rdata/
 pydata_path=${project_dir}/data/scz/UCLA/pydata/
 mkdir -p $github_dir/cluster_output/
 
-Rscript ${github_dir}/pairwise_analysis/all_pairwise_analysis_for_feature_set.R \
+Rscript ${github_dir}/pairwise_analysis/main_pairwise_analysis_for_feature_set.R \
 --project_path $project_dir \
 --github_dir $github_dir \
 --rdata_path $rdata_path \
