@@ -256,6 +256,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                              noise_proc = "AROMA+2P+GMR",
                                              num_k_folds = 10,
                                              flds = NULL,
+                                             out_of_sample_only = TRUE,
                                              use_inv_prob_weighting = FALSE,
                                              use_SMOTE = FALSE,
                                              shuffle_labels = FALSE) {
