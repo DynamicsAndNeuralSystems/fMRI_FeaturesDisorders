@@ -109,7 +109,7 @@ if (pairwise) {
                                                       svm_kernel = svm_kernel,
                                                       grouping_var = grouping_var,
                                                       svm_feature_var = svm_feature_var,
-                                                      noise_procs = noise_proc,
+                                                      noise_proc = noise_proc,
                                                       num_k_folds = num_k_folds,
                                                       out_of_sample_only = TRUE,
                                                       use_inv_prob_weighting = use_inv_prob_weighting,

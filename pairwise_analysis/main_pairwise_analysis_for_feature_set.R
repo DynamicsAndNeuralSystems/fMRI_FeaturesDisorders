@@ -200,7 +200,7 @@ for (i in 1:nrow(weighting_param_df)) {
                           "PROJECT_DIR" = project_path,
                           "EMAIL" = "abry4213@uni.sydney.edu.au",
                           "PBS_NOTIFY" = "a",
-                          "WALL_HRS" = "8",
+                          "WALL_HRS" = "6",
                           "PAIRWISE_DATA_FILE" = paste0(pydata_path, sprintf("UCLA_all_subject_%s_AROMA_2P_GMR_filtered_zscored.Rds",
                                                                              feature_set)),
                           "SPI_DIRECTIONALITY_FILE" = paste0(github_dir, "pairwise_analysis/SPI_Direction_Info.csv"),
