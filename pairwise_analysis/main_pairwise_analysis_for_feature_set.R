@@ -110,7 +110,7 @@ for (i in 1:nrow(weighting_param_df)) {
       tryCatch({pyspi_region_pairwise_SVM_CV_weighting <- run_pairwise_cv_svm_by_input_var(pairwise_data = pyspi_data,
                                                                                            SPI_directionality = SPI_directionality,
                                                                                            svm_kernel = "linear",
-                                                                                           k = 10,
+                                                                                           num_k_folds = 10,
                                                                                            flds = subject_folds,
                                                                                            grouping_var = grouping_var,
                                                                                            svm_feature_var = SVM_feature_var,
