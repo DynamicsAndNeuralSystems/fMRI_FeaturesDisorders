@@ -116,7 +116,6 @@ for (i in 1:nrow(weighting_param_df)) {
                                                                                            svm_feature_var = SVM_feature_var,
                                                                                            test_package = "e1071",
                                                                                            noise_proc = "AROMA+2P+GMR",
-                                                                                           return_all_fold_metrics = TRUE,
                                                                                            use_inv_prob_weighting = use_inv_prob_weighting,
                                                                                            use_SMOTE = use_SMOTE,
                                                                                            shuffle_labels = FALSE)
