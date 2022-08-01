@@ -256,7 +256,6 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                              noise_proc = "AROMA+2P+GMR",
                                              k = 10,
                                              flds = NULL,
-                                             return_all_fold_metrics = FALSE,
                                              use_inv_prob_weighting = FALSE,
                                              use_SMOTE = FALSE,
                                              shuffle_labels = FALSE) {
@@ -365,17 +364,15 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
       # Run k-fold linear SVM
       SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
                                           flds = flds,
-                                          k = k,
+                                          k = num_k_folds,
                                           svm_kernel = svm_kernel,
                                           sample_wts = sample_wts,
                                           use_SMOTE = use_SMOTE,
                                           shuffle_labels = shuffle_labels,
-                                          return_all_fold_metrics = return_all_fold_metrics) %>%
+                                          out_of_sample_only = out_of_sample_only) %>%
         dplyr::mutate(grouping_var = group_var,
-                      Noise_Proc = noise_proc,
-                      use_inv_prob_weighting = use_inv_prob_weighting,
-                      use_SMOTE = use_SMOTE,
-                      num_k_folds = k)
+                      feature_set = feature_set,
+                      Noise_Proc = noise_proc)
       
       # Append results to list
       class_res_list <- rlist::list.append(class_res_list,
