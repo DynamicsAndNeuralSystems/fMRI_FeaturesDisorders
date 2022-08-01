@@ -382,6 +382,8 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                           out_of_sample_only = out_of_sample_only) %>%
         dplyr::mutate(grouping_var = group_var,
                       feature_set = feature_set,
+                      use_SMOTE = use_SMOTE,
+                      use_inv_prob_weighting = use_inv_prob_weighting,
                       Noise_Proc = noise_proc)
       
       # Append results to list

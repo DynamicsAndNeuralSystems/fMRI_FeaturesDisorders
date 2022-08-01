@@ -35,7 +35,8 @@ source(paste0(github_dir, "helper_functions/TS_feature_extraction.R"))
 ### Define noise-processing methods
 noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
-catch22_all_regions(rdata_path = rdata_path, 
+catch22_all_regions(TS_data_file = paste0(rdata_path, "UCLA_fMRI_TimeSeries.Rds"), 
+                    rdata_path,
                     input_dataset = "UCLA",
                     noise_procs = noise_procs)
 
@@ -56,9 +57,9 @@ feature_set = "catch22"
 
 # Find subjects with NA for all ROIs for all catch22 features
 UCLA_catch22_NA_subjects <- find_univariate_subject_na(rdata_path = rdata_path,
-                                                  input_dataset_name = input_dataset_name,
-                                                  feature_set = feature_set,
-                                                  noise_procs = noise_procs)
+                                                       input_dataset_name = input_dataset_name,
+                                                       feature_set = feature_set,
+                                                       noise_procs = noise_procs)
 UCLA_catch22_NA_subjects
 
 # We can load in the raw time-series datasets and 

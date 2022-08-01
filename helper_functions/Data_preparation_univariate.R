@@ -30,10 +30,10 @@ load_mat_data <- function(mat_file, subject_csv, rdata_path, overwrite=F) {
   
   #-----------------------------------------------------------------------------
   # Load noise processing info
-  noise_proc <- reshape2::melt(mat_data$noiseOptions) %>%
+  Noise_Proc <- reshape2::melt(mat_data$noiseOptions) %>%
     dplyr::rename("noiseOptions" = "L1",
-                  "noise_proc" = "value") %>%
-    distinct(noise_proc, noiseOptions)
+                  "Noise_Proc" = "value") %>%
+    distinct(Noise_Proc, noiseOptions)
   
   #-----------------------------------------------------------------------------
   
@@ -88,14 +88,14 @@ load_mat_data <- function(mat_file, subject_csv, rdata_path, overwrite=F) {
   TS_data_full <- inner_join(TS_data_long, ids, 
                              by=c("Subject_Index"="Subject_Index")) %>%
     inner_join(., subject_info, by=c("Subject_ID"="Subject_ID")) %>%
-    inner_join(., noise_proc, by=c("noiseOptions"="noiseOptions")) %>%
+    inner_join(., Noise_Proc, by=c("noiseOptions"="noiseOptions")) %>%
     inner_join(., ROI_info, by=c("ROI_Index"="ROI_Index")) %>%
     dplyr::select(-noiseOptions, -Subject_Index, -ROI_Index) %>%
     filter(diagnosis %in% c("Schz", "Control"))
   
   if (!file.exists(paste0(rdata_path, "UCLA_fMRI_TimeSeries.Rds")) | overwrite) {
     cat("\nWriting UCLA fMRI time-series data to Rds object.", "\n")
-    saveRDS(TS_data_full,  file=paste0(rdata_path, "UCLA_fMRI_TimeSeries.Rds"))
+    saveRDS(TS_data_full, file=paste0(rdata_path, "UCLA_fMRI_TimeSeries.Rds"))
     
   } else {
     cat("\nUCLA_fMRI_TimeSeries.Rds object already exists and --overwrite was not specified. Not writing new Rds object.\n")
