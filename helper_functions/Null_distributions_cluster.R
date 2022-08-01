@@ -109,13 +109,12 @@ if (pairwise) {
                                                       svm_kernel = svm_kernel,
                                                       grouping_var = grouping_var,
                                                       svm_feature_var = svm_feature_var,
-                                                      k = num_k_folds,
-                                                      test_package = test_package,
-                                                      noise_proc = noise_proc,
-                                                      return_all_fold_metrics = return_all_fold_metrics,
+                                                      noise_procs = noise_proc,
+                                                      num_k_folds = num_k_folds,
+                                                      out_of_sample_only = TRUE,
                                                       use_inv_prob_weighting = use_inv_prob_weighting,
                                                       use_SMOTE = use_SMOTE,
-                                                      shuffle_labels = TRUE) %>%
+                                                      shuffle_labels = T) %>%
                      # Keep track of which null iteration this is
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
   
@@ -143,10 +142,11 @@ if (uni_and_pairwise) {
                                                                    svm_kernel = svm_kernel,
                                                                    test_package = test_package,
                                                                    noise_proc = noise_proc,
-                                                                   return_all_fold_metrics = return_all_fold_metrics,
+                                                                   num_k_folds = num_k_folds,
+                                                                   out_of_sample_only = TRUE,
                                                                    use_inv_prob_weighting = use_inv_prob_weighting,
                                                                    use_SMOTE = use_SMOTE,
-                                                                   shuffle_labels = TRUE) %>%
+                                                                   shuffle_labels = T) %>%
                      # Keep track of which null iteration this is
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
   
