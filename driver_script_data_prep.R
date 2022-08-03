@@ -7,24 +7,40 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--project_path", default="/project/hctsa/annie/")
 parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/")
-parser$add_argument("--data_path", default="/project/hctsa/annie/data/scz/UCLA/")
-parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
+parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/")
+parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/Rdata/")
 parser$add_argument("--univariate_feature_set", default="catch22")
-parser$add_argument("--input_mat_file", default="new/UCLA_time_series_four_groups.mat")
+parser$add_argument("--parcellation_name", default="aparc+aseg")
+parser$add_argument("--input_mat_file", default="")
 parser$add_argument("--subject_csv", default="participants.csv")
+parser$add_argument("--brain_region_lookup", default="")
 parser$add_argument("--noise_procs", default=c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"))
-parser$add_argument("--dataset_ID", default="UCLA")
+parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 parser$add_argument("--plot_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/plots/")
+
+# univariate_feature_set <- "catch22"
+# subject_csv <- "participants.csv"
 # project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
-# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
-# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/"
-# univariate_feature_set <- "catch22"
-# dataset_ID <- "UCLA"
-# input_mat_file = "new/UCLA_time_series_four_groups.mat"
-# subject_csv <- "participants.csv"
-# noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # plot_dir <- paste0(github_dir, "plots/")
+
+# UCLA schizophrenia
+# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/Rdata/"
+# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
+# dataset_ID <- "UCLA_Schizophrenia"
+# input_mat_file = "new/UCLA_time_series_four_groups.mat"
+# noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+# parcellation_name <- "aparc+aseg"
+# brain_region_lookup <- ""
+
+# ABIDE ASD
+# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/ABIDE_ASD/Rdata/"
+# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/ABIDE_ASD/"
+# dataset_ID <- "ABIDE_ASD"
+# noise_procs <- c("FC1000")
+# input_mat_file = "NA"
+# parcellation_name <- "harvard_oxford_cort_prob_2mm"
+# brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -35,9 +51,11 @@ rdata_path <- args$rdata_path
 univariate_feature_set <- args$univariate_feature_set
 input_mat_file <- args$input_mat_file
 subject_csv <- args$subject_csv
+parcellation_name <- args$parcellation_name
 noise_procs <- args$noise_procs
 dataset_ID <- args$dataset_ID
 plot_dir <- args$plot_dir
+brain_region_lookup <- args$brain_region_lookup
 
 # Set the seed
 set.seed(127)
@@ -51,42 +69,37 @@ library(tidyverse)
 # Set working directory to file location
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 helper_script_dir = "helper_functions/"
-files.sources = list.files(helper_script_dir, pattern=".R", full.names = T) %>% .[!(str_detect(., "cluster"))]
+files.sources = list.files(helper_script_dir, pattern=".R$", full.names = T) %>% .[!(str_detect(., "cluster"))]
 sapply(files.sources, source)
 
 #-------------------------------------------------------------------------------
-# Prep univariate data
+# Prepare data using dataset-specific script
 #-------------------------------------------------------------------------------
-load_mat_data(mat_file=paste0(data_path, input_mat_file), 
-              subject_csv=paste0(data_path, subject_csv), 
-              rdata_path=rdata_path, 
-              overwrite=TRUE)
+system(sprintf("Rscript %s/data_prep_and_QC/prepare_%s_data.R --data_path %s --input_mat_file %s --subject_csv %s --noise_procs %s --dataset_ID %s --github_dir %s", 
+               github_dir, dataset_ID, data_path, input_mat_file,
+               subject_csv, paste(noise_procs, collapse=" "), dataset_ID, github_dir))
 
 #-------------------------------------------------------------------------------
 # Run catch22
 #-------------------------------------------------------------------------------
-catch22_all_samples(TS_data_file = paste0(rdata_path, sprintf("%s_fMRI_TimeSeries.Rds",
+catch22_all_samples(TS_data_file = paste0(rdata_path, sprintf("%s_fMRI_data.Rds",
                                                               dataset_ID)), 
                     rdata_path,
                     input_dataset = dataset_ID,
-                    output_column_names = c("Sample_ID", "Brain_Region", "Noise_Proc"),
-                    noise_procs = noise_procs)
+                    unique_columns = c("Sample_ID", "Brain_Region", "Noise_Proc"),
+                    output_column_names = c("Sample_ID", "Brain_Region", "Noise_Proc"))
 
 #-------------------------------------------------------------------------------
 # Perform QC for catch22 data
 #-------------------------------------------------------------------------------
 rmarkdown::render(input = paste0(helper_script_dir, "QC_report_template.Rmd"),
-                  output_file = paste0(plot_dir, "QC_report_catch22.html"),
+                  output_file = paste0(plot_dir, "QC_report_", 
+                                       dataset_ID, "_catch22.html"),
                   params = list(rdata_path = rdata_path,
                                 dataset_ID = dataset_ID,
                                 univariate_feature_set = univariate_feature_set,
                                 noise_procs = noise_procs,
-                                raw_TS_file = paste0(rdata_path, "UCLA_fMRI_TimeSeries.Rds")))
+                                raw_TS_file = paste0(rdata_path, 
+                                                     dataset_ID, 
+                                                     "_fMRI_data.Rds")))
 
-#-------------------------------------------------------------------------------
-# Prep univariate data
-#-------------------------------------------------------------------------------
-load_mat_data(mat_file=paste0(data_path, input_mat_file), 
-              subject_csv=paste0(data_path, subject_csv), 
-              rdata_path=rdata_path, 
-              overwrite=TRUE)
