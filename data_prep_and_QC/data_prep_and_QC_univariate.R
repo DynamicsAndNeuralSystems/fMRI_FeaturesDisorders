@@ -93,7 +93,7 @@ saveRDS(filtered_subject_info, file=paste0(rdata_path,
                                                    feature_set)))
 
 # Lastly, we can z-score normalize the filtered catch22 feature matrix
-z_score_feature_matrix(rdata_path = rdata_path,
+z_score_all_noise_procs(rdata_path = rdata_path,
                        input_dataset_name = input_dataset_name,
                        feature_set = feature_set,
                        noise_procs = noise_procs)

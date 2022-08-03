@@ -68,14 +68,18 @@ for (i in 1:nrow(weighting_param_df)) {
     grouping_var = SVM_grouping_params$grouping_var[j]
     SVM_feature_var = SVM_grouping_params$SVM_feature_var[j]
     
-   
-    
     
     weighting_null_dist_file <- paste0(rdata_path, sprintf("pyspi_%s_pairwise_%s_%s_null_model_fits.Rds",
                                                            grouping_var, feature_set, weighting_name))
     
     # Run null perm iterations if overall null distribution data file doesn't exist
     if (!file.exists(weighting_null_dist_file)) {
+
+      # Output script dir
+      output_data_dir <- paste0(rdata_path, sprintf("pyspi_%s_pairwise_%s_%s_null_model_fits/",
+                                                    grouping_var, feature_set, weighting_name))
+      output_scripts_dir <- paste0(github_dir, sprintf("pairwise_analysis/pyspi_%s_pairwise_%s_%s_null_model_fits/",
+                                                       grouping_var, weighting_name, feature_set))
       
       ## Concatenate null results and save to RDS file
       null_model_fit_res <- list.files(output_data_dir, pattern="Rds") %>%

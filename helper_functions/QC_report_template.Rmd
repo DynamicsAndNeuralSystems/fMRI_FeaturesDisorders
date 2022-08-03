@@ -1,0 +1,84 @@
+---
+title: "QC report"
+output: html_document
+params:
+  rdata_path: ""
+  dataset_ID: ""
+  univariate_feature_set: ""
+  raw_TS_file: ""
+  noise_procs: ""
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, message=F, warning=F)
+
+# Parse params
+rdata_path <- params$rdata_path
+dataset_ID <- params$dataset_ID
+univariate_feature_set <- params$univariate_feature_set
+raw_TS_file <- params$raw_TS_file
+noise_procs <- params$noise_procs
+```
+
+## Univariate and pairwise quality control report
+
+### Find and remove samples with all NA values
+
+Samples identified with missing data for one or more noise-processing methods:
+```{r}
+# Find samples with NA for all ROIs for all features
+univar_NA_samples <- find_univariate_sample_na(rdata_path = rdata_path,
+                                                 input_dataset_name = dataset_ID,
+                                                 feature_set = univariate_feature_set,
+                                                 noise_procs = noise_procs)
+kable(univar_NA_samples) %>% kable_styling(full_width = F)
+```
+
+Plot the raw time-series data for these samples to confirm:
+```{r}
+plot_NA_sample_ts(rdata_path = rdata_path, 
+                  input_dataset_name = dataset_ID,
+                  raw_TS_file = raw_TS_file,
+                  NA_sample_IDs = univar_NA_samples$Subject_ID,
+                  noise_procs = noise_procs)
+```
+
+
+Drop any samples shown above with NA features for one or more noise-processing methods:
+```{r}
+remove_samples_from_feature_matrix(rdata_path, 
+                                     input_dataset_name = input_dataset_name,
+                                     feature_set = feature_set,
+                                     sample_IDs_to_drop = univar_NA_samples$Subject_ID)
+```
+
+Save sample data post-filtering to an `.Rds` file:
+```{r}
+filtered_sample_info <- readRDS(paste0(rdata_path, 
+                                        sprintf("%s_%s_filtered.Rds",
+                                                input_dataset_name,
+                                                feature_set))) %>%
+  distinct(Subject_ID, group)
+saveRDS(filtered_sample_info, file=paste0(rdata_path, 
+                                           sprintf("%s_filtered_sample_info_%s.Rds",
+                                                   input_dataset_name,
+                                                   feature_set)))
+
+cat("\nSubject info saved to:", paste0(rdata_path, 
+                                           sprintf("%s_filtered_sample_info_%s.Rds",
+                                                   input_dataset_name,
+                                                   feature_set)), "\n")
+```
+
+### Data normalisation
+
+We want to z-score the feature matrix as well. 
+```{r}
+# Lastly, we can z-score normalize the filtered feature matrix
+z_score_all_noise_procs(rdata_path = rdata_path,
+                       input_dataset_name = input_dataset_name,
+                       feature_set = feature_set,
+                       noise_procs = noise_procs)
+```
+

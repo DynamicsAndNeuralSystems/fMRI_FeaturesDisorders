@@ -93,9 +93,19 @@ load_mat_data <- function(mat_file, subject_csv, rdata_path, overwrite=F) {
     dplyr::select(-noiseOptions, -Subject_Index, -ROI_Index) %>%
     filter(diagnosis %in% c("Schz", "Control"))
   
+  # Separate data into TS versus metadata
+  cat("\nWriting UCLA fMRI time-series data to Rds object.", "\n")
+  metadata <- TS_data_full %>%
+    distinct(Subject_ID, diagnosis, age, gender)
+  saveRDS(metadata, file=paste0(rdata_path, "UCLA_subject_metadata.Rds"))
+  
+  TS_data_for_analysis <- TS_data_full %>%
+    dplyr::select(Subject_ID, Brain_Region, Noise_Proc, timepoint, value) %>%
+    tidyr::unite(col="Unique_ID", c(Subject_ID, Brain_Region, Noise_Proc), sep="__")
+  
   if (!file.exists(paste0(rdata_path, "UCLA_fMRI_TimeSeries.Rds")) | overwrite) {
     cat("\nWriting UCLA fMRI time-series data to Rds object.", "\n")
-    saveRDS(TS_data_full, file=paste0(rdata_path, "UCLA_fMRI_TimeSeries.Rds"))
+    saveRDS(TS_data_for_analysis, file=paste0(rdata_path, "UCLA_fMRI_TimeSeries.Rds"))
     
   } else {
     cat("\nUCLA_fMRI_TimeSeries.Rds object already exists and --overwrite was not specified. Not writing new Rds object.\n")
