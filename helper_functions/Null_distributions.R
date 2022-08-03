@@ -184,7 +184,7 @@ calc_empirical_nulls <- function(class_res,
   
   if (!is_main_data_averaged) {
     class_res <- class_res %>%
-      group_by(Sample_Type, grouping_var, Noise_Proc, use_inv_prob_weighting, use_SMOTE) %>%
+      group_by(Sample_Type, grouping_var, Noise_Proc) %>%
       summarise(accuracy_avg = mean(accuracy, na.rm=T),
                 accuracy_SD = sd(accuracy, na.rm=T),
                 balanced_accuracy_avg = mean(balanced_accuracy, na.rm=T),

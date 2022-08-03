@@ -68,7 +68,6 @@ for (i in 1:nrow(weighting_param_df)) {
     grouping_var = SVM_grouping_params$grouping_var[j]
     SVM_feature_var = SVM_grouping_params$SVM_feature_var[j]
     
-    
     weighting_null_dist_file <- paste0(rdata_path, sprintf("pyspi_%s_pairwise_%s_%s_null_model_fits.Rds",
                                                            grouping_var, feature_set, weighting_name))
     
@@ -94,18 +93,18 @@ for (i in 1:nrow(weighting_param_df)) {
     #### Calculate p-values from empirical model null distributions
     if (!file.exists(paste0(rdata_path, sprintf("pyspi_%s_pairwise_CV_linear_SVM_null_model_fits_pvals_%s_%s.Rds",
                                                 grouping_var, feature_set, weighting_name)))) {
-      pyspi_pairwise_SVM_CV_weighting <- readRDS(paste0(rdata_path,
-                                                        sprintf("pyspi_%s_pairwise_CV_linear_SVM_%s_%s.Rds",
-                                                                grouping_var,
-                                                                feature_set, 
-                                                                weighting_name)))
+      group_wise_SVM_balanced_accuracy <- readRDS(paste0(rdata_path,
+                                                         sprintf("pyspi_%s_pairwise_CV_linear_SVM_%s_%s_balacc.Rds",
+                                                                 grouping_var,
+                                                                 feature_set, 
+                                                                 weighting_name)))
 
       # Calculate p-values
-      pvalues <- calc_empirical_nulls(class_res = pyspi_pairwise_SVM_CV_weighting,
+      pvalues <- calc_empirical_nulls(class_res = group_wise_SVM_balanced_accuracy,
                                       null_data = null_model_fit_res,
                                       feature_set = feature_set,
                                       use_pooled_null = TRUE,
-                                      is_main_data_averaged = FALSE,
+                                      is_main_data_averaged = TRUE,
                                       is_null_data_averaged = TRUE,
                                       grouping_var = grouping_var)
 
