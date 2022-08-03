@@ -10,19 +10,17 @@ parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_Fe
 parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/")
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/Rdata/")
 parser$add_argument("--univariate_feature_set", default="catch22")
-parser$add_argument("--parcellation_name", default="aparc+aseg")
+parser$add_argument("--parcellation_name", default="aparc+aseg", nargs='?')
 parser$add_argument("--input_mat_file", default="")
 parser$add_argument("--subject_csv", default="participants.csv")
-parser$add_argument("--brain_region_lookup", default="")
-parser$add_argument("--noise_procs", default=c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"))
+parser$add_argument("--brain_region_lookup", default="", nargs='?')
+parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
-parser$add_argument("--plot_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/plots/")
 
 # univariate_feature_set <- "catch22"
 # subject_csv <- "participants.csv"
 # project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
-# plot_dir <- paste0(github_dir, "plots/")
 
 # UCLA schizophrenia
 # rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/Rdata/"
@@ -57,6 +55,8 @@ dataset_ID <- args$dataset_ID
 plot_dir <- args$plot_dir
 brain_region_lookup <- args$brain_region_lookup
 
+plot_dir <- paste0(github_dir, "plots/")
+
 # Set the seed
 set.seed(127)
 
@@ -70,7 +70,7 @@ library(tidyverse)
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 helper_script_dir = "helper_functions/"
 files.sources = list.files(helper_script_dir, pattern=".R$", full.names = T) %>% .[!(str_detect(., "cluster"))]
-sapply(files.sources, source)
+invisible(sapply(files.sources, source))
 
 #-------------------------------------------------------------------------------
 # Prepare data using dataset-specific script

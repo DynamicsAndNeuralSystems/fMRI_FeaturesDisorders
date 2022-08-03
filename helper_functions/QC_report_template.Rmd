@@ -43,12 +43,11 @@ plot_NA_sample_ts(rdata_path = rdata_path,
                   noise_procs = noise_procs)
 ```
 
-
 Drop any samples shown above with NA features for one or more noise-processing methods:
 ```{r}
 remove_samples_from_feature_matrix(rdata_path, 
-                                   input_dataset_name = input_dataset_name,
-                                   feature_set = feature_set,
+                                   input_dataset_name = dataset_ID,
+                                   feature_set = univariate_feature_set,
                                    sample_IDs_to_drop = univar_NA_samples$Sample_ID)
 ```
 
@@ -56,18 +55,18 @@ Save sample data post-filtering to an `.Rds` file:
 ```{r}
 filtered_sample_info <- readRDS(paste0(rdata_path, 
                                         sprintf("%s_%s_filtered.Rds",
-                                                input_dataset_name,
-                                                feature_set))) %>%
+                                                dataset_ID,
+                                                univariate_feature_set))) %>%
   distinct(Sample_ID)
 saveRDS(filtered_sample_info, file=paste0(rdata_path, 
                                            sprintf("%s_filtered_sample_info_%s.Rds",
-                                                   input_dataset_name,
-                                                   feature_set)))
+                                                   dataset_ID,
+                                                   univariate_feature_set)))
 
 cat("Subject info saved to:", paste0(rdata_path, 
                                            sprintf("%s_filtered_sample_info_%s.Rds",
-                                                   input_dataset_name,
-                                                   feature_set)), "\n")
+                                                   dataset_ID,
+                                                   univariate_feature_set)), "\n")
 ```
 
 ### Data normalisation
@@ -76,8 +75,8 @@ We want to z-score the feature matrix as well.
 ```{r}
 # Lastly, we can z-score normalize the filtered feature matrix
 z_score_all_noise_procs(rdata_path = rdata_path,
-                       input_dataset_name = input_dataset_name,
-                       feature_set = feature_set,
+                       input_dataset_name = dataset_ID,
+                       feature_set = univariate_feature_set,
                        noise_procs = noise_procs)
 ```
 
