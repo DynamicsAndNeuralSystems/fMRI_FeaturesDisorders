@@ -5,6 +5,8 @@ parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_Fe
 parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/")
 parser$add_argument("--input_mat_file", default="", nargs="?")
 parser$add_argument("--subject_csv", default="participants.csv")
+parser$add_argument("--brain_region_lookup", default="", nargs="?")
+parser$add_argument("--parcellation_name", default="", nargs="?")
 parser$add_argument("--noise_procs", default=c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"), nargs='*', action='append')
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 
@@ -14,11 +16,13 @@ data_path <- args$data_path
 input_mat_file <- args$input_mat_file
 subject_csv <- args$subject_csv
 noise_procs <- args$noise_procs
+parcellation_name <- args$parcellation_name
+brain_region_lookup <- args$brain_region_lookup
 dataset_ID <- args$dataset_ID
 github_dir <- args$github_dir
 
 rdata_path <- paste0(data_path, "Rdata/")
-plot_dir <- paste0(github_dir, "plots/")
+plot_dir <- paste0(data_path, "plots/")
 
 # Load needed libraries
 require(plyr)

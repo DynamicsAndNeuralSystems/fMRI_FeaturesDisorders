@@ -19,9 +19,10 @@ noise_procs <- args$noise_procs
 parcellation_name <- args$parcellation_name
 brain_region_lookup <- args$brain_region_lookup
 dataset_ID <- args$dataset_ID
-plot_dir <- args$plot_dir
+github_dir <- args$github_dir
 
 rdata_path <- paste0(data_path, "Rdata/")
+plot_dir <- paste0(data_path, "plots/")
 
 # Set parameters
 options(scipen = 999)

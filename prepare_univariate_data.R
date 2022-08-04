@@ -82,9 +82,10 @@ invisible(sapply(files.sources, source))
 #-------------------------------------------------------------------------------
 # Prepare data using dataset-specific script
 #-------------------------------------------------------------------------------
-system(sprintf("Rscript %s/data_prep_and_QC/prepare_%s_data.R --data_path %s --input_mat_file %s --subject_csv %s --noise_procs %s --dataset_ID %s --github_dir %s",
+system(sprintf("Rscript %s/data_prep_and_QC/prepare_%s_univariate_data.R --data_path %s --input_mat_file %s --subject_csv %s --noise_procs %s --dataset_ID %s --github_dir %s --parcellation_name %s --brain_region_lookup %s",
                github_dir, dataset_ID, data_path, input_mat_file,
-               subject_csv, paste(noise_procs, collapse=" "), dataset_ID, github_dir))
+               subject_csv, paste(noise_procs, collapse=" "), dataset_ID, github_dir,
+               parcellation_name, brain_region_lookup))
 
 #-------------------------------------------------------------------------------
 # Run catch22

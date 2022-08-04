@@ -1,0 +1,54 @@
+#!/bin/bash
+#PBS -N data_prep
+#PBS -j oe
+#PBS -o /headnode1/abry4213/github/pyspi/data_prep_out.txt
+#PBS -l select=1:ncpus=1:mem=20GB
+#PBS -l walltime=4:00:00
+#PBS -m abe
+#PBS -M abry4213@uni.sydney.edu.au
+#PBS -V
+
+cd "$PBS_O_WORKDIR"
+
+# Load python
+module load Anaconda3-5.1.0
+source /usr/physics/anaconda3/etc/profile.d/conda.sh 
+
+conda activate pyspi
+
+# Define directories
+project_dir=/headnode1/abry4213/
+github_dir=${project_dir}/github/fMRI_FeaturesDisorders/
+mkdir -p $github_dir/cluster_output/
+
+# UCLA Schizophrenia
+python3 prepare_pairwise_data.py --project_path $project_dir \
+--github_dir $github_dir \
+--data_path ${project_dir}/data/UCLA_Schizophrenia/ \
+--rdata_path ${project_dir}/data/UCLA_Schizophrenia/Rdata/ \
+--pairwise_feature_set pyspi19 --parcellation_name aparc+aseg \
+--input_mat_file new/UCLA_time_series_four_groups.mat \
+--subject_csv participants.csv \
+--brain_region_lookup \
+--noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DICER \
+--dataset_ID UCLA_Schizophrenia 
+
+# ABIDE ASD
+python3 prepare_pairwise_data.py --project_path ${project_dir}/ \
+# --github_dir $github_dir \
+# --data_path ${project_dir}/data/ABIDE_ASD/ \
+# --rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \
+# --pairwise_feature_set pyspi19 \
+# --parcellation_name harvard_oxford_cort_prob_2mm \
+# --input_mat_file NA \
+# --subject_csv participants.csv \
+# --brain_region_lookup Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv \
+# --noise_procs FC1000 \
+# --dataset_ID ABIDE_ASD
+
+exit
+
+# Verify the host on which the job ran
+hostname
+
+
