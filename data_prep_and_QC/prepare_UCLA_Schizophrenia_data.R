@@ -46,7 +46,7 @@ load_mat_data <- function(mat_file, dataset_ID, subject_csv, rdata_path, overwri
     dplyr::rename("noiseOptions" = "L1",
                   "Noise_Proc" = "value") %>%
     distinct(Noise_Proc, noiseOptions)
-  cat(Noise_Proc)
+  print(Noise_Proc)
   
   #-----------------------------------------------------------------------------
   
