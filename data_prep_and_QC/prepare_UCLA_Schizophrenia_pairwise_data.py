@@ -8,7 +8,7 @@ import os
 
 # Command-line arguments to parse
 parser = argparse.ArgumentParser(description='Process inputs for pairwise data preparation.')
-parser.add_argument('--github_dir', default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/", dest='github_dir')
+parser.add_argument('--github_dir', default="/project/hctsa/annie/github/", dest='github_dir')
 parser.add_argument('--data_path', default="/project/hctsa/annie/data/UCLA_Schizophrenia/", dest='data_path')
 parser.add_argument('--input_mat_file', default="", nargs="?", dest='input_mat_file')
 parser.add_argument('--subject_csv', default="participants.csv", dest='subject_csv')
@@ -28,7 +28,9 @@ brain_region_lookup = args.brain_region_lookup
 dataset_ID = args.dataset_ID
 github_dir = args.github_dir
 
-# github_dir="/media/sf_Shared_Folder/github/fMRI_FeaturesDisorders/"
+fmri_github_dir = github_dir + "fMRI_FeaturesDisorders/"
+
+# fmri_github_dir="/media/sf_Shared_Folder/github/fMRI_FeaturesDisorders/"
 # data_path="/media/sf_Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
 # input_mat_file="new/UCLA_time_series_four_groups.mat"
 # subject_csv='participants.csv'
@@ -114,3 +116,7 @@ for index in noise_proc_indices:
                   sample_IDs = sample_IDs, pydata_path = pydata_path) 
                   for i in list(range(len(TS_data_split)))]
 
+
+# Create YAML files
+cmd_to_execute = f"Rscript {github_dir}/pyspi-distribute/create_yaml_for_samples.R --data_dir {pydata_path}/{noise_label}/ --sample_metadata {data_dir}/participants.csv --ID_var sampleID --label_var diagnosis --dim_order ps --overwrite"
+os.system(cmd_to_execute)  

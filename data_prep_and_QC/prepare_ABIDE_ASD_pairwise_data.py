@@ -8,7 +8,7 @@ import os
 
 # Command-line arguments to parse
 parser = argparse.ArgumentParser(description='Process inputs for pairwise data preparation.')
-parser.add_argument('--github_dir', default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/", dest='github_dir')
+parser.add_argument('--github_dir', default="/project/hctsa/annie/github/", dest='github_dir')
 parser.add_argument('--data_path', default="/project/hctsa/annie/data/ABIDE_ASD/", dest='data_path')
 parser.add_argument('--input_mat_file', default="", nargs="?", dest='input_mat_file')
 parser.add_argument('--subject_csv', default="participants.csv", dest='subject_csv')
@@ -28,7 +28,9 @@ brain_region_lookup = args.brain_region_lookup
 dataset_ID = args.dataset_ID
 github_dir = args.github_dir
 
-# github_dir="/media/sf_Shared_Folder/github/fMRI_FeaturesDisorders/"
+fmri_github_dir = github_dir + "fMRI_FeaturesDisorders/"
+
+# fmri_github_dir="/media/sf_Shared_Folder/github/fMRI_FeaturesDisorders/"
 # data_path="/media/sf_Shared_Folder/PhD_work/data/ABIDE_ASD/"
 # input_mat_file=""
 # subject_csv='participants.csv'
