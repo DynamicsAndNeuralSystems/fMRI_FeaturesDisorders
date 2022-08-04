@@ -20,7 +20,7 @@ github_dir=/project/hctsa/annie/github/fMRI_FeaturesDisorders/
 mkdir -p $github_dir/cluster_output/
 
 # UCLA Schizophrenia
-Rscript driver_script_data_prep.R --project_path $project_dir \
+Rscript prepare_univariate_data.R --project_path $project_dir \
 --github_dir $github_dir \
 --data_path ${project_dir}/data/UCLA_Schizophrenia/ \
 --rdata_path ${project_dir}/data/UCLA_Schizophrenia/Rdata/ \
@@ -32,7 +32,7 @@ Rscript driver_script_data_prep.R --project_path $project_dir \
 --dataset_ID UCLA_Schizophrenia 
 
 # ABIDE ASD
-# Rscript driver_script_data_prep.R --project_path ${project_dir}/ \
+# Rscript prepare_univariate_data.R --project_path ${project_dir}/ \
 # --github_dir $github_dir \
 # --data_path ${project_dir}/data/ABIDE_ASD/ \
 # --rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \
