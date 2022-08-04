@@ -32,17 +32,17 @@ Rscript driver_script_data_prep.R --project_path $project_dir \
 --dataset_ID UCLA_Schizophrenia 
 
 # ABIDE ASD
-Rscript driver_script_data_prep.R --project_path ${project_dir}/ \
---github_dir $github_dir \
---data_path ${project_dir}/data/ABIDE_ASD/ \
---rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \
---univariate_feature_set catch22 \
---parcellation_name harvard_oxford_cort_prob_2mm \
---input_mat_file NA \
---subject_csv participants.csv \
---brain_region_lookup Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv \
---noise_procs FC1000 \
---dataset_ID ABIDE_ASD 
+# Rscript driver_script_data_prep.R --project_path ${project_dir}/ \
+# --github_dir $github_dir \
+# --data_path ${project_dir}/data/ABIDE_ASD/ \
+# --rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \
+# --univariate_feature_set catch22 \
+# --parcellation_name harvard_oxford_cort_prob_2mm \
+# --input_mat_file NA \
+# --subject_csv participants.csv \
+# --brain_region_lookup Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv \
+# --noise_procs FC1000 \
+# --dataset_ID ABIDE_ASD 
 
 exit
 
