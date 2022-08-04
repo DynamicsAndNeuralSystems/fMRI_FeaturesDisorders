@@ -16,7 +16,7 @@ parser.add_argument('--subject_csv', default="participants.csv", dest='subject_c
 parser.add_argument('--pairwise_feature_set', default="pyspi19", dest='pairwise_feature_set')
 parser.add_argument('--parcellation_name', default="harvard_oxford_cort_prob_2mm", dest='parcellation_name', nargs='?')
 parser.add_argument('--brain_region_lookup', default="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv", dest='brain_region_lookup', nargs='?')
-parser.add_argument('--noise_procs', default=["AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"], nargs='*', action='append', dest='noise_procs')
+parser.add_argument('--noise_procs', default=["AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"], nargs='*', dest='noise_procs')
 parser.add_argument('--dataset_ID', default="UCLA_Schizophrenia", dest='dataset_ID')
 
 # Parse arguments
