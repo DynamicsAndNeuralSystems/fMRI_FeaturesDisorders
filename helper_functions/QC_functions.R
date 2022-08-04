@@ -192,19 +192,58 @@ remove_feature_from_feature_matrix <- function(rdata_path,
 # Function to write a QC report
 #-------------------------------------------------------------------------------
 
-write_QC_report <- function(rdata_path, 
-                            input_dataset_name = "UCLA_Schizophrenia",
-                            univariate_feature_set = "catch22",
-                            noise_procs = c("AROMA+2P",
-                                            "AROMA+2P+GMR",
-                                            "AROMA+2P+DiCER"),
-                            plot_dir) {
+run_QC_for_dataset <- function(rdata_path, 
+                               dataset_ID = "UCLA_Schizophrenia",
+                               univariate_feature_set = "catch22",
+                               noise_procs = c("AROMA+2P",
+                                               "AROMA+2P+GMR",
+                                               "AROMA+2P+DiCER"),
+                               plot_dir) {
   
-  # Find subjects with NA for all ROIs for all catch22 features
+  # Samples identified with missing data for one or more noise-processing methods:
   univar_NA_subjects <- find_univariate_subject_na(rdata_path = rdata_path,
                                                    input_dataset_name = dataset_ID,
                                                    feature_set = univariate_feature_set,
                                                    noise_procs = noise_procs)
+  
+  # Plot the raw time-series data for these samples to confirm:
+  tryCatch({
+    plot_NA_sample_ts(rdata_path = rdata_path, 
+                      input_dataset_name = dataset_ID,
+                      raw_TS_file = raw_TS_file,
+                      NA_sample_IDs = univar_NA_samples$Sample_ID,
+                      noise_procs = noise_procs)
+    ggsave(paste0(plot_dir, input_dataset_name, "_NA_TimeSeries.png"),
+           width = 6, height = 6, units="in", dpi=300)
+  }, error = function(e) cat("No NA time-series to plot.\n"))
+  
+  # Drop any samples shown above with NA features for 
+  # one or more noise-processing methods:
+  remove_samples_from_feature_matrix(rdata_path, 
+                                     input_dataset_name = dataset_ID,
+                                     feature_set = univariate_feature_set,
+                                     sample_IDs_to_drop = univar_NA_samples$Sample_ID)
 
+  # Save sample data post-filtering to an `.Rds` file:
+  filtered_sample_info <- readRDS(paste0(rdata_path, 
+                                         sprintf("%s_%s_filtered.Rds",
+                                                 dataset_ID,
+                                                 univariate_feature_set))) %>%
+    distinct(Sample_ID)
+  saveRDS(filtered_sample_info, file=paste0(rdata_path, 
+                                            sprintf("%s_filtered_sample_info_%s.Rds",
+                                                    dataset_ID,
+                                                    univariate_feature_set)))
+  
+  cat("Subject info saved to:", paste0(rdata_path, 
+                                       sprintf("%s_filtered_sample_info_%s.Rds",
+                                               dataset_ID,
+                                               univariate_feature_set)), "\n")
+  
+  # Data normalisation: z-score the feature matrix as well. 
+  z_score_all_noise_procs(rdata_path = rdata_path,
+                          input_dataset_name = dataset_ID,
+                          feature_set = univariate_feature_set,
+                          noise_procs = noise_procs)
   
 }

@@ -55,13 +55,16 @@ dataset_ID <- args$dataset_ID
 plot_dir <- args$plot_dir
 brain_region_lookup <- args$brain_region_lookup
 
-plot_dir <- paste0(github_dir, "plots/")
+plot_dir <- paste0(rdata_path, "plots/")
+icesTAF::mkdir(plot_dir)
 
 # Set the seed
 set.seed(127)
 
 # Load tidyverse
 library(tidyverse)
+
+cat("Noise processing methods:", noise_procs, "\n")
 
 #-------------------------------------------------------------------------------
 # Source helper scripts
@@ -92,14 +95,8 @@ catch22_all_samples(TS_data_file = paste0(rdata_path, sprintf("%s_fMRI_data.Rds"
 #-------------------------------------------------------------------------------
 # Perform QC for catch22 data
 #-------------------------------------------------------------------------------
-rmarkdown::render(input = paste0(helper_script_dir, "QC_report_template.Rmd"),
-                  output_file = paste0(plot_dir, "QC_report_", 
-                                       dataset_ID, "_catch22.html"),
-                  params = list(rdata_path = rdata_path,
-                                dataset_ID = dataset_ID,
-                                univariate_feature_set = univariate_feature_set,
-                                noise_procs = noise_procs,
-                                raw_TS_file = paste0(rdata_path, 
-                                                     dataset_ID, 
-                                                     "_fMRI_data.Rds")))
-
+run_QC_for_dataset(rdata_path = rdata_path, 
+                   dataset_ID = dataset_ID,
+                   univariate_feature_set = univariate_feature_set,
+                   noise_procs = noise_procs,
+                   plot_dir)
