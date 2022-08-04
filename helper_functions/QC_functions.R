@@ -145,7 +145,7 @@ remove_samples_from_feature_matrix <- function(rdata_path,
                                                 feature_set = "catch22",
                                                 sample_IDs_to_drop = c()) {
   
-  cat("\nDropping samples:", sample_IDs_to_drop, "\n")
+  print("\nDropping samples:", sample_IDs_to_drop, "\n")
   
   TS_df <- readRDS(paste0(rdata_path, sprintf("%s_%s.Rds", input_dataset_name, feature_set))) %>%
     dplyr::filter(!(Sample_ID %in% sample_IDs_to_drop))
@@ -201,7 +201,7 @@ run_QC_for_dataset <- function(rdata_path,
                                plot_dir) {
   
   # Samples identified with missing data for one or more noise-processing methods:
-  univar_NA_subjects <- find_univariate_sample_na(rdata_path = rdata_path,
+  univar_NA_samples <- find_univariate_sample_na(rdata_path = rdata_path,
                                                    input_dataset_name = dataset_ID,
                                                    feature_set = univariate_feature_set)
   
