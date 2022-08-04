@@ -214,7 +214,7 @@ run_QC_for_dataset <- function(rdata_path,
                       raw_TS_file = raw_TS_file,
                       NA_sample_IDs = univar_NA_samples,
                       noise_procs = noise_procs)
-    ggsave(paste0(plot_dir, input_dataset_name, "_NA_TimeSeries.png"),
+    ggsave(paste0(plot_dir, dataset_ID, "_NA_TimeSeries.png"),
            width = 6, height = 6, units="in", dpi=300)
   }, error = function(e) cat("No NA time-series to plot.\n"))
   

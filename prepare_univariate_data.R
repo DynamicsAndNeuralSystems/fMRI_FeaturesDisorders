@@ -104,4 +104,4 @@ run_QC_for_dataset(rdata_path = rdata_path,
                    univariate_feature_set = univariate_feature_set,
                    raw_TS_file = paste0(rdata_path, dataset_ID, "_fMRI_data.Rds"),
                    noise_procs = noise_procs,
-                   plot_dir)
+                   plot_dir = plot_dir)
