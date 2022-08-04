@@ -201,7 +201,7 @@ run_QC_for_dataset <- function(rdata_path,
                                plot_dir) {
   
   # Samples identified with missing data for one or more noise-processing methods:
-  univar_NA_subjects <- find_univariate_subject_na(rdata_path = rdata_path,
+  univar_NA_subjects <- find_univariate_sample_na(rdata_path = rdata_path,
                                                    input_dataset_name = dataset_ID,
                                                    feature_set = univariate_feature_set,
                                                    noise_procs = noise_procs)

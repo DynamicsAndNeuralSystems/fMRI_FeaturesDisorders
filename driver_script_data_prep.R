@@ -55,7 +55,7 @@ dataset_ID <- args$dataset_ID
 plot_dir <- args$plot_dir
 brain_region_lookup <- args$brain_region_lookup
 
-plot_dir <- paste0(rdata_path, "plots/")
+plot_dir <- paste0(data_path, "plots/")
 icesTAF::mkdir(plot_dir)
 
 # Set the seed
