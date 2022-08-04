@@ -4,11 +4,13 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--project_path", default="/project/hctsa/annie/")
 parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
-parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
+parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/")
+parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/Rdata/")
 parser$add_argument("--feature_set", default="catch22")
 # project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
-# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/scz/UCLA/Rdata/"
+# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
+# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/Rdata/"
 # feature_set <- "catch22"
 
 # Parse input arguments
@@ -77,7 +79,13 @@ merged_data <- do.call(plyr::rbind.fill,
                             univariate_feature_subject_class,
                             univariate_combo_subject_class))
 
-# Violin plot of prediiction correctness by group
+# Find # times each subject is misclassified across all univariate models
+merged_data %>%
+  group_by(Subject_ID, Actual_Diagnosis) %>%
+  summarise(num_incorr = sum(!Prediction_Correct)) %>%
+  arrange(desc(num_incorr))
+
+# Violin plot of prediction correctness by group
 merged_data %>%
   group_by(Actual_Diagnosis, grouping_var) %>%
   summarise(correct_prop = sum(Prediction_Correct) / n()) %>%
