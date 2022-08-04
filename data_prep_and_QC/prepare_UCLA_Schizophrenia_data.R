@@ -41,15 +41,18 @@ load_mat_data <- function(mat_file, dataset_ID, subject_csv, rdata_path, overwri
   
   #-----------------------------------------------------------------------------
   # Load noise processing info
+  cat("Cleaning noise-processing info:\n")
   Noise_Proc <- reshape2::melt(mat_data$noiseOptions) %>%
     dplyr::rename("noiseOptions" = "L1",
                   "Noise_Proc" = "value") %>%
     distinct(Noise_Proc, noiseOptions)
+  cat(Noise_Proc)
   
   #-----------------------------------------------------------------------------
   
   #-----------------------------------------------------------------------------
   # Reshape data
+  cat("Reshaping data from wide to long.\n")
   TS_data_long <- reshape2::melt(mat_data$time.series) %>%
     dplyr::rename(timepoint = Var1,
                   ROI_Index = Var2,
