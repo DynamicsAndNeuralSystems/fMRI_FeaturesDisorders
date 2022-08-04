@@ -82,19 +82,19 @@ invisible(sapply(files.sources, source))
 #-------------------------------------------------------------------------------
 # Prepare data using dataset-specific script
 #-------------------------------------------------------------------------------
-# system(sprintf("Rscript %s/data_prep_and_QC/prepare_%s_data.R --data_path %s --input_mat_file %s --subject_csv %s --noise_procs %s --dataset_ID %s --github_dir %s", 
-#                github_dir, dataset_ID, data_path, input_mat_file,
-#                subject_csv, paste(noise_procs, collapse=" "), dataset_ID, github_dir))
+system(sprintf("Rscript %s/data_prep_and_QC/prepare_%s_data.R --data_path %s --input_mat_file %s --subject_csv %s --noise_procs %s --dataset_ID %s --github_dir %s",
+               github_dir, dataset_ID, data_path, input_mat_file,
+               subject_csv, paste(noise_procs, collapse=" "), dataset_ID, github_dir))
 
 #-------------------------------------------------------------------------------
 # Run catch22
 #-------------------------------------------------------------------------------
-# catch22_all_samples(TS_data_file = paste0(rdata_path, sprintf("%s_fMRI_data.Rds",
-#                                                               dataset_ID)), 
-#                     rdata_path,
-#                     input_dataset = dataset_ID,
-#                     unique_columns = c("Sample_ID", "Brain_Region", "Noise_Proc"),
-#                     output_column_names = c("Sample_ID", "Brain_Region", "Noise_Proc"))
+catch22_all_samples(TS_data_file = paste0(rdata_path, sprintf("%s_fMRI_data.Rds",
+                                                              dataset_ID)),
+                    rdata_path,
+                    input_dataset = dataset_ID,
+                    unique_columns = c("Sample_ID", "Brain_Region", "Noise_Proc"),
+                    output_column_names = c("Sample_ID", "Brain_Region", "Noise_Proc"))
 
 #-------------------------------------------------------------------------------
 # Perform QC for catch22 data
