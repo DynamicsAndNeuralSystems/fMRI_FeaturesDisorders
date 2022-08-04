@@ -119,4 +119,5 @@ for index in noise_proc_indices:
 
 # Create YAML files
 cmd_to_execute = f"Rscript {github_dir}/pyspi-distribute/create_yaml_for_samples.R --data_dir {pydata_path}/{noise_label}/ --sample_metadata {data_dir}/participants.csv --ID_var sampleID --label_var diagnosis --dim_order ps --overwrite"
-os.system(cmd_to_execute)  
+print(cmd_to_execute)
+# os.system(cmd_to_execute)  
