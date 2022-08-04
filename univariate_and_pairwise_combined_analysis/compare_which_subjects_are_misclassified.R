@@ -91,6 +91,14 @@ misclassifications_w_info <- merged_data %>%
   arrange(desc(num_incorr)) %>%
   left_join(., subject_metadata)
 
+# Print the subjects with >=5 misclassifications
+misclassifications_w_info %>%
+  filter(num_incorr >= 5) %>%
+  dplyr::select(Subject_ID:gender) %>%
+  dplyr::select(-diagnosis) %>%
+  knitr::kable() %>%
+  kableExtra::kable_styling(full_width = F)
+
 # By age
 misclassifications_w_info %>%
   ggplot(data=., mapping=aes(x=age, y=num_incorr, color=diagnosis)) +
@@ -100,7 +108,13 @@ misclassifications_w_info %>%
   theme(legend.position = "bottom")
 
 # Violin plot of prediction correctness by group
-
+misclassifications_w_info %>%
+  ggplot(data=., mapping=aes(x=Actual_Diagnosis, y=num_incorr)) +
+  geom_violin(aes(fill=Actual_Diagnosis)) +
+  geom_boxplot(fill=NA, color="black", width=0.1) +
+  xlab("Diagnosis") +
+  ylab("# Incorrect Predictions") +
+  theme(legend.position="bottom")
 
 # Bar chart of correctness by group per significant feature
 merged_data %>%
