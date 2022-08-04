@@ -17,6 +17,7 @@ parser$add_argument("--feature_set", default="catch22")
 args <- parser$parse_args()
 project_path <- args$project_path
 github_dir <- args$github_dir
+data_path <- args$data_path
 rdata_path <- args$rdata_path
 feature_set <- args$feature_set
 
@@ -34,6 +35,10 @@ noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # Use e1071 SVM with a linear kernel
 test_package = "e1071"
 kernel = "linear"
+
+# Load subject metadata
+subject_metadata <- read.csv(paste0(data_path, "participants.csv")) %>%
+  dplyr::rename("Subject_ID" = "sampleID")
 
 # Univariate ROI-wise
 univariate_roi_p_vals <- readRDS(paste0(rdata_path, "ROI_wise_CV_linear_SVM_model_permutation_null_catch22_inv_prob_pvals.Rds"))
@@ -80,12 +85,24 @@ merged_data <- do.call(plyr::rbind.fill,
                             univariate_combo_subject_class))
 
 # Find # times each subject is misclassified across all univariate models
-merged_data %>%
+misclassifications_w_info <- merged_data %>%
   group_by(Subject_ID, Actual_Diagnosis) %>%
   summarise(num_incorr = sum(!Prediction_Correct)) %>%
-  arrange(desc(num_incorr))
+  arrange(desc(num_incorr)) %>%
+  left_join(., subject_metadata)
+
+# By age
+misclassifications_w_info %>%
+  ggplot(data=., mapping=aes(x=age, y=num_incorr, color=diagnosis)) +
+  geom_point() +
+  ylab("# Incorrect Predictions") +
+  xlab("Age") +
+  theme(legend.position = "bottom")
 
 # Violin plot of prediction correctness by group
+
+
+# Bar chart of correctness by group per significant feature
 merged_data %>%
   group_by(Actual_Diagnosis, grouping_var) %>%
   summarise(correct_prop = sum(Prediction_Correct) / n()) %>%
