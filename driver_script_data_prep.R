@@ -64,6 +64,11 @@ set.seed(127)
 # Load tidyverse
 library(tidyverse)
 
+# Unlist noise-processing methods
+tryCatch({
+  noise_procs <- unlist(noise_procs)
+}, error = function(e) {})
+
 cat("Noise processing methods:", noise_procs, "\n")
 
 #-------------------------------------------------------------------------------
