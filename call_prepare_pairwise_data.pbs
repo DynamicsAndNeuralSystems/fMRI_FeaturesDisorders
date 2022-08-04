@@ -8,7 +8,7 @@
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -V
 
-cd $$PBS_O_WORKDIR
+cd "$PBS_O_WORKDIR" 
 
 # Load python
 #module load Anaconda3-5.1.0
