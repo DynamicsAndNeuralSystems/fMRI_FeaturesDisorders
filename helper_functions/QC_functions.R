@@ -145,7 +145,7 @@ remove_samples_from_feature_matrix <- function(rdata_path,
                                                 feature_set = "catch22",
                                                 sample_IDs_to_drop = c()) {
   
-  print("\nDropping samples:", sample_IDs_to_drop, "\n")
+  cat("\nDropping samples:", paste(sample_IDs_to_drop, collapse=", "), "\n")
   
   TS_df <- readRDS(paste0(rdata_path, sprintf("%s_%s.Rds", input_dataset_name, feature_set))) %>%
     dplyr::filter(!(Sample_ID %in% sample_IDs_to_drop))
@@ -195,6 +195,7 @@ remove_feature_from_feature_matrix <- function(rdata_path,
 run_QC_for_dataset <- function(rdata_path, 
                                dataset_ID = "UCLA_Schizophrenia",
                                univariate_feature_set = "catch22",
+                               raw_TS_file = "UCLA_Schizophrenia_fMRI_data",
                                noise_procs = c("AROMA+2P",
                                                "AROMA+2P+GMR",
                                                "AROMA+2P+DiCER"),
@@ -203,14 +204,15 @@ run_QC_for_dataset <- function(rdata_path,
   # Samples identified with missing data for one or more noise-processing methods:
   univar_NA_samples <- find_univariate_sample_na(rdata_path = rdata_path,
                                                    input_dataset_name = dataset_ID,
-                                                   feature_set = univariate_feature_set)
+                                                   feature_set = univariate_feature_set) %>%
+    pull(Sample_ID)
   
   # Plot the raw time-series data for these samples to confirm:
   tryCatch({
     plot_NA_sample_ts(rdata_path = rdata_path, 
                       input_dataset_name = dataset_ID,
                       raw_TS_file = raw_TS_file,
-                      NA_sample_IDs = univar_NA_samples$Sample_ID,
+                      NA_sample_IDs = univar_NA_samples,
                       noise_procs = noise_procs)
     ggsave(paste0(plot_dir, input_dataset_name, "_NA_TimeSeries.png"),
            width = 6, height = 6, units="in", dpi=300)
@@ -221,7 +223,7 @@ run_QC_for_dataset <- function(rdata_path,
   remove_samples_from_feature_matrix(rdata_path, 
                                      input_dataset_name = dataset_ID,
                                      feature_set = univariate_feature_set,
-                                     sample_IDs_to_drop = univar_NA_samples$Sample_ID)
+                                     sample_IDs_to_drop = univar_NA_samples)
 
   # Save sample data post-filtering to an `.Rds` file:
   filtered_sample_info <- readRDS(paste0(rdata_path, 
