@@ -2,7 +2,7 @@
 #PBS -P hctsa
 #PBS -N data_prep
 #PBS -j oe
-#PBS -o /project/hctsa/annie/github/cluster_output/data_prep_out.txt
+#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/data_prep_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=4:00:00
 #PBS -m abe
