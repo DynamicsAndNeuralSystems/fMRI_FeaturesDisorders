@@ -8,7 +8,7 @@
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -V
 
-cd "$PBS_O_WORKDIR"
+cd $$PBS_O_WORKDIR
 
 # Load python
 module load Anaconda3-5.1.0
@@ -25,7 +25,6 @@ mkdir -p $github_dir/cluster_output/
 python3 prepare_pairwise_data.py --project_path $project_dir \
 --github_dir $github_dir \
 --data_path ${project_dir}/data/UCLA_Schizophrenia/ \
---pydata_path ${project_dir}/data/UCLA_Schizophrenia/pydata/ \
 --pairwise_feature_set pyspi19 --parcellation_name aparc+aseg \
 --input_mat_file new/UCLA_time_series_four_groups.mat \
 --subject_csv participants.csv \
