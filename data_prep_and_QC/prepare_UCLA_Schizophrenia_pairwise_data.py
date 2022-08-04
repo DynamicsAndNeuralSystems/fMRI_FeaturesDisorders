@@ -95,10 +95,11 @@ def array_to_npy(i, noise_proc, split_data, sample_IDs, pydata_path):
 
 for index in noise_proc_indices:
     noise_proc = noise_proc_indices[index]
+    noise_label = noise_proc.replace("+", "_")
     
     # Make output directory
     try:
-        os.mkdir(pydata_path + noise_proc)
+        os.mkdir(pydata_path + noise_label)
     except OSError as error:
         pass
 
