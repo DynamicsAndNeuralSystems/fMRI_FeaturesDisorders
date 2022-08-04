@@ -8,8 +8,8 @@ import os
 
 # Command-line arguments to parse
 parser = argparse.ArgumentParser(description='Process inputs for pairwise data preparation.')
-parser.add_argument('--project_path', default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/", dest='project_path')
-parser.add_argument('--github_dir', default="/project/hctsa/annie/", dest='github_dir')
+parser.add_argument('--project_path', default="/project/hctsa/annie/", dest='project_path')
+parser.add_argument('--github_dir', default="/project/hctsa/annie/github/", dest='github_dir')
 parser.add_argument('--data_path', default="/project/hctsa/annie/data/UCLA_Schizophrenia/", dest='data_path')
 parser.add_argument('--input_mat_file', default="", nargs="?", dest='input_mat_file')
 parser.add_argument('--subject_csv', default="participants.csv", dest='subject_csv')
@@ -56,7 +56,7 @@ dataset_ID = args.dataset_ID
 # Prep noise-procs for command line
 noise_procs_cl = ' '.join(noise_procs)
 
-cmd_to_execute=f"python3 {github_dir}/data_prep_and_QC/prepare_{dataset_ID}_pairwise_data.py --github_dir {github_dir} --data_path {data_path} --input_mat_file {input_mat_file} --subject_csv {subject_csv} --noise_procs {noise_procs_cl} --brain_region_lookup {brain_region_lookup} --parcellation_name {parcellation_name} --dataset_ID {dataset_ID}"
+cmd_to_execute=f"python3 {github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/prepare_{dataset_ID}_pairwise_data.py --github_dir {github_dir} --data_path {data_path} --input_mat_file {input_mat_file} --subject_csv {subject_csv} --noise_procs {noise_procs_cl} --brain_region_lookup {brain_region_lookup} --parcellation_name {parcellation_name} --dataset_ID {dataset_ID}"
 
 os.system(cmd_to_execute)  
 
