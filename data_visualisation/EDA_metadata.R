@@ -36,6 +36,23 @@ set.seed(127)
 subject_metadata <- read.csv(paste0(data_path, "participants.csv")) %>%
   dplyr::rename("Subject_ID" = "sampleID") %>%
   filter(diagnosis %in% c("CONTROL", "SCHZ"),
-         rest == "1")
+         rest == "1") %>%
+  dplyr::select(Subject_ID:gender)
 
+# Summary of dataset 
+subject_metadata %>%
+  group_by(diagnosis) %>%
+  summarise(N = n(),
+            Percent_Female = 100*sum(gender=="F", na.rm=T)/n(),
+            Num_Female = sum(gender=="F", na.rm=T),
+            Age_Mean = mean(age, na.rm=T),
+            Age_SD = sd(age, na.rm=T))
 
+# Visualise age and sex distribution by diagnosis
+subject_metadata %>%
+  ggplot(data = ., mapping=aes(x = gender, y = age, fill = diagnosis)) +
+  geom_boxplot() +
+  scale_fill_manual(values = c("chartreuse4", "red")) +
+  ylab("Age") +
+  xlab("Sex") +
+  theme(legend.position = "bottom")

@@ -1,6 +1,7 @@
 import pandas as pd
 import dill
 
+pkl_file="/media/sf_Shared_Folder/PhD_work/data/ABIDE_ASD/pydata/FC1000/10021451277603445196/calc.pkl"
 def extract_df_from_pkl(pkl_file):
     
     with open(pkl_file,'rb') as f:
