@@ -30,6 +30,7 @@ github_dir = args.github_dir
 
 fmri_github_dir = github_dir + "fMRI_FeaturesDisorders/"
 
+# github_dir = "/media/sf_Shared_Folder/github/"
 # fmri_github_dir="/media/sf_Shared_Folder/github/fMRI_FeaturesDisorders/"
 # data_path="/media/sf_Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
 # input_mat_file="new/UCLA_time_series_four_groups.mat"
@@ -115,9 +116,11 @@ for index in noise_proc_indices:
     [array_to_npy(i=i, noise_proc = noise_proc, split_data = TS_data_split, 
                   sample_IDs = sample_IDs, pydata_path = pydata_path) 
                   for i in list(range(len(TS_data_split)))]
+    
+    # Create YAML files
+    cmd_to_execute = f"Rscript {github_dir}/pyspi-distribute/create_yaml_for_samples.R --data_dir {pydata_path}/{noise_label}/ --sample_metadata {data_path}/participants.csv --ID_var sampleID --label_var diagnosis --dim_order ps --overwrite"
+    print(cmd_to_execute)
+    os.system(cmd_to_execute)
 
 
-# Create YAML files
-cmd_to_execute = f"Rscript {github_dir}/pyspi-distribute/create_yaml_for_samples.R --data_dir {pydata_path}/{noise_label}/ --sample_metadata {data_path}/participants.csv --ID_var sampleID --label_var diagnosis --dim_order ps --overwrite"
-print(cmd_to_execute)
-os.system(cmd_to_execute)
+
