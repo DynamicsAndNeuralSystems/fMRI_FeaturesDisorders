@@ -31,3 +31,11 @@ library(tidyverse)
 library(cowplot)
 theme_set(theme_cowplot())
 set.seed(127)
+
+# Load subject metadata
+subject_metadata <- read.csv(paste0(data_path, "participants.csv")) %>%
+  dplyr::rename("Subject_ID" = "sampleID") %>%
+  filter(diagnosis %in% c("CONTROL", "SCHZ"),
+         rest == "1")
+
+
