@@ -2,7 +2,7 @@ import pandas as pd
 import dill
 
 pkl_file="/media/sf_Shared_Folder/PhD_work/data/ABIDE_ASD/pydata/FC1000/10021451277603445196/calc.pkl"
-output_csv = "/media/sf_Shared_Folder/PhD_work/data/ABIDE_ASD/pydata/FC1000/10021451277603445196/calc.pkl"
+output_csv = "/media/sf_Shared_Folder/PhD_work/data/ABIDE_ASD/pydata/FC1000/10021451277603445196/calc.csv"
 def extract_df_from_pkl(pkl_file):
     
     with open(pkl_file,'rb') as f:
@@ -24,7 +24,8 @@ def extract_df_from_pkl(pkl_file):
     # Remove variable column
     SPI_res_long = SPI_res_long.drop("variable", 1)
     
-    pd.write_csv()
+    # Write to CSV
+    SPI_res_long.to_csv(output_csv, index=None)
     
     # Return end dictionary
     return(SPI_res_long)

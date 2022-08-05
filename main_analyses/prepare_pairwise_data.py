@@ -56,7 +56,14 @@ dataset_ID = args.dataset_ID
 # Prep noise-procs for command line
 noise_procs_cl = ' '.join(noise_procs)
 
-cmd_to_execute=f"python3 {github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/prepare_{dataset_ID}_pairwise_data.py --github_dir {github_dir} --data_path {data_path} --input_mat_file {input_mat_file} --subject_csv {subject_csv} --noise_procs {noise_procs_cl} --brain_region_lookup {brain_region_lookup} --parcellation_name {parcellation_name} --dataset_ID {dataset_ID}"
+# Prepare pyspi data
+prepare_pyspi_cmd=f"python3 {github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/prepare_{dataset_ID}_pairwise_data.py --github_dir {github_dir} --data_path {data_path} --input_mat_file {input_mat_file} --subject_csv {subject_csv} --noise_procs {noise_procs_cl} --brain_region_lookup {brain_region_lookup} --parcellation_name {parcellation_name} --dataset_ID {dataset_ID}"
+os.system(prepare_pyspi_cmd)  
 
-os.system(cmd_to_execute)  
+# Run pyspi
+# TO ADD
+run_pyspi_cmd=""
 
+# Write calc.table pkl files to CSVs
+pkl_to_csv_cmd=f"python3 {github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_to_csv --github_dir {github_dir} --data_path {data_path} --noise_procs {noise_procs_cl} --brain_region_lookup {brain_region_lookup} --parcellation_name {parcellation_name} --dataset_ID {dataset_ID}"
+os.system(pkl_to_csv_cmd)  

@@ -22,7 +22,7 @@ univariate_feature_set <- args$univariate_feature_set
 # dataset_ID <- "UCLA_Schizophrenia"
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
 # data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
-# plot_dir <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/plots/Misclassification_Analysis/"
+# plot_dir <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/plots/EDA/"
 # rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/Rdata/"
 # univariate_feature_set <- "catch22"
 
@@ -53,6 +53,10 @@ subject_metadata %>%
   ggplot(data = ., mapping=aes(x = gender, y = age, fill = diagnosis)) +
   geom_boxplot() +
   scale_fill_manual(values = c("chartreuse4", "red")) +
+  ggtitle(paste0(dataset_ID, " Age\nvs. Sex and Diagnosis")) +
   ylab("Age") +
   xlab("Sex") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust=0.5))
+ggsave(paste0(plot_dir, dataset_ID, "_Age_vs_Sex_and_Diagnosis.png"),
+       width=5, height=4, units="in", dpi=300)
