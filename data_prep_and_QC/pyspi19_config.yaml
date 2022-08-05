@@ -1,0 +1,113 @@
+# Basic statistics
+.statistics.basic:
+
+  # Covariance
+  covariance:
+    - estimator: EmpiricalCovariance
+
+  # statistics based on cross-correlation (squared means we square the xcorr, not the output)
+  xcorr:
+    - statistic: 'mean'
+
+.statistics.distance:
+
+  # Distance correlation
+  dcorr:
+    - biased: False
+
+  dynamic_time_warping:
+    - global_constraint: itakura
+
+  barycenter:
+  - mode: dtw
+    statistic: mean
+
+.statistics.causal:
+
+  # Additive noise model
+  anm:
+
+# Information-theoretic statistics
+.statistics.infotheory:
+
+  directed_info: # No theiler window yet
+
+    - estimator: gaussian
+
+# Mutual information
+  time_lagged_mutual_info:
+    - estimator: kraskov
+      prop_k: 4
+      dyn_corr_excl: AUTO
+
+  # Transfer entropy
+  transfer_entropy:
+
+    - estimator: kraskov
+      prop_k: 4
+      auto_embed_method: MAX_CORR_AIS
+      k_search_max: 10
+      tau_search_max: 4
+      dyn_corr_excl: AUTO
+
+    # Gaussian estimator doesn't have DCE (aka Bartlett corrections) yet
+    - estimator: gaussian
+      auto_embed_method: MAX_CORR_AIS
+      k_search_max: 10
+      tau_search_max: 2
+
+  integrated_information:
+    - phitype: 'star'
+
+# statistics that analyse in the frequency-domain (see Schoegl and Supp, 2006)
+.statistics.spectral:
+
+  coherence_magnitude:
+    - fs: 1
+
+  phase_slope_index:
+    - fmin: 0
+      fmax: 0.5
+
+  phase_lag_index:
+
+    - fs: 1
+      statistic: max
+
+  spectral_granger:
+      # Non-parametric Granger causality (no VAR model)
+    - method: nonparametric
+      fmin: 0
+      fmax: 0.5
+      statistic: mean
+
+      # Parametric Granger causality (VAR model with inferred or predefined order)
+
+      # AR order optimised by BIC
+    - method: parametric
+      fmin: 0
+      fmax: 0.5
+      statistic: mean
+
+# statistics that analyse in the wavlet-domain (only Mortlet wavelet's at the moment)
+.statistics.wavelet:
+
+  phase_slope_index:
+    - fs: 1
+
+.statistics.misc:
+
+  # Cointegration
+  coint:
+
+    - method: aeg
+      statistic: tstat
+      autolag: aic
+      maxlag: 10
+      trend: ct
+
+  # Power envelope correlation
+  envelope_correlation:
+    - orth: False
+      log: False
+      absolute: False
