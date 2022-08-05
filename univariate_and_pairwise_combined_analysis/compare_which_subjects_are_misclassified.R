@@ -4,22 +4,28 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--project_path", default="/project/hctsa/annie/")
 parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
+parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/")
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/Rdata/")
-parser$add_argument("--feature_set", default="catch22")
-# project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
-# github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
-# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
-# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/Rdata/"
-# feature_set <- "catch22"
+parser$add_argument("--plot_dir", default="/project/hctsa/annie/data/UCLA_Schizophrenia/plots/Misclassification_Analysis/")
+parser$add_argument("--univariate_feature_set", default="catch22")
 
 # Parse input arguments
 args <- parser$parse_args()
 project_path <- args$project_path
+dataset_ID <- args$dataset_ID
 github_dir <- args$github_dir
 data_path <- args$data_path
 rdata_path <- args$rdata_path
-feature_set <- args$feature_set
+univariate_feature_set <- args$univariate_feature_set
+
+# project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
+# dataset_ID <- "UCLA_Schizophrenia"
+# github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
+# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
+# plot_dir <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/plots/Misclassification_Analysis/"
+# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/Rdata/"
+# univariate_feature_set <- "catch22"
 
 ### Source functions
 # Main
@@ -101,20 +107,44 @@ misclassifications_w_info %>%
 
 # By age
 misclassifications_w_info %>%
-  ggplot(data=., mapping=aes(x=age, y=num_incorr, color=diagnosis)) +
+  ggplot(data=., mapping=aes(x=age, y=num_incorr, color=Actual_Diagnosis)) +
   geom_point() +
+  ggtitle("# Incorrect Predictions vs. Age") +
+  scale_color_manual(values = c("chartreuse4", "red")) +
+  labs(color = "Diagnosis") +
   ylab("# Incorrect Predictions") +
   xlab("Age") +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust=0.5))
+ggsave(paste0(plot_dir, dataset_ID, "_num_incorr_vs_age_scatter.png"),
+       width=6, height=4, units="in", dpi=300)
+
+# By sex
+misclassifications_w_info %>%
+  ggplot(data=., mapping=aes(x=gender, y=num_incorr, fill=gender)) +
+  geom_violin() +
+  geom_boxplot(fill=NA, color="black", width=0.1) +
+  ggtitle("# Incorrect Predictions vs. Sex") +
+  ylab("# Incorrect Predictions") +
+  xlab("Sex") +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5))
+ggsave(paste0(plot_dir, dataset_ID, "_num_incorr_vs_sex_violin.png"),
+       width=4.5, height=3, units="in", dpi=300)
 
 # Violin plot of prediction correctness by group
 misclassifications_w_info %>%
   ggplot(data=., mapping=aes(x=Actual_Diagnosis, y=num_incorr)) +
   geom_violin(aes(fill=Actual_Diagnosis)) +
   geom_boxplot(fill=NA, color="black", width=0.1) +
+  ggtitle("# Incorrect Predictions vs. Diagnosis") +
+  scale_fill_manual(values = c("chartreuse4", "red")) +
   xlab("Diagnosis") +
   ylab("# Incorrect Predictions") +
-  theme(legend.position="bottom")
+  theme(legend.position="none",
+        plot.title = element_text(hjust=0.5))
+ggsave(paste0(plot_dir, dataset_ID, "_num_incorr_vs_diagnosis_violin.png"),
+       width=4.5, height=3, units="in", dpi=300)
 
 # Bar chart of correctness by group per significant feature
 merged_data %>%
@@ -124,9 +154,11 @@ merged_data %>%
   geom_bar(stat="identity", position='dodge') +
   ylab("Linear SVM Feature") +
   xlab("% Correct") +
-  scale_fill_manual(values = c("green", "red")) +
+  scale_fill_manual(values = c("chartreuse4", "red")) +
   labs(fill="") +
   theme(legend.position = "bottom")
+ggsave(paste0(plot_dir, dataset_ID, "_percent_correct_by_univariate_feature_and_diagnosis.png"),
+       width=7, height=5, units="in", dpi=300)
 
 # Heatmap of prediction correctness
 guidebar <- merged_data %>%
@@ -135,7 +167,7 @@ guidebar <- merged_data %>%
   ggplot(data = ., mapping=aes(x=Subject_ID, y=0, fill=Actual_Diagnosis)) +
   geom_tile() +
   theme_void() +
-  scale_fill_manual(values = c("green", "red")) +
+  scale_fill_manual(values = c("chartreuse4", "red")) +
   theme(legend.position = "none")
 
 correct_plot <- merged_data %>%
@@ -154,4 +186,5 @@ correct_plot <- merged_data %>%
 
 guidebar / correct_plot + 
   plot_layout(heights = c(1, 40))
- 
+ggsave(paste0(plot_dir, dataset_ID, "_subject_classification_univariate_heatmap.png"),
+       width=12, height=4, units="in", dpi=300)
