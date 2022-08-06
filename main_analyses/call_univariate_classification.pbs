@@ -1,0 +1,37 @@
+#!/bin/bash
+#PBS -P hctsa
+#PBS -N univariate_classification
+#PBS -j oe
+#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/data_prep_out.txt
+#PBS -l select=1:ncpus=1:mem=20GB
+#PBS -l walltime=20:00:00
+#PBS -m abe
+#PBS -M abry4213@uni.sydney.edu.au
+#PBS -V
+
+cd "$PBS_O_WORKDIR"
+
+# Load R
+module load R/4.1.1
+
+# Define directories
+project_dir=/project/hctsa/annie/
+github_dir=/project/hctsa/annie/github/fMRI_FeaturesDisorders/
+mkdir -p $github_dir/cluster_output/
+
+# UCLA Schizophrenia
+Rscript ${github_dir}/classification_functions/univariate_classification.R \
+--github_dir $github_dir \
+--data_path ${project_dir}/data/UCLA_Schizophrenia/ \
+--rdata_path ${project_dir}/data/UCLA_Schizophrenia/Rdata/ \
+--univariate_feature_set catch22 \
+--noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DICER \
+--dataset_ID UCLA_Schizophrenia 
+
+
+exit
+
+# Verify the host on which the job ran
+hostname
+
+
