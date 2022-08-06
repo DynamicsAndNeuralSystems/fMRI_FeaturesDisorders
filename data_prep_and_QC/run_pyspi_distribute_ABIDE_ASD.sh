@@ -19,5 +19,5 @@ do
     --pyspi_config $config_file \
     --sample_yaml ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/sample_onesubj.yaml \
     --pbs_notify a \
-    --email $email --walltime_hrs 1 --cpu 2 --mem 8 --table_only
+    --email $email --walltime_hrs 1 --cpu 2 --mem 8 --table_only --overwrite
 done
