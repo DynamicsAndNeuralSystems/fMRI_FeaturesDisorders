@@ -65,15 +65,15 @@ invisible(sapply(files.sources, source))
 # Generate model-free shuffle null distribution
 ################################################################################
 if (!file.exists(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
-                                            feature_set)))) {
+                                            univariate_feature_set)))) {
   model_free_shuffle_null_res <- run_model_free_n_shuffles(num_shuffles = 100000,
-                                                           feature_set = feature_set,
+                                                           feature_set = univariate_feature_set,
                                                            rdata_path = rdata_path)
   saveRDS(model_free_shuffle_null_res, file = paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
-                                                                         feature_set)))
+                                                                         univariate_feature_set)))
 } else {
   model_free_shuffle_null_res <- readRDS(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
-                                                                    feature_set)))
+                                                                    univariate_feature_set)))
 }
 
 ################################################################################

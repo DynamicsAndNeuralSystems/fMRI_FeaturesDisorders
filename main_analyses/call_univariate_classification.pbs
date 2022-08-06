@@ -2,7 +2,7 @@
 #PBS -P hctsa
 #PBS -N univariate_classification
 #PBS -j oe
-#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/data_prep_out.txt
+#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/univariate_classification_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=20:00:00
 #PBS -m abe
