@@ -27,6 +27,7 @@ mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/
 # --github_dir $github_dir \
 # --data_path ${project_dir}/data/UCLA_Schizophrenia/ \
 # --pairwise_feature_set pyspi19 --parcellation_name aparc+aseg \
+# --pyspi_config_file $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi19_config.yaml \
 # --input_mat_file new/UCLA_time_series_four_groups.mat \
 # --subject_csv participants.csv \
 # --brain_region_lookup \
@@ -38,6 +39,7 @@ python3 $github_dir/fMRI_FeaturesDisorders/main_analyses/prepare_pairwise_data.p
 --github_dir $github_dir \
 --data_path ${project_dir}/data/ABIDE_ASD/ \
 --pairwise_feature_set pyspi19 \
+--pyspi_config_file $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi19_config.yaml \
 --parcellation_name harvard_oxford_cort_prob_2mm \
 --input_mat_file NA \
 --subject_csv participants.csv \

@@ -14,6 +14,7 @@ parser.add_argument('--data_path', default="/project/hctsa/annie/data/UCLA_Schiz
 parser.add_argument('--input_mat_file', default="", nargs="?", dest='input_mat_file')
 parser.add_argument('--subject_csv', default="participants.csv", dest='subject_csv')
 parser.add_argument('--pairwise_feature_set', default="pyspi19", dest='pairwise_feature_set')
+parser.add_argument('--pyspi_config_file', dest='pairwise_feature_set')
 parser.add_argument('--parcellation_name', default="harvard_oxford_cort_prob_2mm", dest='parcellation_name', nargs='?')
 parser.add_argument('--brain_region_lookup', default="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv", dest='brain_region_lookup', nargs='?')
 parser.add_argument('--noise_procs', default=["AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"], nargs='*', dest='noise_procs')
@@ -27,6 +28,7 @@ data_path = args.data_path
 input_mat_file = args.input_mat_file
 subject_csv = args.subject_csv
 pairwise_feature_set = args.pairwise_feature_set
+pyspi_config_file = args.pyspi_config_file
 parcellation_name = args.parcellation_name
 brain_region_lookup = args.brain_region_lookup
 noise_procs = args.noise_procs
@@ -66,7 +68,11 @@ os.system(prepare_pyspi_cmd)
 # Run pyspi
 for noise_proc in noise_procs:
     noise_label = noise_proc.replace("+", "_")
-    run_pyspi_cmd=f"python $pyspi_script_dir/distribute_jobs.py --data_dir {project_path}/data/{dataset_ID}/pydata/{noise_label}/ --compute_file {pyspi_script_dir}/pyspi_compute.py --template_pbs_file {pyspi_script_dir}/template.pbs --pyspi_config {config_file} --sample_yaml {project_path}/data/{dataset_ID}/pydata/{noise_label}/sample.yaml --pbs_notify a  --email abry4213@uni.sydney.edu.au --walltime_hrs 2 --cpu 2 --mem 8 --table_only"
+    # Use default config file unless user supplies a custom one
+    if pyspi_config_file is None:
+        run_pyspi_cmd=f"python $pyspi_script_dir/distribute_jobs.py --data_dir {project_path}/data/{dataset_ID}/pydata/{noise_label}/ --compute_file {pyspi_script_dir}/pyspi_compute.py --template_pbs_file {pyspi_script_dir}/template.pbs --sample_yaml {project_path}/data/{dataset_ID}/pydata/{noise_label}/sample.yaml --pbs_notify a  --email abry4213@uni.sydney.edu.au --walltime_hrs 2 --cpu 2 --mem 8 --table_only"
+    else:
+        run_pyspi_cmd=f"python $pyspi_script_dir/distribute_jobs.py --data_dir {project_path}/data/{dataset_ID}/pydata/{noise_label}/ --compute_file {pyspi_script_dir}/pyspi_compute.py --template_pbs_file {pyspi_script_dir}/template.pbs --pyspi_config {pyspi_config_file} --sample_yaml {project_path}/data/{dataset_ID}/pydata/{noise_label}/sample.yaml --pbs_notify a  --email abry4213@uni.sydney.edu.au --walltime_hrs 2 --cpu 2 --mem 8 --table_only"
     os.system(run_pyspi_cmd)
 
 # Write calc.table pkl files to CSVs
