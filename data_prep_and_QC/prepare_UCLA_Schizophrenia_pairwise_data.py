@@ -94,7 +94,9 @@ def array_to_npy(i, noise_proc, split_data, sample_IDs, pydata_path):
     # Rename noise processing method to have underscores
     noise_label = noise_proc.replace("+", "_")
     # Save region by timepoint data to its own .npy file
-    np.save(f"{pydata_path}/{noise_label}/{sample_ID}.npy", data_norm)
+    if not os.path.exists(f"{pydata_path}/{noise_label}/{sample_ID}.npy"):
+        print(f"Saving .npy data for {sample_ID}")
+        np.save(f"{pydata_path}/{noise_label}/{sample_ID}.npy", data_norm)
 
 for index in noise_proc_indices:
     noise_proc = noise_proc_indices[index]

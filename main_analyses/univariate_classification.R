@@ -11,8 +11,6 @@ parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schiz
 parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/Rdata/")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--parcellation_name", default="aparc+aseg", nargs='?')
-parser$add_argument("--input_mat_file", default="")
-parser$add_argument("--subject_csv", default="participants.csv")
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
 parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
@@ -26,7 +24,6 @@ parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 # rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/Rdata/"
 # data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
-# input_mat_file = "new/UCLA_time_series_four_groups.mat"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # parcellation_name <- "aparc+aseg"
 # brain_region_lookup <- ""
@@ -36,7 +33,6 @@ parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 # data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
 # noise_procs <- c("FC1000")
-# input_mat_file = "NA"
 # parcellation_name <- "harvard_oxford_cort_prob_2mm"
 # brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 

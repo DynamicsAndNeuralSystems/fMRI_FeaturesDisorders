@@ -5,6 +5,7 @@ import scipy.io
 from scipy import stats
 import argparse
 import os
+import os.path
 
 # Command-line arguments to parse
 parser = argparse.ArgumentParser(description='Process inputs for pairwise data preparation.')
@@ -53,9 +54,17 @@ noise_label = noise_procs[0].replace("+", "_")
 # Iterate over subjects and save data to numpy .npy files
 for sample_ID in os.listdir(input_data_path):
     sample_CSV_file = data_path + parcellation_name + "/" + sample_ID + "/run_1/" + sample_ID + "_task-Rest_confounds.csv"
-    sample_TS_data = pd.read_csv(sample_CSV_file, header=None).to_numpy().transpose()
+    sample_TS_data = pd.read_csv(sample_CSV_file, header=None).to_numpy()
+    
+    num_times, num_regions = sample_TS_data.shape
+    print(f"Sample {sample_ID} {noise_label}: {num_regions} regions, {num_times} time points\n")
+
+    # Z-score the time-series data
+    data_norm = np.apply_along_axis(stats.zscore, 0, sample_TS_data)
+    data_norm = np.transpose(data_norm)
     
     # Save region by timepoint data to its own .npy file
-    print(f"Saving .npy data for {sample_ID}")
-    np.save(f"{pydata_path}/{noise_label}/{sample_ID}.npy", sample_TS_data)
+    if not os.path.exists(f"{pydata_path}/{noise_label}/{sample_ID}.npy"):
+        print(f"Saving .npy data for {sample_ID}")
+        np.save(f"{pydata_path}/{noise_label}/{sample_ID}.npy", data_norm)
 
