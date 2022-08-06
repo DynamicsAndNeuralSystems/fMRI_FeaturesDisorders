@@ -70,9 +70,9 @@ for noise_proc in noise_procs:
     noise_label = noise_proc.replace("+", "_")
     # Use default config file unless user supplies a custom one
     if pyspi_config_file is not None:
-        run_pyspi_cmd=f"python {pyspi_script_dir}/distribute_jobs.py --data_dir {project_path}/data/{dataset_ID}/pydata/{noise_label}/ --compute_file {pyspi_script_dir}/pyspi_compute.py --template_pbs_file {pyspi_script_dir}/template.pbs --pyspi_config {pyspi_config_file} --sample_yaml {project_path}/data/{dataset_ID}/pydata/{noise_label}/sample_onesubj.yaml --pbs_notify a --email abry4213@uni.sydney.edu.au --walltime_hrs 2 --cpu 2 --mem 8 --table_only"
+        run_pyspi_cmd=f"python {pyspi_script_dir}/distribute_jobs.py --data_dir {project_path}/data/{dataset_ID}/pydata/{noise_label}/ --compute_file {pyspi_script_dir}/pyspi_compute.py --template_pbs_file {pyspi_script_dir}/template.pbs --pyspi_config {pyspi_config_file} --sample_yaml {project_path}/data/{dataset_ID}/pydata/{noise_label}/sample_onesubj.yaml --pbs_notify a --email abry4213@uni.sydney.edu.au --walltime_hrs 2 --cpu 2 --mem 8 --table_only --overwrite"
     else:
-        run_pyspi_cmd=f"python {pyspi_script_dir}/distribute_jobs.py --data_dir {project_path}/data/{dataset_ID}/pydata/{noise_label}/ --compute_file {pyspi_script_dir}/pyspi_compute.py --template_pbs_file {pyspi_script_dir}/template.pbs --sample_yaml {project_path}/data/{dataset_ID}/pydata/{noise_label}/sample.yaml --pbs_notify a --email abry4213@uni.sydney.edu.au --walltime_hrs 2 --cpu 2 --mem 8 --table_only --overwrite"
+        run_pyspi_cmd=f"python {pyspi_script_dir}/distribute_jobs.py --data_dir {project_path}/data/{dataset_ID}/pydata/{noise_label}/ --compute_file {pyspi_script_dir}/pyspi_compute.py --template_pbs_file {pyspi_script_dir}/template.pbs --sample_yaml {project_path}/data/{dataset_ID}/pydata/{noise_label}/sample.yaml --pbs_notify a --email abry4213@uni.sydney.edu.au --walltime_hrs 2 --cpu 2 --mem 8 --table_only"
     print(run_pyspi_cmd)
     os.system(run_pyspi_cmd)
 
