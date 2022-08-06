@@ -106,5 +106,3 @@ weighting_param_df <- data.frame(name = c("inv_prob"),
                                  use_inv_prob_weighting = c(TRUE),
                                  use_SMOTE = c(FALSE))
 
-cat("\nGrouping param df:\n")
-print(grouping_param_df)

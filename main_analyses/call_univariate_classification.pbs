@@ -28,6 +28,14 @@ Rscript ${github_dir}/classification_functions/univariate_classification.R \
 --noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DICER \
 --dataset_ID UCLA_Schizophrenia 
 
+# ABIDE ASD
+Rscript ${github_dir}/classification_functions/univariate_classification.R \
+--github_dir $github_dir \
+--data_path ${project_dir}/data/ABIDE_ASD/ \
+--rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \
+--univariate_feature_set catch22 \
+--noise_procs FC1000 \
+--dataset_ID ABIDE_ASD 
 
 exit
 
