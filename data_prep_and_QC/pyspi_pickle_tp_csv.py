@@ -33,8 +33,6 @@ fmri_github_dir = github_dir + "fMRI_FeaturesDisorders/"
 # noise_procs=["FC1000"]
 # dataset_ID="ABIDE_ASD"
 
-import numpy as np
-data = np.load(data_path + "pydata/FC1000/15291146613312661592.npy")
 
 def pkl_to_csv(pkl_file, output_csv):
     
