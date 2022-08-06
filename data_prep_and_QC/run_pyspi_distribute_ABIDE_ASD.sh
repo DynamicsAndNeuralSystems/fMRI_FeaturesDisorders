@@ -17,7 +17,7 @@ do
     --compute_file $pyspi_script_dir/pyspi_compute.py \
     --template_pbs_file $pyspi_script_dir/template.pbs \
     --pyspi_config $config_file \
-    --sample_yaml ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/sample.yaml \
+    --sample_yaml ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/sample_onesubj.yaml \
     --pbs_notify a \
     --email $email --walltime_hrs 1 --cpu 2 --mem 8 --table_only
 done

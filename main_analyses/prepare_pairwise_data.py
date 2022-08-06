@@ -66,7 +66,7 @@ prepare_pyspi_cmd=f"python3 {github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC
 os.system(prepare_pyspi_cmd)  
 
 # Script to run distribute_jobs.py
-job_dist_script=github_dir + f"/fMRI_FeaturesDisordersdata_prep_and_QC/run_pyspi_distribute_{dataset_ID}.sh"
+job_dist_script=github_dir + f"/fMRI_FeaturesDisorders/data_prep_and_QC/run_pyspi_distribute_{dataset_ID}.sh"
 
 # Run pyspi
 for noise_proc in noise_procs:
