@@ -64,11 +64,11 @@ prepare_pyspi_cmd=f"python3 {github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC
 os.system(prepare_pyspi_cmd)  
 
 # Run pyspi
-# for noise_proc in noise_procs:
-#     noise_label = noise_proc.replace("+", "_")
-#     run_pyspi_cmd=f"python $pyspi_script_dir/distribute_jobs.py --data_dir {project_path}/data/{dataset_ID}/pydata/{noise_label}/ --compute_file {pyspi_script_dir}/pyspi_compute.py --template_pbs_file {pyspi_script_dir}/template.pbs --pyspi_config {config_file} --sample_yaml {project_path}/data/{dataset_ID}/pydata/{noise_label}/sample.yaml --pbs_notify a  --email abry4213@uni.sydney.edu.au --walltime_hrs 2 --cpu 2 --mem 8 --table_only"
-#     os.system(run_pyspi_cmd)
+for noise_proc in noise_procs:
+    noise_label = noise_proc.replace("+", "_")
+    run_pyspi_cmd=f"python $pyspi_script_dir/distribute_jobs.py --data_dir {project_path}/data/{dataset_ID}/pydata/{noise_label}/ --compute_file {pyspi_script_dir}/pyspi_compute.py --template_pbs_file {pyspi_script_dir}/template.pbs --pyspi_config {config_file} --sample_yaml {project_path}/data/{dataset_ID}/pydata/{noise_label}/sample.yaml --pbs_notify a  --email abry4213@uni.sydney.edu.au --walltime_hrs 2 --cpu 2 --mem 8 --table_only"
+    os.system(run_pyspi_cmd)
 
 # Write calc.table pkl files to CSVs
-# pkl_to_csv_cmd=f"python3 {github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_to_csv --github_dir {github_dir} --data_path {data_path} --noise_procs {noise_procs_cl} --brain_region_lookup {brain_region_lookup} --parcellation_name {parcellation_name} --dataset_ID {dataset_ID}"
-# os.system(pkl_to_csv_cmd)  
+pkl_to_csv_cmd=f"python3 {github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_to_csv --github_dir {github_dir} --data_path {data_path} --noise_procs {noise_procs_cl} --brain_region_lookup {brain_region_lookup} --parcellation_name {parcellation_name} --dataset_ID {dataset_ID}"
+os.system(pkl_to_csv_cmd)  
