@@ -29,10 +29,12 @@ fmri_github_dir = github_dir + "fMRI_FeaturesDisorders/"
 
 # github_dir = "/media/sf_Shared_Folder/github/"
 # fmri_github_dir="/media/sf_Shared_Folder/github/fMRI_FeaturesDisorders/"
-# data_path="/media/sf_Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
-# noise_procs=["AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"]
-# dataset_ID="UCLA_Schizophrenia"
+# data_path="/media/sf_Shared_Folder/PhD_work/data/ABIDE_ASD/"
+# noise_procs=["FC1000"]
+# dataset_ID="ABIDE_ASD"
 
+import numpy as np
+data = np.load(data_path + "pydata/FC1000/15291146613312661592.npy")
 
 def pkl_to_csv(pkl_file, output_csv):
     
