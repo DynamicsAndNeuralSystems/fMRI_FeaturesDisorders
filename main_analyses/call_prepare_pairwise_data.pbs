@@ -62,15 +62,6 @@ python3 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/prepare_${dataset_
 --parcellation_name ${parcellation_name} \
 --dataset_ID ${dataset_ID}
 
-################################################################################
-# Run pyspi-distribute for UCLA Schizophrenia + ABIDE ASD fMRI data
-################################################################################
-source $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/run_pyspi_distribute.sh \
-$project_dir $github_dir \
-$github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi19_config.yaml \
-${project_dir}/github/pyspi-distribute/ \
-abry4213@uni.sydney.edu.au
-
 exit
 
 # Verify the host on which the job ran

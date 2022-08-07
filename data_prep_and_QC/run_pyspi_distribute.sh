@@ -1,13 +1,8 @@
-export project_dir="$1"
-export github_dir="$2"
-export config_file="$3"
-export pyspi_script_dir="$4"
-export email="$5"
-
-# export project_dir=/headnode1/abry4213
-# export github_dir=${project_dir}/github/
-# export config_file=${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi19_config.yaml
-# export pyspi_script_dir=${project_dir}/github/pyspi-distribute/
+export project_dir=/headnode1/abry4213
+export github_dir=${project_dir}/github/
+export config_file=${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi19_config.yaml
+export pyspi_script_dir=${project_dir}/github/pyspi-distribute/
+export email="abry4213@uni.sydney.edu.au"
 
 # UCLA Schizophrenia
 dataset_ID="UCLA_Schizophrenia"
