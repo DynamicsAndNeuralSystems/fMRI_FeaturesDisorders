@@ -15,14 +15,12 @@ parser.add_argument('--overwrite', default=False, action="store_true")
 
 # Parse arguments
 args = parser.parse_args()
+github_dir = args.github_dir
 data_path = args.data_path
-input_mat_file = args.input_mat_file
-subject_csv = args.subject_csv
 noise_procs = args.noise_procs
 parcellation_name = args.parcellation_name
 brain_region_lookup = args.brain_region_lookup
 dataset_ID = args.dataset_ID
-github_dir = args.github_dir
 overwrite = args.overwrite
 
 fmri_github_dir = github_dir + "fMRI_FeaturesDisorders/"
