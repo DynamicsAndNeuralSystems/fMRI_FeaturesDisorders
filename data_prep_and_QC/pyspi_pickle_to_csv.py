@@ -72,5 +72,8 @@ for noise_proc in noise_procs:
         
         # Write calc.table from pkl file to a CSV
         if not os.path.isfile(subject_csv) or overwrite:
-            pkl_to_csv(pkl_file = subject_pkl,
-                       output_csv = subject_csv)
+            try:
+                pkl_to_csv(pkl_file = subject_pkl,
+                        output_csv = subject_csv)
+            except:
+                print(f"Could not process calc.pkl for {subject}.")
