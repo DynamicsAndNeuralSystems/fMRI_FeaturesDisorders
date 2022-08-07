@@ -71,6 +71,6 @@ for noise_proc in noise_procs:
         subject_csv = f"{input_data_path}/{subject}/calc.csv"
         
         # Write calc.table from pkl file to a CSV
-        if not os.path.isFile(subject_csv) or overwrite:
+        if not os.path.isfile(subject_csv) or overwrite:
             pkl_to_csv(pkl_file = subject_pkl,
                        output_csv = subject_csv)
