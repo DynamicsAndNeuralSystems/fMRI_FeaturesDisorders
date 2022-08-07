@@ -7,7 +7,7 @@ import os
 parser = argparse.ArgumentParser(description='Process inputs for pairwise data preparation.')
 parser.add_argument('--github_dir', default="/project/hctsa/annie/github/", dest='github_dir')
 parser.add_argument('--data_path', default="/project/hctsa/annie/data/UCLA_Schizophrenia/", dest='data_path')
-parser.add_argument('--noise_procs', default=["AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"], nargs='*', action='append', dest='noise_procs')
+parser.add_argument('--noise_procs', default=["AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"], nargs='*', dest='noise_procs')
 parser.add_argument('--parcellation_name', default="harvard_oxford_cort_prob_2mm", dest='parcellation_name', nargs='?')
 parser.add_argument('--brain_region_lookup', default="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv", dest='brain_region_lookup', nargs='?')
 parser.add_argument('--dataset_ID', default="UCLA_Schizophrenia", dest='dataset_ID')
@@ -73,7 +73,6 @@ for noise_proc in noise_procs:
         # Write calc.table from pkl file to a CSV
         if not os.path.isfile(subject_csv) or overwrite:
             try:
-                pkl_to_csv(pkl_file = subject_pkl,
-                        output_csv = subject_csv)
+                pkl_to_csv(pkl_file = subject_pkl, output_csv = subject_csv)
             except:
                 print(f"Could not process calc.pkl for {subject}.")

@@ -25,24 +25,24 @@ mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/
 ################################################################################
 # Prepare UCLA Schizophrenia
 ################################################################################
-export dataset_ID="UCLA_Schizophrenia"
-export data_path=${project_dir}/data/UCLA_Schizophrenia/
-export input_mat_file="new/UCLA_time_series_four_groups.mat"
-export subject_csv="participants.csv"
-export noise_procs="AROMA+2P AROMA+2P+GMR AROMA+2P+DICER"
-export brain_region_lookup=" "
-export parcellation_name=" "
+# export dataset_ID="UCLA_Schizophrenia"
+# export data_path=${project_dir}/data/UCLA_Schizophrenia/
+# export input_mat_file="new/UCLA_time_series_four_groups.mat"
+# export subject_csv="participants.csv"
+# export noise_procs="AROMA+2P AROMA+2P+GMR AROMA+2P+DICER"
+# export brain_region_lookup=" "
+# export parcellation_name=" "
 
-cmd="python3 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_to_csv.py \
---github_dir ${github_dir} --data_path ${data_path} \
---noise_procs ${noise_procs} \
---brain_region_lookup ${brain_region_lookup} \
---parcellation_name ${parcellation_name} \
---dataset_ID ${dataset_ID}"
+# cmd="python3 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_to_csv.py \
+# --github_dir ${github_dir} --data_path ${data_path} \
+# --noise_procs ${noise_procs} \
+# --brain_region_lookup ${brain_region_lookup} \
+# --parcellation_name ${parcellation_name} \
+# --dataset_ID ${dataset_ID}"
 
-echo $cmd
+# echo $cmd
 
-$cmd
+# $cmd
 
 ################################################################################
 # Prepare ABIDE ASD
