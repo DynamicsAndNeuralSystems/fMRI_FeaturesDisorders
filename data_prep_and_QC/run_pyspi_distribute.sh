@@ -13,7 +13,7 @@ do
     --template_pbs_file $pyspi_script_dir/template.pbs \
     --pyspi_config $config_file \
     --sample_yaml ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/sample.yaml \
-    --pbs_notify a --overwrite \
+    --pbs_notify a \
     --email $email --walltime_hrs 2 --cpu 2 --mem 8 --table_only
 done
 
@@ -27,6 +27,6 @@ do
     --template_pbs_file $pyspi_script_dir/template.pbs \
     --pyspi_config $config_file \
     --sample_yaml ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/sample.yaml \
-    --pbs_notify a --overwrite \
+    --pbs_notify a \
     --email $email --walltime_hrs 1 --cpu 2 --mem 8 --table_only
 done
