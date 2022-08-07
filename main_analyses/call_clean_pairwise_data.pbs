@@ -47,24 +47,24 @@ $cmd
 ################################################################################
 # Prepare ABIDE ASD
 ################################################################################
-export dataset_ID="ABIDE_ASD"
-export data_path=${project_dir}/data/ABIDE_ASD/
-export input_mat_file=" "
-export subject_csv="participants.csv"
-export noise_procs="FC1000"
-export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
-export parcellation_name="harvard_oxford_cort_prob_2mm"
+# export dataset_ID="ABIDE_ASD"
+# export data_path=${project_dir}/data/ABIDE_ASD/
+# export input_mat_file=" "
+# export subject_csv="participants.csv"
+# export noise_procs="FC1000"
+# export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+# export parcellation_name="harvard_oxford_cort_prob_2mm"
 
-cmd="python3 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_to_csv.py \
---github_dir ${github_dir} --data_path ${data_path} \
---noise_procs ${noise_procs} \
---brain_region_lookup ${brain_region_lookup} \
---parcellation_name ${parcellation_name} \
---dataset_ID ${dataset_ID}"
+# cmd="python3 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_to_csv.py \
+# --github_dir ${github_dir} --data_path ${data_path} \
+# --noise_procs ${noise_procs} \
+# --brain_region_lookup ${brain_region_lookup} \
+# --parcellation_name ${parcellation_name} \
+# --dataset_ID ${dataset_ID}"
 
-echo $cmd
+# echo $cmd
 
-$cmd
+# $cmd
 
 exit
 
