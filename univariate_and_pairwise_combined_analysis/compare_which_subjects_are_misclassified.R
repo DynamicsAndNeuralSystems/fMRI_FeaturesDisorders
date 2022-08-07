@@ -43,8 +43,8 @@ test_package = "e1071"
 kernel = "linear"
 
 # Load subject metadata
-subject_metadata <- read.csv(paste0(data_path, "participants.csv")) %>%
-  dplyr::rename("Subject_ID" = "sampleID")
+subject_metadata <- read.table(paste0(data_path, "participants.tsv"), sep = '\t', header = TRUE) %>%
+  dplyr::rename("Subject_ID" = "participant_id")
 
 # Univariate ROI-wise
 univariate_roi_p_vals <- readRDS(paste0(rdata_path, "ROI_wise_CV_linear_SVM_model_permutation_null_catch22_inv_prob_pvals.Rds"))
@@ -130,6 +130,21 @@ misclassifications_w_info %>%
   theme(legend.position = "none",
         plot.title = element_text(hjust=0.5))
 ggsave(paste0(plot_dir, dataset_ID, "_num_incorr_vs_sex_violin.png"),
+       width=4.5, height=3, units="in", dpi=300)
+
+# By scanner serial number
+misclassifications_w_info %>%
+  mutate(ScannerSerialNumber = as.character(ScannerSerialNumber)) %>%
+  ggplot(data=., mapping=aes(x=ScannerSerialNumber, y=num_incorr, fill=ScannerSerialNumber)) +
+  geom_violin() +
+  geom_boxplot(fill=NA, color="black", width=0.1) +
+  scale_fill_manual(values=c("blueviolet", "forestgreen")) +
+  ggtitle("# Incorrect Predictions vs.\nScanner Serial Number") +
+  ylab("# Incorrect Predictions") +
+  xlab("Scanner Serial Number") +
+  theme(legend.position = "none",
+        plot.title = element_text(hjust=0.5))
+ggsave(paste0(plot_dir, dataset_ID, "_num_incorr_vs_Scanner_Serial_Number_violin.png"),
        width=4.5, height=3, units="in", dpi=300)
 
 # Violin plot of prediction correctness by group

@@ -30,9 +30,10 @@ calc_acc_bacc_for_shuffle <- function(x) {
 # Run given number of model free class label shuffles and calculate accuracy
 run_model_free_n_shuffles <- function(rdata_path,
                                       feature_set = "catch22",
+                                      dataset_ID = "UCLA_Schizophrenia",
                                       num_shuffles = 1000000) {
   
-  input_groups <- readRDS(paste0(rdata_path, "Filtered_subject_info_",
+  input_groups <- readRDS(paste0(rdata_path, dataset_ID, "_filtered_sample_info_",
                                  feature_set, ".Rds")) %>%
     pull(group)
   
