@@ -27,9 +27,9 @@ fmri_github_dir = github_dir + "fMRI_FeaturesDisorders/"
 
 # github_dir = "/media/sf_Shared_Folder/github/"
 # fmri_github_dir="/media/sf_Shared_Folder/github/fMRI_FeaturesDisorders/"
-# data_path="/media/sf_Shared_Folder/PhD_work/data/ABIDE_ASD/"
-# noise_procs=["FC1000"]
-# dataset_ID="ABIDE_ASD"
+# data_path="/media/sf_Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
+# noise_procs=["AROMA+2P"]
+# dataset_ID="UCLA_Schizophrenia"
 
 
 def pkl_to_csv(pkl_file, output_csv):
