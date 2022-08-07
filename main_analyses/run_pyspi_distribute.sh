@@ -5,17 +5,17 @@ export pyspi_script_dir=${project_dir}/github/pyspi-distribute/
 export email="abry4213@uni.sydney.edu.au"
 
 # UCLA Schizophrenia
-dataset_ID="UCLA_Schizophrenia"
-for noise_label in AROMA_2P AROMA_2P_GMR AROMA_2P_DiCER
-do
-    python $pyspi_script_dir/distribute_jobs.py --data_dir ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/ \
-    --compute_file $pyspi_script_dir/pyspi_compute.py \
-    --template_pbs_file $pyspi_script_dir/template.pbs \
-    --pyspi_config $config_file \
-    --sample_yaml ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/sample.yaml \
-    --pbs_notify a \
-    --email $email --walltime_hrs 2 --cpu 2 --mem 8 --table_only
-done
+# dataset_ID="UCLA_Schizophrenia"
+# for noise_label in AROMA_2P AROMA_2P_GMR AROMA_2P_DiCER
+# do
+#     python $pyspi_script_dir/distribute_jobs.py --data_dir ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/ \
+#     --compute_file $pyspi_script_dir/pyspi_compute.py \
+#     --template_pbs_file $pyspi_script_dir/template.pbs \
+#     --pyspi_config $config_file \
+#     --sample_yaml ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/sample.yaml \
+#     --pbs_notify a \
+#     --email $email --walltime_hrs 2 --cpu 2 --mem 8 --table_only
+# done
 
 
 # ABIDE ASD
@@ -27,6 +27,6 @@ do
     --template_pbs_file $pyspi_script_dir/template.pbs \
     --pyspi_config $config_file \
     --sample_yaml ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/sample.yaml \
-    --pbs_notify a \
+    --pbs_notify a --overwrite \
     --email $email --walltime_hrs 1 --cpu 2 --mem 8 --table_only
 done
