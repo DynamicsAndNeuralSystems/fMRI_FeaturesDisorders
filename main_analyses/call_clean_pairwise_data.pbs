@@ -42,6 +42,8 @@ cmd="python3 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_
 
 echo $cmd
 
+$cmd
+
 ################################################################################
 # Prepare ABIDE ASD
 ################################################################################
@@ -61,6 +63,8 @@ cmd="python3 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_
 --dataset_ID ${dataset_ID}"
 
 echo $cmd
+
+$cmd
 
 exit
 
