@@ -76,3 +76,5 @@ for noise_proc in noise_procs:
                 pkl_to_csv(pkl_file = subject_pkl, output_csv = subject_csv)
             except:
                 print(f"Could not process calc.pkl for {subject}.")
+        else:
+          pass
