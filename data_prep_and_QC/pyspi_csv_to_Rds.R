@@ -49,10 +49,10 @@ read_subject_csv <- function(subject_csv, subject_ID) {
 
 # Iterate over each noise-processing method
 for (noise_proc in noise_procs) {
+  noise_label = gsub("\\+", "_", noise_proc)
   if (!(file.exists(paste0(pydata_path, noise_label, "_pairwise_", 
                            pairwise_feature_set, ".Rds")))) {
     # Get list of subjects with processed pyspi data
-    noise_label = gsub("\\+", "_", noise_proc)
     subjects <- list.dirs(paste0(data_path, "pydata/", noise_label), 
                           recursive = F,
                           full.names = F)
