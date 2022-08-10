@@ -1,0 +1,50 @@
+#!/bin/bash
+#PBS -N clean_pairwise_data
+#PBS -j oe
+#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_out.txt
+#PBS -l select=1:ncpus=1:mem=20GB
+#PBS -l walltime=2:00:00
+#PBS -m abe
+#PBS -M abry4213@uni.sydney.edu.au
+#PBS -V
+
+cd "$PBS_O_WORKDIR" 
+
+# Load python
+module load R/4.1.1
+
+# Define directories
+project_dir=/project/hctsa/annie/
+github_dir=${project_dir}/github/
+mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/
+
+################################################################################
+# Prepare UCLA Schizophrenia
+################################################################################
+export dataset_ID="UCLA_Schizophrenia"
+export data_path=${project_dir}/data/UCLA_Schizophrenia/
+export input_mat_file="new/UCLA_time_series_four_groups.mat"
+export subject_csv="participants.csv"
+export noise_procs="AROMA+2P AROMA+2P+GMR AROMA+2P+DICER"
+export brain_region_lookup="Brain_Region_info.csv"
+export parcellation_name=" "
+export pairwise_feature_set="pyspi_19"
+
+# Convert CSVs to an Rds file per noise processing method
+cmd="Rscript ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_csv_to_Rds.R \
+--data_path ${data_path} \
+--brain_region_lookup ${brain_region_lookup} \
+--pairwise_feature_set ${pairwise_feature_set} \
+--noise_procs ${noise_procs} \
+--dataset_ID ${dataset_ID}"
+ 
+echo $cmd
+ 
+$cmd
+
+exit
+
+# Verify the host on which the job ran
+hostname
+
+
