@@ -1,5 +1,6 @@
 #!/bin/bash
 #PBS -N clean_pairwise_data
+#PBS -P hctsa
 #PBS -j oe
 #PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
