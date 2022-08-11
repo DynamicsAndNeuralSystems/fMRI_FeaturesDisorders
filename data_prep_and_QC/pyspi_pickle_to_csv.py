@@ -33,6 +33,7 @@ fmri_github_dir = github_dir + "fMRI_FeaturesDisorders/"
 # noise_label = noise_proc.replace("+", "_")
 # dataset_ID="UCLA_Schizophrenia"
 
+pkl_file = data_path + "pydata/" + noise_label + "/sub-10171/calc.pkl"
 
 def pkl_to_csv(pkl_file, output_csv):
     
