@@ -78,7 +78,7 @@ for (noise_proc in noise_procs) {
                           full.names = F)
     
     # Iterate over each subject and store pyspi data
-    res <- subjects[1:3] %>%
+    res <- subjects %>%
       purrr::map_df(~ read_subject_csv(subject_ID = .x,
                                        subject_csv = paste0(data_path,
                                                             "pydata/", noise_label, 
