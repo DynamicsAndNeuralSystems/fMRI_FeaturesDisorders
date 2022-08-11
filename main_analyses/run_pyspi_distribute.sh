@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 export project_dir=/headnode1/abry4213
 export github_dir=${project_dir}/github/
 export config_file=${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi19_config.yaml
