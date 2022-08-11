@@ -29,17 +29,36 @@ pydata_path <- paste0(data_path, "pydata/")
 # pairwise_feature_set <- "pyspi_19"
 # brain_region_lookup <- "Brain_Region_info.csv"
 
+# ABIDE ASD
+# pydata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/ABIDE_ASD/pydata/"
+# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/ABIDE_ASD/"
+# dataset_ID <- "ABIDE_ASD"
+# noise_procs <- c("FC1000")
+# pairwise_feature_set <- "pyspi_19"
+# brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+
 # Load packages
 library(tidyverse)
 
 # Read in brain region lookup table
-brain_region_LUT <- read.csv(paste0(data_path, brain_region_lookup))
+brain_region_LUT <- read.csv(paste0(data_path, brain_region_lookup)) %>%
+  mutate(Index = as.numeric(Index))
 
 # Function to read in a subject's pyspi data from a CSV and output a dataframe
 read_subject_csv <- function(subject_csv, subject_ID) {
   tryCatch({
     subject_data <- read.csv(subject_csv) %>%
-      dplyr::mutate(Sample_ID = subject_ID)
+      dplyr::mutate(Sample_ID = subject_ID,
+                    brain_region_1 = 1+as.numeric(gsub("proc-", "", brain_region_1)),
+                    brain_region_2 = 1+as.numeric(gsub("proc-", "", brain_region_2))) %>%
+      dplyr::rename("Index" = "brain_region_1") %>%
+      left_join(., brain_region_LUT) %>%
+      dplyr::select(-Index) %>%
+      dplyr::rename("brain_region_1" = "Brain_Region",
+                    "Index" = "brain_region_2") %>%
+      left_join(., brain_region_LUT) %>%
+      dplyr::select(-Index) %>%
+      dplyr::rename("brain_region_2" = "Brain_Region")
     
     return(subject_data)
   }, error = function(e) {
