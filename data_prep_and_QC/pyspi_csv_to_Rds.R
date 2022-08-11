@@ -44,6 +44,7 @@ read_subject_csv <- function(subject_csv, subject_ID) {
     return(subject_data)
   }, error = function(e) {
     cat("Could not process data for", subject_ID, "\n")
+    msg(e)
   })
 }
 
