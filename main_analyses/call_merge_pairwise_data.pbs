@@ -1,18 +1,15 @@
 #!/bin/bash
-#PBS -N clean_pairwise_data
-#PBS -P hctsa
+#PBS -N merge_pairwise_data
+#PBS -q yossarian
 #PBS -j oe
-#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_out.txt
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/merge_pairwise_data_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
-#PBS -l walltime=4:00:00
+#PBS -l walltime=2:00:00
 #PBS -m abe
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -V
 
 cd "$PBS_O_WORKDIR" 
-
-# Load python
-module load R/4.1.1
 
 # Define directories
 project_dir=/project/hctsa/annie/
@@ -32,12 +29,12 @@ export parcellation_name=" "
 export pairwise_feature_set="pyspi_19"
 
 # Convert CSVs to an Rds file per noise processing method
-cmd="Rscript ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_csv_to_Rds.R \
+cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_csv_to_Rds.R \
 --data_path ${data_path} \
 --brain_region_lookup ${brain_region_lookup} \
 --pairwise_feature_set ${pairwise_feature_set} \
 --noise_procs ${noise_procs} \
---dataset_ID ${dataset_ID}"
+--dataset_ID ${dataset_ID} --overwrite"
  
 echo $cmd
  
@@ -54,12 +51,12 @@ export parcellation_name=" "
 export pairwise_feature_set="pyspi_19"
 
 # Convert CSVs to an Rds file per noise processing method
-cmd="Rscript ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_csv_to_Rds.R \
+cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_csv_to_Rds.R \
 --data_path ${data_path} \
 --brain_region_lookup ${brain_region_lookup} \
 --pairwise_feature_set ${pairwise_feature_set} \
 --noise_procs ${noise_procs} \
---dataset_ID ${dataset_ID}"
+--dataset_ID ${dataset_ID} --overwrite"
  
 echo $cmd
  

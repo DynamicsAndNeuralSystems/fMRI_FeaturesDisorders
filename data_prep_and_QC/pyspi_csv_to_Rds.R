@@ -6,6 +6,7 @@ parser$add_argument("--brain_region_lookup", default="", nargs="?")
 parser$add_argument("--pairwise_feature_set", default="pyspi_19")
 parser$add_argument("--noise_procs", default=c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"), nargs='*', action='append')
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
+parser$add_argument("--overwrite", default=FALSE, action="store_true")
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -14,6 +15,7 @@ brain_region_lookup <- args$brain_region_lookup
 pairwise_feature_set <- args$pairwise_feature_set
 dataset_ID <- args$dataset_ID
 noise_procs <- args$noise_procs
+overwrite <- args$overwrite
 
 pydata_path <- paste0(data_path, "pydata/")
 
@@ -39,6 +41,7 @@ pydata_path <- paste0(data_path, "pydata/")
 
 # Load packages
 library(tidyverse)
+library(purrr)
 
 # Read in brain region lookup table
 brain_region_LUT <- read.csv(paste0(data_path, brain_region_lookup)) %>%
@@ -63,7 +66,7 @@ read_subject_csv <- function(subject_csv, subject_ID) {
     return(subject_data)
   }, error = function(e) {
     cat("Could not process data for", subject_ID, "\n")
-    msg(e)
+    message(e)
   })
 }
 
@@ -71,7 +74,7 @@ read_subject_csv <- function(subject_csv, subject_ID) {
 for (noise_proc in noise_procs) {
   noise_label = gsub("\\+", "_", noise_proc)
   if (!(file.exists(paste0(pydata_path, noise_label, "_pairwise_", 
-                           pairwise_feature_set, ".Rds")))) {
+                           pairwise_feature_set, ".Rds"))) | overwrite) {
     # Get list of subjects with processed pyspi data
     subjects <- list.dirs(paste0(data_path, "pydata/", noise_label), 
                           recursive = F,
