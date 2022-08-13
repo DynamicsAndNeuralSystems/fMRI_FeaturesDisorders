@@ -12,7 +12,7 @@
 cd "$PBS_O_WORKDIR" 
 
 # Define directories
-project_dir=/project/hctsa/annie/
+project_dir=/headnode1/abry4213/
 github_dir=${project_dir}/github/
 mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/
 
