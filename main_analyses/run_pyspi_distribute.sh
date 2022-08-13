@@ -15,7 +15,7 @@ export email="abry4213@uni.sydney.edu.au"
 #     --pyspi_config $config_file \
 #     --sample_yaml ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/sample.yaml \
 #     --pbs_notify a \
-#     --email $email --walltime_hrs 8 --cpu 2 --mem 8 --table_only
+#     --email $email --walltime_hrs 8 --cpu 1 --mem 20 --table_only
 # done
 
 
@@ -29,5 +29,5 @@ do
     --pyspi_config $config_file \
     --sample_yaml ${project_dir}/data/${dataset_ID}/pydata/${noise_label}/sample.yaml \
     --pbs_notify a \
-    --email $email --walltime_hrs 6 --cpu 2 --mem 8 --table_only
+    --email $email --walltime_hrs 6 --cpu 1 --mem 20 --table_only
 done
