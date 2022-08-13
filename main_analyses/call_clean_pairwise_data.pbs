@@ -40,23 +40,11 @@ cmd="python3 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_
 --noise_procs ${noise_procs} \
 --brain_region_lookup ${brain_region_lookup} \
 --parcellation_name ${parcellation_name} \
---dataset_ID ${dataset_ID}"
+--dataset_ID ${dataset_ID} --overwrite"
 
 echo $cmd
 
 $cmd
-
-# Convert CSVs to an Rds file per noise processing method
-# cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_csv_to_Rds.R \
-# --data_path ${data_path} \
-# --brain_region_lookup ${brain_region_lookup} \
-# --pairwise_feature_set ${pairwise_feature_set} \
-# --noise_procs ${noise_procs} \
-# --dataset_ID ${dataset_ID}"
-# 
-# echo $cmd
-# 
-# $cmd
 
 ################################################################################
 # Prepare ABIDE ASD
@@ -74,7 +62,7 @@ cmd="python3 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_
 --noise_procs ${noise_procs} \
 --brain_region_lookup ${brain_region_lookup} \
 --parcellation_name ${parcellation_name} \
---dataset_ID ${dataset_ID}"
+--dataset_ID ${dataset_ID} --overwrite"
 
 echo $cmd
 
