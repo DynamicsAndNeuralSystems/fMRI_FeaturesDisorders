@@ -38,7 +38,7 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/dat
  
 echo $cmd
  
-# $cmd
+$cmd
 
 ################################################################################
 # Prepare ABIDE ASD data
