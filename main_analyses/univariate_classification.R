@@ -128,7 +128,7 @@ for (i in 1:nrow(grouping_param_df)) {
                                                 grouping_type, 
                                                 univariate_feature_set, 
                                                 weighting_name)))) {
-      group_wise_SVM_CV_weighting <- run_univariate_cv_svm_by_input_var(rdata_path = rdata_path,
+      group_wise_SVM_CV_weighting <- run_univariate_cv_svm_by_input_var(data_path = data_path,
                                                                         feature_set = univariate_feature_set,
                                                                         test_package = test_package,
                                                                         svm_kernel = kernel,
