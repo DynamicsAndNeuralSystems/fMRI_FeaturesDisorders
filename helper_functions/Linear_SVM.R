@@ -57,16 +57,16 @@ k_fold_CV_linear_SVM <- function(input_data,
     # Training data
     train_data <- input_data[train_i, ] %>%
       filter(!is.na(group))
-    train_subjects <- train_data$Subject_ID
+    train_subjects <- train_data$Sample_ID
     
-    train_data <- train_data %>% dplyr::select(-Subject_ID) 
+    train_data <- train_data %>% dplyr::select(-Sample_ID) 
     
     # Testing data
     test_data <- input_data[test_i, ] %>%
       filter(!is.na(group))
-    test_subjects <- test_data$Subject_ID
+    test_subjects <- test_data$Sample_ID
     
-    test_data <- test_data %>% dplyr::select(-Subject_ID) 
+    test_data <- test_data %>% dplyr::select(-Sample_ID) 
     
     # Run linear SVM on fold
     
@@ -81,7 +81,7 @@ k_fold_CV_linear_SVM <- function(input_data,
     train_data$group <- factor(train_data$group, levels = levels(in_sample_pred))
     
     # Create dataframe containing subject ID and whether out-of-sample prediction was correct
-    in_fold_predictions_by_subject <- data.frame(Subject_ID = train_subjects,
+    in_fold_predictions_by_subject <- data.frame(Sample_ID = train_subjects,
                                                  Sample_Type = "In-sample",
                                                  fold_number = i,
                                                  Actual_Diagnosis = train_data$group,
@@ -95,7 +95,7 @@ k_fold_CV_linear_SVM <- function(input_data,
     test_data$group <- factor(test_data$group, levels = levels(out_sample_pred))
     
     # Create dataframe containing subject ID and whether out-of-sample prediction was correct
-    out_fold_predictions_by_subject <- data.frame(Subject_ID = test_subjects,
+    out_fold_predictions_by_subject <- data.frame(Sample_ID = test_subjects,
                                                   Sample_Type = "Out-of-sample",
                                                   fold_number = i,
                                                   Actual_Diagnosis = test_data$group,
@@ -195,8 +195,8 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
     for (group_var in grouping_var_vector) {
       if (grouping_var == "Combo") {
         data_for_SVM <- feature_matrix %>%
-          dplyr::select(Subject_ID, group, Combo, values) %>%
-          tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+          dplyr::select(Sample_ID, group, Combo, values) %>%
+          tidyr::pivot_wider(id_cols = c(Sample_ID, group),
                              names_from = Combo,
                              values_from 
                              = values) %>%
@@ -209,8 +209,8 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
         # Otherwise iterate over each separate group
         data_for_SVM <- subset(feature_matrix, get(grouping_var_name) == group_var) %>%
           dplyr::ungroup() %>%
-          dplyr::select(Subject_ID, group, svm_feature_var_name, values) %>%
-          tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+          dplyr::select(Sample_ID, group, svm_feature_var_name, values) %>%
+          tidyr::pivot_wider(id_cols = c(Sample_ID, group),
                              names_from = svm_feature_var_name,
                              values_from 
                              = values) %>%
@@ -283,7 +283,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                                                         paste0(brain_region_2, "_", brain_region_1)),
                                      Direction == "Directed" ~ paste0(brain_region_1, "_", brain_region_2))) %>%
       dplyr::select(-brain_region_1, -brain_region_2)  %>%
-      distinct(Subject_ID, SPI, region_pair, .keep_all = T)
+      distinct(Sample_ID, SPI, region_pair, .keep_all = T)
     
   } else if (svm_feature_var == "SPI") {
     
@@ -291,7 +291,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     pairwise_data <- pairwise_data %>%
       rowwise() %>%
       tidyr::unite("region_pair", c(brain_region_1, brain_region_2), sep="_") %>%
-      distinct(Subject_ID, SPI, region_pair, .keep_all = T)
+      distinct(Sample_ID, SPI, region_pair, .keep_all = T)
     
     svm_feature_var_name = svm_feature_var
     grouping_var_name = "region_pair"
@@ -305,10 +305,10 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     pairwise_data <- pairwise_data %>%
       # Special cases
       filter(SPI != "sgc_nonparametric_mean_fs-1_fmin-0_fmax-0-5",
-             !(Subject_ID == "sub-10171" & SPI == "di_gaussian")) %>%
+             !(Sample_ID == "sub-10171" & SPI == "di_gaussian")) %>%
       rowwise() %>%
       tidyr::unite("region_pair", c(brain_region_1, brain_region_2), sep="_") %>%
-      distinct(Subject_ID, SPI, region_pair, .keep_all = T) %>%
+      distinct(Sample_ID, SPI, region_pair, .keep_all = T) %>%
       group_by(SPI, region_pair) %>%
       filter(!all(is.na(value))) %>%
       dplyr::select(where(function(x) any(!is.na(x)))) %>%
@@ -326,8 +326,8 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
         # Impute missing data with the mean
         group_by(group, Combo) %>%
         mutate(value = ifelse(is.na(value), mean(value, na.rm=T), value)) %>%
-        dplyr::select(Subject_ID, group, Combo, value) %>%
-        tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+        dplyr::select(Sample_ID, group, Combo, value) %>%
+        tidyr::pivot_wider(id_cols = c(Sample_ID, group),
                            names_from = Combo,
                            values_from 
                            = value) %>%
@@ -340,8 +340,8 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
       # Otherwise iterate over each separate group
       data_for_SVM <- subset(pairwise_data, get(grouping_var_name) == group_var) %>%
         dplyr::ungroup() %>%
-        dplyr::select(Subject_ID, group, svm_feature_var_name, value) %>%
-        tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+        dplyr::select(Sample_ID, group, svm_feature_var_name, value) %>%
+        tidyr::pivot_wider(id_cols = c(Sample_ID, group),
                            names_from = svm_feature_var_name,
                            values_from 
                            = value) %>%
@@ -418,12 +418,12 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
                                                                       paste0(brain_region_2, "_", brain_region_1)),
                                    Direction == "Directed" ~ paste0(brain_region_1, "_", brain_region_2))) %>%
     dplyr::select(-brain_region_1, -brain_region_2)  %>%
-    distinct(Subject_ID, SPI, region_pair, .keep_all = T)
+    distinct(Sample_ID, SPI, region_pair, .keep_all = T)
   
   # Merge ROI plus theft feature for univariate
   univariate_combo <- univariate_data %>%
     tidyr::unite("Unique_ID", c("names", "Brain_Region"), sep="_") %>%
-    dplyr::select(Subject_ID, group, Unique_ID, values)
+    dplyr::select(Sample_ID, group, Unique_ID, values)
   
   # Initialize list for each SPI
   class_res_list <- list()
@@ -434,12 +434,12 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
     pairwise_combo <- pairwise_data %>%
       filter(SPI == this_SPI) %>%
       tidyr::unite("Unique_ID", c("SPI", "region_pair"), sep="_") %>%
-      dplyr::select(Subject_ID, group, Unique_ID, value) %>%
+      dplyr::select(Sample_ID, group, Unique_ID, value) %>%
       dplyr::rename("values"="value")
     
     # Combine univariate + pairwise data for SVM
     combined_data_for_SVM <- plyr::rbind.fill(univariate_combo, pairwise_combo) %>%
-      tidyr::pivot_wider(id_cols = c(Subject_ID, group),
+      tidyr::pivot_wider(id_cols = c(Sample_ID, group),
                          names_from = Unique_ID, 
                          values_from = values) %>%
       # Drop columns that are all NA/NAN
