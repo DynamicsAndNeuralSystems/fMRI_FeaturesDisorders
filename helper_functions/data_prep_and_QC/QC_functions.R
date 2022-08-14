@@ -192,14 +192,21 @@ remove_feature_from_univariate_feature_matrix <- function(rdata_path,
 # Function to run quality control methods for univariate data
 #-------------------------------------------------------------------------------
 
-run_QC_for_univariate_dataset <- function(rdata_path, 
-                               dataset_ID = "UCLA_Schizophrenia",
-                               univariate_feature_set = "catch22",
-                               raw_TS_file = "UCLA_Schizophrenia_fMRI_data",
-                               noise_procs = c("AROMA+2P",
-                                               "AROMA+2P+GMR",
-                                               "AROMA+2P+DiCER"),
-                               plot_dir) {
+run_QC_for_univariate_dataset <- function(data_path, 
+                                          sample_metadata = "participants.csv",
+                                          dataset_ID = "UCLA_Schizophrenia",
+                                          univariate_feature_set = "catch22",
+                                          raw_TS_file = "UCLA_Schizophrenia_fMRI_data",
+                                          noise_procs = c("AROMA+2P",
+                                                          "AROMA+2P+GMR",
+                                                          "AROMA+2P+DiCER"),
+                                          plot_dir) {
+  
+  rdata_path <- paste0(data_path, "Rdata/")
+  
+  # Load sample metadata
+  sample_metadata_df <- read.csv(paste0(data_path, sample_metadata)) %>%
+    mutate(Sample_ID = gsub("_", "", Sample_ID))
   
   # Samples identified with missing data for one or more noise-processing methods:
   univar_NA_samples <- find_univariate_sample_na(rdata_path = rdata_path,
@@ -230,13 +237,20 @@ run_QC_for_univariate_dataset <- function(rdata_path,
                                          sprintf("%s_%s_filtered.Rds",
                                                  dataset_ID,
                                                  univariate_feature_set))) %>%
-    distinct(Sample_ID)
+    distinct(Sample_ID) %>%
+    left_join(., sample_metadata_df)
   saveRDS(filtered_sample_info, file=paste0(rdata_path, 
                                             sprintf("%s_filtered_sample_info_%s.Rds",
                                                     dataset_ID,
                                                     univariate_feature_set)))
+  
+  # Add underscore if sample ID starts with a number
+  filtered_sample_info <- filtered_sample_info %>%
+    mutate(Sample_ID = ifelse(grepl("^[[:digit:]]+", Sample_ID),
+                              paste0("_", Sample_ID),
+                              Sample_ID))
   write.csv(filtered_sample_info,
-            paste0(data_path, sprintf("%s_samples_with_univariate_%s",
+            paste0(data_path, sprintf("%s_samples_with_univariate_%s.csv",
                                dataset_ID, univariate_feature_set)),
             row.names=F)
   
