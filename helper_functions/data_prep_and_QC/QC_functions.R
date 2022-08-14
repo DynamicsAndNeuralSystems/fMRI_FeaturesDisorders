@@ -244,16 +244,6 @@ run_QC_for_univariate_dataset <- function(data_path,
                                                     dataset_ID,
                                                     univariate_feature_set)))
   
-  # Add underscore if sample ID starts with a number
-  filtered_sample_info <- filtered_sample_info %>%
-    mutate(Sample_ID = ifelse(grepl("^[[:digit:]]+", Sample_ID),
-                              paste0("_", Sample_ID),
-                              Sample_ID))
-  write.csv(filtered_sample_info,
-            paste0(data_path, sprintf("%s_samples_with_univariate_%s.csv",
-                               dataset_ID, univariate_feature_set)),
-            row.names=F)
-  
   cat("Subject info saved to:", paste0(rdata_path, 
                                        sprintf("%s_filtered_sample_info_%s.Rds",
                                                dataset_ID,
