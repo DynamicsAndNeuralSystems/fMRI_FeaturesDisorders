@@ -11,22 +11,24 @@ library(tidyverse)
 #-------------------------------------------------------------------------------
 # Function to read in pairwise TS feature data and return subjects with NA 
 # values. For each noise-processing method, the number of TS features with all 
-# NA for all brain regions are given.
+# NA for all brain region combinations are given.
 #-------------------------------------------------------------------------------
 
-find_pairwise_sample_na <- function(rdata_path, 
-                                      input_dataset_name = "UCLA_Schizophrenia",
-                                      noise_proc = "AROMA_2P_GMR",
-                                      feature_set = "pyspi_19") {
-  TS_feature_data <- readRDS(paste0(rdata_path, sprintf("%s_%s.Rds",
-                                                        input_dataset_name,
-                                                        feature_set)))
+find_pairwise_sample_na <- function(pydata_path, 
+                                    input_dataset_name = "UCLA_Schizophrenia",
+                                    noise_proc = "AROMA_2P_GMR",
+                                    feature_set = "pyspi_19") {
+  
+  # Load in pairwise data for this noise processing method
+  TS_feature_data <- readRDS(paste0(pydata_path, sprintf("%s_pairwise_%s.Rds",
+                                                         noise_proc,
+                                                         feature_set)))
   
   NA_sample_data <- TS_feature_data %>%
-    group_by(Sample_ID, Noise_Proc, names) %>%
-    filter(all(is.na(values))) %>%
+    group_by(Sample_ID, Noise_Proc, SPI) %>%
+    filter(all(is.na(value))) %>%
     ungroup() %>%
-    distinct(Sample_ID, Noise_Proc, names) %>%
+    distinct(Sample_ID, Noise_Proc, SPI) %>%
     group_by(Sample_ID, Noise_Proc) %>%
     dplyr::summarise(num_na = n()) %>%
     # Only want to see subjects with NA for more than one feature
@@ -42,30 +44,29 @@ find_pairwise_sample_na <- function(rdata_path,
 # NA for all subjects/brain regions
 #-------------------------------------------------------------------------------
 
-find_univariate_feature_na <- function(rdata_path, 
-                                       input_dataset_name = "UCLA_Schizophrenia",
-                                       feature_set = "catch22",
-                                       noise_procs = c("AROMA+2P",
-                                                       "AROMA+2P+GMR",
-                                                       "AROMA+2P+DiCER")) {
-  TS_feature_data <- readRDS(paste0(rdata_path, sprintf("%s_%s.Rds",
-                                                        input_dataset_name,
-                                                        feature_set)))
+find_pairwise_feature_na <- function(pydata_path, 
+                                     input_dataset_name = "UCLA_Schizophrenia",
+                                     noise_proc = "AROMA_2P_GMR",
+                                     feature_set = "pyspi_19") {
+  # Load in pairwise data for this noise processing method
+  TS_feature_data <- readRDS(paste0(pydata_path, sprintf("%s_pairwise_%s.Rds",
+                                                         noise_proc,
+                                                         feature_set)))
   
   NA_feature_data <- TS_feature_data %>%
-    group_by(names, Noise_Proc) %>%
-    filter(all(is.na(values))) %>%
-    distinct(names, Noise_Proc) 
+    group_by(SPI, Noise_Proc) %>%
+    filter(all(is.na(value))) %>%
+    distinct(SPI, Noise_Proc) 
   
   return(NA_feature_data)
 }
 
 #-------------------------------------------------------------------------------
-# Function to read in a univariate TS feature matrix, z-score it, and save
+# Function to read in a pairwise TS feature matrix, z-score it, and save
 # the z-scored matrix
 #-------------------------------------------------------------------------------
 
-z_score_feature_matrix <- function(noise_proc,
+z_score_pairwise_feature_matrix <- function(noise_proc,
                                    TS_df) {
   TS_df_noise_proc <- subset(TS_df, Noise_Proc == noise_proc)
   
