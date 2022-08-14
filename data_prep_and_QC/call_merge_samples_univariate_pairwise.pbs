@@ -1,8 +1,8 @@
 #!/bin/bash
-#PBS -N pyspi_data_to_CSV
+#PBS -N merge_samples_univariate_pairwise
 #PBS -q yossarian
 #PBS -j oe
-#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pyspi_data_to_CSV_out.txt
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/merge_samples_univariate_pairwise_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=2:00:00
 #PBS -m abe
@@ -20,7 +20,7 @@ mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/
 # UCLA Schizophrenia
 ################################################################################
 export dataset_ID="UCLA_Schizophrenia"
-export data_path=${project_dir}/data/{dataset_ID}/
+export data_path=${project_dir}/data/${dataset_ID}/
 export univariate_feature_set="catch22"
 export pairwise_feature_set="pyspi_19"
 
@@ -38,7 +38,7 @@ $cmd
 # ABIDE ASD
 ################################################################################
 export dataset_ID="ABIDE_ASD"
-export data_path=${project_dir}/data/{dataset_ID}/
+export data_path=${project_dir}/data/${dataset_ID}/
 export univariate_feature_set="catch22"
 export pairwise_feature_set="pyspi_19"
 
