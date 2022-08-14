@@ -63,6 +63,7 @@ set.seed(127)
 
 # Load tidyverse
 library(tidyverse)
+library(theft)
 
 # Unlist noise-processing methods
 tryCatch({
