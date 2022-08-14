@@ -127,7 +127,9 @@ full_res %>%
   distinct(Sample_ID, Diagnosis) %>%
   write.csv(., paste0(data_path,
                       dataset_ID,
-                      "_samples_with_pyspi.csv"),
+                      "_samples_with_pairwise_",
+                      pairwise_feature_set,
+                      ".csv"),
             row.names = F)
 
 
