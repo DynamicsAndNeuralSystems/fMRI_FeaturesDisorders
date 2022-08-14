@@ -2,8 +2,8 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/")
-parser$add_argument("--brain_region_lookup", default="", nargs="?")
 parser$add_argument("--pairwise_feature_set", default="pyspi_19")
+parser$add_argument("--label_vars", default=c("CONTROL", "SCHIZOPHRENIA"), nargs="*", action="append")
 parser$add_argument("--noise_procs", default=c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"), nargs='*', action='append')
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 parser$add_argument("--overwrite", default=FALSE, action="store_true")
@@ -11,7 +11,7 @@ parser$add_argument("--overwrite", default=FALSE, action="store_true")
 # Parse input arguments
 args <- parser$parse_args()
 data_path <- args$data_path
-brain_region_lookup <- args$brain_region_lookup
+label_vars <- args$label_vars
 pairwise_feature_set <- args$pairwise_feature_set
 dataset_ID <- args$dataset_ID
 noise_procs <- args$noise_procs
@@ -46,6 +46,10 @@ library(purrr)
 # Read in brain region lookup table
 brain_region_LUT <- read.csv(paste0(data_path, brain_region_lookup)) %>%
   mutate(Index = as.numeric(Index))
+
+# Load sample info
+sample_metadata <- read.csv(paste0(data_path, subject_csv)) %>%
+  mutate(Sample_ID == gsub("_", "", Sample_ID))
 
 # Function to read in a subject's pyspi data from a CSV and output a dataframe
 read_subject_csv <- function(subject_csv, subject_ID) {
@@ -92,6 +96,14 @@ for (noise_proc in noise_procs) {
                         pairwise_feature_set, ".Rds"))
   }
 }
+
+# Merge all pairwise data for control and schizophrenia subjects
+full_res <- noise_procs %>%
+  purrr::map_df(~ readRDS(paste0(pydata_path, gsub("\\+", "_", .x), 
+                                 "_pairwise_", 
+                                 pairwise_feature_set, ".Rds"))) %>%
+  left_join(., sample_metadata) %>%
+  dplyr::filter(Diagnosis %in% label_vars)
 
 
 
