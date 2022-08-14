@@ -15,6 +15,17 @@ library(cowplot)
 library(caret)
 theme_set(theme_cowplot())
 
+# DIY rlist::list.append
+list.append <- function (.data, ...) 
+{
+  if (is.list(.data)) {
+    c(.data, list(...))
+  }
+  else {
+    c(.data, ..., recursive = FALSE)
+  }
+}
+
 
 #-------------------------------------------------------------------------------
 # k-fold CV SVM with option to use inverse probability weighting
@@ -31,16 +42,16 @@ k_fold_CV_linear_SVM <- function(input_data,
   
   # Shuffle labels if specified
   if (shuffle_labels) {
-    input_data <- transform(input_data, group = sample(group, replace = FALSE))
+    input_data <- transform(input_data, Diagnosis = sample(Diagnosis, replace = FALSE))
   }
   
-  # Specify that group is a factor so that createFolds creates stratified folds
-  input_data$group <- factor(input_data$group)
+  # Specify that Diagnosis is a factor so that createFolds creates stratified folds
+  input_data$Diagnosis <- factor(input_data$Diagnosis)
   
   # Use pre-specified folds if passed in,
   # Otherwise create train/test data folds
   if (is.null(flds)) {
-    flds <- caret::createFolds(input_data$group, k = k, list = TRUE, returnTrain = FALSE)
+    flds <- caret::createFolds(input_data$Diagnosis, k = k, list = TRUE, returnTrain = FALSE)
   }
   
   # Create dataframe to store subject IDs and whether or not they were properly classified
@@ -56,53 +67,55 @@ k_fold_CV_linear_SVM <- function(input_data,
     
     # Training data
     train_data <- input_data[train_i, ] %>%
-      filter(!is.na(group))
+      filter(!is.na(Diagnosis))
     train_subjects <- train_data$Sample_ID
     
     train_data <- train_data %>% dplyr::select(-Sample_ID) 
     
     # Testing data
     test_data <- input_data[test_i, ] %>%
-      filter(!is.na(group))
+      filter(!is.na(Diagnosis))
     test_subjects <- test_data$Sample_ID
     
     test_data <- test_data %>% dplyr::select(-Sample_ID) 
     
     # Run linear SVM on fold
     
-    svmModel <- e1071::svm(factor(group) ~ .,
+    svmModel <- e1071::svm(factor(Diagnosis) ~ .,
                            kernel = svm_kernel,
                            cost = c,
                            data = train_data,
                            class.weights = sample_wts)
     
-    # Generate in-sample predictions based on SVM model
-    in_sample_pred <- predict(svmModel, train_data)
-    train_data$group <- factor(train_data$group, levels = levels(in_sample_pred))
-    
-    # Create dataframe containing subject ID and whether out-of-sample prediction was correct
-    in_fold_predictions_by_subject <- data.frame(Sample_ID = train_subjects,
-                                                 Sample_Type = "In-sample",
-                                                 fold_number = i,
-                                                 Actual_Diagnosis = train_data$group,
-                                                 Predicted_Diagnosis = in_sample_pred) %>%
-      mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
-    subject_classification_list <- append(subject_classification_list,
-                                          in_fold_predictions_by_subject)
-    
+    if (!out_of_sample_only) {
+      # Generate in-sample predictions based on SVM model
+      in_sample_pred <- predict(svmModel, train_data)
+      train_data$Diagnosis <- factor(train_data$Diagnosis, levels = levels(in_sample_pred))
+      
+      # Create dataframe containing subject ID and whether out-of-sample prediction was correct
+      in_fold_predictions_by_subject <- data.frame(Sample_ID = train_subjects,
+                                                   Sample_Type = "In-sample",
+                                                   fold_number = i,
+                                                   Actual_Diagnosis = train_data$Diagnosis,
+                                                   Predicted_Diagnosis = in_sample_pred) %>%
+        mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
+      subject_classification_list <- list.append(subject_classification_list,
+                                            in_fold_predictions_by_subject)
+    }
+
     # Generate out-of-sample predictions based on SVM model
     out_sample_pred <- predict(svmModel, test_data)
-    test_data$group <- factor(test_data$group, levels = levels(out_sample_pred))
+    test_data$Diagnosis <- factor(test_data$Diagnosis, levels = levels(out_sample_pred))
     
     # Create dataframe containing subject ID and whether out-of-sample prediction was correct
     out_fold_predictions_by_subject <- data.frame(Sample_ID = test_subjects,
                                                   Sample_Type = "Out-of-sample",
                                                   fold_number = i,
-                                                  Actual_Diagnosis = test_data$group,
+                                                  Actual_Diagnosis = test_data$Diagnosis,
                                                   Predicted_Diagnosis = out_sample_pred) %>%
       mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
     
-    subject_classification_list <- append(subject_classification_list,
+    subject_classification_list <- list.append(subject_classification_list,
                                           out_fold_predictions_by_subject)
     
   } 
@@ -128,7 +141,6 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
                                                dataset_ID,
                                                svm_kernel = "linear",
                                                feature_set = "catch22",
-                                               test_package = "e1071",
                                                grouping_var = "Brain_Region",
                                                svm_feature_var = "Feature",
                                                noise_procs = c("AROMA+2P", 
@@ -195,8 +207,10 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
     for (group_var in grouping_var_vector) {
       if (grouping_var == "Combo") {
         data_for_SVM <- feature_matrix %>%
-          dplyr::select(Sample_ID, group, Combo, values) %>%
-          tidyr::pivot_wider(id_cols = c(Sample_ID, group),
+          left_join(., sample_groups) %>%
+          dplyr::select(Sample_ID, Diagnosis, Combo, values) %>%
+          distinct(.keep_all = T) %>%
+          tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
                              names_from = Combo,
                              values_from 
                              = values) %>%
@@ -209,8 +223,10 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
         # Otherwise iterate over each separate group
         data_for_SVM <- subset(feature_matrix, get(grouping_var_name) == group_var) %>%
           dplyr::ungroup() %>%
-          dplyr::select(Sample_ID, group, svm_feature_var_name, values) %>%
-          tidyr::pivot_wider(id_cols = c(Sample_ID, group),
+          left_join(., sample_groups) %>%
+          dplyr::select(Sample_ID, Diagnosis, svm_feature_var_name, values) %>%
+          distinct(.keep_all = T) %>%
+          tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
                              names_from = svm_feature_var_name,
                              values_from 
                              = values) %>%
@@ -233,7 +249,7 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
                       Noise_Proc = noise_proc)
       
       # Append results to list
-      class_res_list <- append(class_res_list, SVM_results)
+      class_res_list <- list.append(class_res_list, SVM_results)
     }
   }
   
@@ -375,7 +391,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                       Noise_Proc = noise_proc)
       
       # Append results to list
-      class_res_list <- append(class_res_list, SVM_results)
+      class_res_list <- list.append(class_res_list, SVM_results)
     } else {
       cat("\nNo observations available for", group_var, "after filtering.\n")
     }
@@ -472,7 +488,7 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
                       use_inv_prob_weighting = use_inv_prob_weighting)
       
       # Append results to list
-      class_res_list <- append(class_res_list, SVM_results)
+      class_res_list <- list.append(class_res_list, SVM_results)
     } else {
       cat("\nNo observations available for", this_SPI, "after filtering.\n")
       
