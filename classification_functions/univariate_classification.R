@@ -5,26 +5,26 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
-parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/")
-parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/")
-parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/Rdata/")
+parser$add_argument("--github_dir", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/")
+parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
+parser$add_argument("--rdata_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/Rdata/")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 
 # univariate_feature_set <- "catch22"
 # subject_csv <- "participants.csv"
-# github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
+# github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
 
 # UCLA schizophrenia
-# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/Rdata/"
-# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
+# rdata_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/Rdata/"
+# data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
 # ABIDE ASD
-# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/ABIDE_ASD/Rdata/"
-# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/ABIDE_ASD/"
+# rdata_path <- "/headnode1/abry4213/data/ABIDE_ASD/Rdata/"
+# data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
 # noise_procs <- c("FC1000")
 
@@ -64,24 +64,24 @@ invisible(sapply(files.sources, source))
 ################################################################################
 # Generate model-free shuffle null distribution
 ################################################################################
-if (!file.exists(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
-                                            univariate_feature_set)))) {
-  model_free_shuffle_null_res <- run_model_free_n_shuffles(num_shuffles = 100000,
-                                                           feature_set = univariate_feature_set,
-                                                           dataset_ID = dataset_ID,
-                                                           rdata_path = rdata_path)
-  saveRDS(model_free_shuffle_null_res, file = paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
-                                                                         univariate_feature_set)))
-} else {
-  model_free_shuffle_null_res <- readRDS(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
-                                                                    univariate_feature_set)))
-}
+# if (!file.exists(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
+#                                             univariate_feature_set)))) {
+#   model_free_shuffle_null_res <- run_model_free_n_shuffles(num_shuffles = 100000,
+#                                                            feature_set = univariate_feature_set,
+#                                                            dataset_ID = dataset_ID,
+#                                                            rdata_path = rdata_path)
+#   saveRDS(model_free_shuffle_null_res, file = paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
+#                                                                          univariate_feature_set)))
+# } else {
+#   model_free_shuffle_null_res <- readRDS(paste0(rdata_path, sprintf("Null_Model_Free_Shuffles_%s.Rds",
+#                                                                     univariate_feature_set)))
+# }
 
 ################################################################################
 # Create ten folds to use for all analyses
 ################################################################################
 
-subjects_to_use <- readRDS(paste0(rdata_path, "UCLA_Subjects_with_Univariate_and_Pairwise.Rds"))
+subjects_to_use <- readRDS(paste0(rdata_path, dataset_ID, "_Subjects_with_Univariate_and_Pairwise.Rds"))
 
 if (!file.exists(paste0(rdata_path, "Subjects_per_10_folds.Rds"))) {
   # Make folds
