@@ -1,6 +1,5 @@
 library(caret)
 library(dplyr)
-library(rlist)
 library(knitr)
 library(kableExtra)
 
@@ -234,7 +233,7 @@ calc_empirical_nulls <- function(class_res,
                     "balanced_accuracy" = "main_balanced_accuracy") 
     
     
-    merged_list <- rlist::list.append(merged_list, p_value_res)
+    merged_list <- append(merged_list, p_value_res)
   }
   main_p_values <- do.call(plyr::rbind.fill, merged_list) %>%
     ungroup() %>%
