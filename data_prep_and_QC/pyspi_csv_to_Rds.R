@@ -3,6 +3,7 @@ library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/")
 parser$add_argument("--pairwise_feature_set", default="pyspi_19")
+parser$add_argument("--sample_metadata", default="participants.csv")
 parser$add_argument("--brain_region_lookup", default="Brain_Region_info.csv")
 parser$add_argument("--label_vars", default=c("CONTROL", "SCHIZOPHRENIA"), nargs="*", action="append")
 parser$add_argument("--noise_procs", default=c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"), nargs='*', action='append')
@@ -13,6 +14,7 @@ parser$add_argument("--overwrite", default=FALSE, action="store_true")
 args <- parser$parse_args()
 data_path <- args$data_path
 label_vars <- args$label_vars
+sample_metadata <- args$sample_metadata
 brain_region_lookup <- args$brain_region_lookup
 pairwise_feature_set <- args$pairwise_feature_set
 dataset_ID <- args$dataset_ID
@@ -50,13 +52,13 @@ brain_region_LUT <- read.csv(paste0(data_path, brain_region_lookup)) %>%
   mutate(Index = as.numeric(Index))
 
 # Load sample info
-sample_metadata <- read.csv(paste0(data_path, subject_csv)) %>%
+sample_metadata_df <- read.csv(paste0(data_path, sample_metadata)) %>%
   mutate(Sample_ID == gsub("_", "", Sample_ID))
 
 # Function to read in a subject's pyspi data from a CSV and output a dataframe
-read_subject_csv <- function(subject_csv, subject_ID) {
+read_sample_pyspi_data <- function(sample_data_file, sample_ID) {
   tryCatch({
-    subject_data <- read.csv(subject_csv) %>%
+    sample_data <- read.csv(sample_data) %>%
       dplyr::mutate(Sample_ID = subject_ID,
                     brain_region_1 = 1+as.numeric(gsub("proc-", "", brain_region_1)),
                     brain_region_2 = 1+as.numeric(gsub("proc-", "", brain_region_2))) %>%
@@ -69,9 +71,9 @@ read_subject_csv <- function(subject_csv, subject_ID) {
       dplyr::select(-Index) %>%
       dplyr::rename("brain_region_2" = "Brain_Region")
     
-    return(subject_data)
+    return(sample_data)
   }, error = function(e) {
-    cat("Could not process data for", subject_ID, "\n")
+    cat("Could not process data for", sample_ID, "\n")
     message(e)
   })
 }
@@ -88,8 +90,8 @@ for (noise_proc in noise_procs) {
     
     # Iterate over each subject and store pyspi data
     res <- subjects %>%
-      purrr::map_df(~ read_subject_csv(subject_ID = .x,
-                                       subject_csv = paste0(data_path,
+      purrr::map_df(~ read_sample_pyspi_data(sample_ID = .x,
+                                       sample_data_file = paste0(data_path,
                                                             "pydata/", noise_label, 
                                                             "/", .x, "/calc.csv"))) %>%
       dplyr::mutate(Noise_Proc = noise_proc)
@@ -106,7 +108,7 @@ if (!(file.exists(paste0(pydata_path, dataset_ID, "_pairwise_",
     purrr::map_df(~ readRDS(paste0(pydata_path, gsub("\\+", "_", .x), 
                                    "_pairwise_", 
                                    pairwise_feature_set, ".Rds"))) %>%
-    left_join(., sample_metadata) %>%
+    left_join(., sample_metadata_df) %>%
     dplyr::filter(Diagnosis %in% label_vars)
   
   saveRDS(full_res, 
