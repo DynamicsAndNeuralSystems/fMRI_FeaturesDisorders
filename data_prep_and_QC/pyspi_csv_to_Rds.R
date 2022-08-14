@@ -80,7 +80,7 @@ read_sample_pyspi_data <- function(sample_data_file, sample_ID) {
 
 # Iterate over each noise-processing method
 for (noise_proc in noise_procs) {
-  noise_label = gsub("\\+", "_", noise_proc)
+  tryCatch({noise_label = gsub("\\+", "_", noise_proc)
   if (!(file.exists(paste0(pydata_path, noise_label, "_pairwise_", 
                            pairwise_feature_set, ".Rds"))) | overwrite) {
     # Get list of subjects with processed pyspi data
@@ -99,6 +99,8 @@ for (noise_proc in noise_procs) {
     saveRDS(res, paste0(pydata_path, noise_label, "_pairwise_", 
                         pairwise_feature_set, ".Rds"))
   }
+  }, error = function(e) message(e)
+  )
 }
 
 # Merge all pairwise data for subjects in user-specified groups
