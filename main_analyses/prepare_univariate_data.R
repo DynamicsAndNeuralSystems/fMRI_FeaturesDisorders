@@ -100,9 +100,9 @@ catch22_all_samples(TS_data_file = paste0(rdata_path, sprintf("%s_fMRI_data.Rds"
 #-------------------------------------------------------------------------------
 # Perform QC for catch22 data
 #-------------------------------------------------------------------------------
-run_QC_for_dataset(rdata_path = rdata_path, 
-                   dataset_ID = dataset_ID,
-                   univariate_feature_set = univariate_feature_set,
-                   raw_TS_file = paste0(rdata_path, dataset_ID, "_fMRI_data.Rds"),
-                   noise_procs = noise_procs,
-                   plot_dir = plot_dir)
+run_QC_for_univariate_dataset(rdata_path = rdata_path, 
+                              dataset_ID = dataset_ID,
+                              univariate_feature_set = univariate_feature_set,
+                              raw_TS_file = paste0(rdata_path, dataset_ID, "_fMRI_data.Rds"),
+                              noise_procs = noise_procs,
+                              plot_dir = plot_dir)
