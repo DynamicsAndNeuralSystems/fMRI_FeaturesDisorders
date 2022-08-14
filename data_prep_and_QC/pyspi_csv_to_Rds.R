@@ -3,6 +3,7 @@ library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/")
 parser$add_argument("--pairwise_feature_set", default="pyspi_19")
+parser$add_argument("--brain_region_lookup", default="Brain_Region_info.csv")
 parser$add_argument("--label_vars", default=c("CONTROL", "SCHIZOPHRENIA"), nargs="*", action="append")
 parser$add_argument("--noise_procs", default=c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"), nargs='*', action='append')
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
@@ -12,6 +13,7 @@ parser$add_argument("--overwrite", default=FALSE, action="store_true")
 args <- parser$parse_args()
 data_path <- args$data_path
 label_vars <- args$label_vars
+brain_region_lookup <- args$brain_region_lookup
 pairwise_feature_set <- args$pairwise_feature_set
 dataset_ID <- args$dataset_ID
 noise_procs <- args$noise_procs
