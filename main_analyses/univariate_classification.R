@@ -35,6 +35,7 @@ args <- parser$parse_args()
 github_dir <- args$github_dir
 data_path <- args$data_path
 rdata_path <- args$rdata_path
+pairwise_feature_set <- args$pairwise_feature_set
 univariate_feature_set <- args$univariate_feature_set
 noise_procs <- args$noise_procs
 dataset_ID <- args$dataset_ID
