@@ -1,0 +1,18 @@
+#!/bin/bash
+#PBS -N pyspi_data_to_CSV
+#PBS -q yossarian
+#PBS -j oe
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pyspi_data_to_CSV_out.txt
+#PBS -l select=1:ncpus=1:mem=20GB
+#PBS -l walltime=2:00:00
+#PBS -m abe
+#PBS -M abry4213@uni.sydney.edu.au
+#PBS -V
+
+cd "$PBS_O_WORKDIR" 
+
+# Define directories
+project_dir=/headnode1/abry4213/
+github_dir=${project_dir}/github/
+mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/
+

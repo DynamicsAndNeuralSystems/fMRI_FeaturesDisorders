@@ -1,10 +1,9 @@
 #!/bin/bash
-#PBS -N clean_pairwise_data
-#PBS -q yossarian
+#PBS -N pairwise_data_prep
 #PBS -j oe
-#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_out.txt
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pairwise_data_prep_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
-#PBS -l walltime=2:00:00
+#PBS -l walltime=4:00:00
 #PBS -m abe
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -V
@@ -30,22 +29,18 @@ export dataset_ID="UCLA_Schizophrenia"
 export data_path=${project_dir}/data/UCLA_Schizophrenia/
 export input_mat_file="new/UCLA_time_series_four_groups.mat"
 export subject_csv="participants.csv"
-export noise_procs="AROMA+2P AROMA+2P+GMR AROMA+2P+DiCER"
-export brain_region_lookup="Brain_Region_info.csv"
+export noise_procs="AROMA+2P AROMA+2P+GMR AROMA+2P+DICER"
+export brain_region_lookup=" "
 export parcellation_name=" "
-export pairwise_feature_set="pyspi_19"
 
-# Read pickle files to CSVs
-cmd="python3 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_to_csv.py \
+python3 ${github_dir}/fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/prepare_${dataset_ID}_pairwise_data.py \
 --github_dir ${github_dir} --data_path ${data_path} \
+--input_mat_file ${input_mat_file} \
+--subject_csv ${subject_csv} \
 --noise_procs ${noise_procs} \
 --brain_region_lookup ${brain_region_lookup} \
 --parcellation_name ${parcellation_name} \
---dataset_ID ${dataset_ID}"
-
-echo $cmd
-
-$cmd
+--dataset_ID ${dataset_ID}
 
 ################################################################################
 # Prepare ABIDE ASD
@@ -58,16 +53,14 @@ export noise_procs="FC1000"
 export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 export parcellation_name="harvard_oxford_cort_prob_2mm"
 
-cmd="python3 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_pickle_to_csv.py \
+python3 ${github_dir}/fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/prepare_${dataset_ID}_pairwise_data.py \
 --github_dir ${github_dir} --data_path ${data_path} \
+--input_mat_file ${input_mat_file} \
+--subject_csv ${subject_csv} \
 --noise_procs ${noise_procs} \
 --brain_region_lookup ${brain_region_lookup} \
 --parcellation_name ${parcellation_name} \
---dataset_ID ${dataset_ID}"
-
-echo $cmd
-
-$cmd
+--dataset_ID ${dataset_ID}
 
 exit
 

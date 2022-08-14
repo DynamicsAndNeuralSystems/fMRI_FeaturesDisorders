@@ -1,8 +1,8 @@
 #!/bin/bash
-#PBS -N merge_pairwise_data
+#PBS -N pyspi_data_to_R
 #PBS -q yossarian
 #PBS -j oe
-#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/merge_pairwise_data_out.txt
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pyspi_data_to_R_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=2:00:00
 #PBS -m abe
@@ -30,7 +30,7 @@ export sample_metadata="participants.csv"
 export brain_region_lookup="Brain_Region_info.csv"
 
 # Convert CSVs to an Rds file per noise processing method
-cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_csv_to_Rds.R \
+cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/pyspi_csv_to_Rds.R \
 --data_path ${data_path} \
 --label_vars ${label_vars} \
 --brain_region_lookup ${brain_region_lookup} \
@@ -55,7 +55,7 @@ export sample_metadata="participants.csv"
 export pairwise_feature_set="pyspi_19"
 
 # Convert CSVs to an Rds file per noise processing method
-cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_csv_to_Rds.R \
+cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/pyspi_csv_to_Rds.R \
 --data_path ${data_path} \
 --label_vars ${label_vars} \
 --brain_region_lookup ${brain_region_lookup} \
