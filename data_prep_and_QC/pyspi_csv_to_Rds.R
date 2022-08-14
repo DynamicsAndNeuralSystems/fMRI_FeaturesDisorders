@@ -23,25 +23,27 @@ overwrite <- args$overwrite
 
 pydata_path <- paste0(data_path, "pydata/")
 
-# univariate_feature_set <- "catch22"
-# subject_csv <- "participants.csv"
-# project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
+# pairwise_feature_set <- "pyspi_19"
+# sample_metadata <- "participants.csv"
+# project_path <- "/headnode1/abry4213/"
 
 # UCLA schizophrenia
-# pydata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/pydata/"
-# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
+# pydata_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/pydata/"
+# data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # pairwise_feature_set <- "pyspi_19"
 # brain_region_lookup <- "Brain_Region_info.csv"
+# label_vars <- c("CONTROL", "SCHZ")
 
 # ABIDE ASD
-# pydata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/ABIDE_ASD/pydata/"
-# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/ABIDE_ASD/"
+# pydata_path <- "/headnode1/abry4213/data/ABIDE_ASD/pydata/"
+# data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
 # noise_procs <- c("FC1000")
 # pairwise_feature_set <- "pyspi_19"
 # brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+# label_vars = c("Control", "ASD")
 
 # Load packages
 library(tidyverse)
@@ -53,7 +55,9 @@ brain_region_LUT <- read.csv(paste0(data_path, brain_region_lookup)) %>%
 
 # Load sample info
 sample_metadata_df <- read.csv(paste0(data_path, sample_metadata)) %>%
-  mutate(Sample_ID == gsub("_", "", Sample_ID))
+  mutate(Sample_ID = gsub("_", "", Sample_ID)) %>%
+  dplyr::select(Sample_ID, Diagnosis) %>%
+  dplyr::filter(Diagnosis %in% label_vars)
 
 # Function to read in a subject's pyspi data from a CSV and output a dataframe
 read_sample_pyspi_data <- function(sample_data_file, sample_ID) {
@@ -110,15 +114,21 @@ if (!(file.exists(paste0(pydata_path, dataset_ID, "_pairwise_",
     purrr::map_df(~ readRDS(paste0(pydata_path, gsub("\\+", "_", .x), 
                                    "_pairwise_", 
                                    pairwise_feature_set, ".Rds"))) %>%
-    left_join(., sample_metadata_df) %>%
-    dplyr::filter(Diagnosis %in% label_vars)
+    semi_join(., sample_metadata_df) %>%
+    left_join(., sample_metadata_df)
   
   saveRDS(full_res, 
           paste0(pydata_path, dataset_ID, "_pairwise_", 
                  pairwise_feature_set, ".Rds"))
 }
 
-
+# Write subjects with pairwise data to a CSV file
+full_res %>%
+  distinct(Sample_ID, Diagnosis) %>%
+  write.csv(., paste0(data_path,
+                      dataset_ID,
+                      "_samples_with_pyspi.csv"),
+            row.names = F)
 
 
 
