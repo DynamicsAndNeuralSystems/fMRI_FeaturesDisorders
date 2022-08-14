@@ -125,9 +125,11 @@ for (i in 1:nrow(grouping_param_df)) {
     
     # Run given weighting for 10-fold CV linear SVM
     if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
-                                                grouping_type, feature_set, weighting_name)))) {
+                                                grouping_type, 
+                                                univariate_feature_set, 
+                                                weighting_name)))) {
       group_wise_SVM_CV_weighting <- run_univariate_cv_svm_by_input_var(rdata_path = rdata_path,
-                                                                        feature_set = feature_set,
+                                                                        feature_set = univariate_feature_set,
                                                                         test_package = test_package,
                                                                         svm_kernel = kernel,
                                                                         grouping_var = grouping_var,
@@ -139,13 +141,15 @@ for (i in 1:nrow(grouping_param_df)) {
       saveRDS(group_wise_SVM_CV_weighting, file=paste0(rdata_path, 
                                                        sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
                                                                grouping_type,
-                                                               feature_set, 
+                                                               univariate_feature_set, 
                                                                weighting_name)))
     }
     
     #### Calculate balanced accuracy across all folds
     if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
-                                                grouping_type, feature_set, weighting_name)))) {
+                                                grouping_type, 
+                                                univariate_feature_set, 
+                                                weighting_name)))) {
       group_wise_SVM_balanced_accuracy <- group_wise_SVM_CV_weighting %>%
         group_by(grouping_var, Noise_Proc, Sample_Type) %>%
         summarise(accuracy = sum(Prediction_Correct) / n(),
@@ -153,7 +157,9 @@ for (i in 1:nrow(grouping_param_df)) {
                                                              reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
       
       saveRDS(group_wise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
-                                                                                grouping_type, feature_set, weighting_name)))
+                                                                                grouping_type, 
+                                                                                univariate_feature_set, 
+                                                                                weighting_name)))
     }
   }
 }
