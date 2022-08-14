@@ -124,7 +124,8 @@ k_fold_CV_linear_SVM <- function(input_data,
 # Run 10-fold cross-validated multi-feature linear SVM by given grouping var
 #-------------------------------------------------------------------------------
 
-run_univariate_cv_svm_by_input_var <- function(rdata_path,
+run_univariate_cv_svm_by_input_var <- function(data_path,
+                                               dataset_ID,
                                                svm_kernel = "linear",
                                                feature_set = "catch22",
                                                test_package = "e1071",
@@ -139,20 +140,23 @@ run_univariate_cv_svm_by_input_var <- function(rdata_path,
                                                use_inv_prob_weighting = FALSE,
                                                shuffle_labels = FALSE) {
   
+  rdata_path <- paste0(data_path, "Rdata/")
+  
+  # Get control/schz proportions
+  sample_groups <- read.csv(paste0(data_path, sprintf("%s_samples_with_univariate_%s.csv",
+                                                      dataset_ID, univariate_feature_set))) %>%
+    dplyr::select(Sample_ID, Diagnosis)
+  
   # Define sample weights
   # Default is 1 and 1 if use_inv_prob_weighting is not included
   if (use_inv_prob_weighting) {
-    # Get control/schz proportions
-    sample_props <- readRDS(paste0(rdata_path, "Filtered_subject_info_",
-                                   feature_set, ".Rds")) %>%
-      dplyr::summarise(control_prop = sum(group=="Control") / n(),
-                       schz_prop = sum(group=="Schz")/n())
     
     # Convert to sample weights based on inverse of probability
-    sample_wts <- list("Control" = 1/sample_props$control_prop,
-                       "Schz" = 1/sample_props$schz_prop)
+    sample_wts <- as.list(1/prop.table(table(sample_groups$Diagnosis)))
+    
   } else {
-    sample_wts <- list("Control" = 1, "Schz" = 1)
+    sample_wts <- as.list(rep(1, length(unique(sample_groups$Diagnosis))))
+    names(sample_wts) = unique(sample_groups$Diagnosis)
   }
   
   class_res_list <- list()
@@ -162,8 +166,10 @@ run_univariate_cv_svm_by_input_var <- function(rdata_path,
     
     # Load z-scored feature data for current noise processing method and
     # time-series feature set
-    feature_matrix <- readRDS(paste0(rdata_path, sprintf("UCLA_%s_%s_filtered_zscored.Rds", 
-                                                         noise_label, feature_set)))      
+    feature_matrix <- readRDS(paste0(rdata_path, sprintf("%s_%s_filtered_zscored.Rds", 
+                                                         dataset_ID,
+                                                         univariate_feature_set))) %>%
+      dplyr::filter(Noise_Proc == noise_proc)
     
     if (svm_feature_var == "Feature") {
       svm_feature_var_name = "names"
