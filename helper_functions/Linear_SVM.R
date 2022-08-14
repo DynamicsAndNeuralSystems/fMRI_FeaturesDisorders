@@ -8,7 +8,6 @@
 # Author: Annie Bryant, 16 May 2022
 #--------------------------------------
 
-require(rlist)
 library(tidyverse)
 library(e1071)
 library(kernlab)
@@ -23,7 +22,7 @@ theme_set(theme_cowplot())
 k_fold_CV_linear_SVM <- function(input_data,
                                  flds = NULL,
                                  k = k,
-                                 c_values = c(1),
+                                 c = 1,
                                  svm_kernel = "linear",
                                  sample_wts = list("Control" = 1,
                                                    "Schz" = 1),
@@ -68,46 +67,44 @@ k_fold_CV_linear_SVM <- function(input_data,
     test_subjects <- test_data$Subject_ID
     
     test_data <- test_data %>% dplyr::select(-Subject_ID) 
-
+    
     # Run linear SVM on fold
     
-    # Iterate over each value of c
-    for (c in c_values) {
-      svmModel <- e1071::svm(factor(group) ~ .,
-                             kernel = svm_kernel,
-                             cost = c,
-                             data = train_data,
-                             class.weights = sample_wts)
-      
-      # Generate in-sample predictions based on SVM model
-      in_sample_pred <- predict(svmModel, train_data)
-      train_data$group <- factor(train_data$group, levels = levels(in_sample_pred))
-      
-      # Create dataframe containing subject ID and whether out-of-sample prediction was correct
-      in_fold_predictions_by_subject <- data.frame(Subject_ID = train_subjects,
-                                                   Sample_Type = "In-sample",
-                                                   fold_number = i,
-                                                   Actual_Diagnosis = train_data$group,
-                                                   Predicted_Diagnosis = in_sample_pred) %>%
-        mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
-      subject_classification_list <- rlist::list.append(subject_classification_list,
-                                                           in_fold_predictions_by_subject)
-      
-      # Generate out-of-sample predictions based on SVM model
-      out_sample_pred <- predict(svmModel, test_data)
-      test_data$group <- factor(test_data$group, levels = levels(out_sample_pred))
-      
-      # Create dataframe containing subject ID and whether out-of-sample prediction was correct
-      out_fold_predictions_by_subject <- data.frame(Subject_ID = test_subjects,
-                                                    Sample_Type = "Out-of-sample",
-                                                fold_number = i,
-                                                Actual_Diagnosis = test_data$group,
-                                                Predicted_Diagnosis = out_sample_pred) %>%
-        mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
-      subject_classification_list <- rlist::list.append(subject_classification_list,
-                                                        out_fold_predictions_by_subject)
-      
-    }
+    svmModel <- e1071::svm(factor(group) ~ .,
+                           kernel = svm_kernel,
+                           cost = c,
+                           data = train_data,
+                           class.weights = sample_wts)
+    
+    # Generate in-sample predictions based on SVM model
+    in_sample_pred <- predict(svmModel, train_data)
+    train_data$group <- factor(train_data$group, levels = levels(in_sample_pred))
+    
+    # Create dataframe containing subject ID and whether out-of-sample prediction was correct
+    in_fold_predictions_by_subject <- data.frame(Subject_ID = train_subjects,
+                                                 Sample_Type = "In-sample",
+                                                 fold_number = i,
+                                                 Actual_Diagnosis = train_data$group,
+                                                 Predicted_Diagnosis = in_sample_pred) %>%
+      mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
+    subject_classification_list <- append(subject_classification_list,
+                                          in_fold_predictions_by_subject)
+    
+    # Generate out-of-sample predictions based on SVM model
+    out_sample_pred <- predict(svmModel, test_data)
+    test_data$group <- factor(test_data$group, levels = levels(out_sample_pred))
+    
+    # Create dataframe containing subject ID and whether out-of-sample prediction was correct
+    out_fold_predictions_by_subject <- data.frame(Subject_ID = test_subjects,
+                                                  Sample_Type = "Out-of-sample",
+                                                  fold_number = i,
+                                                  Actual_Diagnosis = test_data$group,
+                                                  Predicted_Diagnosis = out_sample_pred) %>%
+      mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
+    
+    subject_classification_list <- append(subject_classification_list,
+                                          out_fold_predictions_by_subject)
+    
   } 
   
   # Compile classification res
@@ -230,8 +227,7 @@ run_univariate_cv_svm_by_input_var <- function(rdata_path,
                       Noise_Proc = noise_proc)
       
       # Append results to list
-      class_res_list <- rlist::list.append(class_res_list,
-                                           SVM_results)
+      class_res_list <- append(class_res_list, SVM_results)
     }
   }
   
@@ -284,7 +280,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
       distinct(Subject_ID, SPI, region_pair, .keep_all = T)
     
   } else if (svm_feature_var == "SPI") {
-
+    
     # Don't want to filter by directionality
     pairwise_data <- pairwise_data %>%
       rowwise() %>%
@@ -373,8 +369,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                       Noise_Proc = noise_proc)
       
       # Append results to list
-      class_res_list <- rlist::list.append(class_res_list,
-                                           SVM_results)
+      class_res_list <- append(class_res_list, SVM_results)
     } else {
       cat("\nNo observations available for", group_var, "after filtering.\n")
     }
@@ -471,8 +466,7 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
                       use_inv_prob_weighting = use_inv_prob_weighting)
       
       # Append results to list
-      class_res_list <- rlist::list.append(class_res_list,
-                                           SVM_results)
+      class_res_list <- append(class_res_list, SVM_results)
     } else {
       cat("\nNo observations available for", this_SPI, "after filtering.\n")
       
@@ -485,62 +479,6 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
   return(class_res_df)
 }
 
-#-------------------------------------------------------------------------------
-# Run linear SVM by iterating over number of principal components (PCs)
-#-------------------------------------------------------------------------------
-run_SVM_from_PCA <- function(PCA_res,
-                             group_vector,
-                             c_values = c(1),
-                             interval = 1,
-                             flds = NULL,
-                             use_inv_prob_weighting = FALSE,
-                             return_all_fold_metrics = FALSE) {
-  total_n_PCs <- length(PCA_res$sdev)
-  group <- group_vector
-  
-  # Initialize empty list
-  PCA_SVM_res_list <- list()
-  
-  # Start from 1
-  starting_i <- 1
-  
-  # Increasingly iterate over each PCs
-  for (i in seq(starting_i, total_n_PCs, by = interval)) {
-    svm_for_pc <- as.data.frame(cbind(group, PCA_res$x[, 1:i])) %>%
-      mutate_at(vars(contains("V")), as.numeric) %>%
-      mutate_at(vars(starts_with("PC")), as.numeric) 
-    
-    if (use_inv_prob_weighting) {
-      sample_props <- svm_for_pc %>%
-        dplyr::summarise(control_prop = sum(group=="Control") / n(),
-                         schz_prop = sum(group=="Schz")/n())
-      
-      # Convert to sample weights based on inverse of probability
-      sample_wts <- list("Control" = 1/sample_props$control_prop,
-                         "Schz" = 1/sample_props$schz_prop)
-    } else {
-      sample_wts <- list("Control" = 1, "Schz" = 1)
-    }
-    
-    # Compile results into a dataframe
-    df_res <- k_fold_CV_linear_SVM(input_data = svm_for_pc,
-                                   k = 10,
-                                   flds = flds,
-                                   c_values = c_values,
-                                   svm_kernel = "linear",
-                                   sample_wts = sample_wts,
-                                   shuffle_labels = FALSE,
-                                   return_all_fold_metrics = return_all_fold_metrics)
-    
-    df_res$Num_PCs <- i
-    
-    # Append results to list
-    PCA_SVM_res_list <- rlist::list.append(PCA_SVM_res_list, df_res)
-  }
-  
-  PCA_SVM_res <- do.call(plyr::rbind.fill, PCA_SVM_res_list)
-  return(PCA_SVM_res)
-}
 
 
 
