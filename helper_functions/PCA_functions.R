@@ -121,7 +121,6 @@ run_SVM_from_PCA <- function(list_of_PCA_res,
                              c_values = c(1),
                              interval = 1,
                              use_inv_prob_weighting = FALSE,
-                             use_SMOTE = FALSE,
                              return_all_fold_metrics = FALSE) {
   
   # Initialize results list
@@ -135,8 +134,8 @@ run_SVM_from_PCA <- function(list_of_PCA_res,
     PCA_res <- list_of_PCA_res[[group]]
     total_n_PCs <- length(PCA_res$sdev)
     
-    # Start from 2 if using SMOTE
-    starting_i <- ifelse(use_SMOTE, 2, 1)
+    # Start from 1
+    starting_i <- 1
     
     # Increasingly iterate over each PCs
     for (i in seq(starting_i, total_n_PCs, by = interval)) {
@@ -156,7 +155,6 @@ run_SVM_from_PCA <- function(list_of_PCA_res,
                                      c_values = c_values,
                                      svm_kernel = "linear",
                                      sample_wts = sample_wts,
-                                     use_SMOTE = FALSE,
                                      shuffle_labels = FALSE,
                                      return_all_fold_metrics = return_all_fold_metrics)
       

@@ -20,7 +20,6 @@ parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--return_all_fold_metrics", action='store_true', default=FALSE)
 parser$add_argument("--weighting_name", default="unweighted")
 parser$add_argument("--use_inv_prob_weighting", action='store_true', default=FALSE)
-parser$add_argument("--use_SMOTE", action='store_true', default=FALSE)
 parser$add_argument("--univariate", action='store_true', default=FALSE)
 parser$add_argument("--pairwise", action='store_true', default=FALSE)
 parser$add_argument("--uni_and_pairwise", action='store_true', default=FALSE)
@@ -46,7 +45,6 @@ noise_proc <- args$noise_proc
 return_all_fold_metrics <- args$return_all_fold_metrics
 weighting_name <- args$weighting_name
 use_inv_prob_weighting <- args$use_inv_prob_weighting
-use_SMOTE <- args$use_SMOTE
 univariate <- args$univariate
 pairwise <- args$pairwise
 uni_and_pairwise <- args$uni_and_pairwise
@@ -73,7 +71,6 @@ if (univariate) {
                                                         num_k_folds = num_k_folds,
                                                         out_of_sample_only = TRUE,
                                                         use_inv_prob_weighting = use_inv_prob_weighting,
-                                                        use_SMOTE = use_SMOTE,
                                                         shuffle_labels = T) %>%
                      # Keep track of which null iteration this is
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
@@ -113,7 +110,6 @@ if (pairwise) {
                                                       num_k_folds = num_k_folds,
                                                       out_of_sample_only = TRUE,
                                                       use_inv_prob_weighting = use_inv_prob_weighting,
-                                                      use_SMOTE = use_SMOTE,
                                                       shuffle_labels = T) %>%
                      # Keep track of which null iteration this is
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
@@ -145,7 +141,6 @@ if (uni_and_pairwise) {
                                                                    num_k_folds = num_k_folds,
                                                                    out_of_sample_only = TRUE,
                                                                    use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                   use_SMOTE = use_SMOTE,
                                                                    shuffle_labels = T) %>%
                      # Keep track of which null iteration this is
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))

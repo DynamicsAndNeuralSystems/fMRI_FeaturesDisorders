@@ -60,8 +60,7 @@ run_null_model_n_permutations <- function(rdata_path,
                                           test_package = "e1071",
                                           svm_kernel = "linear",
                                           num_permutations = 100,
-                                          use_inv_prob_weighting = FALSE,
-                                          use_SMOTE = FALSE) {
+                                          use_inv_prob_weighting = FALSE) {
   
   nullOuts <- 1:num_permutations %>%
     purrr::map_df( ~ run_univariate_cv_svm_by_input_var(rdata_path = rdata_path,
@@ -72,7 +71,6 @@ run_null_model_n_permutations <- function(rdata_path,
                                                         svm_feature_var = svm_feature_var,
                                                         noise_procs = noise_procs,
                                                         use_inv_prob_weighting = use_inv_prob_weighting,
-                                                        use_SMOTE = use_SMOTE,
                                                         shuffle_labels = T))
   
   
@@ -94,8 +92,7 @@ run_null_model_n_permutations_pairwise <- function(pairwise_data,
                                                    return_all_fold_metrics = FALSE,
                                                    SPI_directionality,
                                                    num_permutations = 50,
-                                                   use_inv_prob_weighting = FALSE,
-                                                   use_SMOTE = FALSE) {
+                                                   use_inv_prob_weighting = FALSE) {
   
   nullOuts <- 1:num_permutations %>%
     purrr::map_df( ~ run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
@@ -107,7 +104,6 @@ run_null_model_n_permutations_pairwise <- function(pairwise_data,
                                                       noise_proc = noise_proc,
                                                       return_all_fold_metrics = return_all_fold_metrics,
                                                       use_inv_prob_weighting = use_inv_prob_weighting,
-                                                      use_SMOTE = use_SMOTE,
                                                       shuffle_labels = TRUE))
   
   
@@ -132,8 +128,7 @@ run_null_model_n_permutations_univariate_pairwise_combo <- function(univariate_d
                                                                     return_all_fold_metrics = FALSE,
                                                                     SPI_directionality,
                                                                     num_permutations = 40,
-                                                                    use_inv_prob_weighting = FALSE,
-                                                                    use_SMOTE = FALSE) {
+                                                                    use_inv_prob_weighting = FALSE) {
   
   nullOuts <- 1:num_permutations %>%
     purrr::map_df( ~ run_combined_uni_pairwise_cv_svm_by_input_var(univariate_data = univariate_data,
@@ -146,7 +141,6 @@ run_null_model_n_permutations_univariate_pairwise_combo <- function(univariate_d
                                                                    noise_proc = noise_proc,
                                                                    return_all_fold_metrics = return_all_fold_metrics,
                                                                    use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                   use_SMOTE = use_SMOTE,
                                                                    shuffle_labels = TRUE))
   
   

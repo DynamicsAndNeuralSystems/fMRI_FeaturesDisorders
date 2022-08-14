@@ -1,7 +1,7 @@
 #------------------------------------
 # Functions to run linear SVM
 # Options to use cross-validation with
-# Inverse probability weighting or SMOTE
+# Inverse probability weighting
 #------------------------------------
 
 #--------------------------------------
@@ -14,12 +14,11 @@ library(e1071)
 library(kernlab)
 library(cowplot)
 library(caret)
-library(smotefamily)
 theme_set(theme_cowplot())
 
 
 #-------------------------------------------------------------------------------
-# k-fold CV SVM with option to use inverse probability weighting or SMOTE
+# k-fold CV SVM with option to use inverse probability weighting
 #-------------------------------------------------------------------------------
 k_fold_CV_linear_SVM <- function(input_data,
                                  flds = NULL,
@@ -29,7 +28,6 @@ k_fold_CV_linear_SVM <- function(input_data,
                                  sample_wts = list("Control" = 1,
                                                    "Schz" = 1),
                                  out_of_sample_only = TRUE,
-                                 use_SMOTE = FALSE,
                                  shuffle_labels = FALSE) {
   
   # Shuffle labels if specified
@@ -70,13 +68,6 @@ k_fold_CV_linear_SVM <- function(input_data,
     test_subjects <- test_data$Subject_ID
     
     test_data <- test_data %>% dplyr::select(-Subject_ID) 
-    
-    
-    # Apply SMOTE to training data only if indicated
-    if (use_SMOTE) {
-      train_data <- smotefamily::SMOTE(train_data[,-1], train_data$group, K = 5)$data %>%
-        dplyr::rename("group" = "class")
-    }
 
     # Run linear SVM on fold
     
@@ -149,7 +140,6 @@ run_univariate_cv_svm_by_input_var <- function(rdata_path,
                                                num_k_folds = 10,
                                                out_of_sample_only = TRUE,
                                                use_inv_prob_weighting = FALSE,
-                                               use_SMOTE = FALSE,
                                                shuffle_labels = FALSE) {
   
   # Define sample weights
@@ -233,7 +223,6 @@ run_univariate_cv_svm_by_input_var <- function(rdata_path,
                                           k = num_k_folds,
                                           svm_kernel = svm_kernel,
                                           sample_wts = sample_wts,
-                                          use_SMOTE = use_SMOTE,
                                           shuffle_labels = shuffle_labels,
                                           out_of_sample_only = out_of_sample_only) %>%
         dplyr::mutate(grouping_var = group_var,
@@ -267,7 +256,6 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                              flds = NULL,
                                              out_of_sample_only = TRUE,
                                              use_inv_prob_weighting = FALSE,
-                                             use_SMOTE = FALSE,
                                              shuffle_labels = FALSE) {
   
   # Initialize results list for SVM
@@ -377,12 +365,10 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                           k = num_k_folds,
                                           svm_kernel = svm_kernel,
                                           sample_wts = sample_wts,
-                                          use_SMOTE = use_SMOTE,
                                           shuffle_labels = shuffle_labels,
                                           out_of_sample_only = out_of_sample_only) %>%
         dplyr::mutate(grouping_var = group_var,
                       feature_set = feature_set,
-                      use_SMOTE = use_SMOTE,
                       use_inv_prob_weighting = use_inv_prob_weighting,
                       Noise_Proc = noise_proc)
       
@@ -417,7 +403,6 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
                                                           noise_proc = "AROMA+2P+GMR",
                                                           return_all_fold_metrics = FALSE,
                                                           use_inv_prob_weighting = FALSE,
-                                                          use_SMOTE = FALSE,
                                                           shuffle_labels = FALSE) {
   
   # Initialize results list for SVM
@@ -477,15 +462,13 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,
                                           flds = flds,
                                           svm_kernel = svm_kernel,
                                           sample_wts = sample_wts,
-                                          use_SMOTE = use_SMOTE,
                                           shuffle_labels = shuffle_labels,
                                           return_all_fold_metrics = return_all_fold_metrics) %>%
         dplyr::mutate(SPI = this_SPI,
                       univariate_feature_set = univariate_feature_set,
                       pairwise_feature_set = pairwise_feature_set,
                       Noise_Proc = noise_proc,
-                      use_inv_prob_weighting = use_inv_prob_weighting,
-                      use_SMOTE = use_SMOTE)
+                      use_inv_prob_weighting = use_inv_prob_weighting)
       
       # Append results to list
       class_res_list <- rlist::list.append(class_res_list,
@@ -511,7 +494,6 @@ run_SVM_from_PCA <- function(PCA_res,
                              interval = 1,
                              flds = NULL,
                              use_inv_prob_weighting = FALSE,
-                             use_SMOTE = FALSE,
                              return_all_fold_metrics = FALSE) {
   total_n_PCs <- length(PCA_res$sdev)
   group <- group_vector
@@ -519,8 +501,8 @@ run_SVM_from_PCA <- function(PCA_res,
   # Initialize empty list
   PCA_SVM_res_list <- list()
   
-  # Start from 2 if using SMOTE
-  starting_i <- ifelse(use_SMOTE, 2, 1)
+  # Start from 1
+  starting_i <- 1
   
   # Increasingly iterate over each PCs
   for (i in seq(starting_i, total_n_PCs, by = interval)) {
@@ -547,7 +529,6 @@ run_SVM_from_PCA <- function(PCA_res,
                                    c_values = c_values,
                                    svm_kernel = "linear",
                                    sample_wts = sample_wts,
-                                   use_SMOTE = FALSE,
                                    shuffle_labels = FALSE,
                                    return_all_fold_metrics = return_all_fold_metrics)
     
