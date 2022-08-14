@@ -97,13 +97,20 @@ for (noise_proc in noise_procs) {
   }
 }
 
-# Merge all pairwise data for control and schizophrenia subjects
-full_res <- noise_procs %>%
-  purrr::map_df(~ readRDS(paste0(pydata_path, gsub("\\+", "_", .x), 
-                                 "_pairwise_", 
-                                 pairwise_feature_set, ".Rds"))) %>%
-  left_join(., sample_metadata) %>%
-  dplyr::filter(Diagnosis %in% label_vars)
+# Merge all pairwise data for subjects in user-specified groups
+if (!(file.exists(paste0(pydata_path, dataset_ID, "_pairwise_", 
+                         pairwise_feature_set, ".Rds")))) {
+  full_res <- noise_procs %>%
+    purrr::map_df(~ readRDS(paste0(pydata_path, gsub("\\+", "_", .x), 
+                                   "_pairwise_", 
+                                   pairwise_feature_set, ".Rds"))) %>%
+    left_join(., sample_metadata) %>%
+    dplyr::filter(Diagnosis %in% label_vars)
+  
+  saveRDS(full_res, 
+          paste0(pydata_path, dataset_ID, "_pairwise_", 
+                 pairwise_feature_set, ".Rds"))
+}
 
 
 
