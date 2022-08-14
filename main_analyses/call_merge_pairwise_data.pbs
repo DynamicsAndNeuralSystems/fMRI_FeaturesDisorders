@@ -26,11 +26,13 @@ export subject_csv="participants.csv"
 export noise_procs="AROMA+2P AROMA+2P+GMR AROMA+2P+DiCER"
 export pairwise_feature_set="pyspi_19"
 export label_vars="CONTROL SCHIZOPHRENIA"
+export brain_region_lookup="Brain_Region_info.csv"
 
 # Convert CSVs to an Rds file per noise processing method
 cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_csv_to_Rds.R \
 --data_path ${data_path} \
 --label_vars ${label_vars} \
+--brain_region_lookup ${brain_region_lookup} \
 --pairwise_feature_set ${pairwise_feature_set} \
 --noise_procs ${noise_procs} \
 --dataset_ID ${dataset_ID}"
@@ -46,12 +48,14 @@ export dataset_ID="ABIDE_ASD"
 export data_path=${project_dir}/data/ABIDE_ASD/
 export noise_procs="FC1000"
 export label_vars="ASD Control"
+export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 export pairwise_feature_set="pyspi_19"
 
 # Convert CSVs to an Rds file per noise processing method
 cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_csv_to_Rds.R \
 --data_path ${data_path} \
 --label_vars ${label_vars} \
+--brain_region_lookup ${brain_region_lookup} \
 --pairwise_feature_set ${pairwise_feature_set} \
 --noise_procs ${noise_procs} \
 --dataset_ID ${dataset_ID}"
