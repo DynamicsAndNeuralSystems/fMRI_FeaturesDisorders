@@ -12,7 +12,7 @@ parser$add_argument("--pairwise_feature_set", default="pyspi_19")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
-
+# 
 # univariate_feature_set <- "catch22"
 # pairwise_feature_set <- "pyspi_19"
 # subject_csv <- "participants.csv"
@@ -112,6 +112,9 @@ grouping_param_df <- data.frame(grouping_type = c("ROI", "Feature", "Combo"),
 weighting_param_df <- data.frame(name = c("inv_prob"),
                                  use_inv_prob_weighting = c(TRUE))
 
+# Use a linear kernel
+kernel = "linear"
+
 for (i in 1:nrow(grouping_param_df)) {
   grouping_type = grouping_param_df$grouping_type[i]
   grouping_var = grouping_param_df$grouping_var[i]
@@ -131,7 +134,6 @@ for (i in 1:nrow(grouping_param_df)) {
       group_wise_SVM_CV_weighting <- run_univariate_cv_svm_by_input_var(data_path = data_path,
                                                                         dataset_ID = dataset_ID,
                                                                         feature_set = univariate_feature_set,
-                                                                        test_package = test_package,
                                                                         svm_kernel = kernel,
                                                                         grouping_var = grouping_var,
                                                                         flds = sample_folds,
