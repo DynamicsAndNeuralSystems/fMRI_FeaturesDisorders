@@ -66,24 +66,6 @@ source(paste0(helper_script_dir, "Null_distributions.R"))
 source(paste0(helper_script_dir, "Null_distributions_cluster.R"))
 
 ################################################################################
-# Generate model-free shuffle null distribution
-################################################################################
-# if (!file.exists(paste0(rdata_path, sprintf("%s_Null_Model_Free_Shuffles_%s.Rds",
-#                                             dataset_ID, univariate_feature_set)))) {
-#   model_free_shuffle_null_res <- run_model_free_n_shuffles(num_shuffles = 100000,
-#                                                            feature_set = univariate_feature_set,
-#                                                            dataset_ID = dataset_ID,
-#                                                            rdata_path = rdata_path)
-#   saveRDS(model_free_shuffle_null_res, file = paste0(rdata_path, sprintf("%s_Null_Model_Free_Shuffles_%s.Rds",
-#                                                                          dataset_ID,
-#                                                                          univariate_feature_set)))
-# } else {
-#   model_free_shuffle_null_res <- readRDS(paste0(rdata_path, sprintf("%s_Null_Model_Free_Shuffles_%s.Rds",
-#                                                                     dataset_ID,
-#                                                                     univariate_feature_set)))
-# }
-
-################################################################################
 # Create ten folds to use for all analyses
 ################################################################################
 subjects_to_use <- read.csv(paste0(data_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s.csv",
@@ -164,6 +146,86 @@ for (i in 1:nrow(grouping_param_df)) {
                                                                                 grouping_type, 
                                                                                 univariate_feature_set, 
                                                                                 weighting_name)))
+    }
+    
+    ############################################################################
+    # Null model fits
+    ############################################################################
+    
+    # We want to run 1,000 null model fits
+    num_permutations <- 1000
+    nperm_per_iter <- 1
+    wall_hrs <- "1"
+    # Use 10-fold cross-validation
+    num_k_folds <- 10
+    # Define the univariate template PBS script
+    template_pbs_file <- paste0(github_dir, "helper_scripts/classification/template_univariate_null_model_fit.pbs")
+    
+    # Where to store null model fit results
+    output_data_dir <- paste0(rdata_path, sprintf("%s_wise_%s_%s_null_model_fits/",
+                                                  grouping_type, 
+                                                  univariate_feature_set, 
+                                                  weighting_name))
+    
+    # Where to save PBS script to
+    output_scripts_dir <- paste0(github_dir, sprintf("univariate_analysis/%s_wise_%s_%s_null_model_fits/",
+                                                     grouping_type, 
+                                                     univariate_feature_set, 
+                                                     weighting_name))
+    
+    # Make these directories
+    icesTAF::mkdir(output_data_dir)
+    icesTAF::mkdir(output_scripts_dir)
+    
+    # Lookup table for PBS script
+    lookup_list <- list("NAME" = sprintf("univariate_%s_wise_null_model_fit",
+                                         grouping_type),
+                        "MEMNUM" = "20",
+                        "NCPUS" = "1",
+                        "GITHUB_DIR" = github_dir,
+                        "PROJECT_DIR" = project_path,
+                        "EMAIL" = "abry4213@uni.sydney.edu.au",
+                        "PBS_NOTIFY" = "a",
+                        "WALL_HRS" = wall_hrs,
+                        "NUM_K_FOLDS" = num_k_folds,
+                        "NUM_PERMS_PER_ITER" = nperm_per_iter,
+                        "OUTPUT_DATA_DIR" = output_data_dir,
+                        "FEATURE_SET" = univariate_feature_set,
+                        "GROUPING_VAR" = grouping_var,
+                        "SVM_FEATURE_VAR" = SVM_feature_var,
+                        "WEIGHTING_NAME" = weighting_name)
+    
+    to_be_replaced <- names(lookup_list)
+    replacement_values <- unlist(unname(lookup_list))
+    
+    # Create a PBS script per iteration
+    for (p in 1:num_permutations) {
+      
+      # Run command if null file doesn't exist
+      if (!file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
+                               output_data_dir, 
+                               grouping_var, 
+                               univariate_feature_set, 
+                               weighting_name, p))) {
+        cat("\nNow running null perms for iteration", p, "\n")
+        new_pbs_file <- readLines(template_pbs_file)
+        
+        # Replace file paths
+        pbs_text_replaced <- mgsub::mgsub(new_pbs_file,
+                                          to_be_replaced,
+                                          replacement_values)
+        
+        # Replace null iteration number
+        pbs_text_replaced <- gsub("iterj", p, pbs_text_replaced)
+        
+        # Write updated PBS script to file
+        output_pbs_file <- writeLines(pbs_text_replaced,
+                                      paste0(output_scripts_dir,
+                                             "null_iter_", p, ".pbs"))
+        
+        #system(paste0("qsub ", output_scripts_dir, "null_iter_", p, ".pbs"))
+        
+      }
     }
   }
 }
