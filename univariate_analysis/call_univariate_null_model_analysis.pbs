@@ -18,12 +18,12 @@ export univariate_feature_set="catch22"
 mkdir -p $github_dir/cluster_output/
 
 # UCLA Schizophrenia
-# /usr/physics/R/R-4.2.1/bin/Rscript univariate_null_model_analysis.R \
-# --github_dir $github_dir \
-# --rdata_path ${project_dir}/data/UCLA_Schizophrenia/Rdata/ \
-# --univariate_feature_set ${univariate_feature_set} \
-# --noise_proc AROMA+2P+GMR \
-# --dataset_ID UCLA_Schizophrenia
+/usr/physics/R/R-4.2.1/bin/Rscript univariate_null_model_analysis.R \
+--github_dir $github_dir \
+--rdata_path ${project_dir}/data/UCLA_Schizophrenia/Rdata/ \
+--univariate_feature_set ${univariate_feature_set} \
+--noise_proc AROMA+2P+GMR \
+--dataset_ID UCLA_Schizophrenia
                                       
 # ABIDE ASD
 /usr/physics/R/R-4.2.1/bin/Rscript univariate_null_model_analysis.R \
