@@ -2,11 +2,15 @@
 title: "Univariate Regional TS Feature Analysis"
 output: html_document
 params:
-  rdata_path: ""
+  data_path: ""
+  github_dir: ""
   dataset_ID: ""
+  ggseg_atlas: ""
   univariate_feature_set: ""
-  raw_TS_file: ""
+  pairwise_feature_set: ""
+  brain_region_info: ""
   noise_procs: ""
+  noise_proc_for_null: ""
 
 ---
 
@@ -16,6 +20,17 @@ knitr::opts_chunk$set(echo = F, warning=F, message=F)
 
 ```{r}
 library(tidyverse)
+library(icesTAF)
+library(ggseg)
+library(ggsegExtra)
+library(tidyverse)
+library(plotly)
+library(ggseg3d)
+library(ggsegHO)
+library(ungeviz)
+library(reshape2)
+library(patchwork)
+library(cowplot)
 ```
 
 
@@ -26,21 +41,192 @@ library(tidyverse)
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
 
 # UCLA schizophrenia
-# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/Rdata/"
 # data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # noise_proc_for_null <- "AROMA+2P+GMR"
+# ggseg_atlas = "DK"
+# brain_region_file = "Brain_Region_info.csv"
+
+# ABIDE ASD
+# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/ABIDE_ASD/"
+# dataset_ID <- "ABIDE_ASD"
+# noise_procs <- c("FC1000")
+# noise_proc_for_null <- "FC1000"
+# ggseg_atlas = "HO"
+# brain_region_file = "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+
+# Parse params
+data_path <- params$data_path
+github_dir <- params$github_dir
+dataset_ID <- params$dataset_ID
+univariate_feature_set <- params$univariate_feature_set
+pairwise_feature_set <- params$pairwise_feature_set
+noise_procs <- params$noise_procs
+noise_proc_for_null <- params$noise_proc_for_null
+
+rdata_path <- paste0(data_path, "Rdata/")
+
+brain_region_lookup <- read.csv(paste0(data_path, brain_region_file))
 ```
 
-Load univariate region-wise results for dataset
 ```{r}
+# Source null distribution functions
+source(paste0(github_dir, "helper_functions/Visualization.R"))
+```
+
+
+```{r, results="asis"}
+cat("## Univariate linear SVM for", dataset_ID, "\n")
+```
+
+
+### Significant results by brain region
+```{r}
+# Main vs. null histogram
+univariate_region_wise_main <- readRDS(paste0(rdata_path, 
+                                               "ROI_wise_CV_linear_SVM_", 
+                                               univariate_feature_set,
+                                               "_inv_prob_balacc.Rds")) %>%
+  dplyr::filter(Noise_Proc == noise_proc_for_null)
+
+# UCLA_Schizophrenia_ROI_wise_model_permutation_null_catch22_inv_prob.Rds
+univariate_region_wise_null <- readRDS(paste0(rdata_path, dataset_ID,
+                                               "_ROI_wise_model_permutation_null_", 
+                                               univariate_feature_set,
+                                               "_inv_prob.Rds"))
+
+# Pooled empirical null p-values
 univariate_region_wise_pvals <- readRDS(paste0(rdata_path, 
                                                "ROI_wise_CV_linear_SVM_model_permutation_null_", 
                                                univariate_feature_set,
                                                "_inv_prob_pvals.Rds"))
 
-univariate_region_wise_sig <- univariate_region_wise_pvals %>%
-  filter(bal_acc_p_adj < 0.05)
+plot_main_vs_null_bal_acc(main_res = univariate_region_wise_main,
+                          null_res = univariate_region_wise_null,
+                          pvals = univariate_region_wise_pvals,
+                          noise_proc = noise_proc_for_null,
+                          xmin = 0.25, 
+                          xmax = 0.75,
+                          plot_type = "histogram",
+                          grouping_type = "Region-wise",
+                          result_color = "#F0224B") +
+  ggtitle("Results vs. Empirical Null Model") +
+  theme(legend.position = "right",
+        plot.title = element_text(size=13))
 ```
 
+
+```{r}
+univariate_region_wise_sig <- univariate_region_wise_pvals %>%
+  filter(bal_acc_p_adj < 0.05)
+
+univariate_region_wise_sig %>%
+  ungroup() %>%
+  dplyr::select(grouping_var, balanced_accuracy, bal_acc_p_adj) %>%
+  arrange(bal_acc_p_adj) %>%
+  dplyr::rename("Brain Region" = "grouping_var",
+                "Balanced Accuracy" = "balanced_accuracy",
+                "BH-adjusted p value" = "bal_acc_p_adj") %>%
+  knitr::kable(.) %>%
+  kableExtra::kable_styling(full_width=F)
+```
+
+
+```{r}
+# Brain plot of significant regions
+if (ggseg_atlas == "DK") {
+  ggseg_lookup <- dk$data
+  
+  cortex_data <- univariate_region_wise_sig %>%
+    dplyr::rename("Brain_Region" = "grouping_var") %>%
+    dplyr::mutate(Brain_Region = str_replace_all(Brain_Region, "_", " ")) %>%
+    left_join(., brain_region_lookup) %>%
+    dplyr::select(ggseg, balanced_accuracy) %>%
+    dplyr::rename("label" = "ggseg") %>%
+    mutate(label = ifelse(str_detect(label, "ctx-"),
+                          gsub("-", "_", label),
+                          label)) %>%
+    mutate(label = gsub("ctx_", "", label))
+  
+  atlas_to_plot = "dk"
+  
+} else if (ggseg_atlas == "HO") {
+  ggseg_lookup <- hoCort$data
+  
+  cortex_data <- univariate_region_wise_sig %>%
+    dplyr::rename("Brain_Region" = "grouping_var") %>%
+    dplyr::mutate(Brain_Region = str_replace_all(Brain_Region, "_", " ")) %>%
+    left_join(., brain_region_lookup) %>%
+    dplyr::select(ggseg, balanced_accuracy) %>%
+    dplyr::rename("region" = "ggseg") %>%
+    left_join(., ggseg_lookup) 
+  
+  atlas_to_plot = "hoCort"
+}
+
+cortex_data <- cortex_data %>%
+  filter(!is.na(region)) %>%
+  mutate(fillyes = T) %>%
+  distinct()
+
+cortex_data %>%
+  dplyr::select(region, hemi, fillyes) %>%
+  distinct() %>%
+  ggseg(atlas=atlas_to_plot, mapping=aes(fill = fillyes),
+        position="dispersed", colour="darkgrey") +
+  scale_fill_manual(values = c("#F0224B"), na.value = NA) +
+  labs(fill = "Balanced Accuracy") +
+  theme_void() +
+  theme(plot.title = element_blank(),
+        legend.position = "none") 
+```
+
+```{r, results="asis"}
+cat("### Significant results by", univariate_feature_set, "feature\n")
+```
+
+```{r}
+univariate_feature_wise_pvals <- readRDS(paste0(rdata_path, 
+                                               "Feature_wise_CV_linear_SVM_model_permutation_null_", 
+                                               univariate_feature_set,
+                                               "_inv_prob_pvals.Rds"))
+
+univariate_feature_wise_sig <- univariate_feature_wise_pvals %>%
+  filter(bal_acc_p_adj < 0.05)
+
+univariate_feature_wise_sig %>%
+  ungroup() %>%
+  dplyr::select(grouping_var, balanced_accuracy, bal_acc_p_adj) %>%
+  arrange(bal_acc_p_adj) %>%
+  dplyr::rename("Feature" = "grouping_var",
+                "Balanced Accuracy" = "balanced_accuracy",
+                "BH-adjusted p value" = "bal_acc_p_adj") %>%
+  knitr::kable(.) %>%
+  kableExtra::kable_styling(full_width=F)
+```
+
+```{r, results="asis"}
+cat("### Significant results by", univariate_feature_set, "feature + Brain Region combo\n")
+```
+
+```{r}
+univariate_combo_wise_pvals <- readRDS(paste0(rdata_path, 
+                                               "Combo_wise_CV_linear_SVM_model_permutation_null_", 
+                                               univariate_feature_set,
+                                               "_inv_prob_pvals.Rds"))
+
+univariate_combo_wise_sig <- univariate_combo_wise_pvals %>%
+  filter(bal_acc_p_adj < 0.05)
+
+univariate_combo_wise_sig %>%
+  ungroup() %>%
+  dplyr::select(grouping_var, balanced_accuracy, bal_acc_p_adj) %>%
+  arrange(bal_acc_p_adj) %>%
+  mutate(grouping_var = "Region/Feature Combo") %>%
+  dplyr::rename("Feature" = "grouping_var",
+                "Balanced Accuracy" = "balanced_accuracy",
+                "BH-adjusted p value" = "bal_acc_p_adj") %>%
+  knitr::kable(.) %>%
+  kableExtra::kable_styling(full_width=F)
+```
