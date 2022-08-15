@@ -1,0 +1,35 @@
+---
+title: "Univariate Regional TS Feature Analysis"
+output: html_document
+params:
+  rdata_path: ""
+  dataset_ID: ""
+  univariate_feature_set: ""
+  raw_TS_file: ""
+  noise_procs: ""
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# univariate_feature_set <- "catch22"
+# pairwise_feature_set <- "pyspi_19"
+# subject_csv <- "participants.csv"
+# github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
+
+# UCLA schizophrenia
+# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/Rdata/"
+# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
+# dataset_ID <- "UCLA_Schizophrenia"
+# noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+# noise_proc_for_null <- "AROMA+2P+GMR"
+```
+
+Load univariate region-wise results for dataset
+```{r}
+univariate_region_wise_pvals <- readRDS(paste0(rdata_path, ))
+```
+
