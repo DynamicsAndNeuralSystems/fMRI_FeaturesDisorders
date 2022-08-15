@@ -26,15 +26,15 @@ mkdir -p $github_dir/cluster_output/
 --noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DICER \
 --dataset_ID UCLA_Schizophrenia 
 
-# ABIDE ASD
-# Rscript univariate_classification.R \
-# --github_dir $github_dir \
-# --data_path ${project_dir}/data/ABIDE_ASD/ \
-# --rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \
-# --pairwise_feature_set pyspi_19 \
-# --univariate_feature_set catch22 \
-# --noise_procs FC1000 \
-# --dataset_ID ABIDE_ASD 
+ABIDE ASD
+Rscript univariate_classification.R \
+--github_dir $github_dir \
+--data_path ${project_dir}/data/ABIDE_ASD/ \
+--rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \
+--pairwise_feature_set pyspi_19 \
+--univariate_feature_set catch22 \
+--noise_procs FC1000 \
+--dataset_ID ABIDE_ASD 
 
 exit
 

@@ -60,9 +60,10 @@ tryCatch({
 #-------------------------------------------------------------------------------
 # Set working directory to file location
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-helper_script_dir = "../helper_functions/"
+helper_script_dir = "../helper_functions/classification/"
 source(paste0(helper_script_dir, "Linear_SVM.R"))
 source(paste0(helper_script_dir, "Null_distributions.R"))
+source(paste0(helper_script_dir, "Null_distributions_cluster.R"))
 
 ################################################################################
 # Generate model-free shuffle null distribution
