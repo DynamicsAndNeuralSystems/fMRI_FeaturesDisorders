@@ -12,6 +12,7 @@ parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 args <- parser$parse_args()
 github_dir <- args$github_dir
 rdata_path <- args$rdata_path
+noise_proc <- args$noise_proc
 univariate_feature_set <- args$univariate_feature_set
 dataset_ID <- args$dataset_ID
 
