@@ -1,0 +1,46 @@
+#!/bin/bash
+#PBS -N pairwise_linear_SVM
+#PBS -q yossarian
+#PBS -j oe
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pairwise_linear_SVM_out.txt
+#PBS -l select=1:ncpus=1:mem=20GB
+#PBS -l walltime=20:00:00
+#PBS -m abe
+#PBS -M abry4213@uni.sydney.edu.au
+#PBS -V
+
+cd "$PBS_O_WORKDIR"
+
+# Define directories
+project_dir=/headnode1/abry4213/
+github_dir=${project_dir}/github/fMRI_FeaturesDisorders/
+mkdir -p $github_dir/cluster_output/
+
+# UCLA Schizophrenia
+/usr/physics/R/R-4.2.1/bin/Rscript pairwise_classification.R \
+--github_dir $github_dir \
+--data_path ${project_dir}/data/UCLA_Schizophrenia/ \
+--rdata_path ${project_dir}/data/UCLA_Schizophrenia/Rdata/ \
+--pairwise_feature_set pyspi_19 \
+--univariate_feature_set catch22 \
+--noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DICER \
+--noise_proc_for_null AROMA+2P+GMR \
+--dataset_ID UCLA_Schizophrenia
+                                      
+# ABIDE ASD
+# /usr/physics/R/R-4.2.1/bin/Rscript pairwise_classification.R \
+# --github_dir $github_dir \
+# --data_path ${project_dir}/data/ABIDE_ASD/ \
+# --rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \
+# --pairwise_feature_set pyspi_19 \
+# --univariate_feature_set catch22 \
+# --noise_procs FC1000 \
+# --noise_proc_for_null FC1000 \
+# --dataset_ID ABIDE_ASD
+
+exit
+
+# Verify the host on which the job ran
+hostname
+
+
