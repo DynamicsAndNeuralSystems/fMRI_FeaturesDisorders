@@ -11,8 +11,13 @@ params:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = F, warning=F, message=F)
 ```
+
+```{r}
+library(tidyverse)
+```
+
 
 ```{r}
 # univariate_feature_set <- "catch22"
@@ -30,6 +35,12 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Load univariate region-wise results for dataset
 ```{r}
-univariate_region_wise_pvals <- readRDS(paste0(rdata_path, ))
+univariate_region_wise_pvals <- readRDS(paste0(rdata_path, 
+                                               "ROI_wise_CV_linear_SVM_model_permutation_null_", 
+                                               univariate_feature_set,
+                                               "_inv_prob_pvals.Rds"))
+
+univariate_region_wise_sig <- univariate_region_wise_pvals %>%
+  filter(bal_acc_p_adj < 0.05)
 ```
 
