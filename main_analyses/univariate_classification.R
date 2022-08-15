@@ -63,20 +63,21 @@ tryCatch({
 helper_script_dir = "../helper_functions/classification/"
 source(paste0(helper_script_dir, "Linear_SVM.R"))
 source(paste0(helper_script_dir, "Null_distributions.R"))
-source(paste0(helper_script_dir, "Null_distributions_cluster.R"))
 
 ################################################################################
 # Create ten folds to use for all analyses
 ################################################################################
-subjects_to_use <- read.csv(paste0(data_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s.csv",
-                                                      dataset_ID,
-                                                      univariate_feature_set,
-                                                      pairwise_feature_set)))
+subjects_to_use <- readRDS(paste0(data_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s.Rds",
+                                                     dataset_ID,
+                                                     univariate_feature_set,
+                                                     pairwise_feature_set)))
+
+
 if (!file.exists(paste0(rdata_path, dataset_ID, "_samples_per_10_folds.Rds"))) {
   # Make folds
   set.seed(127)
   k = 10
-  sample_folds <- caret::createFolds(subjects_to_use$group, k = k, list = TRUE, returnTrain = FALSE)
+  sample_folds <- caret::createFolds(subjects_to_use$Diagnosis, k = k, list = TRUE, returnTrain = FALSE)
   
   # Save to Rds file
   saveRDS(sample_folds, file=paste0(rdata_path, dataset_ID, "_samples_per_10_folds.Rds"))
@@ -129,6 +130,12 @@ for (i in 1:nrow(grouping_param_df)) {
                                                                grouping_type,
                                                                univariate_feature_set, 
                                                                weighting_name)))
+    } else {
+      group_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path, 
+                                                    sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
+                                                            grouping_type,
+                                                            univariate_feature_set, 
+                                                            weighting_name)))
     }
     
     #### Calculate balanced accuracy across all folds
@@ -146,6 +153,11 @@ for (i in 1:nrow(grouping_param_df)) {
                                                                                 grouping_type, 
                                                                                 univariate_feature_set, 
                                                                                 weighting_name)))
+    } else {
+      group_wise_SVM_balanced_accuracy <- readRDS(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
+                                                                             grouping_type, 
+                                                                             univariate_feature_set, 
+                                                                             weighting_name)))
     }
     
     ############################################################################
@@ -159,16 +171,18 @@ for (i in 1:nrow(grouping_param_df)) {
     # Use 10-fold cross-validation
     num_k_folds <- 10
     # Define the univariate template PBS script
-    template_pbs_file <- paste0(github_dir, "helper_scripts/classification/template_univariate_null_model_fit.pbs")
+    template_pbs_file <- paste0(github_dir, "helper_functions/classification/template_univariate_null_model_fit.pbs")
     
     # Where to store null model fit results
-    output_data_dir <- paste0(rdata_path, sprintf("%s_wise_%s_%s_null_model_fits/",
+    output_data_dir <- paste0(rdata_path, sprintf("%s_%s_wise_%s_%s_null_model_fits/",
+                                                  dataset_ID,
                                                   grouping_type, 
                                                   univariate_feature_set, 
                                                   weighting_name))
     
     # Where to save PBS script to
-    output_scripts_dir <- paste0(github_dir, sprintf("univariate_analysis/%s_wise_%s_%s_null_model_fits/",
+    output_scripts_dir <- paste0(github_dir, sprintf("univariate_analysis/%s_%s_wise_%s_%s_null_model_fits/",
+                                                     dataset_ID,
                                                      grouping_type, 
                                                      univariate_feature_set, 
                                                      weighting_name))
@@ -182,15 +196,17 @@ for (i in 1:nrow(grouping_param_df)) {
                                          grouping_type),
                         "MEMNUM" = "20",
                         "NCPUS" = "1",
+                        "DATASET_ID" = dataset_ID,
                         "GITHUB_DIR" = github_dir,
-                        "PROJECT_DIR" = project_path,
+                        "DATA_PATH" = data_path,
                         "EMAIL" = "abry4213@uni.sydney.edu.au",
                         "PBS_NOTIFY" = "a",
                         "WALL_HRS" = wall_hrs,
                         "NUM_K_FOLDS" = num_k_folds,
                         "NUM_PERMS_PER_ITER" = nperm_per_iter,
                         "OUTPUT_DATA_DIR" = output_data_dir,
-                        "FEATURE_SET" = univariate_feature_set,
+                        "UNIVARIATE_FEATURE_SET" = univariate_feature_set,
+                        "PAIRWISE_FEATURE_SET" = pairwise_feature_set,
                         "GROUPING_VAR" = grouping_var,
                         "SVM_FEATURE_VAR" = SVM_feature_var,
                         "WEIGHTING_NAME" = weighting_name)

@@ -140,7 +140,8 @@ k_fold_CV_linear_SVM <- function(input_data,
 run_univariate_cv_svm_by_input_var <- function(data_path,
                                                dataset_ID,
                                                svm_kernel = "linear",
-                                               feature_set = "catch22",
+                                               univariate_feature_set = "catch22",
+                                               pairwise_feature_set = "pyspi_19",
                                                grouping_var = "Brain_Region",
                                                svm_feature_var = "Feature",
                                                noise_procs = c("AROMA+2P", 
@@ -155,8 +156,10 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
   rdata_path <- paste0(data_path, "Rdata/")
   
   # Get control/schz proportions
-  sample_groups <- read.csv(paste0(data_path, sprintf("%s_samples_with_univariate_%s.csv",
-                                                      dataset_ID, univariate_feature_set))) %>%
+  sample_groups <- readRDS(paste0(data_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s.Rds",
+                                                     dataset_ID,
+                                                     univariate_feature_set,
+                                                     pairwise_feature_set))) %>%
     dplyr::select(Sample_ID, Diagnosis)
   
   # Define sample weights
@@ -245,7 +248,7 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
                                           shuffle_labels = shuffle_labels,
                                           out_of_sample_only = out_of_sample_only) %>%
         dplyr::mutate(grouping_var = group_var,
-                      feature_set = feature_set,
+                      feature_set = univariate_feature_set,
                       Noise_Proc = noise_proc)
       
       # Append results to list

@@ -2,56 +2,78 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
+# Data directories
 parser$add_argument("--pairwise_data_file", default = "")
 parser$add_argument("--univariate_data_file", default = "")
-parser$add_argument("--SPI_directionality_file", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/pairwise_analysis/SPI_Direction_Info.csv")
-parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
-parser$add_argument("--output_data_dir", default="/project/hctsa/annie/data/scz/UCLA/Rdata/Pairwise_pyspi_19_inv_prob_null_model_fits/")
-parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/")
-parser$add_argument("--grouping_var", default="SPI")
+parser$add_argument("--dataset_ID", default = "UCLA_Schizophrenia")
+parser$add_argument("--SPI_directionality_file", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/pairwise_analysis/SPI_Direction_Info.csv")
+parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
+parser$add_argument("--output_data_dir", default="/headnode1/abry4213/data/UCLA_Schizophrenia/Rdata/Pairwise_pyspi_19_inv_prob_null_model_fits/")
+parser$add_argument("--github_dir", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/")
+
+# Permutation arguments
 parser$add_argument("--num_k_folds", default=10)
 parser$add_argument("--null_iter_number", default=1)
 parser$add_argument("--num_perms_for_iter", default=1)
-parser$add_argument("--feature_set", default="pyspi_19")
 parser$add_argument("--svm_kernel", default="linear")
+
+# Feature sets
+parser$add_argument("--univariate_feature_set", default="catch22")
+parser$add_argument("--pairwise_feature_set", default="pyspi_19")
+parser$add_argument("--grouping_var", default="SPI")
 parser$add_argument("--svm_feature_var", default="region_pair")
-parser$add_argument("--test_package", default="e1071")
 parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
+
+# Output metrics
 parser$add_argument("--return_all_fold_metrics", action='store_true', default=FALSE)
 parser$add_argument("--weighting_name", default="unweighted")
 parser$add_argument("--use_inv_prob_weighting", action='store_true', default=FALSE)
+
+# Indicate whether analysis is univariate, pariwise, or both
 parser$add_argument("--univariate", action='store_true', default=FALSE)
 parser$add_argument("--pairwise", action='store_true', default=FALSE)
 parser$add_argument("--uni_and_pairwise", action='store_true', default=FALSE)
 
 # Parse input arguments
 args <- parser$parse_args()
+
+# Data directories
+dataset_ID <- args$dataset_ID
 pairwise_data_file <- args$pairwise_data_file
 univariate_data_file <- args$univariate_data_file
 SPI_directionality_file <- args$SPI_directionality_file
-rdata_path <- args$rdata_path
+data_path <- args$data_path
 output_data_dir <- args$output_data_dir
 github_dir <- args$github_dir
-grouping_var <- args$grouping_var
+
+# Permutation arguments
 num_k_folds <- as.numeric(args$num_k_folds)
 null_iter_number <- args$null_iter_number
 num_perms_for_iter <- args$num_perms_for_iter
-feature_set <- args$feature_set
 svm_kernel <- args$svm_kernel
+
+# Feature sets
 grouping_var <- args$grouping_var
 svm_feature_var <- args$svm_feature_var
-test_package <- args$test_package
 noise_proc <- args$noise_proc
+pairwise_feature_set <- args$pairwise_feature_set
+univariate_feature_set <- args$univariate_feature_set
+
+# Output metrics
 return_all_fold_metrics <- args$return_all_fold_metrics
 weighting_name <- args$weighting_name
 use_inv_prob_weighting <- args$use_inv_prob_weighting
+
+# Indicate whether analysis is univariate, pariwise, or both
 univariate <- args$univariate
 pairwise <- args$pairwise
 uni_and_pairwise <- args$uni_and_pairwise
 
+rdata_path <- paste0(data_path, "Rdata/")
+pydata_path <- paste0(data_path, "pydata/")
 
 # Source linear SVM functions
-source(paste0(github_dir, "helper_functions/Linear_SVM.R"))
+source(paste0(github_dir, "helper_functions/classification/Linear_SVM.R"))
 
 icesTAF::mkdir(output_data_dir)
 
@@ -61,13 +83,14 @@ cat("\nNum permutations per iteration:", num_perms_for_iter, "\n")
 if (univariate) {
   # Run null iteration
   null_out <- 1:num_perms_for_iter  %>%
-    purrr::map_df( ~ run_univariate_cv_svm_by_input_var(rdata_path = rdata_path,
+    purrr::map_df( ~ run_univariate_cv_svm_by_input_var(data_path = data_path,
+                                                        dataset_ID = dataset_ID,
                                                         svm_kernel = svm_kernel,
-                                                        feature_set = feature_set,
-                                                        test_package = test_package,
+                                                        pairwise_feature_set = pairwise_feature_set,
+                                                        univariate_feature_set = univariate_feature_set,
                                                         grouping_var = grouping_var,
                                                         svm_feature_var = svm_feature_var,
-                                                        noise_procs = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"),
+                                                        noise_procs = noise_proc,
                                                         num_k_folds = num_k_folds,
                                                         out_of_sample_only = TRUE,
                                                         use_inv_prob_weighting = use_inv_prob_weighting,

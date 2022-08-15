@@ -27,7 +27,7 @@ mkdir -p $github_dir/cluster_output/
 --dataset_ID UCLA_Schizophrenia 
 
 ABIDE ASD
-Rscript univariate_classification.R \
+/usr/physics/R/R-4.2.1/bin/Rscript univariate_classification.R \
 --github_dir $github_dir \
 --data_path ${project_dir}/data/ABIDE_ASD/ \
 --rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \

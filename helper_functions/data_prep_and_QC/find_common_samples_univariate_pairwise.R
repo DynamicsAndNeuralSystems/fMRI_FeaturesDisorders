@@ -15,28 +15,30 @@ dataset_ID <- args$dataset_ID
 
 library(tidyverse)
 
-# Read in univariate data CSV
-univariate_samples <- read.csv(paste0(data_path, 
-                                      dataset_ID,
-                                      "_samples_with_univariate_",
-                                      univariate_feature_set,
-                                      ".csv")) %>%
-  dplyr::select(Sample_ID)
+rdata_path <- paste0(data_path, "Rdata/")
+
+# Read in univariate data
+univariate_samples <- readRDS(paste0(rdata_path, 
+                                     dataset_ID,
+                                     "_filtered_sample_info_",
+                                     univariate_feature_set,
+                                     ".Rds")) %>%
+  dplyr::select(Sample_ID, Diagnosis)
 
 # Read in pairwise data CSV
-pairwise_samples <- read.csv(paste0(data_path, 
-                                      dataset_ID,
-                                      "_samples_with_pairwise_",
-                                      pairwise_feature_set,
-                                      ".csv")) %>%
-  dplyr::select(Sample_ID)
+pairwise_samples <- readRDS(paste0(data_path,
+                                   dataset_ID,
+                                   "_samples_with_pairwise_",
+                                   pairwise_feature_set,
+                                   ".Rds"))%>%
+  dplyr::select(Sample_ID, Diagnosis)
 
 # Find the intersection
 intersection <- inner_join(univariate_samples, pairwise_samples)
 
-# Write the intersection results to a CSV
-write.csv(intersection,
+# Write the intersection results to an Rds file
+saveRDS(intersection,
           paste0(data_path, dataset_ID, "_samples_with_univariate_",
                  univariate_feature_set,
                  "_and_pairwise_", pairwise_feature_set,
-                 ".csv"))
+                 ".Rds"))

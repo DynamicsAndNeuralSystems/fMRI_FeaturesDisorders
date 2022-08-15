@@ -122,15 +122,18 @@ if (!(file.exists(paste0(pydata_path, dataset_ID, "_pairwise_",
                  pairwise_feature_set, ".Rds"))
 }
 
+full_res <- readRDS(paste0(pydata_path, dataset_ID, "_pairwise_", 
+                           pairwise_feature_set, ".Rds"))
+
 # Write subjects with pairwise data to a CSV file
-full_res %>%
-  distinct(Sample_ID, Diagnosis) %>%
-  write.csv(., paste0(data_path,
+subjects_with_pairwise <- full_res %>%
+  distinct(Sample_ID, Diagnosis)
+
+saveRDS(subjects_with_pairwise, paste0(data_path,
                       dataset_ID,
                       "_samples_with_pairwise_",
                       pairwise_feature_set,
-                      ".csv"),
-            row.names = F)
+                      ".Rds"))
 
 
 
