@@ -80,7 +80,9 @@ icesTAF::mkdir(output_data_dir)
 cat("\nNumber of k-folds:", num_k_folds, "\n")
 cat("\nNum permutations per iteration:", num_perms_for_iter, "\n")
 
-if (univariate) {
+if (univariate & !file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
+                                      output_data_dir, grouping_var, univariate_feature_set, 
+                                      weighting_name, null_iter_number))) {
   # Run null iteration
   null_out <- 1:num_perms_for_iter  %>%
     purrr::map_df( ~ run_univariate_cv_svm_by_input_var(data_path = data_path,

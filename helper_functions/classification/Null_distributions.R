@@ -3,6 +3,17 @@ library(dplyr)
 library(knitr)
 library(kableExtra)
 
+# DIY rlist::list.append
+list.append <- function (.data, ...) 
+{
+  if (is.list(.data)) {
+    c(.data, list(...))
+  }
+  else {
+    c(.data, ..., recursive = FALSE)
+  }
+}
+
 #-------------------------------------------------------------------------------
 # Model-free shuffles
 #-------------------------------------------------------------------------------
@@ -157,12 +168,22 @@ run_null_model_n_permutations_univariate_pairwise_combo <- function(univariate_d
 calc_empirical_nulls <- function(class_res,
                                  null_data,
                                  feature_set,
+                                 noise_proc = "AROMA+2P+GMR",
                                  use_pooled_null = TRUE,
                                  is_main_data_averaged = TRUE,
                                  is_null_data_averaged = TRUE,
                                  grouping_var = "Brain_Region") {
   merged_list <- list()
   
+  # Subset main and null data by noise processing method
+  if ("Noise_Proc" %in% colnames(null_data)) {
+    null_data <- subset(null_data, Noise_Proc == noise_proc)
+  }
+  if ("Noise_Proc" %in% colnames(class_res)) {
+    class_res <- subset(class_res, Noise_Proc == noise_proc)
+  }
+  
+  # Copy null data if in/out of sample is not specified
   if (!("Sample_Type" %in% colnames(null_data))) {
     null_in <- null_data %>%
       mutate(Sample_Type = "In-sample")
@@ -171,11 +192,13 @@ calc_empirical_nulls <- function(class_res,
     null_data <- plyr::rbind.fill(null_in, null_out)
   }
   
+  # Create grouping_var column if it doesn't exist
   if (!("grouping_var" %in% colnames(class_res))) {
     class_res <- class_res %>%
       dplyr::rename("grouping_var" = grouping_var)
   }
   
+  # Aggregate main results if they're not already aggregated
   if (!is_main_data_averaged) {
     class_res <- class_res %>%
       group_by(Sample_Type, grouping_var, Noise_Proc) %>%
@@ -187,6 +210,7 @@ calc_empirical_nulls <- function(class_res,
                     "balanced_accuracy"="balanced_accuracy_avg")
   } 
   
+  # Reshape main results
   main_res <- class_res %>%
     dplyr::select(grouping_var, Sample_Type, Noise_Proc, accuracy, balanced_accuracy) %>%
     mutate(Type = "main") %>%
@@ -208,15 +232,11 @@ calc_empirical_nulls <- function(class_res,
         dplyr::mutate(grouping_var = group_var)
     }
     
+    # Subset by grouping var
     group_main <- subset(main_res, grouping_var == group_var)
     group_null$Type <- "null"
     
-    # If null dataset is specific to each noise-processing method
-    if (!("Noise_Proc" %in% colnames(group_null))) {
-      group_null <- plyr::rbind.fill(group_null %>% mutate(Noise_Proc = "AROMA+2P"),
-                                     group_null %>% mutate(Noise_Proc = "AROMA+2P+GMR")) %>%
-        plyr::rbind.fill(., group_null %>% mutate(Noise_Proc = "AROMA+2P+DiCER"))
-    }
+    # Calculate p-values
     p_value_res <- plyr::rbind.fill(group_main,
                                     group_null) %>%
       group_by(grouping_var, Noise_Proc, Sample_Type) %>%
@@ -233,16 +253,14 @@ calc_empirical_nulls <- function(class_res,
                     "balanced_accuracy" = "main_balanced_accuracy") 
     
     
-    merged_list <- append(merged_list, p_value_res)
+    merged_list <- list.append(merged_list, p_value_res)
   }
   main_p_values <- do.call(plyr::rbind.fill, merged_list) %>%
     ungroup() %>%
-    mutate(Noise_Proc = factor(Noise_Proc, levels = c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"))) %>%
     group_by(Sample_Type, Noise_Proc) %>%
     mutate(acc_p_adj = p.adjust(acc_p, method="BH"),
            bal_acc_p_adj = p.adjust(bal_acc_p, method="BH"),
-           feature_set = feature_set) %>%
-    arrange(Noise_Proc)
+           feature_set = feature_set)
   
   return(main_p_values)
 }

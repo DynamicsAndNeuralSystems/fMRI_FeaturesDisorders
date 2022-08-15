@@ -1,0 +1,41 @@
+#!/bin/bash
+#PBS -N univariate_null_model_analysis
+#PBS -q yossarian
+#PBS -j oe
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/univariate_null_model_analysis_out.txt
+#PBS -l select=1:ncpus=1:mem=20GB
+#PBS -l walltime=1:00:00
+#PBS -m abe
+#PBS -M abry4213@uni.sydney.edu.au
+#PBS -V
+
+cd "$PBS_O_WORKDIR"
+
+# Define directories
+export project_dir=/headnode1/abry4213/
+export github_dir=${project_dir}/github/fMRI_FeaturesDisorders/
+export univariate_feature_set="catch22"
+mkdir -p $github_dir/cluster_output/
+
+# UCLA Schizophrenia
+# /usr/physics/R/R-4.2.1/bin/Rscript univariate_null_model_analysis.R \
+# --github_dir $github_dir \
+# --rdata_path ${project_dir}/data/UCLA_Schizophrenia/Rdata/ \
+# --univariate_feature_set ${univariate_feature_set} \
+# --noise_proc AROMA+2P+GMR \
+# --dataset_ID UCLA_Schizophrenia
+                                      
+# ABIDE ASD
+/usr/physics/R/R-4.2.1/bin/Rscript univariate_null_model_analysis.R \
+--github_dir $github_dir \
+--rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \
+--univariate_feature_set ${univariate_feature_set} \
+--noise_proc FC1000 \
+--dataset_ID ABIDE_ASD
+
+exit
+
+# Verify the host on which the job ran
+hostname
+
+

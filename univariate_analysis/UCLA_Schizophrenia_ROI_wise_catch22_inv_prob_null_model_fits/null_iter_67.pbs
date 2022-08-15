@@ -2,9 +2,9 @@
 #PBS -q yossarian
 #PBS -N 67_univariate_ROI_wise_null_model_fit
 #PBS -j oe
-#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders//cluster_output/UCLA_Schizophrenia_null_model_fits/univariate_ROI_wise_null_model_fit_inv_prob_null_model_fit_67_out.txt
+#PBS -o /headnode1/abry4213//github/fMRI_FeaturesDisorders//cluster_output/UCLA_Schizophrenia_null_model_fits/univariate_ROI_wise_null_model_fit_inv_prob_null_model_fit_67_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
-#PBS -l walltime=1:00:00
+#PBS -l walltime=3:00:00
 #PBS -m a
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -V
@@ -12,8 +12,8 @@
 cd "$PBS_O_WORKDIR"
 
 # Define directories
-github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders/
-data_path=/headnode1/abry4213/data/UCLA_Schizophrenia/
+github_dir=/headnode1/abry4213//github/fMRI_FeaturesDisorders/
+data_path=/headnode1/abry4213//data/UCLA_Schizophrenia/
 rdata_path=${data_path}/Rdata/
 pydata_path=${data_path}/pydata/
 mkdir -p $github_dir/cluster_output/UCLA_Schizophrenia_null_model_fits/
@@ -23,9 +23,9 @@ mkdir -p $github_dir/cluster_output/UCLA_Schizophrenia_null_model_fits/
 --dataset_ID UCLA_Schizophrenia \
 --data_path ${data_path} --github_dir ${github_dir} \
 --univariate --num_k_folds 10 \
---output_data_dir /headnode1/abry4213/data/UCLA_Schizophrenia/Rdata/UCLA_Schizophrenia_ROI_wise_catch22_inv_prob_null_model_fits/ \
+--output_data_dir /headnode1/abry4213//data/UCLA_Schizophrenia/Rdata/UCLA_Schizophrenia_ROI_wise_catch22_inv_prob_null_model_fits/ \
 --null_iter_number 67 \
---num_perms_for_iter 1 \
+--num_perms_for_iter 10 \
 --pairwise_feature_set pyspi_19 \
 --univariate_feature_set catch22 \
 --svm_kernel linear --grouping_var Brain_Region --svm_feature_var Feature \

@@ -28,7 +28,10 @@ mkdir -p $github_dir/cluster_output/DATASET_ID_null_model_fits/
 --num_perms_for_iter NUM_PERMS_PER_ITER \
 --pairwise_feature_set PAIRWISE_FEATURE_SET \
 --univariate_feature_set UNIVARIATE_FEATURE_SET \
---svm_kernel linear --grouping_var GROUPING_VAR --svm_feature_var SVM_FEATURE_VAR \
+--noise_proc NOISE_PROCS \
+--svm_kernel linear \
+--grouping_var GROUPING_VAR \
+--svm_feature_var SVM_FEATURE_VAR \
 --weighting_name WEIGHTING_NAME --use_inv_prob_weighting
 
 exit

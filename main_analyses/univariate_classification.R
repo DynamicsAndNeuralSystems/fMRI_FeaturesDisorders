@@ -8,9 +8,11 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 parser$add_argument("--github_dir", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
 parser$add_argument("--rdata_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/Rdata/")
+parser$add_argument("--num_null_permutations", default=1000)
 parser$add_argument("--pairwise_feature_set", default="pyspi_19")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
+parser$add_argument("--noise_proc_for_null", default=c(""))
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 # 
 # univariate_feature_set <- "catch22"
@@ -23,21 +25,25 @@ parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+# noise_proc_for_null <- "AROMA+2P+GMR"
 
 # ABIDE ASD
 # rdata_path <- "/headnode1/abry4213/data/ABIDE_ASD/Rdata/"
 # data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
 # noise_procs <- c("FC1000")
+# noise_proc_for_null <- "FC1000"
 
 # Parse input arguments
 args <- parser$parse_args()
 github_dir <- args$github_dir
 data_path <- args$data_path
 rdata_path <- args$rdata_path
+num_null_permutations <- args$num_null_permutations
 pairwise_feature_set <- args$pairwise_feature_set
 univariate_feature_set <- args$univariate_feature_set
 noise_procs <- args$noise_procs
+noise_proc_for_null <- args$noise_proc_for_null
 dataset_ID <- args$dataset_ID
 
 plot_dir <- paste0(data_path, "plots/")
@@ -164,10 +170,10 @@ for (i in 1:nrow(grouping_param_df)) {
     # Null model fits
     ############################################################################
     
-    # We want to run 1,000 null model fits
-    num_permutations <- 1000
-    nperm_per_iter <- 1
-    wall_hrs <- "1"
+    # We want to run 1,000 null model fits, and we can run 10 permutations per iteration
+    num_permutations <- 100
+    nperm_per_iter <- 10
+    wall_hrs <- "12"
     # Use 10-fold cross-validation
     num_k_folds <- 10
     # Define the univariate template PBS script
@@ -202,6 +208,7 @@ for (i in 1:nrow(grouping_param_df)) {
                         "EMAIL" = "abry4213@uni.sydney.edu.au",
                         "PBS_NOTIFY" = "a",
                         "WALL_HRS" = wall_hrs,
+                        "NOISE_PROCS" = noise_proc_for_null,
                         "NUM_K_FOLDS" = num_k_folds,
                         "NUM_PERMS_PER_ITER" = nperm_per_iter,
                         "OUTPUT_DATA_DIR" = output_data_dir,
@@ -221,7 +228,7 @@ for (i in 1:nrow(grouping_param_df)) {
       if (!file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
                                output_data_dir, grouping_var, univariate_feature_set, 
                                weighting_name, p))) {
-        cat("\nNow running null perms for iteration", p, "\n")
+        cat("\nNow creating pbs script for for iteration", p, "\n")
         new_pbs_file <- readLines(template_pbs_file)
         
         # Replace file paths
@@ -236,8 +243,6 @@ for (i in 1:nrow(grouping_param_df)) {
         output_pbs_file <- writeLines(pbs_text_replaced,
                                       paste0(output_scripts_dir,
                                              "null_iter_", p, ".pbs"))
-        
-        system(paste0("qsub ", output_scripts_dir, "null_iter_", p, ".pbs"))
         
       }
     }
