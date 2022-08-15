@@ -106,7 +106,7 @@ if (univariate) {
   
   # Save null results to RDS
   saveRDS(null_out, file=sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
-                                 output_data_dir, grouping_var, feature_set, 
+                                 output_data_dir, grouping_var, univariate_feature_set, 
                                  weighting_name, null_iter_number))
 }
 

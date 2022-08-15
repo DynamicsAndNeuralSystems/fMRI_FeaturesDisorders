@@ -219,9 +219,7 @@ for (i in 1:nrow(grouping_param_df)) {
       
       # Run command if null file doesn't exist
       if (!file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
-                               output_data_dir, 
-                               grouping_var, 
-                               univariate_feature_set, 
+                               output_data_dir, grouping_var, univariate_feature_set, 
                                weighting_name, p))) {
         cat("\nNow running null perms for iteration", p, "\n")
         new_pbs_file <- readLines(template_pbs_file)
@@ -239,7 +237,7 @@ for (i in 1:nrow(grouping_param_df)) {
                                       paste0(output_scripts_dir,
                                              "null_iter_", p, ".pbs"))
         
-        #system(paste0("qsub ", output_scripts_dir, "null_iter_", p, ".pbs"))
+        system(paste0("qsub ", output_scripts_dir, "null_iter_", p, ".pbs"))
         
       }
     }
