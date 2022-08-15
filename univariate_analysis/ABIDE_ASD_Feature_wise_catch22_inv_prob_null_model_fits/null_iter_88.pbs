@@ -2,7 +2,7 @@
 #PBS -q yossarian
 #PBS -N 88_univariate_Feature_wise_null_model_fit
 #PBS -j oe
-#PBS -o /headnode1/abry4213//github/fMRI_FeaturesDisorders//cluster_output/ABIDE_ASD_null_model_fits/univariate_Feature_wise_null_model_fit_inv_prob_null_model_fit_88_out.txt
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders//cluster_output/ABIDE_ASD_null_model_fits/univariate_Feature_wise_null_model_fit_inv_prob_null_model_fit_88_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=12:00:00
 #PBS -m a
@@ -12,8 +12,8 @@
 cd "$PBS_O_WORKDIR"
 
 # Define directories
-github_dir=/headnode1/abry4213//github/fMRI_FeaturesDisorders/
-data_path=/headnode1/abry4213//data/ABIDE_ASD/
+github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders/
+data_path=/headnode1/abry4213/data/ABIDE_ASD/
 rdata_path=${data_path}/Rdata/
 pydata_path=${data_path}/pydata/
 mkdir -p $github_dir/cluster_output/ABIDE_ASD_null_model_fits/
@@ -23,7 +23,7 @@ mkdir -p $github_dir/cluster_output/ABIDE_ASD_null_model_fits/
 --dataset_ID ABIDE_ASD \
 --data_path ${data_path} --github_dir ${github_dir} \
 --univariate --num_k_folds 10 \
---output_data_dir /headnode1/abry4213//data/ABIDE_ASD/Rdata/ABIDE_ASD_Feature_wise_catch22_inv_prob_null_model_fits/ \
+--output_data_dir /headnode1/abry4213/data/ABIDE_ASD/Rdata/ABIDE_ASD_Feature_wise_catch22_inv_prob_null_model_fits/ \
 --null_iter_number 88 \
 --num_perms_for_iter 10 \
 --pairwise_feature_set pyspi_19 \

@@ -16,21 +16,17 @@ project_dir=/headnode1/abry4213/
 github_dir=${project_dir}/github/fMRI_FeaturesDisorders/
 mkdir -p $github_dir/cluster_output/
 
-export num_null_permutations=1000
-
 # UCLA Schizophrenia
 /usr/physics/R/R-4.2.1/bin/Rscript univariate_classification.R \
 --github_dir $github_dir \
 --data_path ${project_dir}/data/UCLA_Schizophrenia/ \
 --rdata_path ${project_dir}/data/UCLA_Schizophrenia/Rdata/ \
---num_null_permutations ${num_null_permutations} \
 --pairwise_feature_set pyspi_19 \
 --univariate_feature_set catch22 \
 --noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DICER \
 --noise_proc_for_null AROMA+2P+GMR \
 --dataset_ID UCLA_Schizophrenia
                                       
-# 
 # ABIDE ASD
 /usr/physics/R/R-4.2.1/bin/Rscript univariate_classification.R \
 --github_dir $github_dir \

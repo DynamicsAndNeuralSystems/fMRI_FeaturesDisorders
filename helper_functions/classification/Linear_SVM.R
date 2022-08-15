@@ -155,7 +155,7 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
   
   rdata_path <- paste0(data_path, "Rdata/")
   
-  # Get control/schz proportions
+  # Get diagnosis proportions
   sample_groups <- readRDS(paste0(data_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s.Rds",
                                                      dataset_ID,
                                                      univariate_feature_set,
@@ -267,17 +267,39 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
 # Run pairwise PYSPI multi-feature linear SVM by input feature
 #-------------------------------------------------------------------------------
 run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
+                                             data_path,
                                              SPI_directionality,
                                              svm_kernel = "linear",
                                              grouping_var = "SPI",
                                              svm_feature_var = "region_pair",
-                                             test_package = "e1071",
                                              noise_proc = "AROMA+2P+GMR",
                                              num_k_folds = 10,
                                              flds = NULL,
                                              out_of_sample_only = TRUE,
                                              use_inv_prob_weighting = FALSE,
                                              shuffle_labels = FALSE) {
+  
+  
+  rdata_path <- paste0(data_path, "Rdata/")
+  
+  # Get diagnosis proportions
+  sample_groups <- readRDS(paste0(data_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s.Rds",
+                                                     dataset_ID,
+                                                     univariate_feature_set,
+                                                     pairwise_feature_set))) %>%
+    dplyr::select(Sample_ID, Diagnosis)
+  
+  # Define sample weights
+  # Default is 1 and 1 if use_inv_prob_weighting is not included
+  if (use_inv_prob_weighting) {
+    
+    # Convert to sample weights based on inverse of probability
+    sample_wts <- as.list(1/prop.table(table(sample_groups$Diagnosis)))
+    
+  } else {
+    sample_wts <- as.list(rep(1, length(unique(sample_groups$Diagnosis))))
+    names(sample_wts) = unique(sample_groups$Diagnosis)
+  }
   
   # Initialize results list for SVM
   class_res_list <- list()
@@ -321,7 +343,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     grouping_var_name = "Group_Var"
     
     # Filter by directionality
-    pairwise_data <- pairwise_data %>%
+    pyspi_data <- pyspi_data %>%
       # Special cases
       filter(SPI != "sgc_nonparametric_mean_fs-1_fmin-0_fmax-0-5",
              !(Sample_ID == "sub-10171" & SPI == "di_gaussian")) %>%
@@ -337,16 +359,15 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     
   }
   
-  
   # Reshape data from long to wide for SVM
   for (group_var in unique(grouping_var_vector)) {
     if (grouping_var == "Combo") {
       data_for_SVM <- pairwise_data %>%
         # Impute missing data with the mean
-        group_by(group, Combo) %>%
+        group_by(Diagnosis, Combo) %>%
         mutate(value = ifelse(is.na(value), mean(value, na.rm=T), value)) %>%
-        dplyr::select(Sample_ID, group, Combo, value) %>%
-        tidyr::pivot_wider(id_cols = c(Sample_ID, group),
+        dplyr::select(Sample_ID, Diagnosis, Combo, value) %>%
+        tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
                            names_from = Combo,
                            values_from 
                            = value) %>%
@@ -359,8 +380,8 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
       # Otherwise iterate over each separate group
       data_for_SVM <- subset(pairwise_data, get(grouping_var_name) == group_var) %>%
         dplyr::ungroup() %>%
-        dplyr::select(Sample_ID, group, svm_feature_var_name, value) %>%
-        tidyr::pivot_wider(id_cols = c(Sample_ID, group),
+        dplyr::select(Sample_ID, Diagnosis, svm_feature_var_name, value) %>%
+        tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
                            names_from = svm_feature_var_name,
                            values_from 
                            = value) %>%
@@ -368,15 +389,6 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
         dplyr::select(where(function(x) any(!is.na(x)))) %>%
         # Drop rows with NA for one or more column
         drop_na()
-    }
-    
-    # Define sample weights
-    # Default is 1 and 1 if use_inv_prob_weighting is not included
-    if (use_inv_prob_weighting) {
-      # Get control/schz proportions
-      sample_wts <- as.list(1/prop.table(table(data_for_SVM$group)))
-    } else {
-      sample_wts <- list("Control" = 1, "Schz" = 1)
     }
     
     if (nrow(data_for_SVM) > 0) {
@@ -389,7 +401,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                           shuffle_labels = shuffle_labels,
                                           out_of_sample_only = out_of_sample_only) %>%
         dplyr::mutate(grouping_var = group_var,
-                      feature_set = feature_set,
+                      pairwise_feature_set = pairwise_feature_set,
                       use_inv_prob_weighting = use_inv_prob_weighting,
                       Noise_Proc = noise_proc)
       
@@ -408,7 +420,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
 }
 
 #-------------------------------------------------------------------------------
-# Run combined univaraite theft plus pairwise PYSPI 
+# Run combined univariate theft plus pairwise PYSPI 
 # multi-feature linear SVM by input feature
 #-------------------------------------------------------------------------------
 run_combined_uni_pairwise_cv_svm_by_input_var <- function(univariate_data,

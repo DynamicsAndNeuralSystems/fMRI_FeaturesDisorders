@@ -8,7 +8,6 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 parser$add_argument("--github_dir", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
 parser$add_argument("--rdata_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/Rdata/")
-parser$add_argument("--num_null_permutations", default=1000)
 parser$add_argument("--pairwise_feature_set", default="pyspi_19")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
@@ -39,7 +38,6 @@ args <- parser$parse_args()
 github_dir <- args$github_dir
 data_path <- args$data_path
 rdata_path <- args$rdata_path
-num_null_permutations <- args$num_null_permutations
 pairwise_feature_set <- args$pairwise_feature_set
 univariate_feature_set <- args$univariate_feature_set
 noise_procs <- args$noise_procs
@@ -123,7 +121,8 @@ for (i in 1:nrow(grouping_param_df)) {
                                                 weighting_name)))) {
       group_wise_SVM_CV_weighting <- run_univariate_cv_svm_by_input_var(data_path = data_path,
                                                                         dataset_ID = dataset_ID,
-                                                                        feature_set = univariate_feature_set,
+                                                                        univariate_feature_set = univariate_feature_set,
+                                                                        pairwise_feature_set = pairwise_feature_set,
                                                                         svm_kernel = kernel,
                                                                         grouping_var = grouping_var,
                                                                         flds = sample_folds,
