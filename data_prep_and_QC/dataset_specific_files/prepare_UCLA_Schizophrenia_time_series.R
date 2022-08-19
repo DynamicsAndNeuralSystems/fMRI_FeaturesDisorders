@@ -1,45 +1,35 @@
-# Command-line arguments to parse
-library(argparse)
-parser <- ArgumentParser(description = "Define data paths and feature set")
-parser$add_argument("--github_dir", default="/project/hctsa/annie/github/fMRI_FeaturesDisorders/")
-parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/")
-parser$add_argument("--input_mat_file", default="", nargs="?")
-parser$add_argument("--subject_csv", default="participants.csv")
-parser$add_argument("--brain_region_lookup", default="", nargs="?")
-parser$add_argument("--parcellation_name", default="", nargs="?")
-parser$add_argument("--noise_procs", default=c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER"), nargs='*', action='append')
-parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
-
-# Parse input arguments
-args <- parser$parse_args()
-data_path <- args$data_path
-input_mat_file <- args$input_mat_file
-subject_csv <- args$subject_csv
-noise_procs <- args$noise_procs
-parcellation_name <- args$parcellation_name
-brain_region_lookup <- args$brain_region_lookup
-dataset_ID <- args$dataset_ID
-github_dir <- args$github_dir
-
-output_data_path <- paste0(data_path, "raw_data/")
-plot_dir <- paste0(data_path, "plots/")
+# Define paths specific to this dataset
+univariate_feature_set <- "catch22"
+subject_csv <- "participants.csv"
+github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
+data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
+dataset_ID <- "UCLA_Schizophrenia"
+input_mat_file = "UCLA_time_series_four_groups.mat"
+noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 
 # Load needed libraries
 require(plyr)
 library(tidyverse)
 library(R.matlab)
 
+# Define output directory for time-series .txt files
+ts_output_dir <- paste0(data_path, "raw_data/time_series_files/")
+
 #-------------------------------------------------------------------------------
-# Function to load matlab .mat data for UCLA cohort
+# Function to load matlab .mat data and output time-series data as .txt files
 #-------------------------------------------------------------------------------
-mat_data_into_TXT_files <- function(mat_file, dataset_ID, subject_csv, output_data_path, overwrite=F) {
+mat_data_into_TXT_files <- function(input_mat_file, 
+                                    dataset_ID, 
+                                    subject_csv, 
+                                    data_path, 
+                                    overwrite=F) {
   
   #-----------------------------------------------------------------------------
   
   #-----------------------------------------------------------------------------
   # Read in data
-  cat("\nLoading in .mat file:", mat_file, "\n")
-  mat_data <- readMat(mat_file)
+  cat("\nLoading in .mat file:", input_mat_file, "\n")
+  mat_data <- readMat(input_mat_file)
   
   #-----------------------------------------------------------------------------
   
@@ -51,6 +41,7 @@ mat_data_into_TXT_files <- function(mat_file, dataset_ID, subject_csv, output_da
                   "Noise_Proc" = "value") %>%
     distinct(Noise_Proc, noiseOptions)
   print(Noise_Proc)
+
   
   #-----------------------------------------------------------------------------
   
@@ -59,7 +50,7 @@ mat_data_into_TXT_files <- function(mat_file, dataset_ID, subject_csv, output_da
   cat("Reshaping data from wide to long.\n")
   TS_data_long <- reshape2::melt(mat_data$time.series) %>%
     dplyr::rename(timepoint = Var1,
-                  ROI_Index = Var2,
+                  Index = Var2,
                   Subject_Index = Var3,
                   noiseOptions = Var4)
   
@@ -80,13 +71,13 @@ mat_data_into_TXT_files <- function(mat_file, dataset_ID, subject_csv, output_da
   # Retrieve labels and clean up diagnosis names
   subject_info <- read.csv(subject_csv) %>%
     dplyr::rename(Sample_ID = 1) %>%
-    distinct(Sample_ID, diagnosis, age, gender) %>%
+    distinct(Sample_ID, Diagnosis, age, gender) %>%
     semi_join(., ids) %>%
-    mutate(diagnosis = str_to_title(diagnosis)) %>%
-    mutate(diagnosis = ifelse(diagnosis == "Adhd", "ADHD", diagnosis)) 
+    mutate(diagnosis = str_to_title(Diagnosis)) %>%
+    mutate(diagnosis = ifelse(Diagnosis == "Adhd", "ADHD", Diagnosis)) 
   
   # Save .Rds file containing list of subjects with time-series data and diagnoses
-  saveRDS(subject_info, paste0(output_data_path, sprintf("%s_subjects_with_TS_data.Rds",
+  saveRDS(subject_info, paste0(data_path, sprintf("%s_subjects_with_fMRI_TS_data.Rds",
                                                      dataset_ID)))
   
   #-----------------------------------------------------------------------------
@@ -95,9 +86,13 @@ mat_data_into_TXT_files <- function(mat_file, dataset_ID, subject_csv, output_da
   # Extract ROI names
   ROI_info <- reshape2::melt(mat_data$StructNames) %>%
     distinct(Var1, value) %>%
-    dplyr::rename("ROI_Index"="Var1",
+    dplyr::rename("Index"="Var1",
                   "Brain_Region"="value") %>%
     mutate(Brain_Region = gsub(" +", "", Brain_Region))
+  
+  # Save RDS mapping index to brain region name
+  saveRDS(ROI_info, file=paste0(data_path, sprintf("%s_Brain_Region_Lookup.Rds",
+                                                   dataset_ID)))
   
   #-----------------------------------------------------------------------------
   
@@ -107,35 +102,45 @@ mat_data_into_TXT_files <- function(mat_file, dataset_ID, subject_csv, output_da
                              by=c("Subject_Index"="Subject_Index")) %>%
     inner_join(., subject_info, by=c("Sample_ID"="Sample_ID")) %>%
     inner_join(., Noise_Proc, by=c("noiseOptions"="noiseOptions")) %>%
-    inner_join(., ROI_info, by=c("ROI_Index"="ROI_Index")) %>%
-    dplyr::select(-noiseOptions, -Subject_Index, -ROI_Index) %>%
-    filter(diagnosis %in% c("Schz", "Control"))
+    dplyr::select(-noiseOptions, -Subject_Index)
   
   # Separate data into TS versus metadata
   metadata <- TS_data_full %>%
-    distinct(Sample_ID, diagnosis, age, gender)
-  saveRDS(metadata, file=paste0(rdata_path, sprintf("%s_subject_metadata.Rds",
+    distinct(Sample_ID, Diagnosis, age, gender)
+  saveRDS(metadata, file=paste0(data_path, sprintf("%s_sample_metadata.Rds",
                                                     dataset_ID)))
   
-  TS_data_for_analysis <- TS_data_full %>%
-    dplyr::select(Sample_ID, Brain_Region, Noise_Proc, timepoint, value) 
-  
-  if (!file.exists(paste0(rdata_path, sprintf("%s_fMRI_data.Rds",
-                                              dataset_ID))) | overwrite) {
-    cat("\nWriting", dataset_ID, "fMRI time-series data to Rds object.", "\n")
-    saveRDS(TS_data_for_analysis, file=paste0(output_data_path, sprintf("%s_fMRI_data.Rds",
-                                                                  dataset_ID)))
+  for (noise_proc in Noise_Proc$Noise_Proc) {
+    noise_label = gsub("\\+", "_", noise_proc)
     
-  } else {
-    cat("\nfMRI .Rds object already exists and --overwrite was not specified. Not writing new Rds object.\n")
+    noise_proc_subset = TS_data_full %>%
+      dplyr::filter(Noise_Proc == noise_proc)
+    
+    # Make output directory
+    np_output_dir = paste0(ts_output_dir, noise_label, "/")
+    icesTAF::mkdir(np_output_dir)
+    
+    # Save a .csv file per sample
+    for (sample in unique(noise_proc_subset$Sample_ID)) {
+      if (!file.exists(paste0(np_output_dir, sample, "_TS.csv"))) {
+        noise_proc_subset %>%
+          filter(Sample_ID == sample) %>%
+          dplyr::select(timepoint, Index, value) %>%
+          pivot_wider(names_from=Index, values_from=value) %>%
+          write.csv(., 
+                    file = paste0(np_output_dir, sample, "_TS.csv"),
+                    col.names = F, row.names=F)
+      }
+    }
+
   }
 }
 
 #-------------------------------------------------------------------------------
 # Prep data from .mat file
 #-------------------------------------------------------------------------------
-mat_data_into_TXT_files(mat_file=paste0(data_path, input_mat_file), 
-              dataset_ID = dataset_ID,
-              subject_csv=paste0(data_path, subject_csv), 
-              output_data_path=output_data_path, 
-              overwrite=TRUE)
+mat_data_into_TXT_files(input_mat_file=paste0(data_path, 
+                                              input_mat_file), 
+                        dataset_ID = dataset_ID,
+                        subject_csv=paste0(data_path, subject_csv), 
+                        data_path=data_path)
