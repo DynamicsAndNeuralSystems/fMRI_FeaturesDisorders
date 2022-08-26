@@ -1,0 +1,54 @@
+#!/bin/bash
+#PBS -N clean_pairwise_data
+#PBS -q yossarian
+#PBS -j oe
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_out.txt
+#PBS -l select=1:ncpus=1:mem=40GB
+#PBS -l walltime=4:00:00
+#PBS -m abe
+#PBS -M abry4213@uni.sydney.edu.au
+#PBS -V
+
+cd "$PBS_O_WORKDIR" 
+
+# Load python
+#module load Anaconda3-5.1.0
+/usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
+source /usr/physics/python/anaconda3/etc/profile.d/conda.sh 
+
+conda activate pyspi
+
+# Define directories
+export github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders/
+mkdir -p $github_dir/cluster_output/
+
+# UCLA Schizophrenia
+Rscript clean_pairwise_data.R \
+--github_dir $github_dir \
+--data_path /headnode1/abry4213/data/UCLA_Schizophrenia/ \
+--python_to_use /headnode1/abry4213/.conda/envs/pyspi/bin/python3 \
+--univariate_feature_set catch22 \
+--pairwise_feature_set pyspi14 \
+--sample_csv_file participants.csv \
+--brain_region_lookup Brain_Region_info.csv \
+--noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DiCER \
+--dataset_ID UCLA_Schizophrenia
+
+# ABIDE ASD
+Rscript clean_pairwise_data.R \
+--github_dir $github_dir \
+--data_path /headnode1/abry4213/data/ABIDE_ASD/ \
+--python_to_use /headnode1/abry4213/.conda/envs/pyspi/bin/python3 \
+--univariate_feature_set catch22 \
+--sample_csv_file participants.csv \
+--pairwise_feature_set pyspi14 \
+--brain_region_lookup Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv \
+--noise_procs FC1000 \
+--dataset_ID ABIDE_ASD
+
+exit
+
+# Verify the host on which the job ran
+hostname
+
+

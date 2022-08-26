@@ -29,3 +29,9 @@ output_csv_per_subject <- function(subject_ID) {
 
 subjects %>%
   purrr::map(~ output_csv_per_subject(.x))
+
+# Save metadata
+metadata <- read.csv(paste0(data_path, subject_csv)) %>%
+  mutate(Sample_ID = gsub("_", "", Sample_ID)) 
+saveRDS(metadata, file=paste0(data_path, sprintf("%s_sample_metadata.Rds",
+                                                 dataset_ID)))

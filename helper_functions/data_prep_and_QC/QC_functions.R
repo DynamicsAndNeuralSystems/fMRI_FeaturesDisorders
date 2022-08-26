@@ -16,10 +16,10 @@ library(theft)
 #-------------------------------------------------------------------------------
 
 find_univariate_sample_na <- function(rdata_path, 
-                                      input_dataset_name = "UCLA_Schizophrenia",
+                                      dataset_ID = "UCLA_Schizophrenia",
                                       feature_set = "catch22") {
   TS_feature_data <- readRDS(paste0(rdata_path, sprintf("%s_%s.Rds",
-                                                        input_dataset_name,
+                                                        dataset_ID,
                                                         feature_set)))
   
   NA_sample_data <- TS_feature_data %>%
@@ -43,13 +43,13 @@ find_univariate_sample_na <- function(rdata_path,
 #-------------------------------------------------------------------------------
 
 find_univariate_feature_na <- function(rdata_path, 
-                                       input_dataset_name = "UCLA_Schizophrenia",
+                                       dataset_ID = "UCLA_Schizophrenia",
                                        feature_set = "catch22",
                                        noise_procs = c("AROMA+2P",
                                                        "AROMA+2P+GMR",
                                                        "AROMA+2P+DiCER")) {
   TS_feature_data <- readRDS(paste0(rdata_path, sprintf("%s_%s.Rds",
-                                                        input_dataset_name,
+                                                        dataset_ID,
                                                         feature_set)))
   
   NA_feature_data <- TS_feature_data %>%
@@ -78,14 +78,14 @@ z_score_feature_matrix <- function(noise_proc,
 }
 
 z_score_all_noise_procs <- function(rdata_path,
-                                    input_dataset_name = "UCLA_Schizophrenia",
+                                    dataset_ID = "UCLA_Schizophrenia",
                                     feature_set = "catch22",
                                     noise_procs = c("AROMA+2P",
                                                     "AROMA+2P+GMR",
                                                     "AROMA+2P+DiCER")) {
   
   TS_df <- readRDS(paste0(rdata_path, sprintf("%s_%s_filtered.Rds",
-                                              input_dataset_name,
+                                              dataset_ID,
                                               feature_set)))
   
   TS_df_z <- noise_procs %>%
@@ -93,11 +93,11 @@ z_score_all_noise_procs <- function(rdata_path,
                                             TS_df = TS_df))
   
   saveRDS(TS_df_z, file = paste0(rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
-                                                             input_dataset_name,
+                                                             dataset_ID,
                                                              feature_set)))
   
   cat("\nZ-scored data saved to:", paste0(rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
-                                                              input_dataset_name,
+                                                              dataset_ID,
                                                               feature_set)),
       "\n")
 }
@@ -109,7 +109,7 @@ z_score_all_noise_procs <- function(rdata_path,
 #-------------------------------------------------------------------------------
 
 plot_NA_sample_ts <- function(rdata_path, 
-                              input_dataset_name = "UCLA_Schizophrenia",
+                              dataset_ID = "UCLA_Schizophrenia",
                               grouping_var = "Brain_Region",
                               raw_TS_file = "UCLA_Schizophrenia_fMRI_data",
                               feature_set = "catch22",
@@ -125,7 +125,7 @@ plot_NA_sample_ts <- function(rdata_path,
       filter(Sample_ID %in% NA_sample_IDs) %>%
       ggplot(data=., mapping=aes_string(x="timepoint", y="value", color=grouping_var)) +
       ggtitle(sprintf("Raw time-series for %s\nNA samples with %s",
-                      gsub("_", " ", input_dataset_name), feature_set)) +
+                      gsub("_", " ", dataset_ID), feature_set)) +
       geom_line(alpha=0.6) +
       facet_grid(Sample_ID ~ Noise_Proc, switch="y") +
       theme(legend.position="none",
@@ -141,16 +141,16 @@ plot_NA_sample_ts <- function(rdata_path,
 #-------------------------------------------------------------------------------
 
 remove_samples_from_feature_matrix <- function(rdata_path, 
-                                                input_dataset_name = "UCLA_Schizophrenia",
+                                                dataset_ID = "UCLA_Schizophrenia",
                                                 feature_set = "catch22",
                                                 sample_IDs_to_drop = c()) {
   
   cat("\nDropping samples:", paste(sample_IDs_to_drop, collapse=", "), "\n")
   
-  TS_df <- readRDS(paste0(rdata_path, sprintf("%s_%s.Rds", input_dataset_name, feature_set))) %>%
+  TS_df <- readRDS(paste0(rdata_path, sprintf("%s_%s.Rds", dataset_ID, feature_set))) %>%
     dplyr::filter(!(Sample_ID %in% sample_IDs_to_drop))
   
-  saveRDS(TS_df, paste0(rdata_path, sprintf("%s_%s_filtered.Rds", input_dataset_name, feature_set)))
+  saveRDS(TS_df, paste0(rdata_path, sprintf("%s_%s_filtered.Rds", dataset_ID, feature_set)))
 }
 
 #-------------------------------------------------------------------------------
@@ -158,7 +158,7 @@ remove_samples_from_feature_matrix <- function(rdata_path,
 #-------------------------------------------------------------------------------
 
 remove_feature_from_univariate_feature_matrix <- function(rdata_path, 
-                                               input_dataset_name = "UCLA_Schizophrenia",
+                                               dataset_ID = "UCLA_Schizophrenia",
                                                feature_set = "catch22",
                                                features_to_drop = c(),
                                                overwrite = F,
@@ -169,11 +169,11 @@ remove_feature_from_univariate_feature_matrix <- function(rdata_path,
     noise_label <- gsub("\\+", "_", noise_proc)
     if (!file.exists(paste0(rdata_path, 
                             sprintf("%s_%s_%s_filtered.Rds",
-                                    input_dataset_name,
+                                    dataset_ID,
                                     noise_label,
                                     feature_set))) | overwrite) {
       TS_feature_df_filtered <- readRDS(paste0(rdata_path, sprintf("%s_%s_%s.Rds",
-                                                                   input_dataset_name,
+                                                                   dataset_ID,
                                                                    noise_label,
                                                                    feature_set))) %>%
         dplyr::mutate(Noise_Proc = noise_proc) %>%
@@ -181,7 +181,7 @@ remove_feature_from_univariate_feature_matrix <- function(rdata_path,
       
       saveRDS(TS_feature_df_filtered, file = paste0(rdata_path, 
                                                     sprintf("%s_%s_%s_filtered.Rds",
-                                                            input_dataset_name,
+                                                            dataset_ID,
                                                             noise_label,
                                                             feature_set)))
     }
@@ -202,7 +202,7 @@ run_QC_for_univariate_dataset <- function(data_path,
                                                           "AROMA+2P+DiCER"),
                                           plot_dir) {
   
-  rdata_path <- paste0(data_path, "Rdata/")
+  rdata_path <- paste0(data_path, "processed_data/Rdata/")
   
   # Load sample metadata
   sample_metadata_df <- read.csv(paste0(data_path, sample_metadata)) %>%
@@ -210,14 +210,14 @@ run_QC_for_univariate_dataset <- function(data_path,
   
   # Samples identified with missing data for one or more noise-processing methods:
   univar_NA_samples <- find_univariate_sample_na(rdata_path = rdata_path,
-                                                   input_dataset_name = dataset_ID,
+                                                   dataset_ID = dataset_ID,
                                                    feature_set = univariate_feature_set) %>%
     pull(Sample_ID)
   
   # Plot the raw time-series data for these samples to confirm:
   tryCatch({
     plot_NA_sample_ts(rdata_path = rdata_path, 
-                      input_dataset_name = dataset_ID,
+                      dataset_ID = dataset_ID,
                       raw_TS_file = raw_TS_file,
                       NA_sample_IDs = univar_NA_samples,
                       noise_procs = noise_procs)
@@ -228,7 +228,7 @@ run_QC_for_univariate_dataset <- function(data_path,
   # Drop any samples shown above with NA features for 
   # one or more noise-processing methods:
   remove_samples_from_feature_matrix(rdata_path, 
-                                     input_dataset_name = dataset_ID,
+                                     dataset_ID = dataset_ID,
                                      feature_set = univariate_feature_set,
                                      sample_IDs_to_drop = univar_NA_samples)
 
@@ -251,7 +251,7 @@ run_QC_for_univariate_dataset <- function(data_path,
   
   # Data normalisation: z-score the feature matrix as well. 
   z_score_all_noise_procs(rdata_path = rdata_path,
-                          input_dataset_name = dataset_ID,
+                          dataset_ID = dataset_ID,
                           feature_set = univariate_feature_set,
                           noise_procs = noise_procs)
   

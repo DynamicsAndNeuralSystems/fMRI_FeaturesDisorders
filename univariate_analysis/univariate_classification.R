@@ -7,7 +7,7 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--github_dir", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
-parser$add_argument("--rdata_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/Rdata/")
+parser$add_argument("--rdata_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/processed_data/Rdata/")
 parser$add_argument("--pairwise_feature_set", default="pyspi_19")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")

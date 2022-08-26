@@ -127,6 +127,7 @@ mat_data_into_TXT_files <- function(input_mat_file,
           filter(Sample_ID == sample) %>%
           dplyr::select(timepoint, Index, value) %>%
           pivot_wider(names_from=Index, values_from=value) %>%
+          dplyr::select(-timepoint) %>%
           write.csv(., 
                     file = paste0(np_output_dir, sample, "_TS.csv"),
                     col.names = F, row.names=F)
@@ -140,6 +141,7 @@ mat_data_into_TXT_files <- function(input_mat_file,
 # Prep data from .mat file
 #-------------------------------------------------------------------------------
 mat_data_into_TXT_files(input_mat_file=paste0(data_path, 
+                                              "raw_data/",
                                               input_mat_file), 
                         dataset_ID = dataset_ID,
                         subject_csv=paste0(data_path, subject_csv), 
