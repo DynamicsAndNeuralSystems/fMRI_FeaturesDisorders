@@ -16,24 +16,24 @@ github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders/
 mkdir -p $github_dir/cluster_output/
 
 # UCLA Schizophrenia
-# Rscript prepare_univariate_data.R \
-# --github_dir $github_dir \
-# --data_path /headnode1/abry4213/data/UCLA_Schizophrenia/ \
-# --univariate_feature_set catch22 \
-# --subject_csv participants.csv \
-# --brain_region_lookup Brain_Region_info.csv \
-# --noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DiCER \
-# --dataset_ID UCLA_Schizophrenia 
-
-# ABIDE ASD
 Rscript prepare_univariate_data.R \
 --github_dir $github_dir \
---data_path /headnode1/abry4213/data/ABIDE_ASD/ \
+--data_path /headnode1/abry4213/data/UCLA_Schizophrenia/ \
 --univariate_feature_set catch22 \
 --subject_csv participants.csv \
---brain_region_lookup Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv \
---noise_procs FC1000 \
---dataset_ID ABIDE_ASD
+--brain_region_lookup Brain_Region_info.csv \
+--noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DiCER \
+--dataset_ID UCLA_Schizophrenia 
+
+# ABIDE ASD
+# Rscript prepare_univariate_data.R \
+# --github_dir $github_dir \
+# --data_path /headnode1/abry4213/data/ABIDE_ASD/ \
+# --univariate_feature_set catch22 \
+# --subject_csv participants.csv \
+# --brain_region_lookup Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv \
+# --noise_procs FC1000 \
+# --dataset_ID ABIDE_ASD
 
 exit
 
