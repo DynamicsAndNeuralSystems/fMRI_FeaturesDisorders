@@ -15,7 +15,7 @@ dataset_ID <- args$dataset_ID
 
 library(tidyverse)
 
-rdata_path <- paste0(data_path, "Rdata/")
+rdata_path <- paste0(data_path, "processed_data/Rdata/")
 
 # Read in univariate data
 univariate_samples <- readRDS(paste0(rdata_path, 

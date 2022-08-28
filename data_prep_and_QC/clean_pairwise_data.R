@@ -11,9 +11,10 @@ parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizo
 parser$add_argument("--python_to_use", default="/headnode1/abry4213/.conda/envs/pyspi/bin/python3")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--pairwise_feature_set", default="pyspi14")
-parser$add_argument("--sample_csv_file", default="participants.csv")
+parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
 parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
+parser$add_argument("--main_noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 
 # Parse input arguments
@@ -23,8 +24,9 @@ data_path <- args$data_path
 python_to_use <- args$python_to_use
 univariate_feature_set <- args$univariate_feature_set
 pairwise_feature_set <- args$pairwise_feature_set
-sample_csv_file <- args$sample_csv_file
+sample_metadata_file <- args$sample_metadata_file
 noise_procs <- args$noise_procs
+main_noise_proc <- args$main_noise_proc
 dataset_ID <- args$dataset_ID
 plot_dir <- args$plot_dir
 brain_region_lookup <- args$brain_region_lookup
@@ -32,21 +34,23 @@ brain_region_lookup <- args$brain_region_lookup
 # python_to_use <- "/headnode1/abry4213/.conda/envs/pyspi/bin/python3"
 # univariate_feature_set <- "catch22"
 # pairwise_feature_set <- "pyspi14"
-# sample_csv_file <- "participants.csv"
 # github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
 
 # UCLA schizophrenia
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
+# sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
 # dataset_ID <- "UCLA_Schizophrenia"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # brain_region_lookup <- "Brain_Region_info.csv"
 
 # ABIDE ASD
 # data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
+# sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
 # dataset_ID <- "ABIDE_ASD"
 # noise_procs <- c("FC1000")
 # brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 
+sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
 pkl_data_path <- paste0(data_path, "raw_data/numpy_files/")
 rdata_path <- paste0(data_path, "processed_data/Rdata/")
 plot_dir <- paste0(data_path, "plots/")
@@ -69,6 +73,9 @@ library(reticulate)
 reticulate::source_python(paste0(github_dir, "helper_functions/data_prep_and_QC/pickle_reader.py"))
 library(tidyverse)
 
+# Source QC functions
+source(paste0(github_dir, "helper_functions/data_prep_and_QC/QC_functions_pairwise.R"))
+
 # Unlist noise-processing methods
 tryCatch({
   noise_procs <- unlist(noise_procs)
@@ -79,7 +86,6 @@ noise_procs <- noise_procs[noise_procs!=""]
 # Print out arguments
 cat("pkl_data_path:", pkl_data_path, "\n")
 cat("rdata_path:", rdata_path, "\n")
-cat("sample_csv_file:", paste0(data_path, sample_csv_file), "\n")
 cat("noise_procs:", paste(noise_procs, collapse=", "), "\n")
 
 #-------------------------------------------------------------------------------
@@ -88,13 +94,10 @@ cat("noise_procs:", paste(noise_procs, collapse=", "), "\n")
 #-------------------------------------------------------------------------------
 read_pyspi_pkl_into_RDS <- function(pkl_data_path,
                                     rdata_path,
-                                    sample_csv_file,
+                                    sample_metadata,
                                     noise_procs = c("AROMA+2P",
                                                     "AROMA+2P+GMR",
                                                     "AROMA+2P+DiCER")) {
-  
-  # Load sample data
-  sample_data <- read.csv(sample_csv_file)
   # Iterate over each noise-processing method
   for (noise_proc in noise_procs) {
     noise_label = gsub("\\+", "_", noise_proc)
@@ -116,7 +119,7 @@ read_pyspi_pkl_into_RDS <- function(pkl_data_path,
         cat("\nNow prepping data for", sample, noise_label, "\n")
         tryCatch({sample_pkl_data <- extract_df_from_pkl(paste0(np_data_path, sample, "/calc.pkl")) %>%
           mutate(Sample_ID = sample,
-                 Diagnosis = subset(sample_data, Sample_ID == sample) %>% pull(Diagnosis),
+                 Diagnosis = subset(sample_metadata, Sample_ID == sample) %>% pull(Diagnosis),
                  Noise_Proc = noise_proc,
                  brain_region_1 = as.numeric(gsub("proc-", "", brain_region_1)),
                  brain_region_2 = as.numeric(gsub("proc-", "", brain_region_2)))
@@ -188,7 +191,7 @@ merge_pyspi_res_for_study <- function(rdata_path,
       mutate(Index = 1 + as.numeric(gsub("proc-", "", Index))) %>%
       left_join(ROI_index) %>%
       dplyr::select(-Index) %>%
-      pivot_wider(id_cols = c("Sample_ID", "Diagnosis", "SPI", "value", "comparison"),
+      pivot_wider(id_cols = c("Sample_ID", "Diagnosis", "SPI", "Noise_Proc", "value", "comparison"),
                   names_from = "Region_Number",
                   values_from = "Brain_Region") %>%
       dplyr::select(-comparison) 
@@ -204,10 +207,19 @@ merge_pyspi_res_for_study <- function(rdata_path,
 #-------------------------------------------------------------------------------
 read_pyspi_pkl_into_RDS(pkl_data_path = pkl_data_path,
                         rdata_path = rdata_path,
-                        sample_csv_file = paste0(data_path, sample_csv_file),
+                        sample_metadata = sample_metadata,
                         noise_procs = noise_procs)
 
 merge_pyspi_res_for_study(rdata_path = rdata_path,
                           dataset_ID = dataset_ID,
                           brain_region_lookup = paste0(data_path, brain_region_lookup),
                           noise_procs = noise_procs)
+
+#-------------------------------------------------------------------------------
+# Perform QC for pairwise data
+#-------------------------------------------------------------------------------
+run_QC_for_dataset(data_path = data_path, 
+                   sample_metadata_file = sample_metadata_file,
+                   dataset_ID = dataset_ID,
+                   pairwise_feature_set = pairwise_feature_set,
+                   noise_proc = main_noise_proc)

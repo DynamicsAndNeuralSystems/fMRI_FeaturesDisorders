@@ -29,9 +29,10 @@ Rscript clean_pairwise_data.R \
 --python_to_use /headnode1/abry4213/.conda/envs/pyspi/bin/python3 \
 --univariate_feature_set catch22 \
 --pairwise_feature_set pyspi14 \
---sample_csv_file participants.csv \
+--sample_metadata_file UCLA_Schizophrenia_sample_metadata.Rds \
 --brain_region_lookup Brain_Region_info.csv \
 --noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DiCER \
+--main_noise_proc AROMA+2P+GMR \
 --dataset_ID UCLA_Schizophrenia
 
 # ABIDE ASD
@@ -40,10 +41,11 @@ Rscript clean_pairwise_data.R \
 --data_path /headnode1/abry4213/data/ABIDE_ASD/ \
 --python_to_use /headnode1/abry4213/.conda/envs/pyspi/bin/python3 \
 --univariate_feature_set catch22 \
---sample_csv_file participants.csv \
 --pairwise_feature_set pyspi14 \
+--sample_metadata_file ABIDE_ASD_sample_metadata.Rds \
 --brain_region_lookup Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv \
 --noise_procs FC1000 \
+--main_noise_proc FC1000 \
 --dataset_ID ABIDE_ASD
 
 exit

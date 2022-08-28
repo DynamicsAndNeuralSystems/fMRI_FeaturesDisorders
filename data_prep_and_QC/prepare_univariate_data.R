@@ -63,7 +63,7 @@ tryCatch({
 # Set working directory to file location
 helper_script_dir = paste0(github_dir, "helper_functions/")
 source(paste0(helper_script_dir, "data_prep_and_QC/TS_feature_extraction.R"))
-source(paste0(helper_script_dir, "data_prep_and_QC/QC_functions.R"))
+source(paste0(helper_script_dir, "data_prep_and_QC/QC_functions_univariate.R"))
 
 
 # DIY rlist::list.append

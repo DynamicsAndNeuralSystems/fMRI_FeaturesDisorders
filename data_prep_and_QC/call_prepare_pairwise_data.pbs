@@ -1,8 +1,8 @@
 #!/bin/bash
-#PBS -N pairwise_data_prep
+#PBS -N prepare_pairwise_data
 #PBS -q yossarian
 #PBS -j oe
-#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pairwise_data_prep_out.txt
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_pairwise_data.txt
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=4:00:00
 #PBS -m abe

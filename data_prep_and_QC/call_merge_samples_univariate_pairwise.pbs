@@ -22,7 +22,7 @@ mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/
 export dataset_ID="UCLA_Schizophrenia"
 export data_path=${project_dir}/data/${dataset_ID}/
 export univariate_feature_set="catch22"
-export pairwise_feature_set="pyspi_19"
+export pairwise_feature_set="pyspi14"
 
 cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/find_common_samples_univariate_pairwise.R \
 --data_path ${data_path} \
@@ -40,7 +40,7 @@ $cmd
 export dataset_ID="ABIDE_ASD"
 export data_path=${project_dir}/data/${dataset_ID}/
 export univariate_feature_set="catch22"
-export pairwise_feature_set="pyspi_19"
+export pairwise_feature_set="pyspi14"
 
 cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/find_common_samples_univariate_pairwise.R \
 --data_path ${data_path} \
