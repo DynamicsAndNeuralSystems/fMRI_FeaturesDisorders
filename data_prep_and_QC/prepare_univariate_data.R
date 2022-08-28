@@ -30,14 +30,14 @@ brain_region_lookup <- args$brain_region_lookup
 # UCLA schizophrenia
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
-# sample_metadata_file <- "UCLA_Schizophrenia_sample_info.Rds"
+# sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # brain_region_lookup <- "Brain_Region_info.csv"
 
 # ABIDE ASD
 # data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
-# sample_metadata_file <- "ABIDE_ASD_sample_info.Rds"
+# sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
 # noise_procs <- c("FC1000")
 # brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 

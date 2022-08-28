@@ -149,7 +149,7 @@ remove_feature_from_univariate_feature_matrix <- function(TS_df,
 #-------------------------------------------------------------------------------
 
 run_QC_for_univariate_dataset <- function(data_path, 
-                                          sample_metadata_file = "UCLA_Schizophrenia_sample_info.Rds",
+                                          sample_metadata_file = "UCLA_Schizophrenia_sample_metadata.Rds",
                                           dataset_ID = "UCLA_Schizophrenia",
                                           univariate_feature_set = "catch22",
                                           raw_TS_file = "UCLA_Schizophrenia_fMRI_data.Rds",
