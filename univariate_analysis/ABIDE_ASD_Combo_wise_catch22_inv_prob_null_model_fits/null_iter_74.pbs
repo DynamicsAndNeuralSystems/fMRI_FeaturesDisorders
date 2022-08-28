@@ -22,11 +22,12 @@ mkdir -p $github_dir/cluster_output/ABIDE_ASD_null_model_fits/
 /usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/helper_functions/classification/Null_distributions_cluster.R \
 --dataset_ID ABIDE_ASD \
 --data_path ${data_path} --github_dir ${github_dir} \
+--sample_metadata_file ABIDE_ASD_sample_metadata.Rds \
 --univariate --num_k_folds 10 \
---output_data_dir /headnode1/abry4213/data/ABIDE_ASD/Rdata/ABIDE_ASD_Combo_wise_catch22_inv_prob_null_model_fits/ \
+--output_data_dir /headnode1/abry4213/data/ABIDE_ASD/processed_data/Rdata/ABIDE_ASD_Combo_wise_catch22_inv_prob_null_model_fits/ \
 --null_iter_number 74 \
 --num_perms_for_iter 10 \
---pairwise_feature_set pyspi_19 \
+--pairwise_feature_set pyspi14 \
 --univariate_feature_set catch22 \
 --noise_proc FC1000 \
 --svm_kernel linear \

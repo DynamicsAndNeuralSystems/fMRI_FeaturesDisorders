@@ -3,7 +3,7 @@ library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
 parser$add_argument("--univariate_feature_set", default="catch22")
-parser$add_argument("--pairwise_feature_set", default="pyspi_19")
+parser$add_argument("--pairwise_feature_set", default="pyspi14")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 
 # Parse input arguments
@@ -23,22 +23,22 @@ univariate_samples <- readRDS(paste0(rdata_path,
                                      "_filtered_sample_info_",
                                      univariate_feature_set,
                                      ".Rds")) %>%
-  dplyr::select(Sample_ID, Diagnosis)
+  dplyr::select(Sample_ID)
 
 # Read in pairwise data CSV
-pairwise_samples <- readRDS(paste0(data_path,
+pairwise_samples <- readRDS(paste0(rdata_path,
                                    dataset_ID,
-                                   "_samples_with_pairwise_",
+                                   "_filtered_sample_info_",
                                    pairwise_feature_set,
                                    ".Rds"))%>%
-  dplyr::select(Sample_ID, Diagnosis)
+  dplyr::select(Sample_ID)
 
 # Find the intersection
 intersection <- inner_join(univariate_samples, pairwise_samples)
 
 # Write the intersection results to an Rds file
 saveRDS(intersection,
-          paste0(data_path, dataset_ID, "_samples_with_univariate_",
+          paste0(rdata_path, dataset_ID, "_samples_with_univariate_",
                  univariate_feature_set,
                  "_and_pairwise_", pairwise_feature_set,
-                 ".Rds"))
+                 "_filtered.Rds"))

@@ -20,21 +20,23 @@ mkdir -p $github_dir/cluster_output/
 /usr/physics/R/R-4.2.1/bin/Rscript pairwise_classification.R \
 --github_dir $github_dir \
 --data_path ${project_dir}/data/UCLA_Schizophrenia/ \
---pairwise_feature_set pyspi_19 \
+--pairwise_feature_set pyspi14 \
 --univariate_feature_set catch22 \
 --noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DICER \
 --noise_proc_for_null AROMA+2P+GMR \
---dataset_ID UCLA_Schizophrenia
+--dataset_ID UCLA_Schizophrenia \
+--sample_metadata_file UCLA_Schizophrenia_sample_metadata.Rds
                                       
 # ABIDE ASD
 /usr/physics/R/R-4.2.1/bin/Rscript pairwise_classification.R \
 --github_dir $github_dir \
 --data_path ${project_dir}/data/ABIDE_ASD/ \
---pairwise_feature_set pyspi_19 \
+--pairwise_feature_set pyspi14 \
 --univariate_feature_set catch22 \
 --noise_procs FC1000 \
 --noise_proc_for_null FC1000 \
---dataset_ID ABIDE_ASD
+--dataset_ID ABIDE_ASD \
+--sample_metadata_file ABIDE_ASD_sample_metadata.Rds
 
 exit
 

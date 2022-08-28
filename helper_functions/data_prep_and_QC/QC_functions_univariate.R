@@ -118,15 +118,15 @@ plot_NA_sample_ts <- function(dataset_ID = "UCLA_Schizophrenia",
 # Function to drop a list of samples from the given feature matrix
 #-------------------------------------------------------------------------------
 
-remove_samples_from_feature_matrix <- function(TS_df, 
+remove_samples_from_feature_matrix <- function(TS_feature_data, 
                                                 sample_IDs_to_drop = c()) {
   
   cat("\nDropping samples:", paste(sample_IDs_to_drop, collapse=", "), "\n")
   
-  TS_df_filtered <- TS_df %>%
+  TS_feature_data_filtered <- TS_feature_data %>%
     dplyr::filter(!(Sample_ID %in% sample_IDs_to_drop))
 
-  return(TS_df_filtered)
+  return(TS_feature_data_filtered)
   
 }
 
@@ -134,14 +134,19 @@ remove_samples_from_feature_matrix <- function(TS_df,
 # Function to drop a feature(s) from the given feature matrix
 #-------------------------------------------------------------------------------
 
-remove_feature_from_univariate_feature_matrix <- function(TS_df, 
+remove_features_from_feature_matrix <- function(TS_feature_data, 
                                                features_to_drop = c()) {
-  cat("\nDropping features:", paste(names, collapse=", "), "\n")
-  
-  TS_df_filtered <- TS_df %>%
-    dplyr::filter(!(names %in% features_to_drop))
+  if (length(features_to_drop) > 0) {
+    cat("\nDropping features:", paste(names, collapse=", "), "\n")
+    
+    TS_feature_data_filtered <- TS_feature_data %>%
+      dplyr::filter(!(names %in% features_to_drop))
+    
+    return(TS_feature_data_filtered)
+  } else {
+    return(TS_feature_data)
+  }
 
-  return(TS_df_filtered)
 }
 
 #-------------------------------------------------------------------------------
@@ -161,7 +166,7 @@ run_QC_for_univariate_dataset <- function(data_path,
   proc_rdata_path <- paste0(data_path, "processed_data/Rdata/")
   
   # Load sample metadata
-  sample_metadata_df <- readRDS(paste0(data_path, sample_metadata_file))
+  sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
 
   # Filter to schizophrenia and control for UCLA
   if (dataset_ID == "UCLA_Schizophrenia") {
@@ -176,8 +181,7 @@ run_QC_for_univariate_dataset <- function(data_path,
   # Samples identified with missing data for all features:
   univar_NA_samples <- find_univariate_sample_na(TS_feature_data,
                                                  dataset_ID = dataset_ID,
-                                                 univariate_feature_set = univariate_feature_set,
-                                                 noise_proc = noise_proc) %>%
+                                                 univariate_feature_set = univariate_feature_set) %>%
     pull(Sample_ID)
 
   # Plot the raw time-series data for these samples to confirm:
@@ -195,22 +199,17 @@ run_QC_for_univariate_dataset <- function(data_path,
   # Drop any samples shown above with NA features for 
   # one or more noise-processing methods:
   TS_feature_data_filtered <- remove_samples_from_feature_matrix(TS_feature_data = TS_feature_data, 
-                                                                 dataset_ID = dataset_ID,
-                                                                 univariate_feature_set = univariate_feature_set,
                                                                  sample_IDs_to_drop = univar_NA_samples)
 
   # Features identified with missing data for all samples:
   univar_NA_features <- find_univariate_feature_na(TS_feature_data_filtered,
                                                  dataset_ID = dataset_ID,
-                                                 univariate_feature_set = univariate_feature_set,
-                                                 noise_proc = noise_proc) %>%
+                                                 univariate_feature_set = univariate_feature_set) %>%
     pull(names)
   
   # Drop any samples shown above with NA features for 
   # one or more noise-processing methods:
   TS_feature_data_filtered <- remove_features_from_feature_matrix(TS_feature_data = TS_feature_data_filtered, 
-                                                                 dataset_ID = dataset_ID,
-                                                                 univariate_feature_set = univariate_feature_set,
                                                                  features_to_drop = univar_NA_features)                                                               
 
 

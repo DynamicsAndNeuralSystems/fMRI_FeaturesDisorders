@@ -2,8 +2,9 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
-parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
-parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/scz/UCLA/Rdata/")
+parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
+parser$add_argument("--rdata_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/processed_data/Rdata/")
+parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
@@ -11,26 +12,28 @@ parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 # Parse input arguments
 args <- parser$parse_args()
 github_dir <- args$github_dir
+sample_metadata_file <- args$sample_metadata_file
 rdata_path <- args$rdata_path
 noise_proc <- args$noise_proc
 univariate_feature_set <- args$univariate_feature_set
 dataset_ID <- args$dataset_ID
 
 # univariate_feature_set <- "catch22"
-# pairwise_feature_set <- "pyspi_19"
-# subject_csv <- "participants.csv"
+# pairwise_feature_set <- "pyspi14"
 # github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
 
 # UCLA schizophrenia
-# rdata_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/Rdata/"
+# rdata_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/processed_data/Rdata/"
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
+# sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
 # noise_proc <- "AROMA+2P+GMR"
 
 # ABIDE ASD
-# rdata_path <- "/headnode1/abry4213/data/ABIDE_ASD/Rdata/"
+# rdata_path <- "/headnode1/abry4213/data/ABIDE_ASD/processed_data/Rdata/"
 # data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
+# sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
 # noise_proc <- "FC1000"
 
 

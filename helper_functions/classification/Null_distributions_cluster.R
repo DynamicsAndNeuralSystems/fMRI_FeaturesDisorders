@@ -6,6 +6,7 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 parser$add_argument("--pairwise_data_file", default = "")
 parser$add_argument("--univariate_data_file", default = "")
 parser$add_argument("--dataset_ID", default = "UCLA_Schizophrenia")
+parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
 parser$add_argument("--SPI_directionality_file", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/pairwise_analysis/SPI_Direction_Info.csv")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
 parser$add_argument("--output_data_dir", default="/headnode1/abry4213/data/UCLA_Schizophrenia/Rdata/Pairwise_pyspi_19_inv_prob_null_model_fits/")
@@ -39,6 +40,7 @@ args <- parser$parse_args()
 
 # Data directories
 dataset_ID <- args$dataset_ID
+sample_metadata_file <- args$sample_metadata_file
 pairwise_data_file <- args$pairwise_data_file
 univariate_data_file <- args$univariate_data_file
 SPI_directionality_file <- args$SPI_directionality_file
@@ -69,8 +71,11 @@ univariate <- args$univariate
 pairwise <- args$pairwise
 uni_and_pairwise <- args$uni_and_pairwise
 
-rdata_path <- paste0(data_path, "Rdata/")
-pydata_path <- paste0(data_path, "pydata/")
+rdata_path <- paste0(data_path, "processed_data/Rdata/")
+pydata_path <- paste0(data_path, "processed_data/pydata/")
+
+# Load sample metadata
+sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
 
 # Source linear SVM functions
 source(paste0(github_dir, "helper_functions/classification/Linear_SVM.R"))
@@ -86,6 +91,7 @@ if (univariate & !file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.R
   # Run null iteration
   null_out <- 1:num_perms_for_iter  %>%
     purrr::map_df( ~ run_univariate_cv_svm_by_input_var(data_path = data_path,
+                                                        sample_metadata = sample_metadata,
                                                         dataset_ID = dataset_ID,
                                                         svm_kernel = svm_kernel,
                                                         pairwise_feature_set = pairwise_feature_set,

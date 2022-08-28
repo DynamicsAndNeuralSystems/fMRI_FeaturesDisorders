@@ -20,7 +20,7 @@ mkdir -p $github_dir/cluster_output/
 /usr/physics/R/R-4.2.1/bin/Rscript univariate_classification.R \
 --github_dir $github_dir \
 --data_path ${project_dir}/data/UCLA_Schizophrenia/ \
---rdata_path ${project_dir}/data/UCLA_Schizophrenia/Rdata/ \
+--sample_metadata_file UCLA_Schizophrenia_sample_metadata.Rds \
 --pairwise_feature_set pyspi_19 \
 --univariate_feature_set catch22 \
 --noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DICER \
@@ -31,7 +31,7 @@ mkdir -p $github_dir/cluster_output/
 /usr/physics/R/R-4.2.1/bin/Rscript univariate_classification.R \
 --github_dir $github_dir \
 --data_path ${project_dir}/data/ABIDE_ASD/ \
---rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \
+--sample_metadata_file ABIDE_ASD_sample_metadata.Rds \
 --pairwise_feature_set pyspi_19 \
 --univariate_feature_set catch22 \
 --noise_procs FC1000 \

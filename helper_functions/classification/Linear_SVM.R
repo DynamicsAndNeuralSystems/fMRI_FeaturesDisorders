@@ -139,6 +139,7 @@ k_fold_CV_linear_SVM <- function(input_data,
 
 run_univariate_cv_svm_by_input_var <- function(data_path,
                                                dataset_ID,
+                                               sample_metadata,
                                                svm_kernel = "linear",
                                                univariate_feature_set = "catch22",
                                                pairwise_feature_set = "pyspi_19",
@@ -153,14 +154,15 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
                                                use_inv_prob_weighting = FALSE,
                                                shuffle_labels = FALSE) {
   
-  rdata_path <- paste0(data_path, "Rdata/")
+  rdata_path <- paste0(data_path, "processed_data/Rdata/")
   
   # Get diagnosis proportions
-  sample_groups <- readRDS(paste0(data_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s.Rds",
+  sample_groups <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
                                                      dataset_ID,
                                                      univariate_feature_set,
                                                      pairwise_feature_set))) %>%
-    dplyr::select(Sample_ID, Diagnosis)
+    left_join(., sample_metadata) %>%
+    distinct(Sample_ID, Diagnosis)
   
   # Define sample weights
   # Default is 1 and 1 if use_inv_prob_weighting is not included
@@ -268,6 +270,7 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
 #-------------------------------------------------------------------------------
 run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                              data_path,
+                                             sample_metadata,
                                              SPI_directionality,
                                              svm_kernel = "linear",
                                              grouping_var = "SPI",
@@ -280,13 +283,14 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                              shuffle_labels = FALSE) {
   
   
-  rdata_path <- paste0(data_path, "Rdata/")
+  rdata_path <- paste0(data_path, "processed_data/Rdata/")
   
   # Get diagnosis proportions
-  sample_groups <- readRDS(paste0(data_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s.Rds",
+  sample_groups <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
                                                      dataset_ID,
                                                      univariate_feature_set,
                                                      pairwise_feature_set))) %>%
+    left_join(., sample_metadata) %>%
     dplyr::select(Sample_ID, Diagnosis)
   
   # Define sample weights
@@ -303,6 +307,12 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   
   # Initialize results list for SVM
   class_res_list <- list()
+  
+  # Rename names to SPI
+  if ("names" %in% colnames(pairwise_data)) {
+    pairwise_data <- pairwise_data %>%
+      dplyr::rename("SPI" = "names")
+  }
   
   # Combine region pair names
   if (svm_feature_var == "region_pair") {
@@ -351,7 +361,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
       tidyr::unite("region_pair", c(brain_region_1, brain_region_2), sep="_") %>%
       distinct(Sample_ID, SPI, region_pair, .keep_all = T) %>%
       group_by(SPI, region_pair) %>%
-      filter(!all(is.na(value))) %>%
+      filter(!all(is.na(values))) %>%
       dplyr::select(where(function(x) any(!is.na(x)))) %>%
       unite("Combo", c("region_pair", "SPI"), sep="_", remove=F)
     
@@ -365,12 +375,12 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
       data_for_SVM <- pairwise_data %>%
         # Impute missing data with the mean
         group_by(Diagnosis, Combo) %>%
-        mutate(value = ifelse(is.na(value), mean(value, na.rm=T), value)) %>%
-        dplyr::select(Sample_ID, Diagnosis, Combo, value) %>%
+        mutate(values = ifelse(is.na(values), mean(values, na.rm=T), values)) %>%
+        dplyr::select(Sample_ID, Diagnosis, Combo, values) %>%
         tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
                            names_from = Combo,
                            values_from 
-                           = value) %>%
+                           = values) %>%
         # Drop columns that are all NA/NAN
         dplyr::select(where(function(x) any(!is.na(x)))) %>%
         # Drop rows with NA for one or more column
@@ -380,11 +390,11 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
       # Otherwise iterate over each separate group
       data_for_SVM <- subset(pairwise_data, get(grouping_var_name) == group_var) %>%
         dplyr::ungroup() %>%
-        dplyr::select(Sample_ID, Diagnosis, svm_feature_var_name, value) %>%
+        dplyr::select(Sample_ID, Diagnosis, svm_feature_var_name, values) %>%
         tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
                            names_from = svm_feature_var_name,
                            values_from 
-                           = value) %>%
+                           = values) %>%
         # Drop columns that are all NA/NAN
         dplyr::select(where(function(x) any(!is.na(x)))) %>%
         # Drop rows with NA for one or more column

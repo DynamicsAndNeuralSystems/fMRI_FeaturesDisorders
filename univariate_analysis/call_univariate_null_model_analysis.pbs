@@ -20,18 +20,20 @@ mkdir -p $github_dir/cluster_output/
 # UCLA Schizophrenia
 /usr/physics/R/R-4.2.1/bin/Rscript univariate_null_model_analysis.R \
 --github_dir $github_dir \
---rdata_path ${project_dir}/data/UCLA_Schizophrenia/Rdata/ \
+--rdata_path ${project_dir}/data/UCLA_Schizophrenia/processed_data/Rdata/ \
 --univariate_feature_set ${univariate_feature_set} \
 --noise_proc AROMA+2P+GMR \
---dataset_ID UCLA_Schizophrenia
+--dataset_ID UCLA_Schizophrenia \
+--sample_metadata_file UCLA_Schizophrenia_sample_metadata.Rds
                                       
 # ABIDE ASD
 /usr/physics/R/R-4.2.1/bin/Rscript univariate_null_model_analysis.R \
 --github_dir $github_dir \
---rdata_path ${project_dir}/data/ABIDE_ASD/Rdata/ \
+--rdata_path ${project_dir}/data/ABIDE_ASD/processed_data/Rdata/ \
 --univariate_feature_set ${univariate_feature_set} \
 --noise_proc FC1000 \
---dataset_ID ABIDE_ASD
+--dataset_ID ABIDE_ASD \
+--sample_metadata_file ABIDE_ASD_sample_metadata.Rds
 
 exit
 
