@@ -16,6 +16,7 @@ parser$add_argument("--brain_region_lookup", default="", nargs='?')
 parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
 parser$add_argument("--main_noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
+parser$add_argument("--run_number")
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -25,11 +26,11 @@ python_to_use <- args$python_to_use
 univariate_feature_set <- args$univariate_feature_set
 pairwise_feature_set <- args$pairwise_feature_set
 sample_metadata_file <- args$sample_metadata_file
+brain_region_lookup <- args$brain_region_lookup
 noise_procs <- args$noise_procs
 main_noise_proc <- args$main_noise_proc
 dataset_ID <- args$dataset_ID
-plot_dir <- args$plot_dir
-brain_region_lookup <- args$brain_region_lookup
+run_number <- args$run_number
 
 # python_to_use <- "/headnode1/abry4213/.conda/envs/pyspi/bin/python3"
 # univariate_feature_set <- "catch22"
@@ -52,8 +53,16 @@ brain_region_lookup <- args$brain_region_lookup
 
 sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
 pkl_data_path <- paste0(data_path, "raw_data/numpy_files/")
-rdata_path <- paste0(data_path, "processed_data/Rdata/")
-plot_dir <- paste0(data_path, "plots/")
+
+if (!is.null(run_number)) {
+  rdata_path <- paste0(data_path, "processed_data_run", run_number, "/Rdata/")
+  plot_dir <- paste0(data_path, "plots_run", run_number, "/")
+} else {
+  rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  plot_dir <- paste0(data_path, "plots/")
+}
+
+icesTAF::mkdir(rdata_path)
 icesTAF::mkdir(plot_dir)
 
 # DIY rlist::list.append
@@ -219,6 +228,7 @@ merge_pyspi_res_for_study(rdata_path = rdata_path,
 # Perform QC for pairwise data
 #-------------------------------------------------------------------------------
 run_QC_for_dataset(data_path = data_path, 
+                   proc_rdata_path = rdata_path,
                    sample_metadata_file = sample_metadata_file,
                    dataset_ID = dataset_ID,
                    pairwise_feature_set = pairwise_feature_set,

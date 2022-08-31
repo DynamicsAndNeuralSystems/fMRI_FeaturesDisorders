@@ -127,12 +127,15 @@ remove_features_from_feature_matrix <- function(TS_feature_data,
 #-------------------------------------------------------------------------------
 
 run_QC_for_dataset <- function(data_path = "/headnode1/abry4213/data/UCLA_Schizophrenia/", 
+                               proc_rdata_path,
                                sample_metadata_file = "UCLA_Schizophrenia_sample_metadata.Rds",
                                dataset_ID = "UCLA_Schizophrenia",
                                pairwise_feature_set = "catch22",
                                noise_proc = "AROMA+2P+GMR") {
   # Processed rdata path
-  proc_rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  if (is.null(proc_rdata_path)) {
+    proc_rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  }
   
   # Load metadata
   sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
