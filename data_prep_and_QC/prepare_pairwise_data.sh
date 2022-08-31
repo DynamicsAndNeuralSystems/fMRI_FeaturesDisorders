@@ -20,6 +20,7 @@ cmd="python3 ${fmri_github_dir}/helper_functions/data_prep_and_QC/split_MTS_into
 --noise_procs "$noise_procs" \
 --dataset_ID ${dataset_ID}"
 echo $cmd
+$cmd
 
 # # Create sample.yaml file for this dataset
 # for noise_proc in $noise_procs_list
