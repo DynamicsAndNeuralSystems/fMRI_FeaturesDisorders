@@ -10,7 +10,7 @@ parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizo
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
-parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
+parser$add_argument("--noise_procs", default=c(""))
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 parser$add_argument("--run_number")
 
@@ -66,7 +66,9 @@ library(theft)
 tryCatch({
   noise_procs <- stringr::str_split(noise_procs, ";")[[1]]
   noise_procs <- unlist(noise_procs)
-}, error = function(e) {})
+}, error = function(e) {
+  message(e)
+})
 
 
 #-------------------------------------------------------------------------------
