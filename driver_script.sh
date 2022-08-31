@@ -20,7 +20,7 @@ export noise_procs="AROMA+2P AROMA+2P+GMR AROMA+2P+DiCER"
 cd $github_dir/data_prep_and_QC/
 
 # Prep univariate data
-for run_number in 1 2 3 4 5; do
+for run_number in 1; do #2 3 4 5; do
   qsub -v run_number=$run_number,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs \
   -N prepare_univariate_data_${dataset_ID}${run_number} \
   -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}${run_number}_out.txt \
