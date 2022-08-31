@@ -36,11 +36,10 @@ cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
 # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_pairwise_data_${dataset_ID}.txt \
 # -l select=1:ncpus=1:mem=20GB -l walltime=4:00:00 -M $email -m a -V \
 # prepare_pairwise_data.sh"
-# echo $cmd
 # $cmd
 
 # Run pyspi-distribute
-bash data_prep_and_QC/call_run_pyspi_distribute.sh \
+bash call_run_pyspi_distribute.sh \
 $github_dir \
 ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi14_config.yaml \
 $email \
