@@ -14,7 +14,7 @@ mkdir -p $github_dir/cluster_output/
 cmd="/usr/physics/R/R-4.2.1/bin/Rscript univariate_classification.R \
 --github_dir $github_dir \
 --data_path $data_path \
---sample_metadata_file $sample_metdata_file \
+--sample_metadata_file $sample_metadata_file \
 --pairwise_feature_set $pairwise_feature_set \
 --univariate_feature_set $univariate_feature_set \
 --noise_procs $noise_procs \
@@ -22,6 +22,7 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript univariate_classification.R \
 --dataset_ID $dataset_ID \
 --run_number $run_number"
 echo $cmd
+$cmd
 
 exit
 
