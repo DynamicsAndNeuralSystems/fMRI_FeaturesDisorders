@@ -10,6 +10,7 @@
 #PBS -V
 
 cd "$PBS_O_WORKDIR"
+export run_number="$1"
 
 # Define directories
 github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders/
@@ -23,17 +24,19 @@ Rscript prepare_univariate_data.R \
 --sample_metadata_file UCLA_Schizophrenia_sample_metadata.Rds \
 --brain_region_lookup Brain_Region_info.csv \
 --noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DiCER \
---dataset_ID UCLA_Schizophrenia
+--dataset_ID UCLA_Schizophrenia \
+--run_number $run_number
 
 # ABIDE ASD
-Rscript prepare_univariate_data.R \
---github_dir $github_dir \
---data_path /headnode1/abry4213/data/ABIDE_ASD/ \
---univariate_feature_set catch22 \
---sample_metadata_file ABIDE_ASD_sample_metadata.Rds \
---brain_region_lookup Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv \
---noise_procs FC1000 \
---dataset_ID ABIDE_ASD
+# Rscript prepare_univariate_data.R \
+# --github_dir $github_dir \
+# --data_path /headnode1/abry4213/data/ABIDE_ASD/ \
+# --univariate_feature_set catch22 \
+# --sample_metadata_file ABIDE_ASD_sample_metadata.Rds \
+# --brain_region_lookup Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv \
+# --noise_procs FC1000 \
+# --dataset_ID ABIDE_ASD \
+# --run_number $run_number
 
 exit
 

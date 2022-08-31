@@ -305,6 +305,10 @@ plot_main_vs_null_bal_acc <- function(main_res,
       pull(balanced_accuracy)
   }
   
+  if (length(dotted_line_val) == 0) {
+    dotted_line_val = NA_real_
+  }
+  
   p <- p + geom_vline(aes(xintercept = dotted_line_val),
                        color = "black", size = 1.2,
                        linetype = 2) +

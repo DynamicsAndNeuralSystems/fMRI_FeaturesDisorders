@@ -48,7 +48,7 @@ noise_proc_for_null <- params$noise_proc_for_null
 brain_region_file <- params$brain_region_file
 
 # univariate_feature_set <- "catch22"
-# pairwise_feature_set <- "pyspi_19"
+# pairwise_feature_set <- "pyspi14"
 # subject_csv <- "participants.csv"
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
 
@@ -68,8 +68,7 @@ brain_region_file <- params$brain_region_file
 # ggseg_atlas = "HO"
 # brain_region_file = "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 
-rdata_path <- paste0(data_path, "Rdata/")
-
+rdata_path <- paste0(data_path, "processed_data/Rdata/")
 brain_region_lookup <- read.csv(paste0(data_path, brain_region_file))
 ```
 

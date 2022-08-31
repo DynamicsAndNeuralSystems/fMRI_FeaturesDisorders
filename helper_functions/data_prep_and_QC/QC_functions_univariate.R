@@ -154,6 +154,7 @@ remove_features_from_feature_matrix <- function(TS_feature_data,
 #-------------------------------------------------------------------------------
 
 run_QC_for_univariate_dataset <- function(data_path, 
+                                          proc_rdata_path,
                                           sample_metadata_file = "UCLA_Schizophrenia_sample_metadata.Rds",
                                           dataset_ID = "UCLA_Schizophrenia",
                                           univariate_feature_set = "catch22",
@@ -163,7 +164,9 @@ run_QC_for_univariate_dataset <- function(data_path,
                                                           "AROMA+2P+DiCER"),
                                           plot_dir) {
   
-  proc_rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  if (is.null(proc_rdata_path)) {
+    proc_rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  }
   
   # Load sample metadata
   sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
@@ -241,11 +244,11 @@ run_QC_for_univariate_dataset <- function(data_path,
   TS_df_z <- z_score_all_noise_procs(TS_feature_data = TS_feature_data_filtered,
                                     noise_procs = noise_procs)
 
-  saveRDS(TS_df_z, file = paste0(rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
+  saveRDS(TS_df_z, file = paste0(proc_rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
                                                             dataset_ID,
                                                             univariate_feature_set)))
   
-  cat("\nZ-scored data saved to:", paste0(rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
+  cat("\nZ-scored data saved to:", paste0(proc_rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
                                                               dataset_ID,
                                                               univariate_feature_set)),
       "\n")

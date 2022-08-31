@@ -12,6 +12,7 @@ parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
 parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
+parser$add_argument("--run_number")
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -19,10 +20,10 @@ github_dir <- args$github_dir
 data_path <- args$data_path
 univariate_feature_set <- args$univariate_feature_set
 sample_metadata_file <- args$sample_metadata_file
+brain_region_lookup <- args$brain_region_lookup
 noise_procs <- args$noise_procs
 dataset_ID <- args$dataset_ID
-plot_dir <- args$plot_dir
-brain_region_lookup <- args$brain_region_lookup
+run_number <- args$run_number
 
 # univariate_feature_set <- "catch22"
 # github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
@@ -33,6 +34,7 @@ brain_region_lookup <- args$brain_region_lookup
 # sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # brain_region_lookup <- "Brain_Region_info.csv"
+# run_number <- 1
 
 # ABIDE ASD
 # data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
@@ -40,9 +42,16 @@ brain_region_lookup <- args$brain_region_lookup
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
 # noise_procs <- c("FC1000")
 # brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+# run_number <- 1
 
-rdata_path <- paste0(data_path, "processed_data/Rdata/")
-plot_dir <- paste0(data_path, "plots/")
+if (!is.null(run_number)) {
+  rdata_path <- paste0(data_path, "processed_data/Rdata_", run_number, "/")
+  plot_dir <- paste0(data_path, "plots_run", run_number, "/")
+} else {
+  rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  plot_dir <- paste0(data_path, "plots/")
+}
+
 icesTAF::mkdir(plot_dir)
 
 # Set the seed
@@ -145,6 +154,7 @@ catch22_all_samples(full_TS_data = full_TS_data,
 # Perform QC for catch22 data
 #-------------------------------------------------------------------------------
 run_QC_for_univariate_dataset(data_path = data_path, 
+                              proc_rdata_path = rdata_path,
                               sample_metadata_file = sample_metadata_file,
                               dataset_ID = dataset_ID,
                               univariate_feature_set = univariate_feature_set,
