@@ -5,7 +5,7 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
-parser$add_argument("--github_dir", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/")
+parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
 parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
 parser$add_argument("--pairwise_feature_set", default="pyspi14")
@@ -13,6 +13,7 @@ parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
 parser$add_argument("--noise_proc_for_null", default=c(""))
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
+parser$add_argument("--run_number")
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -28,7 +29,7 @@ sample_metadata_file <- args$sample_metadata_file
 # 
 # univariate_feature_set <- "catch22"
 # pairwise_feature_set <- "pyspi14"
-# github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
+# github_dir <- "/headnode1/abry4213/github/"
 
 # UCLA schizophrenia
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
@@ -44,8 +45,14 @@ sample_metadata_file <- args$sample_metadata_file
 # noise_procs <- c("FC1000")
 # noise_proc_for_null <- "FC1000"
 
-rdata_path <- paste0(data_path, "processed_data/Rdata/")
-plot_dir <- paste0(data_path, "plots/")
+if (!is.null(run_number)) {
+  rdata_path <- paste0(data_path, "processed_data_run", run_number, "/Rdata/")
+  plot_dir <- paste0(data_path, "plots_run", run_number, "/")
+} else {
+  rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  plot_dir <- paste0(data_path, "plots/")
+}
+
 icesTAF::mkdir(plot_dir)
 
 # Set the seed
@@ -56,6 +63,7 @@ library(tidyverse)
 
 # Unlist noise-processing methods
 tryCatch({
+  noise_procs <- stringr::str_split(noise_procs, ";")[[1]]
   noise_procs <- unlist(noise_procs)
 }, error = function(e) {})
 
@@ -64,8 +72,7 @@ tryCatch({
 # Source helper scripts
 #-------------------------------------------------------------------------------
 # Set working directory to file location
-# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-helper_script_dir = "../helper_functions/classification/"
+helper_script_dir = paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/classification/")
 source(paste0(helper_script_dir, "Linear_SVM.R"))
 source(paste0(helper_script_dir, "Null_distributions.R"))
 
@@ -181,7 +188,7 @@ for (i in 1:nrow(grouping_param_df)) {
     # Use 10-fold cross-validation
     num_k_folds <- 10
     # Define the univariate template PBS script
-    template_pbs_file <- paste0(github_dir, "helper_functions/classification/template_univariate_null_model_fit.pbs")
+    template_pbs_file <- paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/classification/template_univariate_null_model_fit.pbs")
 
     # Where to store null model fit results
     output_data_dir <- paste0(rdata_path, sprintf("%s_%s_wise_%s_%s_null_model_fits/",
@@ -191,7 +198,7 @@ for (i in 1:nrow(grouping_param_df)) {
                                                   weighting_name))
 
     # Where to save PBS script to
-    output_scripts_dir <- paste0(github_dir, sprintf("univariate_analysis/%s_%s_wise_%s_%s_null_model_fits/",
+    output_scripts_dir <- paste0(github_dir, sprintf("fMRI_FeaturesDisorders/univariate_analysis/%s_%s_wise_%s_%s_null_model_fits/",
                                                      dataset_ID,
                                                      grouping_type,
                                                      univariate_feature_set,
