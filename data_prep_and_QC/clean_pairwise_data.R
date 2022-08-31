@@ -13,7 +13,7 @@ parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--pairwise_feature_set", default="pyspi14")
 parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
-parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
+parser$add_argument("--noise_procs", default=c(""))
 parser$add_argument("--main_noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 parser$add_argument("--run_number")
@@ -89,7 +89,9 @@ source(paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/data_prep_and
 tryCatch({
   noise_procs <- stringr::str_split(noise_procs, ";")[[1]]
   noise_procs <- unlist(noise_procs)
-}, error = function(e) {})
+}, error = function(e) {
+  message(e)
+})
 # Remove empty noise-processing methods
 noise_procs <- noise_procs[noise_procs!=""]
 
