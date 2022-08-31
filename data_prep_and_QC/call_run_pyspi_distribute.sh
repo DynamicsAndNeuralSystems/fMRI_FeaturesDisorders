@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+
+#module load Anaconda3-5.1.0
+/usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
+source /usr/physics/python/anaconda3/etc/profile.d/conda.sh 
+conda activate pyspi
+
 export github_dir="$1"
 export config_file="$2"
 export email="$3"
