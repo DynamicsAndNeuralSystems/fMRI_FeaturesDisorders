@@ -8,6 +8,7 @@ cd $github_dir/data_prep_and_QC/
 for run_number in 1 2 3 4 5; do
   qsub -v run_number=$run_number -N prepare_univariate_data${run_number} \
   -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data${run_number}_out.txt \
+  -m a \
   call_prepare_univariate_data.pbs
 done
 
@@ -23,6 +24,7 @@ done
 for run_number in 1 2 3 4 5; do
   qsub -v run_number=$run_number -N clean_pairwise_data${run_number} \
   -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data${run_number}_out.txt \
+  -m a \
   call_clean_pairwise_data.pbs
 done
 
@@ -31,6 +33,7 @@ done
 for run_number in 1 2 3 4 5; do
   qsub -v run_number=$run_number -N merge_samples_univariate_pairwise${run_number} \
   -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/merge_samples_univariate_pairwise${run_number}_out.txt \
+  -m a \
   call_merge_samples_univariate_pairwise.pbs
 done
 

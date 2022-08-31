@@ -3,7 +3,6 @@
 #PBS -j oe
 #PBS -l select=1:ncpus=1:mem=40GB
 #PBS -l walltime=4:00:00
-#PBS -m abe
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -V
 
