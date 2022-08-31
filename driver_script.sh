@@ -1,6 +1,29 @@
 ##########################################################################################
 # Prep univariate data
-qsub data_prep_and_QC/call_prepare_univariate_data.pbs
+qsub -v run_number=1 \
+-N prepare_univariate_data1 \
+-o /headnode/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data1_out.txt \
+data_prep_and_QC/call_prepare_univariate_data.pbs
+
+qsub -v run_number=2 \
+-N prepare_univariate_data2 \
+-o /headnode/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data2_out.txt \
+data_prep_and_QC/call_prepare_univariate_data.pbs
+
+qsub -v run_number=3 \
+-N prepare_univariate_data3 \
+-o /headnode/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data3_out.txt \
+data_prep_and_QC/call_prepare_univariate_data.pbs
+
+qsub -v run_number=4 \
+-N prepare_univariate_data4 \
+-o /headnode/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data4_out.txt \
+data_prep_and_QC/call_prepare_univariate_data.pbs
+
+qsub -v run_number=5 \
+-N prepare_univariate_data5 \
+-o /headnode/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data5_out.txt \
+data_prep_and_QC/call_prepare_univariate_data.pbs
 
 # Prep pairwise data
 # Get data into .npy files
