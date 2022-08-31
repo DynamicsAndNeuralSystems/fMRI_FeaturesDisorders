@@ -36,8 +36,9 @@ run_number <- args$run_number
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
-# noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+# noise_procs <- "AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
 # noise_proc_for_null <- "AROMA+2P+GMR"
+# run_number <- 1
 
 # ABIDE ASD
 # data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
@@ -93,7 +94,9 @@ if (!file.exists(paste0(rdata_path, dataset_ID, "_samples_per_10_folds.Rds"))) {
   # Make folds
   set.seed(127)
   k = 10
-  sample_folds <- caret::createFolds(subjects_to_use$Diagnosis, k = k, list = TRUE, returnTrain = FALSE)
+  samples_with_diagnosis <- subjects_to_use %>%
+    left_join(., sample_metadata)
+  sample_folds <- caret::createFolds(samples_with_diagnosis$Diagnosis, k = k, list = TRUE, returnTrain = FALSE)
   
   # Save to Rds file
   saveRDS(sample_folds, file=paste0(rdata_path, dataset_ID, "_samples_per_10_folds.Rds"))
