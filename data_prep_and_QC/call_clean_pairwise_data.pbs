@@ -19,7 +19,7 @@ conda activate pyspi
 mkdir -p $github_dir/cluster_output/
 
 # Run script
-Rscript clean_pairwise_data.R \
+cmd="Rscript clean_pairwise_data.R \
 --github_dir $github_dir \
 --data_path $data_path \
 --python_to_use $python_to_use \
@@ -30,7 +30,9 @@ Rscript clean_pairwise_data.R \
 --noise_procs $noise_procs \
 --main_noise_proc $main_noise_proc \
 --dataset_ID $dataset_ID \
---run_number $run_number
+--run_number $run_number"
+echo $cmd
+$cmd
 
 exit
 
