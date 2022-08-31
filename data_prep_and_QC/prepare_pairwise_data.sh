@@ -17,7 +17,7 @@ noise_procs_list=$(echo $noise_procs | sed "s/;/ /g")
 cmd="python3 ${fmri_github_dir}/helper_functions/data_prep_and_QC/split_MTS_into_npy.py \
 --github_dir ${fmri_github_dir} \
 --data_path ${data_path} \
---noise_procs $noise_procs_list \
+--noise_procs "$noise_procs_list" \
 --dataset_ID ${dataset_ID}"
 $cmd
 
