@@ -53,6 +53,7 @@ if (!is.null(run_number)) {
 }
 
 icesTAF::mkdir(plot_dir)
+icesTAF::mkdir(rdata_path)
 
 # Set the seed
 set.seed(127)
