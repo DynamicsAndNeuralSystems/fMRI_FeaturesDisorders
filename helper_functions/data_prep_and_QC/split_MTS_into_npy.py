@@ -9,7 +9,7 @@ import os
 parser = argparse.ArgumentParser(description='Process inputs for pairwise data preparation.')
 parser.add_argument('--github_dir', default="/headnode1/abry4213/github/", dest='github_dir')
 parser.add_argument('--data_path', default="/headnode1/abry4213/data/UCLA_Schizophrenia/", dest='data_path')
-parser.add_argument('--noise_procs', nargs='*', action='append', dest='noise_procs')
+parser.add_argument('--noise_procs', dest='noise_procs')
 parser.add_argument('--dataset_ID', default="UCLA_Schizophrenia", dest='dataset_ID')
 
 # Parse arguments
