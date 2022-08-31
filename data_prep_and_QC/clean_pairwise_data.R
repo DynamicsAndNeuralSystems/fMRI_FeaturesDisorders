@@ -6,7 +6,7 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
-parser$add_argument("--github_dir", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/")
+parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
 parser$add_argument("--python_to_use", default="/headnode1/abry4213/.conda/envs/pyspi/bin/python3")
 parser$add_argument("--univariate_feature_set", default="catch22")
@@ -79,11 +79,11 @@ list.append <- function (.data, ...)
 # Load specified python version
 reticulate::use_python(python_to_use)
 library(reticulate)
-reticulate::source_python(paste0(github_dir, "helper_functions/data_prep_and_QC/pickle_reader.py"))
+reticulate::source_python(paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/pickle_reader.py"))
 library(tidyverse)
 
 # Source QC functions
-source(paste0(github_dir, "helper_functions/data_prep_and_QC/QC_functions_pairwise.R"))
+source(paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/QC_functions_pairwise.R"))
 
 # Unlist noise-processing methods
 tryCatch({
