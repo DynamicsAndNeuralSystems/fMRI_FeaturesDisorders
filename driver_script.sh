@@ -52,7 +52,7 @@ cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
 
 # Integrate results from pyspi-distribute
 for run_number in 1 2 3 4 5; do
-  qsub -v run_number=$run_number,github_dir=$github_dir,data_path=$data_path,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
+  qsub -v run_number=$run_number,github_dir=$github_dir,data_path=$data_path,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
   -N clean_pairwise_data_${dataset_ID}${run_number} \
   -o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}${run_number}_out.txt \
   -m a \
