@@ -10,7 +10,7 @@
 #PBS -V
 
 cd "$PBS_O_WORKDIR"
-export run_number="$1"
+# export run_number="$1"
 
 # Define directories
 github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders/
