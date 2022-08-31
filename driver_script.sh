@@ -12,10 +12,13 @@ for run_number in 1 2 3 4 5; do
 done
 
 # # Prep pairwise data
+
 # # Get data into .npy files
 # qsub data_prep_and_QC/call_prepare_pairwise_data.pbs 
+
 # # Run pyspi-distribute
 # bash data_prep_and_QC/call_run_pyspi_distribute.sh 
+
 # Integrate results from pyspi-distribute
 for run_number in 1 2 3 4 5; do
   qsub -v run_number=$run_number -N clean_pairwise_data${run_number} \
@@ -25,6 +28,12 @@ done
 
 # Merge subjects with univariate + pairwise data
 # qsub data_prep_and_QC/call_merge_samples_univariate_pairwise.pbs
+for run_number in 1 2 3 4 5; do
+  qsub -v run_number=$run_number -N merge_samples_univariate_pairwise${run_number} \
+  -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/merge_samples_univariate_pairwise${run_number}_out.txt \
+  call_merge_samples_univariate_pairwise.pbs
+done
+
 
 ##########################################################################################
 # # Univariate linear SVM

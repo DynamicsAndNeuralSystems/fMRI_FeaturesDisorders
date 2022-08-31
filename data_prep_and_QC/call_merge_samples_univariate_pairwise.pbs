@@ -1,8 +1,6 @@
 #!/bin/bash
-#PBS -N merge_samples_univariate_pairwise
 #PBS -q yossarian
 #PBS -j oe
-#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/merge_samples_univariate_pairwise_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=2:00:00
 #PBS -m abe
