@@ -18,7 +18,7 @@ run_number <- args$run_number
 library(tidyverse)
 
 if (!is.null(run_number)) {
-  rdata_path <- paste0(data_path, "processed_data_run", run_number, "/Rdata/"
+  rdata_path <- paste0(data_path, "processed_data_run", run_number, "/Rdata/")
 } else {
   rdata_path <- paste0(data_path, "processed_data/Rdata/")
 }
