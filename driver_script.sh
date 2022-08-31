@@ -5,7 +5,7 @@ export pairwise_feature_set="pyspi14"
 
 # UCLA Schizophrenia
 export dataset_ID="UCLA_Schizophrenia"
-export data_path=${project_dir}/data/${dataset_ID}/
+export data_path=/headnode1/abry4213/data/${dataset_ID}/
 export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
 export brain_region_lookup="Brain_Region_info.csv"
 export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
@@ -32,7 +32,7 @@ cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
 # Get data into .npy files
 cmd="qsub -N prepare_pairwise_data_${dataset_ID} -q yossarian -j oe \
 -v github_dir=$github_dir,data_path=$data_path,noise_procs=$noise_procs,dataset_ID=$dataset_ID,subject_metadata_file=$subject_metadata_file \
--o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_pairwise_data.txt \
+-o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_pairwise_data_${dataset_ID}.txt \
 -l select=1:ncpus=1:mem=20GB -l walltime=4:00:00 -M abry4213@uni.sydney.edu.au -m a -V \
 prepare_pairwise_data.sh"
 echo $cmd
