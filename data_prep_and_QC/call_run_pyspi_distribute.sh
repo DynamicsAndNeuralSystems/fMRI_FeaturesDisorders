@@ -16,8 +16,10 @@ export walltime_hrs="$7"
 noise_procs_list=$(echo $noise_procs | sed "s/;/ /g")
 export pyspi_script_dir=${github_dir}/pyspi-distribute/
 
-for noise_label in $noise_procs_list
+for noise_proc in $noise_procs_list
 do
+    noise_label=$(echo $noise_proc | sed "s/\+/_/g")
+    echo $noise_label
     python $pyspi_script_dir/distribute_jobs.py \
     --data_dir ${data_path}/raw_data/numpy_files/${noise_label}/ \
     --compute_file $pyspi_script_dir/pyspi_compute.py \
