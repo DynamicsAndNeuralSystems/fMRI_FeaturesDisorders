@@ -4,13 +4,13 @@ export github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders/
 
 cd $github_dir/data_prep_and_QC/
 
-# Prep univariate data
-for run_number in 1 2 3 4 5; do
-  qsub -v run_number=$run_number -N prepare_univariate_data${run_number} \
-  -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data${run_number}_out.txt \
-  -m a \
-  call_prepare_univariate_data.pbs
-done
+# # Prep univariate data
+# for run_number in 1 2 3 4 5; do
+#   qsub -v run_number=$run_number -N prepare_univariate_data${run_number} \
+#   -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data${run_number}_out.txt \
+#   -m a \
+#   call_prepare_univariate_data.pbs
+# done
 
 # # Prep pairwise data
 
@@ -20,13 +20,13 @@ done
 # # Run pyspi-distribute
 # bash data_prep_and_QC/call_run_pyspi_distribute.sh 
 
-# Integrate results from pyspi-distribute
-for run_number in 1 2 3 4 5; do
-  qsub -v run_number=$run_number -N clean_pairwise_data${run_number} \
-  -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data${run_number}_out.txt \
-  -m a \
-  call_clean_pairwise_data.pbs
-done
+# # Integrate results from pyspi-distribute
+# for run_number in 1 2 3 4 5; do
+#   qsub -v run_number=$run_number -N clean_pairwise_data${run_number} \
+#   -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data${run_number}_out.txt \
+#   -m a \
+#   call_clean_pairwise_data.pbs
+# done
 
 # Merge subjects with univariate + pairwise data
 # qsub data_prep_and_QC/call_merge_samples_univariate_pairwise.pbs
