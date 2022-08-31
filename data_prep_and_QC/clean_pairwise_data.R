@@ -87,6 +87,7 @@ source(paste0(github_dir, "helper_functions/data_prep_and_QC/QC_functions_pairwi
 
 # Unlist noise-processing methods
 tryCatch({
+  noise_procs <- stringr::str_split(noise_procs, ";")[[1]]
   noise_procs <- unlist(noise_procs)
 }, error = function(e) {})
 # Remove empty noise-processing methods

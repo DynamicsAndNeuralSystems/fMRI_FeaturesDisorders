@@ -16,36 +16,21 @@ source /usr/physics/python/anaconda3/etc/profile.d/conda.sh
 conda activate pyspi
 
 # Define directories
-export github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders/
 mkdir -p $github_dir/cluster_output/
 
-# UCLA Schizophrenia
+# Run script
 Rscript clean_pairwise_data.R \
 --github_dir $github_dir \
---data_path /headnode1/abry4213/data/UCLA_Schizophrenia/ \
---python_to_use /headnode1/abry4213/.conda/envs/pyspi/bin/python3 \
---univariate_feature_set catch22 \
---pairwise_feature_set pyspi14 \
---sample_metadata_file UCLA_Schizophrenia_sample_metadata.Rds \
---brain_region_lookup Brain_Region_info.csv \
---noise_procs AROMA+2P AROMA+2P+GMR AROMA+2P+DiCER \
---main_noise_proc AROMA+2P+GMR \
---dataset_ID UCLA_Schizophrenia \
+--data_path $data_path \
+--python_to_use $python_to_use \
+--univariate_feature_set $univariate_feature_set \
+--pairwise_feature_set $pairwise_feature_set \
+--sample_metadata_file $sample_metadata_file \
+--brain_region_lookup $brain_region_lookup \
+--noise_procs $noise_procs \
+--main_noise_proc $main_noise_proc \
+--dataset_ID $dataset_ID \
 --run_number $run_number
-
-# ABIDE ASD
-# Rscript clean_pairwise_data.R \
-# --github_dir $github_dir \
-# --data_path /headnode1/abry4213/data/ABIDE_ASD/ \
-# --python_to_use /headnode1/abry4213/.conda/envs/pyspi/bin/python3 \
-# --univariate_feature_set catch22 \
-# --pairwise_feature_set pyspi14 \
-# --sample_metadata_file ABIDE_ASD_sample_metadata.Rds \
-# --brain_region_lookup Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv \
-# --noise_procs FC1000 \
-# --main_noise_proc FC1000 \
-# --dataset_ID ABIDE_ASD \
-# --run_number $run_number
 
 exit
 

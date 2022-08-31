@@ -3,6 +3,7 @@ export github_dir=/headnode1/abry4213/github/
 export univariate_feature_set="catch22"
 export pairwise_feature_set="pyspi14"
 export email="abry4213@uni.sydney.edu.au"
+export python_to_use=/headnode1/abry4213/.conda/envs/pyspi/bin/python3
 
 # UCLA Schizophrenia
 export dataset_ID="UCLA_Schizophrenia"
@@ -10,6 +11,7 @@ export data_path=/headnode1/abry4213/data/${dataset_ID}/
 export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
 export brain_region_lookup="Brain_Region_info.csv"
 export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
+export main_noise_proc="AROMA+2P+GMR"
 
 # ABIDE ASD
 # export dataset_ID="ABIDE_ASD"
@@ -39,22 +41,23 @@ cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
 # $cmd
 
 # Run pyspi-distribute
-bash call_run_pyspi_distribute.sh \
-$github_dir \
-${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi14_config.yaml \
-$email \
-$dataset_ID \
-$data_path \
-$noise_procs \
-8
+# bash call_run_pyspi_distribute.sh \
+# $github_dir \
+# ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi14_config.yaml \
+# $email \
+# $dataset_ID \
+# $data_path \
+# $noise_procs \
+# 8
 
-# # Integrate results from pyspi-distribute
-# for run_number in 1 2 3 4 5; do
-#   qsub -v run_number=$run_number -N clean_pairwise_data${run_number} \
-#   -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data${run_number}_out.txt \
-#   -m a \
-#   call_clean_pairwise_data.pbs
-# done
+# Integrate results from pyspi-distribute
+for run_number in 1 2 3 4 5; do
+  qsub -v run_number=$run_number,github_dir=$github_dir,data_path=$data_path,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
+  -N clean_pairwise_data_${dataset_ID}${run_number} \
+  -o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}${run_number}_out.txt \
+  -m a \
+  call_clean_pairwise_data.pbs
+done
 
 # Merge subjects with univariate + pairwise data
 # qsub data_prep_and_QC/call_merge_samples_univariate_pairwise.pbs
