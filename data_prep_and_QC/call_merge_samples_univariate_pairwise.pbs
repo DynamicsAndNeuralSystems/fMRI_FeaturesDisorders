@@ -25,7 +25,8 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/hel
 --data_path ${data_path} \
 --univariate_feature_set ${univariate_feature_set} \
 --pairwise_feature_set ${pairwise_feature_set} \
---dataset_ID ${dataset_ID}"
+--dataset_ID ${dataset_ID} \
+--run_number $run_number"
  
 echo $cmd
  
@@ -34,17 +35,17 @@ $cmd
 ################################################################################
 # ABIDE ASD
 ################################################################################
-export dataset_ID="ABIDE_ASD"
-export data_path=${project_dir}/data/${dataset_ID}/
-export univariate_feature_set="catch22"
-export pairwise_feature_set="pyspi14"
+# export dataset_ID="ABIDE_ASD"
+# export data_path=${project_dir}/data/${dataset_ID}/
+# export univariate_feature_set="catch22"
+# export pairwise_feature_set="pyspi14"
 
-cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/find_common_samples_univariate_pairwise.R \
---data_path ${data_path} \
---univariate_feature_set ${univariate_feature_set} \
---pairwise_feature_set ${pairwise_feature_set} \
---dataset_ID ${dataset_ID}"
+# cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/find_common_samples_univariate_pairwise.R \
+# --data_path ${data_path} \
+# --univariate_feature_set ${univariate_feature_set} \
+# --pairwise_feature_set ${pairwise_feature_set} \
+# --dataset_ID ${dataset_ID}"
  
-echo $cmd
+# echo $cmd
  
-$cmd
+# $cmd
