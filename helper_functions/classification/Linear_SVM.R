@@ -138,6 +138,7 @@ k_fold_CV_linear_SVM <- function(input_data,
 #-------------------------------------------------------------------------------
 
 run_univariate_cv_svm_by_input_var <- function(data_path,
+                                               rdata_path,
                                                dataset_ID,
                                                sample_metadata,
                                                svm_kernel = "linear",
@@ -154,7 +155,9 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
                                                use_inv_prob_weighting = FALSE,
                                                shuffle_labels = FALSE) {
   
-  rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  if (is.null(rdata_path)) {
+    rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  }
   
   # Get diagnosis proportions
   sample_groups <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
