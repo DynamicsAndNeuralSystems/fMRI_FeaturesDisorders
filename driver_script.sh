@@ -2,6 +2,7 @@
 export github_dir=/headnode1/abry4213/github/
 export univariate_feature_set="catch22"
 export pairwise_feature_set="pyspi14"
+export email="abry4213@uni.sydney.edu.au"
 
 # UCLA Schizophrenia
 export dataset_ID="UCLA_Schizophrenia"
@@ -28,21 +29,25 @@ cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
 #   call_prepare_univariate_data.pbs
 # done
 
-# Prep pairwise data
-# Get data into .npy files
-cmd="qsub -N prepare_pairwise_data_${dataset_ID} -q yossarian -j oe \
--v github_dir=$github_dir,data_path=$data_path,noise_procs=$noise_procs,dataset_ID=$dataset_ID,sample_metadata_file=$sample_metadata_file \
--o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_pairwise_data_${dataset_ID}.txt \
--l select=1:ncpus=1:mem=20GB -l walltime=4:00:00 -M abry4213@uni.sydney.edu.au -m a -V \
-prepare_pairwise_data.sh"
-echo $cmd
-$cmd
-
+# # Prep pairwise data
 # # Get data into .npy files
-# qsub data_prep_and_QC/call_prepare_pairwise_data.pbs 
+# cmd="qsub -N prepare_pairwise_data_${dataset_ID} -q yossarian -j oe \
+# -v github_dir=$github_dir,data_path=$data_path,noise_procs=$noise_procs,dataset_ID=$dataset_ID,sample_metadata_file=$sample_metadata_file \
+# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_pairwise_data_${dataset_ID}.txt \
+# -l select=1:ncpus=1:mem=20GB -l walltime=4:00:00 -M $email -m a -V \
+# prepare_pairwise_data.sh"
+# echo $cmd
+# $cmd
 
-# # Run pyspi-distribute
-# bash data_prep_and_QC/call_run_pyspi_distribute.sh 
+# Run pyspi-distribute
+bash data_prep_and_QC/call_run_pyspi_distribute.sh \
+$github_dir \
+${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi14_config.yaml \
+$email \
+$dataset_ID \
+$data_path \
+$noise_procs \
+8
 
 # # Integrate results from pyspi-distribute
 # for run_number in 1 2 3 4 5; do
