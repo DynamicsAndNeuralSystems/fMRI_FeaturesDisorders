@@ -8,7 +8,7 @@ export dataset_ID="UCLA_Schizophrenia"
 export data_path=${project_dir}/data/${dataset_ID}/
 export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
 export brain_region_lookup="Brain_Region_info.csv"
-export noise_procs="AROMA+2P\ AROMA+2P+GMR\ AROMA+2P+DiCER"
+export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
 
 # ABIDE ASD
 # export dataset_ID="ABIDE_ASD"

@@ -64,6 +64,7 @@ library(theft)
 
 # Unlist noise-processing methods
 tryCatch({
+  noise_procs <- stringr::str_split(noise_procs, ";")[[1]]
   noise_procs <- unlist(noise_procs)
 }, error = function(e) {})
 
