@@ -34,8 +34,9 @@ cmd="qsub -N prepare_pairwise_data_${dataset_ID} -q yossarian -j oe \
 -v github_dir=$github_dir,data_path=$data_path,noise_procs=$noise_procs,dataset_ID=$dataset_ID,subject_metadata_file=$subject_metadata_file \
 -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_pairwise_data.txt \
 -l select=1:ncpus=1:mem=20GB -l walltime=4:00:00 -M abry4213@uni.sydney.edu.au -m a -V \
-data_prep_and_QC/prepare_pairwise_data.sh"
+prepare_pairwise_data.sh"
 echo $cmd
+$cmd
 
 # # Get data into .npy files
 # qsub data_prep_and_QC/call_prepare_pairwise_data.pbs 
