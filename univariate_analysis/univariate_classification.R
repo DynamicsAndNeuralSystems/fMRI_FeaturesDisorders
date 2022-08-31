@@ -26,6 +26,7 @@ noise_procs <- args$noise_procs
 noise_proc_for_null <- args$noise_proc_for_null
 dataset_ID <- args$dataset_ID
 sample_metadata_file <- args$sample_metadata_file
+run_number <- args$run_number
 # 
 # univariate_feature_set <- "catch22"
 # pairwise_feature_set <- "pyspi14"
