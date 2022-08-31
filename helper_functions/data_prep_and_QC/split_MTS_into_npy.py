@@ -29,7 +29,7 @@ fmri_github_dir = github_dir + "fMRI_FeaturesDisorders/"
 
 # Cast noise proc as list
 if type(noise_procs) == str:
-    noise_procs = noise_procs.split()
+    noise_procs = noise_procs.split(";")
 
 # Iterate over noise-processing methods and subjects
 for noise_proc in noise_procs:
