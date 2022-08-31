@@ -97,14 +97,15 @@ read_in_sample_TS_data <- function(sample_ID, noise_proc,
   TS_data <- read.csv(paste0(data_path,
                              "raw_data/time_series_files/",
                              noise_label, "/",
-                             sample_ID, "_TS.csv")) %>%
+                             sample_ID, "_TS.csv"),
+                      header=F) %>%
     mutate(timepoint = 1:nrow(.)) %>%
     pivot_longer(cols = c(-timepoint),
                  names_to = "Index",
                  values_to = "values") %>%
     mutate(Sample_ID = sample_ID,
            Noise_Proc = noise_proc,
-           Index = as.numeric(gsub("X", "", Index))) %>%
+           Index = as.numeric(gsub("X|V", "", Index))) %>%
     left_join(., brain_region_lookup_table) %>%
     dplyr::select(Sample_ID, Noise_Proc, Brain_Region, timepoint, values)
 }

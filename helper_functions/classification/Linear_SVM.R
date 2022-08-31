@@ -370,7 +370,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   }
   
   # Reshape data from long to wide for SVM
-  for (group_var in unique(grouping_var_vector)) {
+  for (group_var in unique(grouping_var_vector)[10:14]) {
     if (grouping_var == "Combo") {
       data_for_SVM <- pairwise_data %>%
         # Impute missing data with the mean
@@ -403,7 +403,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     
     if (nrow(data_for_SVM) > 0) {
       # Run k-fold linear SVM
-      SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
+      tryCatch({SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
                                           flds = flds,
                                           k = num_k_folds,
                                           svm_kernel = svm_kernel,
@@ -417,6 +417,10 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
       
       # Append results to list
       class_res_list <- list.append(class_res_list, SVM_results)
+      }, error = function(e) {
+        cat("Error for", group_var, "\n")
+        message(e)
+      })
     } else {
       cat("\nNo observations available for", group_var, "after filtering.\n")
     }
