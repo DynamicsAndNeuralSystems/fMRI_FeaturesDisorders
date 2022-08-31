@@ -23,13 +23,13 @@ export main_noise_proc="AROMA+2P+GMR"
 # export noise_procs="FC1000"
 
 # Prep univariate data
-# for run_number in 1 2 3 4 5; do
-#   qsub -v run_number=$run_number,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs \
-#   -N prepare_univariate_data_${dataset_ID}${run_number} \
-#   -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}${run_number}_out.txt \
-#   -m a \
-#   call_prepare_univariate_data.pbs
-# done
+for run_number in 1 2 3 4 5; do
+  qsub -v run_number=$run_number,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs \
+  -N prepare_univariate_data_${dataset_ID}${run_number} \
+  -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}${run_number}_out.txt \
+  -m a \
+  call_prepare_univariate_data.pbs
+done
 
 # # Prep pairwise data
 # # Get data into .npy files
@@ -70,16 +70,16 @@ export main_noise_proc="AROMA+2P+GMR"
 
 
 ##########################################################################################
-cd $github_dir/fMRI_FeaturesDisorders/univariate_analysis/
-
-# Univariate linear SVM
-for run_number in 1 2 3 4 5; do
-  qsub -v run_number=$run_number,github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
-  -N run_univariate_classification_${dataset_ID}${run_number} \
-  -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}${run_number}_out.txt \
-  -m a -M $email \
-  call_univariate_classification.pbs 
-done
+# cd $github_dir/fMRI_FeaturesDisorders/univariate_analysis/
+# 
+# # Univariate linear SVM
+# for run_number in 1 2 3 4 5; do
+#   qsub -v run_number=$run_number,github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
+#   -N run_univariate_classification_${dataset_ID}${run_number} \
+#   -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}${run_number}_out.txt \
+#   -m a -M $email \
+#   call_univariate_classification.pbs 
+# done
 
 # # Generate null model fits
 # bash univariate_analysis/call_univariate_null_model_generation.sh
