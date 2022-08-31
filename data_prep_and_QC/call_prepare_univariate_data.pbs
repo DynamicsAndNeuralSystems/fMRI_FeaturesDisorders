@@ -1,8 +1,8 @@
 #!/bin/bash
 #PBS -q yossarian
-#PBS -N prepare_univariate_data
+#PBS -N prepare_univariate_data${run_number}
 #PBS -j oe
-#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data.txt
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data${run_number}.txt
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=4:00:00
 #PBS -m abe
@@ -10,7 +10,6 @@
 #PBS -V
 
 cd "$PBS_O_WORKDIR"
-# export run_number="$1"
 
 # Define directories
 github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders/
