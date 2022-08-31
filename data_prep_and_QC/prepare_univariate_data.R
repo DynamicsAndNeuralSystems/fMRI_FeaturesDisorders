@@ -45,7 +45,7 @@ run_number <- args$run_number
 # run_number <- 1
 
 if (!is.null(run_number)) {
-  rdata_path <- paste0(data_path, "processed_data/Rdata_", run_number, "/")
+  rdata_path <- paste0(data_path, "processed_data_run", run_number, "/Rdata/")
   plot_dir <- paste0(data_path, "plots_run", run_number, "/")
 } else {
   rdata_path <- paste0(data_path, "processed_data/Rdata/")
