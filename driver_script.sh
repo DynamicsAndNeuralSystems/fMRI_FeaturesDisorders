@@ -82,8 +82,12 @@ for run_number in 1 2 3 4 5; do
 done
 
 # # Generate null model fits
-# bash univariate_analysis/call_univariate_null_model_generation.sh
-# 
+null_perm_scripts=$(find ${github_dir}/univariate_analysis/null_pbs_scripts/*ROI* -name "null_iter_*.pbs")
+for script in $null_perm_scripts; do
+  echo "Now submitting $script"
+  qsub $script
+done
+
 # # Integrate null model fits and calculate p-values
 # qsub univariate_analysis/call_univariate_null_model_analysis.pbs
 
