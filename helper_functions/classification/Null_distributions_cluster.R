@@ -9,6 +9,7 @@ parser$add_argument("--dataset_ID", default = "UCLA_Schizophrenia")
 parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
 parser$add_argument("--SPI_directionality_file", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/pairwise_analysis/SPI_Direction_Info.csv")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
+parser$add_argument("--rdata_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/processed_data/Rdata/")
 parser$add_argument("--output_data_dir", default="/headnode1/abry4213/data/UCLA_Schizophrenia/Rdata/Pairwise_pyspi_19_inv_prob_null_model_fits/")
 parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
 
@@ -45,6 +46,7 @@ pairwise_data_file <- args$pairwise_data_file
 univariate_data_file <- args$univariate_data_file
 SPI_directionality_file <- args$SPI_directionality_file
 data_path <- args$data_path
+rdata_path <- args$rdata_path
 output_data_dir <- args$output_data_dir
 github_dir <- args$github_dir
 
@@ -71,8 +73,9 @@ univariate <- args$univariate
 pairwise <- args$pairwise
 uni_and_pairwise <- args$uni_and_pairwise
 
-rdata_path <- paste0(data_path, "processed_data/Rdata/")
-pydata_path <- paste0(data_path, "processed_data/pydata/")
+if (is.null(rdata_path)) {
+  rdata_path <- paste0(data_path, "processed_data/Rdata/")
+}
 
 # Load sample metadata
 sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
@@ -91,6 +94,7 @@ if (univariate & !file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.R
   # Run null iteration
   null_out <- 1:num_perms_for_iter  %>%
     purrr::map_df( ~ run_univariate_cv_svm_by_input_var(data_path = data_path,
+                                                        rdata_path = rdata_path,
                                                         sample_metadata = sample_metadata,
                                                         dataset_ID = dataset_ID,
                                                         svm_kernel = svm_kernel,

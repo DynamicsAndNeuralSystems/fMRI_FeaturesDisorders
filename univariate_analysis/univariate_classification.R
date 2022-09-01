@@ -228,6 +228,7 @@ for (i in 1:nrow(grouping_param_df)) {
                         "DATASET_ID" = dataset_ID,
                         "GITHUB_DIR" = github_dir,
                         "DATA_PATH" = data_path,
+                        "RDATA_PATH" = rdata_path,
                         "EMAIL" = email,
                         "PBS_NOTIFY" = "a",
                         "WALL_HRS" = wall_hrs,
