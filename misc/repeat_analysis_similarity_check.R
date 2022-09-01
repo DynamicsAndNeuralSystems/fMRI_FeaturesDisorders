@@ -24,10 +24,13 @@ all(apply(combn(length(catch22_list), 2), 2, function(x)
 univariate_ROI_wise_SVM_list <- list()
 for (run_number in 1:5){
   run_number_ROI_SVM_balacc <- readRDS(sprintf("%s/processed_data_run%s/Rdata/ROI_wise_CV_linear_SVM_catch22_inv_prob_balacc.Rds",
-                                        data_path, run_number))
+                                        data_path, run_number)) %>%
+    mutate(run_number = run_number)
   univariate_ROI_wise_SVM_list[[run_number]] <- run_number_ROI_SVM_balacc
 }
+univariate_ROI_wise_SVM_df <- do.call(plyr::rbind.fill, univariate_ROI_wise_SVM_list)
 
-# Check whether all five dataframes in terms are equal
-all(apply(combn(length(univariate_ROI_wise_SVM_list), 2), 2, function(x)
-  all.equal(univariate_ROI_wise_SVM_list[[x[1]]], univariate_ROI_wise_SVM_list[[x[2]]])))
+# Pull out left caudal anterior cingulate cortex as an example
+univariate_ROI_wise_SVM_df %>%
+  filter(grouping_var=="ctx-lh-caudalanteriorcingulate") %>%
+  arrange(Noise_Proc)
