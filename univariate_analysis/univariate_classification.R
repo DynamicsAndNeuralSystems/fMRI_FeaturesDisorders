@@ -13,6 +13,7 @@ parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_procs", default=c(""))
 parser$add_argument("--noise_proc_for_null", default=c(""))
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
+parser$add_argument("--email")
 parser$add_argument("--run_number")
 
 # Parse input arguments
@@ -26,6 +27,7 @@ noise_procs <- args$noise_procs
 noise_proc_for_null <- args$noise_proc_for_null
 dataset_ID <- args$dataset_ID
 sample_metadata_file <- args$sample_metadata_file
+email <- args$email
 run_number <- args$run_number
 
 cat("noise_procs:", noise_procs, "\n")
@@ -207,25 +209,26 @@ for (i in 1:nrow(grouping_param_df)) {
                                                   weighting_name))
 
     # Where to save PBS script to
-    output_scripts_dir <- paste0(github_dir, sprintf("fMRI_FeaturesDisorders/univariate_analysis/%s_%s_wise_%s_%s_null_model_fits/",
+    output_scripts_dir <- paste0(github_dir, sprintf("fMRI_FeaturesDisorders/univariate_analysis/%s_%s_wise_%s_%s_null_model_fits%s/",
                                                      dataset_ID,
                                                      grouping_type,
                                                      univariate_feature_set,
-                                                     weighting_name))
+                                                     weighting_name,
+                                                     run_number))
     
     # Make these directories
     icesTAF::mkdir(output_data_dir)
     icesTAF::mkdir(output_scripts_dir)
 
     # Lookup table for PBS script
-    lookup_list <- list("NAME" = sprintf("univariate_%s_wise_null_model_fit",
-                                         grouping_type),
+    lookup_list <- list("NAME" = sprintf("univariate_%s_wise_null_model_fit%s",
+                                         grouping_type, run_number),
                         "MEMNUM" = "20",
                         "NCPUS" = "1",
                         "DATASET_ID" = dataset_ID,
                         "GITHUB_DIR" = github_dir,
                         "DATA_PATH" = data_path,
-                        "EMAIL" = "abry4213@uni.sydney.edu.au",
+                        "EMAIL" = email,
                         "PBS_NOTIFY" = "a",
                         "WALL_HRS" = wall_hrs,
                         "NOISE_PROCS" = noise_proc_for_null,
