@@ -209,7 +209,7 @@ for (i in 1:nrow(grouping_param_df)) {
                                                   weighting_name))
 
     # Where to save PBS script to
-    output_scripts_dir <- paste0(github_dir, sprintf("fMRI_FeaturesDisorders/univariate_analysis/%s_%s_wise_%s_%s_null_model_fits%s/",
+    output_scripts_dir <- paste0(github_dir, sprintf("fMRI_FeaturesDisorders/univariate_analysis/null_pbs_scripts/%s_%s_wise_%s_%s_null_model_fits%s/",
                                                      dataset_ID,
                                                      grouping_type,
                                                      univariate_feature_set,
