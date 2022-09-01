@@ -10,7 +10,7 @@ parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizo
 parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
 parser$add_argument("--pairwise_feature_set", default="pyspi14")
 parser$add_argument("--univariate_feature_set", default="catch22")
-parser$add_argument("--noise_procs", default=c(""), nargs="*", action="append")
+parser$add_argument("--noise_procs", default=c(""))
 parser$add_argument("--noise_proc_for_null", default=c(""))
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 parser$add_argument("--run_number")
@@ -27,6 +27,10 @@ noise_proc_for_null <- args$noise_proc_for_null
 dataset_ID <- args$dataset_ID
 sample_metadata_file <- args$sample_metadata_file
 run_number <- args$run_number
+
+cat("noise_procs:", noise_procs, "\n")
+cat("noise_proc_for_null:", noise_proc_for_null, "\n")
+cat("run_number:", run_number, "\n")
 # 
 # univariate_feature_set <- "catch22"
 # pairwise_feature_set <- "pyspi14"

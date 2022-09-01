@@ -2,7 +2,7 @@
 #PBS -q yossarian
 #PBS -N 40_univariate_ROI_wise_null_model_fit
 #PBS -j oe
-#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders//cluster_output/UCLA_Schizophrenia_null_model_fits/univariate_ROI_wise_null_model_fit_inv_prob_null_model_fit_40_out.txt
+#PBS -o /headnode1/abry4213/github//cluster_output/UCLA_Schizophrenia_null_model_fits/univariate_ROI_wise_null_model_fit_inv_prob_null_model_fit_40_out.txt
 #PBS -l select=1:ncpus=1:mem=20GB
 #PBS -l walltime=12:00:00
 #PBS -m a
@@ -12,7 +12,7 @@
 cd "$PBS_O_WORKDIR"
 
 # Define directories
-github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders/
+github_dir=/headnode1/abry4213/github/
 data_path=/headnode1/abry4213/data/UCLA_Schizophrenia/
 rdata_path=${data_path}/Rdata/
 pydata_path=${data_path}/pydata/
@@ -22,8 +22,9 @@ mkdir -p $github_dir/cluster_output/UCLA_Schizophrenia_null_model_fits/
 /usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/helper_functions/classification/Null_distributions_cluster.R \
 --dataset_ID UCLA_Schizophrenia \
 --data_path ${data_path} --github_dir ${github_dir} \
+--sample_metadata_file UCLA_Schizophrenia_sample_metadata.Rds \
 --univariate --num_k_folds 10 \
---output_data_dir /headnode1/abry4213/data/UCLA_Schizophrenia/processed_data/Rdata/UCLA_Schizophrenia_ROI_wise_catch22_inv_prob_null_model_fits/ \
+--output_data_dir /headnode1/abry4213/data/UCLA_Schizophrenia/processed_data_run4/Rdata/UCLA_Schizophrenia_ROI_wise_catch22_inv_prob_null_model_fits/ \
 --null_iter_number 40 \
 --num_perms_for_iter 10 \
 --pairwise_feature_set pyspi14 \
