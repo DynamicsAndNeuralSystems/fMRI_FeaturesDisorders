@@ -10,7 +10,7 @@ parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample
 parser$add_argument("--SPI_directionality_file", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/pairwise_analysis/SPI_Direction_Info.csv")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
 parser$add_argument("--output_data_dir", default="/headnode1/abry4213/data/UCLA_Schizophrenia/Rdata/Pairwise_pyspi_19_inv_prob_null_model_fits/")
-parser$add_argument("--github_dir", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/")
+parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
 
 # Permutation arguments
 parser$add_argument("--num_k_folds", default=10)
@@ -78,7 +78,7 @@ pydata_path <- paste0(data_path, "processed_data/pydata/")
 sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
 
 # Source linear SVM functions
-source(paste0(github_dir, "helper_functions/classification/Linear_SVM.R"))
+source(paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/classification/Linear_SVM.R"))
 
 icesTAF::mkdir(output_data_dir)
 

@@ -2,7 +2,7 @@
 #PBS -q yossarian
 #PBS -N iterj_NAME
 #PBS -j oe
-#PBS -o GITHUB_DIR/cluster_output/DATASET_ID_null_model_fits/NAME_WEIGHTING_NAME_null_model_fit_iterj_out.txt
+#PBS -o GITHUB_DIR/fMRI_FeaturesDisorders/cluster_output/DATASET_ID_null_model_fits/NAME_WEIGHTING_NAME_null_model_fit_iterj_out.txt
 #PBS -l select=1:ncpus=NCPUS:mem=MEMNUMGB
 #PBS -l walltime=WALL_HRS:00:00
 #PBS -m PBS_NOTIFY
@@ -16,10 +16,10 @@ github_dir=GITHUB_DIR
 data_path=DATA_PATH
 rdata_path=${data_path}/Rdata/
 pydata_path=${data_path}/pydata/
-mkdir -p $github_dir/cluster_output/DATASET_ID_null_model_fits/
+mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/DATASET_ID_null_model_fits/
 
 # Change to relevant directory and run our compute script
-/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/helper_functions/classification/Null_distributions_cluster.R \
+/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/helper_functions/classification/Null_distributions_cluster.R \
 --dataset_ID DATASET_ID \
 --data_path ${data_path} --github_dir ${github_dir} \
 --sample_metadata_file SAMPLE_METADATA_FILE \
