@@ -3,20 +3,22 @@ library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
-parser$add_argument("--rdata_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/processed_data/Rdata/")
+parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
 parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
+parser$add_argument("--run_number")
 
 # Parse input arguments
 args <- parser$parse_args()
 github_dir <- args$github_dir
 sample_metadata_file <- args$sample_metadata_file
-rdata_path <- args$rdata_path
+data_path <- args$data_path
 noise_proc <- args$noise_proc
 univariate_feature_set <- args$univariate_feature_set
 dataset_ID <- args$dataset_ID
+run_number <- args$run_number
 
 # univariate_feature_set <- "catch22"
 # pairwise_feature_set <- "pyspi14"
@@ -35,6 +37,14 @@ dataset_ID <- args$dataset_ID
 # dataset_ID <- "ABIDE_ASD"
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
 # noise_proc <- "FC1000"
+
+if (!is.null(run_number)) {
+  rdata_path <- paste0(data_path, "processed_data_run", run_number, "/Rdata/")
+  plot_dir <- paste0(data_path, "plots_run", run_number, "/")
+} else {
+  rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  plot_dir <- paste0(data_path, "plots/")
+}
 
 
 #-------------------------------------------------------------------------------
