@@ -5,7 +5,7 @@ parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizo
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--pairwise_feature_set", default="pyspi14")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
-parser$add_argument("--run_number")
+parser$add_argument("--run_number", nargs="?")
 
 # Parse input arguments
 args <- parser$parse_args()

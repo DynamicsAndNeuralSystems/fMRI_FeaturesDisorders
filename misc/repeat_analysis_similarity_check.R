@@ -30,7 +30,22 @@ for (run_number in 1:5){
 }
 univariate_ROI_wise_SVM_df <- do.call(plyr::rbind.fill, univariate_ROI_wise_SVM_list)
 
-# Pull out left caudal anterior cingulate cortex as an example
+# Pull out right caudal anterior cingulate cortex as an example
 univariate_ROI_wise_SVM_df %>%
-  filter(grouping_var=="ctx-lh-caudalanteriorcingulate") %>%
+  filter(grouping_var=="ctx-rh-caudalanteriorcingulate") %>%
+  arrange(Noise_Proc)
+
+# Compare null p-values
+univariate_ROI_wise_SVM_pval_list <- list()
+for (run_number in 1:5){
+  run_number_ROI_SVM_pvals <- readRDS(sprintf("%s/processed_data_run%s/Rdata/ROI_wise_CV_linear_SVM_model_permutation_null_catch22_inv_prob_pvals.Rds",
+                                               data_path, run_number)) %>%
+    mutate(run_number = run_number)
+  univariate_ROI_wise_SVM_pval_list[[run_number]] <- run_number_ROI_SVM_pvals
+}
+univariate_ROI_wise_SVM_pval_df <- do.call(plyr::rbind.fill, univariate_ROI_wise_SVM_pval_list)
+
+# Pull out right caudal anterior cingulate cortex as an example
+univariate_ROI_wise_SVM_pval_df %>%
+  filter(grouping_var=="ctx-rh-caudalanteriorcingulate") %>%
   arrange(Noise_Proc)

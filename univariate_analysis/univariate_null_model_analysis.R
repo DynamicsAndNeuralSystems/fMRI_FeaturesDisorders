@@ -22,20 +22,19 @@ run_number <- args$run_number
 
 # univariate_feature_set <- "catch22"
 # pairwise_feature_set <- "pyspi14"
-# github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
+# github_dir <- "/headnode1/abry4213/github/"
 
 # UCLA schizophrenia
-# rdata_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/processed_data/Rdata/"
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
 # noise_proc <- "AROMA+2P+GMR"
+# run_number <- 2
 
 # ABIDE ASD
-# rdata_path <- "/headnode1/abry4213/data/ABIDE_ASD/processed_data/Rdata/"
 # data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
-# dataset_ID <- "ABIDE_ASD"
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
+# dataset_ID <- "ABIDE_ASD"
 # noise_proc <- "FC1000"
 
 if (!is.null(run_number)) {
@@ -50,9 +49,7 @@ if (!is.null(run_number)) {
 #-------------------------------------------------------------------------------
 # Source helper scripts
 #-------------------------------------------------------------------------------
-# Set working directory to file location
-# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-helper_script_dir = "../helper_functions/classification/"
+helper_script_dir = paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/classification/")
 source(paste0(helper_script_dir, "Linear_SVM.R"))
 source(paste0(helper_script_dir, "Null_distributions.R"))
 
@@ -61,11 +58,6 @@ set.seed(127)
 
 # Load tidyverse
 library(tidyverse)
-
-# Unlist noise-processing methods
-tryCatch({
-  noise_procs <- unlist(noise_procs)
-}, error = function(e) {})
 
 # Use e1071 SVM with a linear kernel
 kernel = "linear"
@@ -98,6 +90,7 @@ for (i in 1:nrow(grouping_param_df)) {
                                                 grouping_type,
                                                 univariate_feature_set,
                                                 weighting_name)))) {
+      cat("Now merging null model fits data\n")
       # Define data directory
       output_data_dir <- paste0(rdata_path, sprintf("%s_%s_wise_%s_%s_null_model_fits/",
                                                     dataset_ID,
@@ -109,6 +102,7 @@ for (i in 1:nrow(grouping_param_df)) {
       ## Concatenate null results and save to RDS file
       model_permutation_null_weighting <- list.files(output_data_dir, pattern="Rds") %>%
         purrr::map_df(~ readRDS(paste0(output_data_dir, .x)))
+      cat("Now saving null model fits data\n")
       saveRDS(model_permutation_null_weighting, paste0(rdata_path, sprintf("%s_%s_wise_model_permutation_null_%s_%s.Rds",
                                                                            dataset_ID,
                                                                            grouping_type,
@@ -127,6 +121,7 @@ for (i in 1:nrow(grouping_param_df)) {
                                                 grouping_type,
                                                 univariate_feature_set,
                                                 weighting_name)))) {
+      cat("Now calculating p-values\n")
       group_wise_SVM_balanced_accuracy <- readRDS(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
                                                                              grouping_type, 
                                                                              univariate_feature_set, 

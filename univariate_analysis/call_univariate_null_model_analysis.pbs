@@ -18,8 +18,7 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript univariate_null_model_analysis.R \
 --noise_proc ${main_noise_proc} \
 --dataset_ID $dataset_ID \
 --sample_metadata_file $sample_metadata_file \
---run_number $run_number \
---email $email"
+--run_number $run_number"
 echo $cmd
 $cmd
                                       

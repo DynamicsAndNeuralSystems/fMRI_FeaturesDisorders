@@ -12,7 +12,7 @@ parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
 parser$add_argument("--noise_procs", default=c(""))
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
-parser$add_argument("--run_number")
+parser$add_argument("--run_number", nargs='?')
 
 # Parse input arguments
 args <- parser$parse_args()

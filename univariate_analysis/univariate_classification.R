@@ -14,7 +14,7 @@ parser$add_argument("--noise_procs", default=c(""))
 parser$add_argument("--noise_proc_for_null", default=c(""))
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 parser$add_argument("--email")
-parser$add_argument("--run_number")
+parser$add_argument("--run_number", nargs='?')
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -79,7 +79,6 @@ tryCatch({
 #-------------------------------------------------------------------------------
 # Source helper scripts
 #-------------------------------------------------------------------------------
-# Set working directory to file location
 helper_script_dir = paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/classification/")
 source(paste0(helper_script_dir, "Linear_SVM.R"))
 source(paste0(helper_script_dir, "Null_distributions.R"))
