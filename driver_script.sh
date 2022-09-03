@@ -102,11 +102,11 @@ cd $github_dir/fMRI_FeaturesDisorders/univariate_analysis/
 #   call_univariate_classification.pbs 
 # done
 # Round 2: Running as main analysis
-qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc \
--N run_univariate_classification_${dataset_ID} \
--o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_out.txt \
--m a -M $email \
-call_univariate_classification.pbs 
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc \
+# -N run_univariate_classification_${dataset_ID} \
+# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_out.txt \
+# -m a -M $email \
+# call_univariate_classification.pbs 
 
 # # Generate null model fits
 # null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/univariate_analysis/null_pbs_scripts/* -name "null_iter_*.pbs")
@@ -123,6 +123,12 @@ call_univariate_classification.pbs
 #   -m a -M $email \
 #   call_univariate_null_model_analysis.pbs 
 # done
+# Round 2: Running as main analysis
+qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
+-N run_univariate_null_model_analysis${dataset_ID} \
+-o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_out.txt \
+-m a -M $email \
+call_univariate_null_model_analysis.pbs 
 
 ##########################################################################################
 # # Pairwise linear SVM

@@ -207,6 +207,9 @@ for (i in 1:nrow(grouping_param_df)) {
                                                   univariate_feature_set,
                                                   weighting_name))
 
+    
+    run_number = ifelse(is.null(run_number), "", run_number)
+
     # Where to save PBS script to
     output_scripts_dir <- paste0(github_dir, sprintf("fMRI_FeaturesDisorders/univariate_analysis/null_pbs_scripts/%s_%s_wise_%s_%s_null_model_fits%s/",
                                                      dataset_ID,
@@ -214,10 +217,14 @@ for (i in 1:nrow(grouping_param_df)) {
                                                      univariate_feature_set,
                                                      weighting_name,
                                                      run_number))
+
+    cat("\nNow generating null PBS scripts for", grouping_type, "\n")
+    cat("Script location:", output_scripts_dir, "\n")
     
     # Make these directories
     icesTAF::mkdir(output_data_dir)
     icesTAF::mkdir(output_scripts_dir)
+
 
     # Lookup table for PBS script
     lookup_list <- list("NAME" = sprintf("univariate_%s_wise_null_model_fit%s",
@@ -252,7 +259,6 @@ for (i in 1:nrow(grouping_param_df)) {
       if (!file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
                                output_data_dir, grouping_var, univariate_feature_set,
                                weighting_name, p))) {
-        cat("\nNow creating pbs script for for iteration", p, "\n")
         new_pbs_file <- readLines(template_pbs_file)
 
         # Replace file paths

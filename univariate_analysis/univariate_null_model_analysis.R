@@ -8,7 +8,7 @@ parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
-parser$add_argument("--run_number")
+parser$add_argument("--run_number", nargs="?")
 
 # Parse input arguments
 args <- parser$parse_args()
