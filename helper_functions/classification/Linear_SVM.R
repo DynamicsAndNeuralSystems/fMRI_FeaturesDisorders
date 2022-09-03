@@ -272,7 +272,9 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
 # Run pairwise PYSPI multi-feature linear SVM by input feature
 #-------------------------------------------------------------------------------
 run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
+                                             dataset_ID,
                                              data_path,
+                                             rdata_path,
                                              sample_metadata,
                                              SPI_directionality,
                                              svm_kernel = "linear",
@@ -286,7 +288,9 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                              shuffle_labels = FALSE) {
   
   
-  rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  if (is.null(rdata_path)) {
+    rdata_path <- paste0(data_path, "processed_data/Rdata/")
+  }
   
   # Get diagnosis proportions
   sample_groups <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
@@ -373,7 +377,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   }
   
   # Reshape data from long to wide for SVM
-  for (group_var in unique(grouping_var_vector)[10:14]) {
+  for (group_var in unique(grouping_var_vector)) {
     if (grouping_var == "Combo") {
       data_for_SVM <- pairwise_data %>%
         # Impute missing data with the mean

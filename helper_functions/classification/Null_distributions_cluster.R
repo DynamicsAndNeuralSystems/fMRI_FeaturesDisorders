@@ -122,21 +122,26 @@ if (univariate & !file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.R
                                  weighting_name, null_iter_number))
 }
 
-if (pairwise) {
+if (pairwise & !(file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
+                                 output_data_dir, grouping_var, pairwise_feature_set, 
+                                 weighting_name, null_iter_number)))) {
   # Load data
   pairwise_data <- readRDS(pairwise_data_file)
   SPI_directionality <- read.csv(SPI_directionality_file)
   
   
   cat("\nHead of pairwise data:\n")
-  head(pairwise_data)
+  print(head(pairwise_data))
   cat("\nHead of SPI directionality data:\n")
-  head(SPI_directionality)
-  
+  print(head(SPI_directionality))
   
   # Run null iteration
   null_out <- 1:num_perms_for_iter %>%
-    purrr::map_df( ~ run_pairwise_cv_svm_by_input_var(pairwise_data = pairwise_data,
+    purrr::map_df( ~ run_pairwise_cv_svm_by_input_var(data_path = data_path,
+                                                      rdata_path = rdata_path,
+                                                      dataset_ID = dataset_ID,
+                                                      sample_metadata = sample_metadata,
+                                                      pairwise_data = pairwise_data,
                                                       SPI_directionality = SPI_directionality,
                                                       svm_kernel = svm_kernel,
                                                       grouping_var = grouping_var,
@@ -150,8 +155,9 @@ if (pairwise) {
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
   
   # Save null results to RDS
-  saveRDS(null_out, file=sprintf("%s/pyspi_%s_pairwise_%s_null_model_fit_iter_%s.Rds",
-                                 output_data_dir, grouping_var, feature_set, null_iter_number))
+  saveRDS(null_out, file=sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
+                                 output_data_dir, grouping_var, pairwise_feature_set, 
+                                 weighting_name, null_iter_number))
 }
 
 if (uni_and_pairwise) {
