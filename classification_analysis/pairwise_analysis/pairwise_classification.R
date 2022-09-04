@@ -38,7 +38,7 @@ cat("run_number:", run_number, "\n")
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
-# noise_proc_for_null <- "AROMA+2P+GMR"s
+# noise_proc_for_null <- "AROMA+2P+GMR"
 
 # ABIDE ASD
 # data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
@@ -92,6 +92,8 @@ subjects_to_use <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariat
                                                       univariate_feature_set,
                                                       pairwise_feature_set)))
 
+pyspi_data <- pyspi_data %>%
+  semi_join(., subjects_to_use)
 
 if (!file.exists(paste0(rdata_path, dataset_ID, "_samples_per_10_folds_10_repeats.Rds"))) {
   sample_folds <- list()
@@ -135,22 +137,45 @@ for (i in 1:nrow(grouping_param_df)) {
                                               pairwise_feature_set, 
                                               weighting_name)))) {
     tryCatch({ 
-      group_wise_SVM_CV_weighting <- 1:length(sample_folds) %>%
-        purrr::map_df( ~ run_pairwise_cv_svm_by_input_var(pairwise_data = pyspi_data,
-                                                          data_path = data_path,
-                                                          rdata_path = rdata_path,
-                                                          sample_metadata = sample_metadata,
-                                                          SPI_directionality = SPI_directionality,
-                                                          svm_kernel = kernel,
-                                                          num_k_folds = 10,
-                                                          flds = sample_folds[[.x]],
-                                                          repeat_number = .x,
-                                                          grouping_var = grouping_var,
-                                                          svm_feature_var = SVM_feature_var,
-                                                          noise_proc = noise_proc_for_null,
-                                                          out_of_sample_only = TRUE,
-                                                          use_inv_prob_weighting = use_inv_prob_weighting,
-                                                          shuffle_labels = FALSE))
+      group_wise_SVM_CV_weighting_list <- list()
+      for (idx in 1:length(sample_folds)) {
+        tryCatch({
+          if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_repeat%s.Rds",
+                                                      grouping_var, pairwise_feature_set,
+                                                      weighting_name, idx)))) {
+            repeat_res <- run_pairwise_cv_svm_by_input_var(pairwise_data = pyspi_data,
+                                                           dataset_ID = dataset_ID,
+                                                           data_path = data_path,
+                                                           rdata_path = rdata_path,
+                                                           sample_metadata = sample_metadata,
+                                                           SPI_directionality = SPI_directionality,
+                                                           svm_kernel = kernel,
+                                                           num_k_folds = 10,
+                                                           flds = sample_folds[[idx]],
+                                                           repeat_number = idx,
+                                                           grouping_var = grouping_var,
+                                                           svm_feature_var = SVM_feature_var,
+                                                           noise_proc = noise_proc_for_null,
+                                                           out_of_sample_only = TRUE,
+                                                           use_inv_prob_weighting = use_inv_prob_weighting,
+                                                           shuffle_labels = FALSE)
+            saveRDS(repeat_res, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_repeat%s.Rds",
+                                                                grouping_var, pairwise_feature_set,
+                                                                weighting_name, idx)))
+          } else {
+            repeat_res <- readRDS(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_repeat%s.Rds",
+                                                             grouping_var, pairwise_feature_set,
+                                                             weighting_name, idx)))
+          }
+          group_wise_SVM_CV_weighting_list <- list.append(group_wise_SVM_CV_weighting_list, repeat_res)
+        }, error = function(e) {
+          cat("Error for repeat number:", idx, "\n")
+          message(e)
+        })
+        
+      }
+      
+      group_wise_SVM_CV_weighting <- do.call(plyr::rbind.fill, group_wise_SVM_CV_weighting_list)
       saveRDS(group_wise_SVM_CV_weighting, file=paste0(rdata_path,
                                                        sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
                                                                grouping_var,
@@ -206,7 +231,7 @@ for (i in 1:nrow(grouping_param_df)) {
   # Use 10-fold cross-validation
   num_k_folds <- 10
   # Define the univariate template PBS script
-  template_pbs_file <- paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/classification/template_wise_null_model_fit.pbs")
+  template_pbs_file <- paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/classification/template_pairwise_null_model_fit.pbs")
   
   # Where to store null model fit results
   output_data_dir <- paste0(rdata_path, sprintf("%s_%s_wise_%s_%s_null_model_fits/",

@@ -35,7 +35,7 @@ run_number <- args$run_number
 # python_to_use <- "/headnode1/abry4213/.conda/envs/pyspi/bin/python3"
 # univariate_feature_set <- "catch22"
 # pairwise_feature_set <- "pyspi14"
-# github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
+# github_dir <- "/headnode1/abry4213/github/"
 
 # UCLA schizophrenia
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
@@ -50,6 +50,13 @@ run_number <- args$run_number
 # dataset_ID <- "ABIDE_ASD"
 # noise_procs <- c("FC1000")
 # brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+
+# HCP100
+# data_path <- "/headnode1/abry4213/data/HCP100/"
+# sample_metadata_file <- "HCP100_sample_metadata.Rds"
+# dataset_ID <- "HCP100"
+# noise_procs <- c("AROMA+2P+GMR")
+# brain_region_lookup <- "Brain_Region_info.csv"
 
 sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
 pkl_data_path <- paste0(data_path, "raw_data/numpy_files/")
@@ -129,18 +136,23 @@ read_pyspi_pkl_into_RDS <- function(pkl_data_path,
       # noise-processing method, create one
       if (!file.exists(paste0(np_rdata_path, sample, "_pyspi.Rds"))) {
         cat("\nNow prepping data for", sample, noise_label, "\n")
-        tryCatch({sample_pkl_data <- extract_df_from_pkl(paste0(np_data_path, sample, "/calc.pkl")) %>%
-          mutate(Sample_ID = sample,
-                 Diagnosis = subset(sample_metadata, Sample_ID == sample) %>% pull(Diagnosis),
-                 Noise_Proc = noise_proc,
-                 brain_region_1 = as.numeric(gsub("proc-", "", brain_region_1)),
-                 brain_region_2 = as.numeric(gsub("proc-", "", brain_region_2)))
-        # Save results to an RDS file for this sample
-        saveRDS(sample_pkl_data, file=paste0(np_rdata_path, sample, "_pyspi.Rds"))},
-        error = function(e){
-          cat("\nError for sample", sample, "\n")
-          print(e)
-        })
+        tryCatch({
+          sample_pkl_data <- extract_df_from_pkl(paste0(np_data_path, sample, "/calc.pkl")) %>%
+            mutate(Sample_ID = sample,
+                   Noise_Proc = noise_proc,
+                   brain_region_1 = as.numeric(gsub("proc-", "", brain_region_1)),
+                   brain_region_2 = as.numeric(gsub("proc-", "", brain_region_2)))
+          
+          if ("Diagnosis" %in% colnames(sample_metadata)) {
+            sample_pkl_data <- sample_pkl_data %>%
+              mutate(Diagnosis = subset(sample_metadata, Sample_ID == sample) %>% pull(Diagnosis))
+          }
+          # Save results to an RDS file for this sample
+          saveRDS(sample_pkl_data, file=paste0(np_rdata_path, sample, "_pyspi.Rds"))},
+          error = function(e){
+            cat("\nError for sample", sample, "\n")
+            print(e)
+          })
       }
     }
   }

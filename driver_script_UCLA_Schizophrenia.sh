@@ -96,12 +96,12 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysi
 #   -m a -M $email \
 #   call_univariate_classification.pbs 
 # done
-# Round 2: Running as main analysis
-qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc \
--N run_univariate_classification_${dataset_ID} \
--o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_out.txt \
--m a -M $email \
-call_univariate_classification.pbs 
+# # Round 2: Running as main analysis
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc \
+# -N run_univariate_classification_${dataset_ID} \
+# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_out.txt \
+# -m a -M $email \
+# call_univariate_classification.pbs 
 
 # # Generate null model fits
 # null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/null_pbs_scripts/* -name "null_iter_*.pbs")
@@ -118,7 +118,7 @@ call_univariate_classification.pbs
 #   -m a -M $email \
 #   call_univariate_null_model_analysis.pbs 
 # done
-# Round 2: Running as main analysis
+# # Round 2: Running as main analysis
 # qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
 # -N run_univariate_null_model_analysis${dataset_ID} \
 # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_out.txt \
@@ -129,40 +129,40 @@ call_univariate_classification.pbs
 # Pairwise analysis
 cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/
 
-# Pairwise linear SVM
-qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc  \
--N run_pairwise_classification${dataset_ID} \
--o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_pairwise_classification_${dataset_ID}_out.txt \
--m a -M $email \
-call_pairwise_classification.pbs 
+# # Pairwise linear SVM
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc  \
+# -N pairwise_classification${dataset_ID} \
+# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_classification_${dataset_ID}_out.txt \
+# -m a -M $email \
+# call_pairwise_classification.pbs 
 
-# Generate null model fits
-# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/null_pbs_scripts/* -name "null_iter_*.pbs")
+# # Generate null model fits
+# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/null_pbs_scripts/*${dataset_ID}* -name "null_iter_*.pbs")
 # for script in $null_perm_scripts; do
 #   echo "Now submitting $script"
 #   qsub $script
 # done
 
-# # Integrate null model fits and calculate p-values
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
-# -N pairwise_null_model_analysis${dataset_ID} \
-# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_null_model_analysis_${dataset_ID}_out.txt \
-# -m a -M $email \
-# call_pairwise_null_model_analysis.pbs 
+# Integrate null model fits and calculate p-values
+qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
+-N pairwise_null_model_analysis${dataset_ID} \
+-o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_null_model_analysis_${dataset_ID}_out.txt \
+-m a -M $email \
+call_pairwise_null_model_analysis.pbs 
 
 
 ##########################################################################################
 # Combined univariate + pairwise analysis
 cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise/
 
-qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc,email=$email  \
--N combined_univariate_pairwise_classification_${dataset_ID} \
--o $github_dir/fMRI_FeaturesDisorders/cluster_output/combined_univariate_pairwise_classification_${dataset_ID}_out.txt \
--m a -M $email \
-call_combined_univariate_pairwise_classification.pbs 
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc,email=$email  \
+# -N combined_univariate_pairwise_classification_${dataset_ID} \
+# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/combined_univariate_pairwise_classification_${dataset_ID}_out.txt \
+# -m a -M $email \
+# call_combined_univariate_pairwise_classification.pbs 
 
-# Generate null model fits
-# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise/null_pbs_scripts/* -name "null_iter_*.pbs")
+# # Generate null model fits
+# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise/null_pbs_scripts/*${dataset_ID}* -name "null_iter_*.pbs")
 # for script in $null_perm_scripts; do
 #   echo "Now submitting $script"
 #   qsub $script

@@ -83,7 +83,7 @@ combined_univariate_pairwise <- args$combined_univariate_pairwise
 # null_iter_number <- 1
 # num_perms_for_iter <- 5
 # svm_kernel <- "linear"
-weighting_name <- "inv_prob"
+# weighting_name <- "inv_prob"
 # SPI_directionality_file <- paste0(github_dir, "fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/SPI_Direction_Info.csv")
 
 # UCLA schizophrenia
@@ -191,6 +191,13 @@ if (pairwise & !(file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rd
                                                       shuffle_labels = T) %>%
                      # Keep track of which null iteration this is
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
+
+  
+  null_out <- null_out %>% 
+    group_by(grouping_var, Noise_Proc, Sample_Type, Null_Iter_Number) %>%
+    summarise(accuracy = sum(Prediction_Correct) / n(),
+              balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
+                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
   
   # Save null results to RDS
   saveRDS(null_out, file=sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
@@ -230,6 +237,12 @@ if (combined_univariate_pairwise & !file.exists(sprintf("%s/univariate_%s_pairwi
                                                                    shuffle_labels = TRUE) %>%
                      # Keep track of which null iteration this is
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
+  
+  null_out <- null_out %>% 
+    group_by(grouping_var, Noise_Proc, Sample_Type, Null_Iter_Number) %>%
+    summarise(accuracy = sum(Prediction_Correct) / n(),
+              balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
+                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
   
   # Save null results to RDS
   saveRDS(null_out, file=sprintf("%s/univariate_%s_pairwise_%s_CV_linear_SVM_%s_null_model_fit_iter_%s.Rds",

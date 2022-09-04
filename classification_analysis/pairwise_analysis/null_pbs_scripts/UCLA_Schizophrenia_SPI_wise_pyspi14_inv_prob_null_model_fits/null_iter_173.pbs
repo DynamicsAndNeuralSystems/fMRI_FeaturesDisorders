@@ -21,7 +21,7 @@ mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/UCLA_Schizophrenia_nu
 /usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/helper_functions/classification/Null_distributions_cluster.R \
 --dataset_ID UCLA_Schizophrenia \
 --pairwise_data_file /headnode1/abry4213/data/UCLA_Schizophrenia/processed_data/Rdata//UCLA_Schizophrenia_pyspi14_filtered_zscored.Rds \
---SPI_directionality_file /headnode1/abry4213/github/fMRI_FeaturesDisorders/pairwise_analysis/SPI_Direction_Info.csv \
+--SPI_directionality_file /headnode1/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/SPI_Direction_Info.csv \
 --data_path ${data_path} \
 --rdata_path ${rdata_path} \
 --github_dir ${github_dir} \
