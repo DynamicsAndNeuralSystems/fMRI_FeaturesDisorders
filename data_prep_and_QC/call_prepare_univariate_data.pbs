@@ -9,8 +9,7 @@
 cd "$PBS_O_WORKDIR"
 
 # Define directories
-github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders/
-mkdir -p $github_dir/cluster_output/
+mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/
 
 # Call R script
 Rscript prepare_univariate_data.R \

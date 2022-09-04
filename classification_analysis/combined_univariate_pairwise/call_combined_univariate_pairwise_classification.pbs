@@ -1,0 +1,32 @@
+#!/bin/bash
+#PBS -q yossarian
+#PBS -j oe
+#PBS -l select=1:ncpus=1:mem=20GB
+#PBS -l walltime=20:00:00
+#PBS -V
+
+cd "$PBS_O_WORKDIR"
+
+# Define directories
+mkdir -p $github_dir/cluster_output/
+
+# Run pairwise classification
+cmd="/usr/physics/R/R-4.2.1/bin/Rscript combined_univariate_pairwise_classification.R \
+--github_dir $github_dir \
+--data_path $data_path \
+--dataset_ID $dataset_ID \
+--univariate_feature_set $univariate_feature_set \
+--pairwise_feature_set $pairwise_feature_set \
+--sample_metadata_file $sample_metadata_file \
+--noise_proc_for_null $main_noise_proc \
+--run_number $run_number \
+--email $email"
+echo $cmd
+$cmd
+
+exit
+
+# Verify the host on which the job ran
+hostname
+
+

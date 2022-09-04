@@ -5,7 +5,7 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
-parser$add_argument("--github_dir", default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/")
+parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
@@ -26,7 +26,7 @@ dataset_ID <- args$dataset_ID
 run_number <- args$run_number
 
 # univariate_feature_set <- "catch22"
-# github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
+# github_dir <- "/headnode1/abry4213/github/"
 
 # UCLA schizophrenia
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
@@ -34,7 +34,6 @@ run_number <- args$run_number
 # sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # brain_region_lookup <- "Brain_Region_info.csv"
-# run_number <- 1
 
 # ABIDE ASD
 # data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
@@ -42,7 +41,13 @@ run_number <- args$run_number
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
 # noise_procs <- c("FC1000")
 # brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
-# run_number <- 1
+
+# HCP100
+# data_path <- "/headnode1/abry4213/data/HCP100/"
+# dataset_ID <- "HCP100"
+# sample_metadata_file <- "HCP100_sample_metadata.Rds"
+# noise_procs <- c("AROMA+2P+GMR")
+# brain_region_lookup <- "Brain_Region_info.csv"
 
 if (!is.null(run_number)) {
   rdata_path <- paste0(data_path, "processed_data_run", run_number, "/Rdata/")
@@ -75,7 +80,7 @@ tryCatch({
 # Source helper scripts
 #-------------------------------------------------------------------------------
 # Set working directory to file location
-helper_script_dir = paste0(github_dir, "helper_functions/")
+helper_script_dir = paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/")
 source(paste0(helper_script_dir, "data_prep_and_QC/TS_feature_extraction.R"))
 source(paste0(helper_script_dir, "data_prep_and_QC/QC_functions_univariate.R"))
 

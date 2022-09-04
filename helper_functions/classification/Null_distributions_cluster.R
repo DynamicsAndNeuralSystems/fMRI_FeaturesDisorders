@@ -34,7 +34,7 @@ parser$add_argument("--use_inv_prob_weighting", action='store_true', default=FAL
 # Indicate whether analysis is univariate, pariwise, or both
 parser$add_argument("--univariate", action='store_true', default=FALSE)
 parser$add_argument("--pairwise", action='store_true', default=FALSE)
-parser$add_argument("--uni_and_pairwise", action='store_true', default=FALSE)
+parser$add_argument("--combined_univariate_pairwise", action='store_true', default=FALSE)
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -71,7 +71,44 @@ use_inv_prob_weighting <- args$use_inv_prob_weighting
 # Indicate whether analysis is univariate, pariwise, or both
 univariate <- args$univariate
 pairwise <- args$pairwise
-uni_and_pairwise <- args$uni_and_pairwise
+combined_univariate_pairwise <- args$combined_univariate_pairwise
+
+
+################### Debugging ######################
+# univariate_feature_set <- "catch22"
+# pairwise_feature_set <- "pyspi14"
+# github_dir <- "/headnode1/abry4213/github/"
+# email <- "abry4213@uni.sydney.edu.au"
+# num_k_folds <- 10
+# null_iter_number <- 1
+# num_perms_for_iter <- 5
+# svm_kernel <- "linear"
+# SPI_directionality_file <- paste0(github_dir, "fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/SPI_Direction_Info.csv")
+
+# UCLA schizophrenia
+# dataset_ID <- "UCLA_Schizophrenia"
+# sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
+# data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
+# noise_proc <- "AROMA+2P+GMR"
+
+# ABIDE ASD
+# dataset_ID <- "ABIDE_ASD"
+# sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
+# data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
+# noise_proc <- "FC1000"
+
+# All
+# use_inv_prob_weighting = TRUE
+# rdata_path <- paste0(data_path, "processed_data/Rdata/")
+# output_data_dir <- paste0(rdata_path, dataset_ID, "_univariate_",
+#                           univariate_feature_set, "_pairwise_",
+#                           pairwise_feature_set, "_inv_prob_null_model_fits/")
+# univariate_data_file <- paste0(rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
+#                                                    dataset_ID, univariate_feature_set))
+# pairwise_data_file <- paste0(rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
+#                                                  dataset_ID, pairwise_feature_set))
+
+####################################################
 
 if (is.null(rdata_path)) {
   rdata_path <- paste0(data_path, "processed_data/Rdata/")
@@ -160,34 +197,41 @@ if (pairwise & !(file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rd
                                  weighting_name, null_iter_number))
 }
 
-if (uni_and_pairwise) {
-  # Load data
-  univariate_feature_set = "catch22"
-  pairwise_feature_set = "pyspi_19"
+if (combined_univariate_pairwise & !file.exists(sprintf("%s/univariate_%s_pairwise_%s_CV_linear_SVM_%s_null_model_fit_iter_%s.Rds",
+                                                        output_data_dir, 
+                                                        univariate_feature_set, 
+                                                        pairwise_feature_set, 
+                                                        weighting_name, 
+                                                        null_iter_number))) {
+  univariate_feature_data <- readRDS(univariate_data_file) %>%
+    dplyr::filter(Noise_Proc == noise_proc)
+    
+  pairwise_feature_data <- readRDS(pairwise_data_file) %>%
+    dplyr::filter(Noise_Proc == noise_proc)
   
-  univariate_data <- readRDS(univariate_data_file)
-  pairwise_data <- readRDS(pairwise_data_file)
   SPI_directionality <- read.csv(SPI_directionality_file)
   
   # Run null iteration
   null_out <- 1:num_perms_for_iter %>%
-    purrr::map_df( ~ run_combined_uni_pairwise_cv_svm_by_input_var(univariate_data = univariate_data,
-                                                                   univariate_feature_set = "catch22",
-                                                                   pairwise_data = pairwise_data,
-                                                                   pairwise_feature_set = "pyspi_19",
+    purrr::map_df( ~ run_combined_uni_pairwise_cv_svm_by_input_var(dataset_ID = dataset_ID,
+                                                                   data_path = data_path,
+                                                                   rdata_path = rdata_path,
+                                                                   univariate_data = univariate_feature_data,
+                                                                   univariate_feature_set = univariate_feature_set,
+                                                                   pairwise_data = pairwise_feature_data,
+                                                                   pairwise_feature_set = pairwise_feature_set,
                                                                    SPI_directionality = SPI_directionality,
+                                                                   num_k_folds = 10,
                                                                    svm_kernel = svm_kernel,
-                                                                   test_package = test_package,
                                                                    noise_proc = noise_proc,
-                                                                   num_k_folds = num_k_folds,
                                                                    out_of_sample_only = TRUE,
                                                                    use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                   shuffle_labels = T) %>%
+                                                                   shuffle_labels = TRUE) %>%
                      # Keep track of which null iteration this is
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
   
   # Save null results to RDS
-  saveRDS(null_out, file=sprintf("%s/Univariate_%s_Pairwise_%s_CV_linear_SVM_%s_null_model_fit_iter_%s.Rds",
+  saveRDS(null_out, file=sprintf("%s/univariate_%s_pairwise_%s_CV_linear_SVM_%s_null_model_fit_iter_%s.Rds",
                                  output_data_dir, univariate_feature_set, 
                                  pairwise_feature_set, weighting_name, null_iter_number))
 }

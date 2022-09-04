@@ -8,35 +8,36 @@ export python_to_use=/headnode1/abry4213/.conda/envs/pyspi/bin/python3
 cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
 
 # UCLA Schizophrenia
-export dataset_ID="UCLA_Schizophrenia"
-export data_path=/headnode1/abry4213/data/${dataset_ID}/
-export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
-export brain_region_lookup="Brain_Region_info.csv"
-export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
-export main_noise_proc="AROMA+2P+GMR"
+# export dataset_ID="UCLA_Schizophrenia"
+# export data_path=/headnode1/abry4213/data/${dataset_ID}/
+# export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
+# export brain_region_lookup="Brain_Region_info.csv"
+# export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
+# export main_noise_proc="AROMA+2P+GMR"
 
 # ABIDE ASD
-# export dataset_ID="ABIDE_ASD"
-# export data_path=${project_dir}/data/${dataset_ID}/
-# export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
-# export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
-# export noise_procs="FC1000"
+export dataset_ID="ABIDE_ASD"
+export data_path=${project_dir}/data/${dataset_ID}/
+export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
+export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+export noise_procs="FC1000"
+export main_noise_proc="FC1000"
 
 # # Prep univariate data
 # Round 1: Running 5 iterations as a sanity check that values are the same
 # for run_number in 1 2 3 4 5; do
-#   qsub -v run_number=$run_number,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs \
+#   qsub -v run_number=$run_number,github_dir=$github_dir,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs \
 #   -N prepare_univariate_data_${dataset_ID}${run_number} \
 #   -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}${run_number}_out.txt \
 #   -m a \
 #   call_prepare_univariate_data.pbs
 # done
-# # Round 2: Running as main analysis
-# qsub -v dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs \
-# -N prepare_univariate_data_${dataset_ID}${run_number} \
-# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}_out.txt \
-# -m a \
-# call_prepare_univariate_data.pbs
+# Round 2: Running as main analysis
+qsub -v dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs \
+-N prepare_univariate_data_${dataset_ID}${run_number} \
+-o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}_out.txt \
+-m a \
+call_prepare_univariate_data.pbs
 
 # # Prep pairwise data
 # # Get data into .npy files
@@ -67,11 +68,11 @@ export main_noise_proc="AROMA+2P+GMR"
 #   call_clean_pairwise_data.pbs
 # done
 # Round 2: Running as main analysis
-# qsub -v github_dir=$github_dir,data_path=$data_path,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
-# -N clean_pairwise_data_${dataset_ID} \
-# -o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}_out.txt \
-# -m a -M $email \
-# call_clean_pairwise_data.pbs
+qsub -v github_dir=$github_dir,data_path=$data_path,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
+-N clean_pairwise_data_${dataset_ID} \
+-o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}_out.txt \
+-m a -M $email \
+call_clean_pairwise_data.pbs
 
 # Merge subjects with univariate + pairwise data
 # Round 1: Running 5 iterations as a sanity check that values are the same
@@ -158,3 +159,24 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/
 
 ##########################################################################################
 # Combined univariate + pairwise analysis
+cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise/
+
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc,email=$email  \
+# -N combined_univariate_pairwise_classification_${dataset_ID} \
+# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/combined_univariate_pairwise_classification_${dataset_ID}_out.txt \
+# -m a -M $email \
+# call_combined_univariate_pairwise_classification.pbs 
+
+# Generate null model fits
+# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise/null_pbs_scripts/* -name "null_iter_*.pbs")
+# for script in $null_perm_scripts; do
+#   echo "Now submitting $script"
+#   qsub $script
+# done
+
+# # Integrate null model fits and calculate p-values
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
+# -N pairwise_null_model_analysis${dataset_ID} \
+# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_null_model_analysis_${dataset_ID}_out.txt \
+# -m a -M $email \
+# call_pairwise_null_model_analysis.pbs 
