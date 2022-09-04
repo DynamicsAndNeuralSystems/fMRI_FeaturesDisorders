@@ -83,6 +83,7 @@ combined_univariate_pairwise <- args$combined_univariate_pairwise
 # null_iter_number <- 1
 # num_perms_for_iter <- 5
 # svm_kernel <- "linear"
+weighting_name <- "inv_prob"
 # SPI_directionality_file <- paste0(github_dir, "fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/SPI_Direction_Info.csv")
 
 # UCLA schizophrenia

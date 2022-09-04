@@ -20,13 +20,12 @@ mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/ABIDE_ASD_null_model_
 # Change to relevant directory and run our compute script
 /usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/helper_functions/classification/Null_distributions_cluster.R \
 --dataset_ID ABIDE_ASD \
---pairwise_data_file PAIRWISE_DATA_FILE \
 --data_path ${data_path} \
 --rdata_path ${rdata_path} \
 --github_dir ${github_dir} \
 --sample_metadata_file ABIDE_ASD_sample_metadata.Rds \
---SPI_directionality_file SPI_DIRECTIONALITY_FILE \
---univariate --num_k_folds 10 \
+--univariate \
+--num_k_folds 10 \
 --output_data_dir /headnode1/abry4213/data/ABIDE_ASD/processed_data/Rdata/ABIDE_ASD_ROI_wise_catch22_inv_prob_null_model_fits/ \
 --null_iter_number 20 \
 --num_perms_for_iter 10 \

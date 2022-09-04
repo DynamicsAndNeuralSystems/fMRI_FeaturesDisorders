@@ -44,7 +44,6 @@ cat("run_number:", run_number, "\n")
 # sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
 # noise_procs <- "AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
 # noise_proc_for_null <- "AROMA+2P+GMR"
-# run_number <- 1
 
 # ABIDE ASD
 # data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
@@ -87,27 +86,34 @@ source(paste0(helper_script_dir, "Null_distributions.R"))
 sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
 
 ################################################################################
-# Create ten folds to use for all analyses
+# Create 10 repeats of 10 folds to use for all analyses
 ################################################################################
 subjects_to_use <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
-                                                     dataset_ID,
-                                                     univariate_feature_set,
-                                                     pairwise_feature_set)))
+                                                      dataset_ID,
+                                                      univariate_feature_set,
+                                                      pairwise_feature_set)))
 
-
-if (!file.exists(paste0(rdata_path, dataset_ID, "_samples_per_10_folds.Rds"))) {
-  # Make folds
-  set.seed(127)
-  k = 10
-  samples_with_diagnosis <- subjects_to_use %>%
-    left_join(., sample_metadata)
-  sample_folds <- caret::createFolds(samples_with_diagnosis$Diagnosis, k = k, list = TRUE, returnTrain = FALSE)
+if (!file.exists(paste0(rdata_path, dataset_ID, "_samples_per_10_folds_10_repeats.Rds"))) {
+  sample_folds <- list()
   
-  # Save to Rds file
-  saveRDS(sample_folds, file=paste0(rdata_path, dataset_ID, "_samples_per_10_folds.Rds"))
+  for (i in 1:10) {
+    # Make folds
+    k = 10
+    samples_with_diagnosis <- subjects_to_use %>%
+      left_join(., sample_metadata)
+    sample_folds_i <- caret::createFolds(samples_with_diagnosis$Diagnosis, k = k, list = TRUE, returnTrain = FALSE)
+    sample_folds[[i]] <- sample_folds_i
+  }
+  
+  # Save RDS file
+  saveRDS(sample_folds, paste0(rdata_path, dataset_ID, "_samples_per_10_folds_10_repeats.Rds"))
 } else {
-  sample_folds <- readRDS(paste0(rdata_path, dataset_ID, "_samples_per_10_folds.Rds"))
+  sample_folds <- readRDS(paste0(rdata_path, dataset_ID, "_samples_per_10_folds_10_repeats.Rds"))
 }
+
+
+
+
 
 ################################################################################
 # Define weighting parameters
@@ -117,11 +123,10 @@ grouping_param_df <- data.frame(grouping_type = c("ROI", "Feature", "Combo"),
                                 grouping_var = c("Brain_Region", "Feature", "Combo"),
                                 SVM_feature_var = c("Feature", "Brain_Region", "Combo")) 
 
-weighting_param_df <- data.frame(name = c("inv_prob"),
-                                 use_inv_prob_weighting = c(TRUE))
-
 # Use a linear kernel
 kernel = "linear"
+weighting_name <- "inv_prob"
+use_inv_prob_weighting <- TRUE
 
 for (i in 1:nrow(grouping_param_df)) {
   grouping_type = grouping_param_df$grouping_type[i]
@@ -129,41 +134,41 @@ for (i in 1:nrow(grouping_param_df)) {
   SVM_feature_var = grouping_param_df$SVM_feature_var[i]
   
   #### 10-fold linear SVM with different weights
-  # Iterate over weighting_param_df 
-  for (j in 1:nrow(weighting_param_df)) {
-    weighting_name <- weighting_param_df$name[j]
-    use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[j]
+  
+  # Run given weighting for 10-fold CV linear SVM
+  if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
+                                              grouping_type, 
+                                              univariate_feature_set, 
+                                              weighting_name)))) {
     
-    # Run given weighting for 10-fold CV linear SVM
-    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
-                                                grouping_type, 
-                                                univariate_feature_set, 
-                                                weighting_name)))) {
-      group_wise_SVM_CV_weighting <- run_univariate_cv_svm_by_input_var(data_path = data_path,
-                                                                        rdata_path = rdata_path,
-                                                                        dataset_ID = dataset_ID,
-                                                                        sample_metadata = sample_metadata,
-                                                                        univariate_feature_set = univariate_feature_set,
-                                                                        pairwise_feature_set = pairwise_feature_set,
-                                                                        svm_kernel = kernel,
-                                                                        grouping_var = grouping_var,
-                                                                        flds = sample_folds,
-                                                                        svm_feature_var = SVM_feature_var,
-                                                                        out_of_sample_only = TRUE,
-                                                                        use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                        noise_procs = noise_procs)
-      saveRDS(group_wise_SVM_CV_weighting, file=paste0(rdata_path, 
-                                                       sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
-                                                               grouping_type,
-                                                               univariate_feature_set, 
-                                                               weighting_name)))
-    } else {
-      group_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path, 
-                                                    sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
-                                                            grouping_type,
-                                                            univariate_feature_set, 
-                                                            weighting_name)))
-    }
+    group_wise_SVM_CV_weighting <- 1:length(sample_folds) %>%
+      purrr::map_df( ~ run_univariate_cv_svm_by_input_var(data_path = data_path,
+                                                           rdata_path = rdata_path,
+                                                           dataset_ID = dataset_ID,
+                                                           sample_metadata = sample_metadata,
+                                                           univariate_feature_set = univariate_feature_set,
+                                                           pairwise_feature_set = pairwise_feature_set,
+                                                           svm_kernel = kernel,
+                                                           grouping_var = grouping_var,
+                                                           flds = sample_folds[[.x]],
+                                                           repeat_number = .x,
+                                                           svm_feature_var = SVM_feature_var,
+                                                           out_of_sample_only = TRUE,
+                                                           use_inv_prob_weighting = use_inv_prob_weighting,
+                                                           noise_procs = noise_procs))
+    
+    saveRDS(group_wise_SVM_CV_weighting, file=paste0(rdata_path, 
+                                                     sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
+                                                             grouping_type,
+                                                             univariate_feature_set, 
+                                                             weighting_name)))
+  } else {
+    group_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path, 
+                                                  sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
+                                                          grouping_type,
+                                                          univariate_feature_set, 
+                                                          weighting_name)))
+  }
     
     #### Calculate balanced accuracy across all folds
     if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
@@ -171,10 +176,15 @@ for (i in 1:nrow(grouping_param_df)) {
                                                 univariate_feature_set, 
                                                 weighting_name)))) {
       group_wise_SVM_balanced_accuracy <- group_wise_SVM_CV_weighting %>%
-        group_by(grouping_var, Noise_Proc, Sample_Type) %>%
+        group_by(grouping_var, Noise_Proc, Sample_Type, repeat_number) %>%
         summarise(accuracy = sum(Prediction_Correct) / n(),
                   balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
-                                                             reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
+                                                             reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]]) %>%
+        group_by(grouping_var, Noise_Proc, Sample_Type) %>%
+        summarise(mean_accuracy = mean(accuracy, na.rm=T),
+                  mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+        dplyr::rename("accuracy" = "mean_accuracy",
+                      "balanced_accuracy" = "mean_balanced_accuracy")
       
       saveRDS(group_wise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
                                                                                 grouping_type, 
@@ -199,17 +209,17 @@ for (i in 1:nrow(grouping_param_df)) {
     num_k_folds <- 10
     # Define the univariate template PBS script
     template_pbs_file <- paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/classification/template_univariate_null_model_fit.pbs")
-
+    
     # Where to store null model fit results
     output_data_dir <- paste0(rdata_path, sprintf("%s_%s_wise_%s_%s_null_model_fits/",
                                                   dataset_ID,
                                                   grouping_type,
                                                   univariate_feature_set,
                                                   weighting_name))
-
+    
     
     run_number = ifelse(is.null(run_number), "", run_number)
-
+    
     # Where to save PBS script to
     output_scripts_dir <- paste0(github_dir, sprintf("fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/null_pbs_scripts/%s_%s_wise_%s_%s_null_model_fits%s/",
                                                      dataset_ID,
@@ -217,15 +227,15 @@ for (i in 1:nrow(grouping_param_df)) {
                                                      univariate_feature_set,
                                                      weighting_name,
                                                      run_number))
-
+    
     cat("\nNow generating null PBS scripts for", grouping_type, "\n")
     cat("Script location:", output_scripts_dir, "\n")
     
     # Make these directories
     icesTAF::mkdir(output_data_dir)
     icesTAF::mkdir(output_scripts_dir)
-
-
+    
+    
     # Lookup table for PBS script
     lookup_list <- list("NAME" = sprintf("univariate_%s_wise_null_model_fit%s",
                                          grouping_type, run_number),
@@ -248,33 +258,32 @@ for (i in 1:nrow(grouping_param_df)) {
                         "GROUPING_VAR" = grouping_var,
                         "SVM_FEATURE_VAR" = SVM_feature_var,
                         "WEIGHTING_NAME" = weighting_name)
-
+    
     to_be_replaced <- names(lookup_list)
     replacement_values <- unlist(unname(lookup_list))
-
+    
     # Create a PBS script per iteration
     for (p in 1:num_permutations) {
-
+      
       # Run command if null file doesn't exist
       if (!file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
                                output_data_dir, grouping_var, univariate_feature_set,
                                weighting_name, p))) {
         new_pbs_file <- readLines(template_pbs_file)
-
+        
         # Replace file paths
         pbs_text_replaced <- mgsub::mgsub(new_pbs_file,
                                           to_be_replaced,
                                           replacement_values)
-
+        
         # Replace null iteration number
         pbs_text_replaced <- gsub("iterj", p, pbs_text_replaced)
-
+        
         # Write updated PBS script to file
         output_pbs_file <- writeLines(pbs_text_replaced,
                                       paste0(output_scripts_dir,
                                              "null_iter_", p, ".pbs"))
-
+        
       }
     }
-  }
 }

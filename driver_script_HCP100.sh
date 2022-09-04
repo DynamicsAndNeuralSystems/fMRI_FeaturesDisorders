@@ -7,22 +7,6 @@ export python_to_use=/headnode1/abry4213/.conda/envs/pyspi/bin/python3
 
 cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
 
-# UCLA Schizophrenia
-# export dataset_ID="UCLA_Schizophrenia"
-# export data_path=/headnode1/abry4213/data/${dataset_ID}/
-# export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
-# export brain_region_lookup="Brain_Region_info.csv"
-# export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
-# export main_noise_proc="AROMA+2P+GMR"
-
-# ABIDE ASD
-# export dataset_ID="ABIDE_ASD"
-# export data_path=/headnode1/abry4213/data/${dataset_ID}/
-# export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
-# export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
-# export noise_procs="FC1000"
-# export main_noise_proc="FC1000"
-
 # HCP 100-subject subset
 export dataset_ID="HCP100"
 export data_path=/headnode1/abry4213/data/${dataset_ID}/
@@ -30,6 +14,7 @@ export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
 export brain_region_lookup="Brain_Region_info.csv"
 export noise_procs="AROMA+2P+GMR"
 export main_noise_proc="AROMA+2P+GMR"
+export pyspi_walltime_hrs=16
 
 # # Prep univariate data
 # Round 1: Running 5 iterations as a sanity check that values are the same
@@ -63,7 +48,7 @@ $email \
 $dataset_ID \
 $data_path \
 $noise_procs \
-8
+$pyspi_walltime_hrs
 
 # Integrate results from pyspi-distribute
 # Round 1: Running 5 iterations as a sanity check that values are the same
