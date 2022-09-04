@@ -78,7 +78,7 @@ pyspi_data_file <- sprintf("%s/%s_%s_filtered_zscored.Rds",
 pyspi_data <- readRDS(pyspi_data_file) %>%
   dplyr::filter(Noise_Proc %in% noise_proc_for_null) 
 
-SPI_directionality_file <- paste0(github_dir, "fMRI_FeaturesDisorders/pairwise_analysis/SPI_Direction_Info.csv")
+SPI_directionality_file <- paste0(github_dir, "fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/SPI_Direction_Info.csv")
 SPI_directionality <- read.csv(SPI_directionality_file)
 
 # Load sample metadata
@@ -111,7 +111,6 @@ if (!file.exists(paste0(rdata_path, dataset_ID, "_samples_per_10_folds.Rds"))) {
 ################################################################################
 # Define weighting parameters
 ################################################################################
-
 weighting_param_df <- data.frame(name = c("inv_prob"),
                                  use_inv_prob_weighting = c(TRUE))
 
@@ -132,7 +131,7 @@ for (i in 1:nrow(grouping_param_df)) {
     use_inv_prob_weighting <- weighting_param_df$use_inv_prob_weighting[j]
     
     # Run given weighting for 10-fold CV linear SVM
-    if (!file.exists(paste0(rdata_path, sprintf("%s_pairwise_CV_linear_SVM_%s_%s.Rds",
+    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
                                                 grouping_var, 
                                                 pairwise_feature_set, 
                                                 weighting_name)))) {
@@ -152,7 +151,7 @@ for (i in 1:nrow(grouping_param_df)) {
                                                                         use_inv_prob_weighting = use_inv_prob_weighting,
                                                                         shuffle_labels = FALSE)
         saveRDS(group_wise_SVM_CV_weighting, file=paste0(rdata_path,
-                                                         sprintf("%s_pairwise_CV_linear_SVM_%s_%s.Rds",
+                                                         sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
                                                                  grouping_var,
                                                                  pairwise_feature_set,
                                                                  weighting_name)))
@@ -162,14 +161,14 @@ for (i in 1:nrow(grouping_param_df)) {
       })
     } else {
       group_wise_SVM_CV_weighting <- readRDS(paste0(rdata_path, 
-                                                    sprintf("%s_pairwise_CV_linear_SVM_%s_%s.Rds",
+                                                    sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
                                                             grouping_var,
                                                             pairwise_feature_set, 
                                                             weighting_name)))
     }
     
     #### Calculate balanced accuracy across all folds
-    if (!file.exists(paste0(rdata_path, sprintf("%s_pairwise_CV_linear_SVM_%s_%s_balacc.Rds",
+    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
                                                 grouping_var, 
                                                 pairwise_feature_set, 
                                                 weighting_name)))) {
@@ -179,12 +178,12 @@ for (i in 1:nrow(grouping_param_df)) {
                   balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
                                                              reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
       
-      saveRDS(group_wise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("%s_pairwise_CV_linear_SVM_%s_%s_balacc.Rds",
+      saveRDS(group_wise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
                                                                                 grouping_var, 
                                                                                 pairwise_feature_set, 
                                                                                 weighting_name)))
     } else {
-      group_wise_SVM_balanced_accuracy <- readRDS(paste0(rdata_path, sprintf("%s_pairwise_CV_linear_SVM_%s_%s_balacc.Rds",
+      group_wise_SVM_balanced_accuracy <- readRDS(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
                                                                              grouping_var, 
                                                                              pairwise_feature_set, 
                                                                              weighting_name)))
@@ -201,7 +200,7 @@ for (i in 1:nrow(grouping_param_df)) {
     # Use 10-fold cross-validation
     num_k_folds <- 10
     # Define the univariate template PBS script
-    template_pbs_file <- paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/classification/template_pairwise_null_model_fit.pbs")
+    template_pbs_file <- paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/classification/template_wise_null_model_fit.pbs")
 
     # Where to store null model fit results
     output_data_dir <- paste0(rdata_path, sprintf("%s_%s_wise_%s_%s_null_model_fits/",
@@ -213,7 +212,7 @@ for (i in 1:nrow(grouping_param_df)) {
     run_number = ifelse(is.null(run_number), "", run_number)
 
     # Where to save PBS script to
-    output_scripts_dir <- paste0(github_dir, sprintf("fMRI_FeaturesDisorders/pairwise_analysis/null_pbs_scripts/%s_%s_wise_%s_%s_null_model_fits%s/",
+    output_scripts_dir <- paste0(github_dir, sprintf("fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/null_pbs_scripts/%s_%s_wise_%s_%s_null_model_fits%s/",
                                                      dataset_ID,
                                                      grouping_var,
                                                      pairwise_feature_set,
