@@ -17,6 +17,7 @@ Rscript prepare_univariate_data.R \
 --data_path /headnode1/abry4213/data/$dataset_ID/ \
 --univariate_feature_set $univariate_feature_set \
 --sample_metadata_file $sample_metadata_file \
+--label_vars $label_vars \
 --brain_region_lookup $brain_region_lookup \
 --noise_procs $noise_procs \
 --dataset_ID $dataset_ID \

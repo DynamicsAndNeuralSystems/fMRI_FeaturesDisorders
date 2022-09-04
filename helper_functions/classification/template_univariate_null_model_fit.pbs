@@ -20,13 +20,12 @@ mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/DATASET_ID_null_model
 # Change to relevant directory and run our compute script
 /usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/helper_functions/classification/Null_distributions_cluster.R \
 --dataset_ID DATASET_ID \
---pairwise_data_file PAIRWISE_DATA_FILE \
 --data_path ${data_path} \
 --rdata_path ${rdata_path} \
 --github_dir ${github_dir} \
 --sample_metadata_file SAMPLE_METADATA_FILE \
---SPI_directionality_file SPI_DIRECTIONALITY_FILE \
---univariate --num_k_folds NUM_K_FOLDS \
+--univariate \
+--num_k_folds NUM_K_FOLDS \
 --output_data_dir OUTPUT_DATA_DIR \
 --null_iter_number iterj \
 --num_perms_for_iter NUM_PERMS_PER_ITER \

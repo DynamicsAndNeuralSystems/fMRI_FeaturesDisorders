@@ -30,7 +30,7 @@ do
     --data_dir ${data_path}/raw_data/numpy_files/${noise_label}/ \
     --sample_metadata_file ${data_path}/${sample_metadata_file} \
     --ID_var Sample_ID \
-    --label_vars Diagnosis \
+    --label_vars $label_vars \
     --dim_order ps \
     --overwrite"
     $cmd
