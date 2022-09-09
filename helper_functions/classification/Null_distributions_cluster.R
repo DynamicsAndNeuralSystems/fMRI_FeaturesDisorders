@@ -149,10 +149,17 @@ if (univariate & !file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.R
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
   
   null_out <- null_out %>% 
-    group_by(grouping_var, Noise_Proc, Sample_Type, Null_Iter_Number) %>%
+    group_by(grouping_var, Noise_Proc, Sample_Type, fold_number, Null_Iter_Number) %>%
+    # First find accuracy and balanced accuracy by fold
     summarise(accuracy = sum(Prediction_Correct) / n(),
               balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
-                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
+                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]]) %>%
+    # Then take average acc/balacc across all ten folds per iteration
+    group_by(grouping_var, Noise_Proc, Sample_Type, Null_Iter_Number) %>%
+    summarise(mean_accuracy = mean(accuracy, na.rm=T),
+              mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+    dplyr::rename("accuracy" = "mean_accuracy",
+                  "balanced_accuracy" = "mean_balanced_accuracy")
   
   # Save null results to RDS
   saveRDS(null_out, file=sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
@@ -194,10 +201,17 @@ if (pairwise & !(file.exists(sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rd
 
   
   null_out <- null_out %>% 
-    group_by(grouping_var, Noise_Proc, Sample_Type, Null_Iter_Number) %>%
+    group_by(grouping_var, Noise_Proc, Sample_Type, fold_number, Null_Iter_Number) %>%
+    # First find accuracy and balanced accuracy by fold
     summarise(accuracy = sum(Prediction_Correct) / n(),
               balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
-                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
+                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]]) %>%
+    # Then take average acc/balacc across all ten folds per iteration
+    group_by(grouping_var, Noise_Proc, Sample_Type, Null_Iter_Number) %>%
+    summarise(mean_accuracy = mean(accuracy, na.rm=T),
+              mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+    dplyr::rename("accuracy" = "mean_accuracy",
+                  "balanced_accuracy" = "mean_balanced_accuracy")
   
   # Save null results to RDS
   saveRDS(null_out, file=sprintf("%s/%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
@@ -239,10 +253,17 @@ if (combined_univariate_pairwise & !file.exists(sprintf("%s/univariate_%s_pairwi
                      mutate(Null_Iter_Number = .x + (.x * (as.numeric(null_iter_number) - 1))))
   
   null_out <- null_out %>% 
-    group_by(grouping_var, Noise_Proc, Sample_Type, Null_Iter_Number) %>%
+    group_by(grouping_var, Noise_Proc, Sample_Type, fold_number, Null_Iter_Number) %>%
+    # First find accuracy and balanced accuracy by fold
     summarise(accuracy = sum(Prediction_Correct) / n(),
               balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
-                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
+                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]]) %>%
+    # Then take average acc/balacc across all ten folds per iteration
+    group_by(grouping_var, Noise_Proc, Sample_Type, Null_Iter_Number) %>%
+    summarise(mean_accuracy = mean(accuracy, na.rm=T),
+              mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+    dplyr::rename("accuracy" = "mean_accuracy",
+                  "balanced_accuracy" = "mean_balanced_accuracy")
   
   # Save null results to RDS
   saveRDS(null_out, file=sprintf("%s/univariate_%s_pairwise_%s_CV_linear_SVM_%s_null_model_fit_iter_%s.Rds",

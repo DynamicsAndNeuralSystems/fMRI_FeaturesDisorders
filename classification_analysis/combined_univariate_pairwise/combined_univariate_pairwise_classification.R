@@ -155,27 +155,41 @@ for (i in 1:nrow(grouping_param_df)) {
   # Run given weighting for 10-fold CV linear SVM
   if (!file.exists(paste0(rdata_path, sprintf("univariate_%s_pairwise_%s_CV_linear_SVM_%s.Rds",
                                               univariate_feature_set, pairwise_feature_set, weighting_name)))) {
-    tryCatch({univariate_pairwise_SVM_CV_weighting <- 1:length(sample_folds) %>%
-      purrr::map_df( ~ run_combined_uni_pairwise_cv_svm_by_input_var(dataset_ID = dataset_ID,
-                                                                     data_path = data_path,
-                                                                     rdata_path = rdata_path,
-                                                                     univariate_data = univariate_feature_data,
-                                                                     univariate_feature_set = univariate_feature_set,
-                                                                     pairwise_data = pairwise_feature_data,
-                                                                     pairwise_feature_set = pairwise_feature_set,
-                                                                     SPI_directionality = SPI_directionality,
-                                                                     flds = sample_folds[[.x]],
-                                                                     repeat_number = .x,
-                                                                     num_k_folds = 10,
-                                                                     svm_kernel = kernel,
-                                                                     noise_proc = noise_proc_for_null,
-                                                                     out_of_sample_only = TRUE,
-                                                                     use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                     shuffle_labels = FALSE))
-    saveRDS(univariate_pairwise_SVM_CV_weighting, file=paste0(rdata_path,
-                                                              sprintf("univariate_%s_pairwise_%s_CV_linear_SVM_%s.Rds",
-                                                                      univariate_feature_set, pairwise_feature_set, weighting_name)))
+    tryCatch({
+      univariate_pairwise_SVM_CV_weighting_list <- list()
+      for (idx in 1:length(sample_folds)) {
+        tryCatch({
+          repeat_res <- run_combined_uni_pairwise_cv_svm_by_input_var(dataset_ID = dataset_ID,
+                                                                      data_path = data_path,
+                                                                      rdata_path = rdata_path,
+                                                                      univariate_data = univariate_feature_data,
+                                                                      univariate_feature_set = univariate_feature_set,
+                                                                      pairwise_data = pairwise_feature_data,
+                                                                      pairwise_feature_set = pairwise_feature_set,
+                                                                      SPI_directionality = SPI_directionality,
+                                                                      flds = sample_folds[[idx]],
+                                                                      repeat_number = idx,
+                                                                      num_k_folds = 10,
+                                                                      svm_kernel = kernel,
+                                                                      noise_proc = noise_proc_for_null,
+                                                                      out_of_sample_only = TRUE,
+                                                                      use_inv_prob_weighting = use_inv_prob_weighting,
+                                                                      shuffle_labels = FALSE)
+          
+          univariate_pairwise_SVM_CV_weighting_list <- list.append(univariate_pairwise_SVM_CV_weighting_list,
+                                                                   repeat_res)
+        }, error = function(e) {
+          cat("Error for repeat number:", idx, "\n")
+          message(e)
+        })
+      }
+      univariate_pairwise_SVM_CV_weighting <- do.call(plyr::rbind.fill, 
+                                                      univariate_pairwise_SVM_CV_weighting_list)
+      saveRDS(univariate_pairwise_SVM_CV_weighting, file=paste0(rdata_path,
+                                                                sprintf("univariate_%s_pairwise_%s_CV_linear_SVM_%s.Rds",
+                                                                        univariate_feature_set, pairwise_feature_set, weighting_name)))
     }, error = function(e) {
+      cat("Could not run linear SVM for", grouping_var, pairwise_feature_set, ".\n")
       message(e)
     })
   } else {
@@ -185,27 +199,39 @@ for (i in 1:nrow(grouping_param_df)) {
   }
   
   #### Calculate balanced accuracy across all folds
-  if (!file.exists(paste0(rdata_path, sprintf("univariate_%s_pairwise_%s_CV_linear_SVM_%s_balacc.Rds",
+  if (!file.exists(paste0(rdata_path, sprintf("univariate_%s_pairwise_%s_CV_linear_SVM_%s_balacc_across_repeats.Rds",
                                               univariate_feature_set, 
                                               pairwise_feature_set,
                                               weighting_name)))) {
+    
+    # First find balanced accuracy per repeat across folds
     univariate_pairwise_SVM_balanced_accuracy <- univariate_pairwise_SVM_CV_weighting %>%
-      group_by(SPI, Noise_Proc, Sample_Type, repeat_number) %>%
+      group_by(SPI, Noise_Proc, Sample_Type, fold_number, repeat_number) %>%
       summarise(accuracy = sum(Prediction_Correct) / n(),
                 balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
-                                                           reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]]) %>%
+                                                           reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
+    
+    saveRDS(univariate_pairwise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("univariate_%s_pairwise_%s_CV_linear_SVM_%s_balacc.Rds",
+                                                                                       univariate_feature_set, 
+                                                                                       pairwise_feature_set,
+                                                                                       weighting_name)))
+    
+    # Then find averaged balanced accuracy across all repeats
+    univariate_pairwise_SVM_balanced_accuracy_across_repeats <- univariate_pairwise_SVM_balanced_accuracy %>%
       group_by(SPI, Noise_Proc, Sample_Type) %>%
       summarise(mean_accuracy = mean(accuracy, na.rm=T),
                 mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
       dplyr::rename("accuracy" = "mean_accuracy",
                     "balanced_accuracy" = "mean_balanced_accuracy")
     
-    saveRDS(univariate_pairwise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("univariate_%s_pairwise_%s_CV_linear_SVM_%s_balacc.Rds",
+    saveRDS(univariate_pairwise_SVM_balanced_accuracy_across_repeats, file=paste0(rdata_path, sprintf("univariate_%s_pairwise_%s_CV_linear_SVM_%s_balacc_across_repeats.Rds",
                                                                                        univariate_feature_set, 
                                                                                        pairwise_feature_set,
                                                                                        weighting_name)))
+    
+
   } else {
-    univariate_pairwise_SVM_balanced_accuracy <- readRDS(paste0(rdata_path, sprintf("univariate_%s_pairwise_%s_CV_linear_SVM_%s_balacc.Rds",
+    univariate_pairwise_SVM_balanced_accuracy_across_repeats <- readRDS(paste0(rdata_path, sprintf("univariate_%s_pairwise_%s_CV_linear_SVM_%s_balacc_across_repeats.Rds",
                                                                                     univariate_feature_set, 
                                                                                     pairwise_feature_set,
                                                                                     weighting_name)))

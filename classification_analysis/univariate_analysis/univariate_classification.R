@@ -111,10 +111,6 @@ if (!file.exists(paste0(rdata_path, dataset_ID, "_samples_per_10_folds_10_repeat
   sample_folds <- readRDS(paste0(rdata_path, dataset_ID, "_samples_per_10_folds_10_repeats.Rds"))
 }
 
-
-
-
-
 ################################################################################
 # Define weighting parameters
 ################################################################################
@@ -141,7 +137,7 @@ for (i in 1:nrow(grouping_param_df)) {
                                               univariate_feature_set, 
                                               weighting_name)))) {
     
-    group_wise_SVM_CV_weighting <- 1:length(sample_folds) %>%
+    group_wise_SVM_CV_weighting <- 1:length(repeat_number) %>%
       purrr::map_df( ~ run_univariate_cv_svm_by_input_var(data_path = data_path,
                                                            rdata_path = rdata_path,
                                                            dataset_ID = dataset_ID,
@@ -170,28 +166,35 @@ for (i in 1:nrow(grouping_param_df)) {
                                                           weighting_name)))
   }
     
-    #### Calculate balanced accuracy across all folds
-    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
+    #### Calculate averaged balanced accuracy across all folds and repeats
+    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc_across_repeats.Rds",
                                                 grouping_type, 
                                                 univariate_feature_set, 
                                                 weighting_name)))) {
+      # First find balanced accuracy per repeat across folds
       group_wise_SVM_balanced_accuracy <- group_wise_SVM_CV_weighting %>%
-        group_by(grouping_var, Noise_Proc, Sample_Type, repeat_number) %>%
+        group_by(grouping_var, Noise_Proc, Sample_Type, fold_number, repeat_number) %>%
         summarise(accuracy = sum(Prediction_Correct) / n(),
                   balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
-                                                             reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]]) %>%
+                                                             reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
+      saveRDS(group_wise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
+                                                                                grouping_type, 
+                                                                                univariate_feature_set, 
+                                                                                weighting_name))) 
+      
+      # Then find averaged balanced accuracy across all repeats
+      group_wise_SVM_balanced_accuracy_across_repeats <- group_wise_SVM_balanced_accuracy %>%
         group_by(grouping_var, Noise_Proc, Sample_Type) %>%
         summarise(mean_accuracy = mean(accuracy, na.rm=T),
                   mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
         dplyr::rename("accuracy" = "mean_accuracy",
                       "balanced_accuracy" = "mean_balanced_accuracy")
-      
-      saveRDS(group_wise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
+      saveRDS(group_wise_SVM_balanced_accuracy_across_repeats, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc_across_repeats.Rds",
                                                                                 grouping_type, 
                                                                                 univariate_feature_set, 
                                                                                 weighting_name)))
     } else {
-      group_wise_SVM_balanced_accuracy <- readRDS(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
+      group_wise_SVM_balanced_accuracy_across_repeats <- readRDS(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc_across_repeats.Rds",
                                                                              grouping_type, 
                                                                              univariate_feature_set, 
                                                                              weighting_name)))
@@ -279,7 +282,7 @@ for (i in 1:nrow(grouping_param_df)) {
         # Replace null iteration number
         pbs_text_replaced <- gsub("iterj", p, pbs_text_replaced)
         
-        # Write updated PBS script to file
+        # Write updated PBS script to fil
         output_pbs_file <- writeLines(pbs_text_replaced,
                                       paste0(output_scripts_dir,
                                              "null_iter_", p, ".pbs"))

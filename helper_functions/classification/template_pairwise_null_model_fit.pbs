@@ -37,7 +37,8 @@ mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/DATASET_ID_null_model
 --grouping_var GROUPING_VAR \
 --svm_feature_var SVM_FEATURE_VAR \
 --noise_proc NOISE_PROC_FOR_NULL \
---use_inv_prob_weighting
+--use_inv_prob_weighting \
+--weighting_name WEIGHTING_NAME
 
 exit
 
