@@ -21,13 +21,13 @@ knitr::opts_chunk$set(echo = F, warning=F, message=F)
 library(tidyverse)
 library(icesTAF)
 library(ggseg)
-library(ggsegExtra)
+# library(ggsegExtra)
 library(tidyverse)
 library(plotly)
-library(ggseg3d)
-library(ggsegHO)
-library(ungeviz)
-library(reshape2)
+# library(ggseg3d)
+# library(ggsegHO)
+# library(ungeviz)
+# library(reshape2)
 library(patchwork)
 library(cowplot)
 
@@ -51,9 +51,11 @@ brain_region_file <- params$brain_region_file
 # pairwise_feature_set <- "pyspi14"
 # subject_csv <- "participants.csv"
 # github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
+# github_dir <- "~/github/fMRI_FeaturesDisorders/"
 
 # UCLA schizophrenia
 # data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
+# data_path <- "~/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # noise_proc_for_null <- "AROMA+2P+GMR"
@@ -62,6 +64,7 @@ brain_region_file <- params$brain_region_file
 
 # ABIDE ASD
 # data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/ABIDE_ASD/"
+# data_path <- "~/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
 # noise_procs <- c("FC1000")
 # noise_proc_for_null <- "FC1000"
@@ -87,10 +90,15 @@ cat("## Univariate linear SVM results for", dataset_ID, "\n")
 ```{r, fig.width=6,fig.height=4}
 # Main vs. null histogram
 univariate_region_wise_main <- readRDS(paste0(rdata_path, 
-                                               "ROI_wise_CV_linear_SVM_", 
-                                               univariate_feature_set,
-                                               "_inv_prob_balacc.Rds")) %>%
-  dplyr::filter(Noise_Proc == noise_proc_for_null)
+                                              "ROI_wise_CV_linear_SVM_", 
+                                              univariate_feature_set,
+                                              "_inv_prob_balacc.Rds")) %>%
+  dplyr::filter(Noise_Proc == noise_proc_for_null) %>%
+  group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
+  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+  group_by(grouping_var, Sample_Type, Noise_Proc) %>%
+  summarise(balanced_accuracy = mean(mean_balanced_accuracy, na.rm=T),
+            SD = sd(mean_balanced_accuracy, na.rm=T))
 
 # UCLA_Schizophrenia_ROI_wise_model_permutation_null_catch22_inv_prob.Rds
 univariate_region_wise_null <- readRDS(paste0(rdata_path, dataset_ID,
@@ -128,14 +136,20 @@ plot_main_vs_null_bal_acc(main_res = univariate_region_wise_main,
 
 ```{r}
 univariate_region_wise_sig <- univariate_region_wise_pvals %>%
-  filter(bal_acc_p_adj < 0.05)
-
-univariate_region_wise_sig %>%
+  filter(bal_acc_p_adj < 0.05) %>%
   ungroup() %>%
   dplyr::select(grouping_var, balanced_accuracy, bal_acc_p_adj) %>%
-  arrange(bal_acc_p_adj) %>%
+  left_join(., univariate_region_wise_main)
+
+univariate_region_wise_sig %>%
+  arrange(bal_acc_p_adj, desc(balanced_accuracy)) %>%
+  dplyr::select(grouping_var, balanced_accuracy, SD, bal_acc_p_adj) %>%
+  mutate(balanced_accuracy = paste0(round(100*balanced_accuracy, 2), " ± ", round(100*SD, 2)),
+         bal_acc_p_adj = format(bal_acc_p_adj, scientific = T, 
+                                big.mark = ",")) %>%
+  dplyr::select(-SD) %>%
   dplyr::rename("Brain Region" = "grouping_var",
-                "Balanced Accuracy" = "balanced_accuracy",
+                "Balanced Accuracy ± SD" = "balanced_accuracy",
                 "BH-adjusted p value" = "bal_acc_p_adj") %>%
   knitr::kable(.) %>%
   kableExtra::kable_styling(full_width=F)
@@ -199,10 +213,15 @@ cat("### Significant results by", univariate_feature_set, "feature\n")
 ```{r, fig.width=6,fig.height=4}
 # Main vs. null histogram
 univariate_feature_wise_main <- readRDS(paste0(rdata_path, 
-                                               "Feature_wise_CV_linear_SVM_", 
-                                               univariate_feature_set,
-                                               "_inv_prob_balacc.Rds")) %>%
-  dplyr::filter(Noise_Proc == noise_proc_for_null)
+                                              "Feature_wise_CV_linear_SVM_", 
+                                              univariate_feature_set,
+                                              "_inv_prob_balacc.Rds")) %>%
+  dplyr::filter(Noise_Proc == noise_proc_for_null) %>%
+  group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
+  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+  group_by(grouping_var, Sample_Type, Noise_Proc) %>%
+  summarise(balanced_accuracy = mean(mean_balanced_accuracy, na.rm=T),
+            SD = sd(mean_balanced_accuracy, na.rm=T))
 
 # UCLA_Schizophrenia_Feature_wise_model_permutation_null_catch22_inv_prob.Rds
 univariate_feature_wise_null <- readRDS(paste0(rdata_path, dataset_ID,
@@ -239,14 +258,20 @@ plot_main_vs_null_bal_acc(main_res = univariate_feature_wise_main,
 
 ```{r}
 univariate_feature_wise_sig <- univariate_feature_wise_pvals %>%
-  filter(bal_acc_p_adj < 0.05)
-
-univariate_feature_wise_sig %>%
+  filter(bal_acc_p_adj < 0.05) %>%
   ungroup() %>%
   dplyr::select(grouping_var, balanced_accuracy, bal_acc_p_adj) %>%
-  arrange(bal_acc_p_adj) %>%
-  dplyr::rename("Feature" = "grouping_var",
-                "Balanced Accuracy" = "balanced_accuracy",
+  left_join(., univariate_feature_wise_main)
+
+univariate_feature_wise_sig %>%
+  arrange(bal_acc_p_adj, desc(balanced_accuracy)) %>%
+  dplyr::select(grouping_var, balanced_accuracy, SD, bal_acc_p_adj) %>%
+  mutate(balanced_accuracy = paste0(round(100*balanced_accuracy, 2), " ± ", round(100*SD, 2)),
+         bal_acc_p_adj = format(bal_acc_p_adj, scientific = T, 
+                                big.mark = ",")) %>%
+  dplyr::select(-SD) %>%
+  dplyr::rename("catch22 feature" = "grouping_var",
+                "Balanced Accuracy ± SD" = "balanced_accuracy",
                 "BH-adjusted p value" = "bal_acc_p_adj") %>%
   knitr::kable(.) %>%
   kableExtra::kable_styling(full_width=F)
@@ -259,10 +284,15 @@ cat("### Significant results by", univariate_feature_set, "feature + Brain Regio
 ```{r, fig.width=6,fig.height=4}
 # Main vs. null histogram
 univariate_combo_wise_main <- readRDS(paste0(rdata_path, 
-                                               "Combo_wise_CV_linear_SVM_", 
-                                               univariate_feature_set,
-                                               "_inv_prob_balacc.Rds")) %>%
-  dplyr::filter(Noise_Proc == noise_proc_for_null)
+                                              "Combo_wise_CV_linear_SVM_", 
+                                              univariate_feature_set,
+                                              "_inv_prob_balacc.Rds")) %>%
+  dplyr::filter(Noise_Proc == noise_proc_for_null) %>%
+  group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
+  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+  group_by(grouping_var, Sample_Type, Noise_Proc) %>%
+  summarise(balanced_accuracy = mean(mean_balanced_accuracy, na.rm=T),
+            SD = sd(mean_balanced_accuracy, na.rm=T))
 
 # UCLA_Schizophrenia_Combo_wise_model_permutation_null_catch22_inv_prob.Rds
 univariate_combo_wise_null <- readRDS(paste0(rdata_path, dataset_ID,
@@ -299,21 +329,21 @@ plot_main_vs_null_bal_acc(main_res = univariate_combo_wise_main,
 ```
 
 ```{r}
-univariate_combo_wise_pvals <- readRDS(paste0(rdata_path, 
-                                               "Combo_wise_CV_linear_SVM_model_permutation_null_", 
-                                               univariate_feature_set,
-                                               "_inv_prob_pvals.Rds"))
-
 univariate_combo_wise_sig <- univariate_combo_wise_pvals %>%
-  filter(bal_acc_p_adj < 0.05)
-
-univariate_combo_wise_sig %>%
+  filter(bal_acc_p_adj < 0.05) %>%
   ungroup() %>%
   dplyr::select(grouping_var, balanced_accuracy, bal_acc_p_adj) %>%
-  arrange(bal_acc_p_adj) %>%
-  mutate(grouping_var = "Region/Feature Combo") %>%
-  dplyr::rename("Feature" = "grouping_var",
-                "Balanced Accuracy" = "balanced_accuracy",
+  left_join(., univariate_combo_wise_main)
+
+univariate_combo_wise_sig %>%
+  arrange(bal_acc_p_adj, desc(balanced_accuracy)) %>%
+  dplyr::select(grouping_var, balanced_accuracy, SD, bal_acc_p_adj) %>%
+  mutate(balanced_accuracy = paste0(round(100*balanced_accuracy, 2), " ± ", round(100*SD, 2)),
+         bal_acc_p_adj = format(bal_acc_p_adj, scientific = T, 
+                                big.mark = ",")) %>%
+  dplyr::select(-SD) %>%
+  dplyr::rename("Region/Feature Combo" = "grouping_var",
+                "Balanced Accuracy ± SD" = "balanced_accuracy",
                 "BH-adjusted p value" = "bal_acc_p_adj") %>%
   knitr::kable(.) %>%
   kableExtra::kable_styling(full_width=F)
