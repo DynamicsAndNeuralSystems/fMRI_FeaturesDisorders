@@ -137,7 +137,7 @@ for (i in 1:nrow(grouping_param_df)) {
                                               univariate_feature_set, 
                                               weighting_name)))) {
     
-    group_wise_SVM_CV_weighting <- 1:length(repeat_number) %>%
+    group_wise_SVM_CV_weighting <- 1:length(sample_folds) %>%
       purrr::map_df( ~ run_univariate_cv_svm_by_input_var(data_path = data_path,
                                                            rdata_path = rdata_path,
                                                            dataset_ID = dataset_ID,
