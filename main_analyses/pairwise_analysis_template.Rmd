@@ -74,8 +74,20 @@ cat("## Pairwise linear SVM results for", dataset_ID, "\n")
 ```
 
 
-### Significant results by brain region
+### Significant results by SPI
 ```{r, fig.width=6,fig.height=4}
+# Main vs. null histogram
+SPI_wise_main <- readRDS(paste0(rdata_path, 
+                                              "SPI_wise_CV_linear_SVM_", 
+                                              pairwise_feature_set,
+                                              "_inv_prob_balacc.Rds")) %>%
+  dplyr::filter(Noise_Proc == noise_proc_for_null) %>%
+  group_by(SPI, Sample_Type, Noise_Proc, repeat_number) %>%
+  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+  group_by(SPI, Sample_Type, Noise_Proc) %>%
+  summarise(balanced_accuracy = mean(mean_balanced_accuracy, na.rm=T),
+            SD = sd(mean_balanced_accuracy, na.rm=T))
+
 # Main vs. null histogram
 SPI_wise_main <- readRDS(paste0(rdata_path, 
                                 "SPI_wise_CV_linear_SVM_", 
