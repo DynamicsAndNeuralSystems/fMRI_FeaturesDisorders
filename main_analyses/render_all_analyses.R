@@ -1,5 +1,5 @@
-rmarkdown::render(input = "univariate_analysis_template.Rmd",
-                  output_file = "UCLA_Schizophrenia_Univariate_Analysis.html",
+rmarkdown::render(input = "dataset_analysis_template.Rmd",
+                  output_file = "UCLA_Schizophrenia_Classification_Analysis.html",
                   params = list(data_path = "~/data/UCLA_Schizophrenia/",
                                 dataset_ID = "UCLA_Schizophrenia",
                                 github_dir = "~/github/fMRI_FeaturesDisorders/",
