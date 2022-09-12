@@ -196,7 +196,7 @@ for (i in 1:nrow(grouping_param_df)) {
                                                            reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
     saveRDS(group_wise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
                                                                               grouping_var, 
-                                                                              univariate_feature_set, 
+                                                                              pairwise_feature_set, 
                                                                               weighting_name))) 
     
     # Then find averaged balanced accuracy across all repeats
