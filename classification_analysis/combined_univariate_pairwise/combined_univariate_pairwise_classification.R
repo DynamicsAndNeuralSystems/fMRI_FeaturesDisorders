@@ -158,30 +158,26 @@ for (i in 1:nrow(grouping_param_df)) {
     tryCatch({
       univariate_pairwise_SVM_CV_weighting_list <- list()
       for (idx in 1:length(sample_folds)) {
-        tryCatch({
-          repeat_res <- run_combined_uni_pairwise_cv_svm_by_input_var(dataset_ID = dataset_ID,
-                                                                      data_path = data_path,
-                                                                      rdata_path = rdata_path,
-                                                                      univariate_data = univariate_feature_data,
-                                                                      univariate_feature_set = univariate_feature_set,
-                                                                      pairwise_data = pairwise_feature_data,
-                                                                      pairwise_feature_set = pairwise_feature_set,
-                                                                      SPI_directionality = SPI_directionality,
-                                                                      flds = sample_folds[[idx]],
-                                                                      repeat_number = idx,
-                                                                      num_k_folds = 10,
-                                                                      svm_kernel = kernel,
-                                                                      noise_proc = noise_proc_for_null,
-                                                                      out_of_sample_only = TRUE,
-                                                                      use_inv_prob_weighting = use_inv_prob_weighting,
-                                                                      shuffle_labels = FALSE)
-          
-          univariate_pairwise_SVM_CV_weighting_list <- list.append(univariate_pairwise_SVM_CV_weighting_list,
-                                                                   repeat_res)
-        }, error = function(e) {
-          cat("Error for repeat number:", idx, "\n")
-          message(e)
-        })
+        repeat_res <- run_combined_uni_pairwise_cv_svm_by_input_var(dataset_ID = dataset_ID,
+                                                                    data_path = data_path,
+                                                                    rdata_path = rdata_path,
+                                                                    univariate_data = univariate_feature_data,
+                                                                    univariate_feature_set = univariate_feature_set,
+                                                                    pairwise_data = pairwise_feature_data,
+                                                                    pairwise_feature_set = pairwise_feature_set,
+                                                                    SPI_directionality = SPI_directionality,
+                                                                    flds = sample_folds[[idx]],
+                                                                    repeat_number = idx,
+                                                                    num_k_folds = 10,
+                                                                    svm_kernel = kernel,
+                                                                    noise_proc = noise_proc_for_null,
+                                                                    out_of_sample_only = TRUE,
+                                                                    use_inv_prob_weighting = use_inv_prob_weighting,
+                                                                    shuffle_labels = FALSE)
+        
+        univariate_pairwise_SVM_CV_weighting_list <- list.append(univariate_pairwise_SVM_CV_weighting_list,
+                                                                  repeat_res)
+
       }
       univariate_pairwise_SVM_CV_weighting <- do.call(plyr::rbind.fill, 
                                                       univariate_pairwise_SVM_CV_weighting_list)

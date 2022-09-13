@@ -139,30 +139,23 @@ for (i in 1:nrow(grouping_param_df)) {
     tryCatch({ 
       group_wise_SVM_CV_weighting_list <- list()
       for (idx in 1:length(sample_folds)) {
-        tryCatch({
-          repeat_res <- run_pairwise_cv_svm_by_input_var(pairwise_data = pyspi_data,
-                                                         dataset_ID = dataset_ID,
-                                                         data_path = data_path,
-                                                         rdata_path = rdata_path,
-                                                         sample_metadata = sample_metadata,
-                                                         SPI_directionality = SPI_directionality,
-                                                         svm_kernel = kernel,
-                                                         num_k_folds = 10,
-                                                         flds = sample_folds[[idx]],
-                                                         repeat_number = idx,
-                                                         grouping_var = grouping_var,
-                                                         svm_feature_var = SVM_feature_var,
-                                                         noise_proc = noise_proc_for_null,
-                                                         out_of_sample_only = TRUE,
-                                                         use_inv_prob_weighting = use_inv_prob_weighting,
-                                                         shuffle_labels = FALSE)
-          
-          group_wise_SVM_CV_weighting_list <- list.append(group_wise_SVM_CV_weighting_list, repeat_res)
-        }, error = function(e) {
-          cat("Error for repeat number:", idx, "\n")
-          message(e)
-        })
-        
+        repeat_res <- run_pairwise_cv_svm_by_input_var(pairwise_data = pyspi_data,
+                                                       dataset_ID = dataset_ID,
+                                                       data_path = data_path,
+                                                       rdata_path = rdata_path,
+                                                       sample_metadata = sample_metadata,
+                                                       SPI_directionality = SPI_directionality,
+                                                       svm_kernel = kernel,
+                                                       num_k_folds = 10,
+                                                       flds = sample_folds[[idx]],
+                                                       repeat_number = idx,
+                                                       grouping_var = grouping_var,
+                                                       svm_feature_var = SVM_feature_var,
+                                                       noise_proc = noise_proc_for_null,
+                                                       out_of_sample_only = TRUE,
+                                                       use_inv_prob_weighting = use_inv_prob_weighting,
+                                                       shuffle_labels = FALSE)
+        group_wise_SVM_CV_weighting_list <- list.append(group_wise_SVM_CV_weighting_list, repeat_res)
       }
       
       group_wise_SVM_CV_weighting <- do.call(plyr::rbind.fill, group_wise_SVM_CV_weighting_list)

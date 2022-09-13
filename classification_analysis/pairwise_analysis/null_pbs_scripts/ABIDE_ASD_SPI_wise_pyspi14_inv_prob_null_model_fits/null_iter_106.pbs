@@ -37,7 +37,8 @@ mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/ABIDE_ASD_null_model_
 --grouping_var SPI \
 --svm_feature_var region_pair \
 --noise_proc FC1000 \
---use_inv_prob_weighting
+--use_inv_prob_weighting \
+--weighting_name inv_prob
 
 exit
 
