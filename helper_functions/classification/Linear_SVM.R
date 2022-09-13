@@ -100,9 +100,9 @@ k_fold_CV_linear_SVM <- function(input_data,
                                                    Predicted_Diagnosis = in_sample_pred) %>%
         mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
       subject_classification_list <- list.append(subject_classification_list,
-                                            in_fold_predictions_by_subject)
+                                                 in_fold_predictions_by_subject)
     }
-
+    
     # Generate out-of-sample predictions based on SVM model
     out_sample_pred <- predict(svmModel, test_data)
     test_data$Diagnosis <- factor(test_data$Diagnosis, levels = levels(out_sample_pred))
@@ -116,7 +116,7 @@ k_fold_CV_linear_SVM <- function(input_data,
       mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
     
     subject_classification_list <- list.append(subject_classification_list,
-                                          out_fold_predictions_by_subject)
+                                               out_fold_predictions_by_subject)
     
   } 
   
@@ -162,9 +162,9 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
   
   # Get diagnosis proportions
   sample_groups <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
-                                                     dataset_ID,
-                                                     univariate_feature_set,
-                                                     pairwise_feature_set))) %>%
+                                                      dataset_ID,
+                                                      univariate_feature_set,
+                                                      pairwise_feature_set))) %>%
     left_join(., sample_metadata) %>%
     distinct(Sample_ID, Diagnosis)
   
@@ -297,9 +297,9 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   
   # Get diagnosis proportions
   sample_groups <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
-                                                     dataset_ID,
-                                                     univariate_feature_set,
-                                                     pairwise_feature_set))) %>%
+                                                      dataset_ID,
+                                                      univariate_feature_set,
+                                                      pairwise_feature_set))) %>%
     left_join(., sample_metadata) %>%
     dplyr::select(Sample_ID, Diagnosis)
   
@@ -414,12 +414,12 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     if (nrow(data_for_SVM) > 0) {
       # Run k-fold linear SVM
       tryCatch({SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
-                                          flds = flds,
-                                          k = num_k_folds,
-                                          svm_kernel = svm_kernel,
-                                          sample_wts = sample_wts,
-                                          shuffle_labels = shuffle_labels,
-                                          out_of_sample_only = out_of_sample_only) %>%
+                                                    flds = flds,
+                                                    k = num_k_folds,
+                                                    svm_kernel = svm_kernel,
+                                                    sample_wts = sample_wts,
+                                                    shuffle_labels = shuffle_labels,
+                                                    out_of_sample_only = out_of_sample_only) %>%
         dplyr::mutate(grouping_var = group_var,
                       repeat_number = repeat_number,
                       pairwise_feature_set = pairwise_feature_set,
@@ -464,16 +464,16 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(dataset_ID,
                                                           out_of_sample_only = TRUE,
                                                           use_inv_prob_weighting = FALSE,
                                                           shuffle_labels = FALSE) {
-
+  
   if (is.null(rdata_path)) {
     rdata_path <- paste0(data_path, "processed_data/Rdata/")
   }
   
   # Get diagnosis proportions
   sample_groups <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
-                                                     dataset_ID,
-                                                     univariate_feature_set,
-                                                     pairwise_feature_set))) %>%
+                                                      dataset_ID,
+                                                      univariate_feature_set,
+                                                      pairwise_feature_set))) %>%
     left_join(., sample_metadata) %>%
     dplyr::select(Sample_ID, Diagnosis)
   
@@ -546,26 +546,32 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(dataset_ID,
     
     if (nrow(combined_data_for_SVM) > 0) {
       # Run k-fold linear SVM
-      SVM_results <- k_fold_CV_linear_SVM(input_data = combined_data_for_SVM,
-                                          flds = flds,
-                                          k = num_k_folds,
-                                          svm_kernel = svm_kernel,
-                                          sample_wts = sample_wts,
-                                          shuffle_labels = shuffle_labels,
-                                          out_of_sample_only = out_of_sample_only) %>%
-        dplyr::mutate(SPI = this_SPI,
-                      repeat_number = repeat_number,
-                      univariate_feature_set = univariate_feature_set,
-                      pairwise_feature_set = pairwise_feature_set,
-                      Noise_Proc = noise_proc)
-      
-      # Append results to list
-      class_res_list <- list.append(class_res_list, SVM_results)
+      tryCatch({
+        # Run k-fold linear SVM
+        SVM_results <- k_fold_CV_linear_SVM(input_data = combined_data_for_SVM,
+                                            flds = flds,
+                                            k = num_k_folds,
+                                            svm_kernel = svm_kernel,
+                                            sample_wts = sample_wts,
+                                            shuffle_labels = shuffle_labels,
+                                            out_of_sample_only = out_of_sample_only) %>%
+          dplyr::mutate(SPI = this_SPI,
+                        repeat_number = repeat_number,
+                        univariate_feature_set = univariate_feature_set,
+                        pairwise_feature_set = pairwise_feature_set,
+                        Noise_Proc = noise_proc)
+        
+        # Append results to list
+        class_res_list <- list.append(class_res_list, SVM_results)
+      }, error = function(e) {
+        cat("Error for", group_var, "\n")
+        message(e)
+      })
     } else {
-      cat("\nNo observations available for", this_SPI, "after filtering.\n")
-      
+      cat("\nNo observations available for", group_var, "after filtering.\n")
     }
   }
+  
   # Combine results from all regions into a dataframe
   class_res_df <- do.call(plyr::rbind.fill, class_res_list)
   
