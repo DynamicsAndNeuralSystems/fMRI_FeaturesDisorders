@@ -20,12 +20,13 @@ knitr::opts_chunk$set(echo = F, warning=F, message=F)
 ```{r}
 library(tidyverse)
 library(icesTAF)
+library(broom)
 library(ggseg)
+library(ggsegHO)
 # library(ggsegExtra)
 library(tidyverse)
 library(plotly)
 # library(ggseg3d)
-# library(ggsegHO)
 # library(ungeviz)
 # library(reshape2)
 library(patchwork)
@@ -72,6 +73,7 @@ brain_region_file <- params$brain_region_file
 # brain_region_file = "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 
 rdata_path <- paste0(data_path, "processed_data/Rdata/")
+plot_path <- paste0(data_path, "plots/")
 brain_region_lookup <- read.csv(paste0(data_path, brain_region_file))
 ```
 
@@ -89,11 +91,13 @@ cat("## Univariate linear SVM results for", dataset_ID, "\n")
 ### Significant results by brain region
 ```{r, fig.width=6,fig.height=4}
 # Main vs. null histogram
-univariate_region_wise_main <- readRDS(paste0(rdata_path, 
+univariate_region_wise_full <- readRDS(paste0(rdata_path, 
                                               "ROI_wise_CV_linear_SVM_", 
                                               univariate_feature_set,
                                               "_inv_prob_balacc.Rds")) %>%
-  dplyr::filter(Noise_Proc == noise_proc_for_null) %>%
+  dplyr::filter(Noise_Proc == noise_proc_for_null) 
+
+univariate_region_wise_main <- univariate_region_wise_full %>%
   group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
   summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
   group_by(grouping_var, Sample_Type, Noise_Proc) %>%
@@ -102,9 +106,9 @@ univariate_region_wise_main <- readRDS(paste0(rdata_path,
 
 # UCLA_Schizophrenia_ROI_wise_model_permutation_null_catch22_inv_prob.Rds
 univariate_region_wise_null <- readRDS(paste0(rdata_path, dataset_ID,
-                                               "_ROI_wise_model_permutation_null_", 
-                                               univariate_feature_set,
-                                               "_inv_prob.Rds"))
+                                              "_ROI_wise_model_permutation_null_", 
+                                              univariate_feature_set,
+                                              "_inv_prob.Rds"))
 
 # Pooled empirical null p-values
 univariate_region_wise_pvals <- readRDS(paste0(rdata_path, 
@@ -132,7 +136,6 @@ plot_main_vs_null_bal_acc(main_res = univariate_region_wise_main,
   theme(legend.position = "right",
         plot.title = element_text(size=13))
 ```
-
 
 ```{r}
 univariate_region_wise_sig <- univariate_region_wise_pvals %>%
@@ -213,9 +216,9 @@ cat("### Significant results by", univariate_feature_set, "feature\n")
 ```{r, fig.width=6,fig.height=4}
 # Main vs. null histogram
 univariate_feature_wise_main <- readRDS(paste0(rdata_path, 
-                                              "Feature_wise_CV_linear_SVM_", 
-                                              univariate_feature_set,
-                                              "_inv_prob_balacc.Rds")) %>%
+                                               "Feature_wise_CV_linear_SVM_", 
+                                               univariate_feature_set,
+                                               "_inv_prob_balacc.Rds")) %>%
   dplyr::filter(Noise_Proc == noise_proc_for_null) %>%
   group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
   summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
@@ -231,9 +234,9 @@ univariate_feature_wise_null <- readRDS(paste0(rdata_path, dataset_ID,
 
 # Pooled empirical null p-values
 univariate_feature_wise_pvals <- readRDS(paste0(rdata_path, 
-                                               "Feature_wise_CV_linear_SVM_model_permutation_null_", 
-                                               univariate_feature_set,
-                                               "_inv_prob_pvals.Rds"))
+                                                "Feature_wise_CV_linear_SVM_model_permutation_null_", 
+                                                univariate_feature_set,
+                                                "_inv_prob_pvals.Rds"))
 
 # Define xmin and xmax
 xmin = 0.99 * min(c(min(univariate_feature_wise_main$balanced_accuracy)),
@@ -284,9 +287,9 @@ cat("### Significant results by", univariate_feature_set, "feature + Brain Regio
 ```{r, fig.width=6,fig.height=4}
 # Main vs. null histogram
 univariate_combo_wise_main <- readRDS(paste0(rdata_path, 
-                                              "Combo_wise_CV_linear_SVM_", 
-                                              univariate_feature_set,
-                                              "_inv_prob_balacc.Rds")) %>%
+                                             "Combo_wise_CV_linear_SVM_", 
+                                             univariate_feature_set,
+                                             "_inv_prob_balacc.Rds")) %>%
   dplyr::filter(Noise_Proc == noise_proc_for_null) %>%
   group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
   summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
@@ -296,15 +299,15 @@ univariate_combo_wise_main <- readRDS(paste0(rdata_path,
 
 # UCLA_Schizophrenia_Combo_wise_model_permutation_null_catch22_inv_prob.Rds
 univariate_combo_wise_null <- readRDS(paste0(rdata_path, dataset_ID,
-                                               "_Combo_wise_model_permutation_null_", 
-                                               univariate_feature_set,
-                                               "_inv_prob.Rds"))
+                                             "_Combo_wise_model_permutation_null_", 
+                                             univariate_feature_set,
+                                             "_inv_prob.Rds"))
 
 # Pooled empirical null p-values
 univariate_combo_wise_pvals <- readRDS(paste0(rdata_path, 
-                                               "Combo_wise_CV_linear_SVM_model_permutation_null_", 
-                                               univariate_feature_set,
-                                               "_inv_prob_pvals.Rds"))
+                                              "Combo_wise_CV_linear_SVM_model_permutation_null_", 
+                                              univariate_feature_set,
+                                              "_inv_prob_pvals.Rds"))
 
 # Define xmin and xmax
 xmin = 0.99 * min(c(min(univariate_combo_wise_main$balanced_accuracy)),
@@ -321,6 +324,7 @@ plot_main_vs_null_bal_acc(main_res = univariate_combo_wise_main,
                           xmax = xmax,
                           line_only = TRUE,
                           plot_type = "histogram",
+                          density = F,
                           grouping_type = "Combo-wise",
                           result_color = "#9B51B4") +
   ggtitle("Results vs. Empirical Null Model") +
@@ -333,7 +337,9 @@ univariate_combo_wise_sig <- univariate_combo_wise_pvals %>%
   filter(bal_acc_p_adj < 0.05) %>%
   ungroup() %>%
   dplyr::select(grouping_var, balanced_accuracy, bal_acc_p_adj) %>%
-  left_join(., univariate_combo_wise_main)
+  left_join(., univariate_combo_wise_main, by=c("grouping_var")) %>%
+  dplyr::select(-balanced_accuracy.x) %>%
+  dplyr::rename("balanced_accuracy" = "balanced_accuracy.y")
 
 univariate_combo_wise_sig %>%
   arrange(bal_acc_p_adj, desc(balanced_accuracy)) %>%
@@ -355,87 +361,81 @@ univariate_combo_wise_sig %>%
 cat("## Pairwise linear SVM results for", dataset_ID, "\n")
 ```
 
-```{r}
-testfull <- readRDS(paste0(rdata_path, 
-                           "SPI_wise_CV_linear_SVM_", 
-                           pairwise_feature_set,
-                           "_inv_prob_balacc.Rds"))
-testacc <- readRDS(paste0(rdata_path, 
-                          "SPI_wise_CV_linear_SVM_", 
-                          pairwise_feature_set,
-                          "_inv_prob_balacc_across_repeats.Rds"))
-```
-
-
 ### Significant results by SPI
 ```{r, fig.width=6,fig.height=4}
-# Main vs. null histogram
-SPI_wise_main <- readRDS(paste0(rdata_path, 
-                                              "SPI_wise_CV_linear_SVM_", 
-                                              pairwise_feature_set,
-                                              "_inv_prob_balacc.Rds")) %>%
-  dplyr::filter(Noise_Proc == noise_proc_for_null) %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc) %>%
-  summarise(balanced_accuracy = mean(mean_balanced_accuracy, na.rm=T),
-            SD = sd(mean_balanced_accuracy, na.rm=T))
-
-# UCLA_Schizophrenia_ROI_wise_model_permutation_null_catch22_inv_prob.Rds
-SPI_wise_null <- readRDS(paste0(rdata_path, dataset_ID,
-                                "_SPI_wise_model_permutation_null_", 
-                                pairwise_feature_set,
-                                "_inv_prob.Rds"))
-
-# Pooled empirical null p-values
-SPI_wise_pvals <- readRDS(paste0(rdata_path, 
-                                 "SPI_wise_CV_linear_SVM_model_permutation_null_", 
-                                 pairwise_feature_set,
-                                 "_inv_prob_pvals.Rds"))
-
-# Define xmin and xmax
-xmin = 0.99 * min(c(min(SPI_wise_main$balanced_accuracy)),
-                  c(min(SPI_wise_null$balanced_accuracy)))
-
-xmax = 1.01 * max(c(max(SPI_wise_main$balanced_accuracy)),
-                  c(max(SPI_wise_null$balanced_accuracy)))
-
-plot_main_vs_null_bal_acc(main_res = SPI_wise_main,
-                          null_res = SPI_wise_null,
-                          pvals = SPI_wise_pvals,
-                          noise_proc = noise_proc_for_null,
-                          xmin = xmin, 
-                          xmax = xmax,
-                          plot_type = "histogram",
-                          grouping_type = "SPI-wise",
-                          result_color = "darkgoldenrod1") +
-  ggtitle("Results vs. Empirical Null Model") +
-  theme(legend.position = "right",
-        plot.title = element_text(size=13))
+tryCatch({
+  # Main vs. null histogram
+  SPI_wise_main_full <- readRDS(paste0(rdata_path, 
+                                  "SPI_wise_CV_linear_SVM_", 
+                                  pairwise_feature_set,
+                                  "_inv_prob_balacc.Rds")) %>%
+    dplyr::filter(Noise_Proc == noise_proc_for_null) 
+  
+  SPI_wise_main <- SPI_wise_main_full %>%
+    group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
+    summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+    group_by(grouping_var, Sample_Type, Noise_Proc) %>%
+    summarise(balanced_accuracy = mean(mean_balanced_accuracy, na.rm=T),
+              SD = sd(mean_balanced_accuracy, na.rm=T))
+  
+  # UCLA_Schizophrenia_ROI_wise_model_permutation_null_catch22_inv_prob.Rds
+  SPI_wise_null <- readRDS(paste0(rdata_path, dataset_ID,
+                                  "_SPI_wise_model_permutation_null_", 
+                                  pairwise_feature_set,
+                                  "_inv_prob.Rds"))
+  
+  # Pooled empirical null p-values
+  SPI_wise_pvals <- readRDS(paste0(rdata_path, 
+                                   "SPI_wise_CV_linear_SVM_model_permutation_null_", 
+                                   pairwise_feature_set,
+                                   "_inv_prob_pvals.Rds"))
+  
+  # Define xmin and xmax
+  xmin = 0.99 * min(c(min(SPI_wise_main$balanced_accuracy)),
+                    c(min(SPI_wise_null$balanced_accuracy)))
+  
+  xmax = 1.01 * max(c(max(SPI_wise_main$balanced_accuracy)),
+                    c(max(SPI_wise_null$balanced_accuracy)))
+  
+  plot_main_vs_null_bal_acc(main_res = SPI_wise_main,
+                            null_res = SPI_wise_null,
+                            pvals = SPI_wise_pvals,
+                            noise_proc = noise_proc_for_null,
+                            xmin = xmin, 
+                            xmax = xmax,
+                            plot_type = "histogram",
+                            grouping_type = "SPI-wise",
+                            result_color = "darkgoldenrod1") +
+    ggtitle("Results vs. Empirical Null Model") +
+    theme(legend.position = "right",
+          plot.title = element_text(size=13))
+}, error = function(e) e)
 ```
 
 
 ```{r}
-SPI_wise_sig <- SPI_wise_pvals %>%
-  filter(bal_acc_p_adj < 0.05) %>%
-  ungroup() %>%
-  dplyr::select(grouping_var, balanced_accuracy, bal_acc_p_adj) %>%
-  left_join(., SPI_wise_main, by=c("grouping_var")) %>%
-  dplyr::select(-balanced_accuracy.x) %>%
-  dplyr::rename("balanced_accuracy" = "balanced_accuracy.y")
-
-SPI_wise_sig %>%
-  arrange(bal_acc_p_adj, desc(balanced_accuracy)) %>%
-  dplyr::select(grouping_var, balanced_accuracy, SD, bal_acc_p_adj) %>%
-  mutate(balanced_accuracy = paste0(round(100*balanced_accuracy, 2), " ± ", round(100*SD, 2)),
-         bal_acc_p_adj = format(bal_acc_p_adj, scientific = T, 
-                                big.mark = ",")) %>%
-  dplyr::select(-SD) %>%
-  dplyr::rename("pyspi SPI" = "grouping_var",
-                "Balanced Accuracy ± SD" = "balanced_accuracy",
-                "BH-adjusted p value" = "bal_acc_p_adj") %>%
-  knitr::kable(.) %>%
-  kableExtra::kable_styling(full_width=F)
+tryCatch({
+  SPI_wise_sig <- SPI_wise_pvals %>%
+    filter(bal_acc_p_adj < 0.05) %>%
+    ungroup() %>%
+    dplyr::select(grouping_var, balanced_accuracy, bal_acc_p_adj) %>%
+    left_join(., SPI_wise_main, by=c("grouping_var")) %>%
+    dplyr::select(-balanced_accuracy.x) %>%
+    dplyr::rename("balanced_accuracy" = "balanced_accuracy.y")
+  
+  SPI_wise_sig %>%
+    arrange(bal_acc_p_adj, desc(balanced_accuracy)) %>%
+    dplyr::select(grouping_var, balanced_accuracy, SD, bal_acc_p_adj) %>%
+    mutate(balanced_accuracy = paste0(round(100*balanced_accuracy, 2), " ± ", round(100*SD, 2)),
+           bal_acc_p_adj = format(bal_acc_p_adj, scientific = T, 
+                                  big.mark = ",")) %>%
+    dplyr::select(-SD) %>%
+    dplyr::rename("pyspi SPI" = "grouping_var",
+                  "Balanced Accuracy ± SD" = "balanced_accuracy",
+                  "BH-adjusted p value" = "bal_acc_p_adj") %>%
+    knitr::kable(.) %>%
+    kableExtra::kable_styling(full_width=F)
+}, error = function(e) e)
 ```
 
 
@@ -446,73 +446,168 @@ cat("## Univariate-Pairwise combo linear SVM results for", dataset_ID, "\n")
 
 ### Significant results by SPI + univariate combo
 ```{r, fig.width=6,fig.height=4}
-# Main vs. null histogram
-SPI_combo_wise_main <- readRDS(paste0(rdata_path, 
-                                "univariate_", univariate_feature_set,
-                                "_pairwise_", pairwise_feature_set,
-                                "_CV_linear_SVM_inv_prob_balacc.Rds")) %>%
-  dplyr::filter(Noise_Proc == noise_proc_for_null) %>%
-  group_by(SPI, Sample_Type, Noise_Proc, repeat_number) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-  group_by(SPI, Sample_Type, Noise_Proc) %>%
-  summarise(balanced_accuracy = mean(mean_balanced_accuracy, na.rm=T),
-            SD = sd(mean_balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("grouping_var" = "SPI")
-
-SPI_combo_wise_null <- readRDS(paste0(rdata_path, dataset_ID,
-                                      "_univariate_", univariate_feature_set,
-                                      "_pairwise_", pairwise_feature_set, 
-                                      "_model_permutation_null_inv_prob.Rds"))
-
-# Pooled empirical null p-values
-SPI_combo_wise_pvals <- readRDS(paste0(rdata_path,
-                                       "univariate_", univariate_feature_set,
-                                       "_pairwise_", pairwise_feature_set,
-                                       "_CV_linear_SVM_model_permutation_null_inv_prob_pvals.Rds"))
-
-# Define xmin and xmax
-xmin = 0.99 * min(c(min(SPI_combo_wise_main$balanced_accuracy)),
-                  c(min(SPI_combo_wise_null$balanced_accuracy)))
-
-xmax = 1.01 * max(c(max(SPI_combo_wise_main$balanced_accuracy)),
-                  c(max(SPI_combo_wise_null$balanced_accuracy)))
-
-plot_main_vs_null_bal_acc(main_res = SPI_combo_wise_main,
-                          null_res = SPI_combo_wise_null,
-                          pvals = SPI_combo_wise_pvals,
-                          noise_proc = noise_proc_for_null,
-                          xmin = xmin, 
-                          xmax = xmax,
-                          plot_type = "histogram",
-                          grouping_type = "SPI-wise",
-                          result_color = "limegreen") +
-  ggtitle("Results vs. Empirical Null Model") +
-  theme(legend.position = "right",
-        plot.title = element_text(size=13))
+tryCatch({
+  # Main vs. null histogram
+  SPI_combo_wise_main_full <- readRDS(paste0(rdata_path, 
+                                        "univariate_", univariate_feature_set,
+                                        "_pairwise_", pairwise_feature_set,
+                                        "_CV_linear_SVM_inv_prob_balacc.Rds")) %>%
+    dplyr::filter(Noise_Proc == noise_proc_for_null)  %>%
+    dplyr::rename("grouping_var" = "SPI")
+  
+  SPI_combo_wise_main <- SPI_combo_wise_main_full %>%
+    group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
+    summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+    group_by(grouping_var, Sample_Type, Noise_Proc) %>%
+    summarise(balanced_accuracy = mean(mean_balanced_accuracy, na.rm=T),
+              SD = sd(mean_balanced_accuracy, na.rm=T))
+  
+  SPI_combo_wise_null <- readRDS(paste0(rdata_path, dataset_ID,
+                                        "_univariate_", univariate_feature_set,
+                                        "_pairwise_", pairwise_feature_set, 
+                                        "_model_permutation_null_inv_prob.Rds"))
+  
+  # Pooled empirical null p-values
+  SPI_combo_wise_pvals <- readRDS(paste0(rdata_path,
+                                         "univariate_", univariate_feature_set,
+                                         "_pairwise_", pairwise_feature_set,
+                                         "_CV_linear_SVM_model_permutation_null_inv_prob_pvals.Rds"))
+  
+  # Define xmin and xmax
+  xmin = 0.99 * min(c(min(SPI_combo_wise_main$balanced_accuracy)),
+                    c(min(SPI_combo_wise_null$balanced_accuracy)))
+  
+  xmax = 1.01 * max(c(max(SPI_combo_wise_main$balanced_accuracy)),
+                    c(max(SPI_combo_wise_null$balanced_accuracy)))
+  
+  plot_main_vs_null_bal_acc(main_res = SPI_combo_wise_main,
+                            null_res = SPI_combo_wise_null,
+                            pvals = SPI_combo_wise_pvals,
+                            noise_proc = noise_proc_for_null,
+                            xmin = xmin, 
+                            xmax = xmax,
+                            plot_type = "histogram",
+                            grouping_type = "SPI-wise",
+                            result_color = "limegreen") +
+    ggtitle("Results vs. Empirical Null Model") +
+    theme(legend.position = "right",
+          plot.title = element_text(size=13))
+}, error = function(e) e)
 ```
 
 
 ```{r}
-SPI_combo_wise_sig <- SPI_combo_wise_pvals %>%
-  filter(bal_acc_p_adj < 0.05) %>%
-  ungroup() %>%
-  dplyr::select(grouping_var, balanced_accuracy, bal_acc_p_adj) %>%
-  left_join(., SPI_combo_wise_main, by=c("grouping_var")) %>%
-  dplyr::select(-balanced_accuracy.x) %>%
-  dplyr::rename("balanced_accuracy" = "balanced_accuracy.y")
+tryCatch({
+  SPI_combo_wise_sig <- SPI_combo_wise_pvals %>%
+    filter(bal_acc_p_adj < 0.05) %>%
+    ungroup() %>%
+    dplyr::select(grouping_var, balanced_accuracy, bal_acc_p_adj) %>%
+    left_join(., SPI_combo_wise_main, by=c("grouping_var")) %>%
+    dplyr::select(-balanced_accuracy.x) %>%
+    dplyr::rename("balanced_accuracy" = "balanced_accuracy.y")
+  
+  SPI_combo_wise_sig %>%
+    arrange(bal_acc_p_adj, desc(balanced_accuracy)) %>%
+    dplyr::select(grouping_var, balanced_accuracy, SD, bal_acc_p_adj) %>%
+    mutate(balanced_accuracy = paste0(round(100*balanced_accuracy, 2), " ± ", round(100*SD, 2)),
+           bal_acc_p_adj = format(bal_acc_p_adj, scientific = T, 
+                                  big.mark = ",")) %>%
+    dplyr::select(-SD) %>%
+    dplyr::rename("SPI with Univariate Combo" = "grouping_var",
+                  "Balanced Accuracy ± SD" = "balanced_accuracy",
+                  "BH-adjusted p value" = "bal_acc_p_adj") %>%
+    knitr::kable(.) %>%
+    kableExtra::kable_styling(full_width=F)
+}, error = function(e) e)
+```
 
-SPI_combo_wise_sig %>%
-  arrange(bal_acc_p_adj, desc(balanced_accuracy)) %>%
-  dplyr::select(grouping_var, balanced_accuracy, SD, bal_acc_p_adj) %>%
-  mutate(balanced_accuracy = paste0(round(100*balanced_accuracy, 2), " ± ", round(100*SD, 2)),
-         bal_acc_p_adj = format(bal_acc_p_adj, scientific = T, 
-                                big.mark = ",")) %>%
-  dplyr::select(-SD) %>%
-  dplyr::rename("SPI with Univariate Combo" = "grouping_var",
-                "Balanced Accuracy ± SD" = "balanced_accuracy",
-                "BH-adjusted p value" = "bal_acc_p_adj") %>%
+```{r}
+# Find which SPIs are statistically different with vs without univariate
+# combo-wise information
+sig_SPIs_diff <- SPI_wise_main_full %>% 
+  mutate(Analysis = "SPI") %>%
+  plyr::rbind.fill(., SPI_combo_wise_main_full %>% 
+                     mutate(Analysis = "SPI + Combo")) %>%
+  mutate(Analysis = factor(Analysis, levels = c("SPI + Combo", "SPI"))) %>%
+  group_by(grouping_var, Analysis, repeat_number) %>%
+  summarise(mean_balac = mean(balanced_accuracy, na.rm=T)) %>%
+  dplyr::rename("balanced_accuracy" = "mean_balac") %>%
+  arrange(repeat_number) %>%
+  nest(data = -grouping_var) %>%
+  mutate(test = map(data, ~ t.test(balanced_accuracy ~ Analysis, data = .x, paired=T)),
+         tidied = map(test, tidy)) %>%
+  unnest(tidied) %>%
+  ungroup() %>%
+  mutate(p.adj = p.adjust(p.value, method="BH")) %>%
+  filter(p.adj < 0.05) %>%
+  dplyr::select(grouping_var, estimate, statistic, p.value, p.adj) 
+
+sig_SPIs_diff %>%
+  dplyr::rename("SPI" = "grouping_var",
+                "Mean Difference" = "estimate",
+                "T-statistic" = "statistic",
+                "p-value" = "p.value",
+                "BH" = "p.adj") %>%
   knitr::kable(.) %>%
   kableExtra::kable_styling(full_width=F)
 ```
 
+
+```{r, fig.width=8,fig.height=4}
+# Spaghetti plot comparing SPIs with vs without univariate combo info,
+# Only those with a significant difference
+SPI_combo_wise_main %>%
+  mutate(Analysis = "SPI + Univariate Combo") %>%
+  plyr::rbind.fill(., SPI_wise_main %>% mutate(Analysis = "SPI")) %>%
+  filter(grouping_var %in% sig_SPIs_diff$grouping_var) %>%
+  mutate(grouping_var = fct_reorder(grouping_var, balanced_accuracy, .fun=max,
+                                    .desc=T)) %>%
+  ggplot(data=., mapping=aes(x=Analysis, 
+                             y=balanced_accuracy, 
+                             group=grouping_var,
+                             color = grouping_var)) +
+  geom_line(size=1.5) +
+  ylab("10-repeat 10-fold CV Balanced Accuracy") +
+  xlab("Pairwise Analysis Type") +
+  labs(color = "SPI")
+```
+
+
+```{r}
+# Summarise mean of null distributions 
+region_wise_null_mean <- univariate_region_wise_null %>%
+  ungroup() %>%
+  summarise(mean_balacc = mean(balanced_accuracy)) %>%
+  mutate(method = "Univariate Region-wise")
+
+feature_wise_null_mean <- univariate_feature_wise_null %>%
+  ungroup() %>%
+  summarise(mean_balacc = mean(balanced_accuracy)) %>%
+  mutate(method = "Univariate Feature-wise")
+
+combo_wise_null_mean <- univariate_combo_wise_null %>%
+  ungroup() %>%
+  summarise(mean_balacc = mean(balanced_accuracy)) %>%
+  mutate(method = "Univariate Combo-wise")
+
+SPI_wise_null_mean <- SPI_wise_null %>%
+  ungroup() %>%
+  summarise(mean_balacc = mean(balanced_accuracy)) %>%
+  mutate(method = "Pairwise SPI-wise")
+
+SPI_combo_wise_null_mean <- SPI_combo_wise_null %>%
+  ungroup() %>%
+  summarise(mean_balacc = mean(balanced_accuracy)) %>%
+  mutate(method = "Pairwise Combo-wise")
+
+do.call(plyr::rbind.fill, list(region_wise_null_mean,
+                               feature_wise_null_mean,
+                               combo_wise_null_mean,
+                               SPI_wise_null_mean,
+                               SPI_combo_wise_null_mean)) %>%
+  dplyr::rename("Mean Null Balanced Accuracy" = "mean_balacc",
+                "Analysis Method" = "method") %>%
+  knitr::kable(.) %>%
+  kableExtra::kable_styling(full_width=F)
+```
 

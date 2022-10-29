@@ -1,4 +1,4 @@
-rmarkdown::render(input = "dataset_analysis_template.Rmd",
+rmarkdown::render(input = "~/github/fMRI_FeaturesDisorders/main_analyses/dataset_analysis_template.Rmd",
                   output_file = "UCLA_Schizophrenia_Classification_Analysis.html",
                   params = list(data_path = "~/data/UCLA_Schizophrenia/",
                                 dataset_ID = "UCLA_Schizophrenia",
@@ -11,14 +11,14 @@ rmarkdown::render(input = "dataset_analysis_template.Rmd",
                                 noise_proc_for_null = "AROMA+2P+GMR"))
 
 
-# rmarkdown::render(input = "univariate_analysis_template.Rmd",
-#                   output_file = "ABIDE_ASD_Univariate_Analysis.html",
-#                   params = list(data_path = "~/data/ABIDE_ASD/",
-#                                 dataset_ID = "ABIDE_ASD",
-#                                 github_dir = "~/fMRI_FeaturesDisorders/",
-#                                 univariate_feature_set = "catch22",
-#                                 pairwise_feature_set = "pyspi14",
-#                                 ggseg_atlas = "HO",
-#                                 brain_region_file = "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv",
-#                                 noise_procs = c("FC1000"),
-#                                 noise_proc_for_null = "FC1000"))
+rmarkdown::render(input = "~/github/fMRI_FeaturesDisorders/main_analyses/dataset_analysis_template.Rmd",
+                  output_file = "ABIDE_ASD_Classification_Analysis.html",
+                  params = list(data_path = "~/data/ABIDE_ASD/",
+                                dataset_ID = "ABIDE_ASD",
+                                github_dir = "~/github/fMRI_FeaturesDisorders/",
+                                univariate_feature_set = "catch22",
+                                pairwise_feature_set = "pyspi14",
+                                ggseg_atlas = "HO",
+                                brain_region_file = "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv",
+                                noise_procs = c("FC1000"),
+                                noise_proc_for_null = "FC1000"))

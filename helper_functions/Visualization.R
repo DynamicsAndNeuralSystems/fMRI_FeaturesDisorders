@@ -262,6 +262,7 @@ plot_main_vs_null_bal_acc <- function(main_res,
                                       noise_proc = "AROMA+2P+GMR",
                                       plot_type = "histogram",
                                       grouping_type, result_color,
+                                      density = TRUE,
                                       xmin = NULL, xmax = NULL,
                                       line_only = FALSE) {
 
@@ -274,8 +275,11 @@ plot_main_vs_null_bal_acc <- function(main_res,
     ungroup() %>%
     ggplot(data=., mapping=aes(x = balanced_accuracy)) +
     ggtitle(grouping_type) +
-    xlab("Balanced Accuracy\n(10-Fold CV)") +
-    ylab("Density") 
+    xlab("Balanced Accuracy\n(10-Fold CV)") 
+  
+  if (density) {p <- p + ylab("Density")} else {
+    p <- p + ylab("Count")
+  }
 
   # Find line to plot if only line
   if (line_only) {
@@ -332,11 +336,18 @@ plot_main_vs_null_bal_acc <- function(main_res,
                           aes(fill = "Null"),
                           alpha = 0.7)
     
-  } else if (plot_type == "histogram") {
+  } else if (plot_type == "histogram" & density) {
     p <- p + geom_histogram(data = subset(null_res,
                                           Sample_Type == "Out-of-sample" &
                                             Noise_Proc == noise_proc),
                             aes(fill = "Null", y=..density..),
+                            bins = 50,
+                            alpha = 0.7)
+  } else if (plot_type == "histogram" & !(density)) {
+    p <- p + geom_histogram(data = subset(null_res,
+                                          Sample_Type == "Out-of-sample" &
+                                            Noise_Proc == noise_proc),
+                            aes(fill = "Null"),
                             bins = 50,
                             alpha = 0.7)
   }
