@@ -205,9 +205,16 @@ for (i in 1:nrow(grouping_param_df)) {
     ############################################################################
     
     # We want to run 1,000 null model fits, and we can run 10 permutations per iteration
-    num_permutations <- 100
-    nperm_per_iter <- 10
-    wall_hrs <- "12"
+    if (grouping_type == "Combo") {
+      num_permutations <- 100
+      nperm_per_iter <- 50
+      wall_hrs <- "70"
+    } else {
+      num_permutations <- 100
+      nperm_per_iter <- 10
+      wall_hrs <- "12"
+    }
+
     # Use 10-fold cross-validation
     num_k_folds <- 10
     # Define the univariate template PBS script

@@ -564,11 +564,11 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(dataset_ID,
         # Append results to list
         class_res_list <- list.append(class_res_list, SVM_results)
       }, error = function(e) {
-        cat("Error for", group_var, "\n")
+        cat("Error for", this_SPI, "\n")
         message(e)
       })
     } else {
-      cat("\nNo observations available for", group_var, "after filtering.\n")
+      cat("\nNo observations available for", this_SPI, "after filtering.\n")
     }
   }
   
