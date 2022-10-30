@@ -35,58 +35,11 @@ source(paste0(github_dir, "helper_functions/Visualization.R"))
 
 plot_path <- "~/github/fMRI_FeaturesDisorders/plots/Manuscript_Draft/"
 
-################################################################################
-# Slides 2-4: network visualisations
-################################################################################
-
-#B179C4
-set.seed(127)
-purple_TS <- arima.sim(model=list(ar=c(0.3,-0.2)),n=50)
-
-data.frame(Time = 1:length(purple_TS),
-           BOLD = as.numeric(purple_TS),
-           Time_Series = "TS1") %>%
-  ggplot(data=., mapping=aes(x=Time, y=BOLD, color=Time_Series)) +
-  geom_line(size=1.2) +
-  scale_color_manual(values=c("#B179C4")) + 
-  theme_void() +
-  theme(legend.position="none") 
-ggsave(paste0(plot_path, "univar_node_TS.png"), width=1.8, height=1, 
-       units="in", dpi=300, bg = "transparent")
-
-# blue: #4472C4
-# orange: #FF6600
-blue_TS <- arima.sim(model=list(ar=c(0.1,-0.8)),n=50)
-orange_TS <- arima.sim(model=list(ar=c(0.7,-0.1)),n=50)
-
-data.frame(Time = rep(1:length(blue_TS), 2),
-           BOLD = c(as.numeric(blue_TS), as.numeric(orange_TS)),
-           Time_Series = c(rep("TS1", length(blue_TS)),
-                           rep("TS2", length(orange_TS)))) %>%
-  ggplot(data=., mapping=aes(x=Time, y=BOLD, color=Time_Series)) +
-  geom_line(size=1.2, aes(color = Time_Series)) +
-  scale_color_manual(values=c("#4472C4", "#FF6600")) + 
-  theme_void() +
-  theme(legend.position="none") 
-ggsave(paste0(plot_path, "pairwise_node_TS.png"), width=1.8, height=1, 
-       units="in", dpi=300, bg = "transparent")
-
 
 ################################################################################
-# Slide 5: Methods figures
+# Figure 1: methods overview
 ################################################################################
-
-# Find number of subjects by group
-UCLA_subjects <- readRDS(paste0(UCLA_rdata_path, "UCLA_Schizophrenia_filtered_sample_info_catch22.Rds"))
-ABIDE_subjects <- readRDS(paste0(ABIDE_rdata_path, "ABIDE_ASD_filtered_sample_info_catch22.Rds"))
-UCLA_metadata <- readRDS(paste0(UCLA_data_path, "UCLA_Schizophrenia_sample_metadata.Rds")) %>%
-  semi_join(., UCLA_subjects)
-ABIDE_metadata <- readRDS(paste0(ABIDE_data_path, "ABIDE_ASD_sample_metadata.Rds")) %>%
-  semi_join(., ABIDE_subjects)
-
-table(UCLA_metadata$Diagnosis)
-
-table(ABIDE_metadata$Diagnosis)
+icesTAF::mkdir(paste0(plot_path, "Figure1/"))
 
 # Brain figure
 data.frame(
@@ -117,12 +70,8 @@ data.frame(Time = 1:length(ar.sim1),
   geom_line(size=0.6, alpha=0.9) +
   scale_color_manual(values=c("deepskyblue2")) + 
   scale_y_continuous(labels=scaleFUN) +
-  theme(legend.position="none",
-        axis.line = element_line(color="white"),
-        axis.text = element_text(color="white"),
-        axis.title = element_text(color="white"),
-        axis.ticks = element_line(color="white"))
-ggsave(paste0(plot_path, "BOLD_TS_blue.png"), width=2.3, height=1.8, 
+  theme(legend.position="none")
+ggsave(paste0(plot_path, "Figure1/BOLD_TS_blue.png"), width=2.3, height=1.8, 
        units="in", dpi=1200, bg = "transparent")
 
 # Rostral middle frontal (orange)
@@ -133,12 +82,8 @@ data.frame(Time = 1:length(ar.sim2),
   geom_line(size=0.6, alpha=0.9) +
   scale_color_manual(values=c("darkorange2")) +
   scale_y_continuous(labels=scaleFUN) +
-  theme(legend.position="none",
-        axis.line = element_line(color="white"),
-        axis.text = element_text(color="white"),
-        axis.title = element_text(color="white"),
-        axis.ticks = element_line(color="white"))
-ggsave(paste0(plot_path, "BOLD_TS_orange.png"), width=2.3, height=1.8, 
+  theme(legend.position="none")
+ggsave(paste0(plot_path, "Figure1/BOLD_TS_orange.png"), width=2.3, height=1.8, 
        units="in", dpi=1200, bg = "transparent")
 
 # Plots together
@@ -150,17 +95,15 @@ data.frame(Time = c(1:length(ar.sim1), 1:length(ar.sim2)),
   geom_line(size=0.6, alpha=0.9) +
   scale_color_manual(values=c("deepskyblue2", "darkorange2")) +
   scale_y_continuous(labels=scaleFUN) +
-  theme(legend.position="none",
-        axis.line = element_line(color="white"),
-        axis.text = element_text(color="white"),
-        axis.title = element_text(color="white"),
-        axis.ticks = element_line(color="white"))
-ggsave(paste0(plot_path, "BOLD_TS_both.png"), width=2.3, height=1.8, 
+  theme(legend.position="none")
+ggsave(paste0(plot_path, "Figure1/BOLD_TS_both.png"), width=2.3, height=1.8, 
        units="in", dpi=1200, bg = "transparent")
 
+
 ################################################################################
-# Slide 7 Univariate Results
+# Figure 2: Univariate results
 ################################################################################
+icesTAF::mkdir(paste0(plot_path, "Figure2/"))
 
 # Load UCLA p-values
 UCLA_ROI_pvals <- readRDS(paste0(UCLA_rdata_path, "ROI_wise_CV_linear_SVM_model_permutation_null_catch22_inv_prob_pvals.Rds")) %>%
@@ -224,13 +167,9 @@ ggplot() +
                                           filter(bal_acc_p_adj < 0.05) %>% 
                                           pull(balanced_accuracy)))) +
   xlab("Balanced Accuracy") +
-  ylab("Brain Region") +
-  theme(axis.line = element_line(color="white"),
-        axis.text = element_text(color="white"),
-        axis.title = element_text(color="white"),
-        axis.ticks = element_line(color="white"))
+  ylab("Brain Region")
 
-ggsave(paste0(plot_path, "UCLA_Schizophrenia_Brain_Region_sig_boxplot.png"),
+ggsave(paste0(plot_path, "Figure2/UCLA_Schizophrenia_Brain_Region_sig_boxplot.png"),
        width = 3.7, height = 2, units="in", dpi=300)
 
 # ABIDE boxplot with shaded null region
