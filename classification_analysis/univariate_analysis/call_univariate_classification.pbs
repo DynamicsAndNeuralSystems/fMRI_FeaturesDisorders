@@ -20,7 +20,6 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript univariate_classification.R \
 --noise_procs $noise_procs \
 --noise_proc_for_null $main_noise_proc \
 --dataset_ID $dataset_ID \
---run_number $run_number \
 --email $email"
 echo $cmd
 $cmd
@@ -36,7 +35,6 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript generate_null_model_PBS_scripts.R \
 --noise_procs $noise_procs \
 --noise_proc_for_null $main_noise_proc \
 --dataset_ID $dataset_ID \
---run_number $run_number \
 --email $email"
 echo $cmd
 $cmd
