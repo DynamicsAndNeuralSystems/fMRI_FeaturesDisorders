@@ -26,6 +26,53 @@ list.append <- function (.data, ...)
   }
 }
 
+#-------------------------------------------------------------------------------
+# In-sample SVM with option to use inverse probability weighting
+#-------------------------------------------------------------------------------
+in_sample_linear_SVM <- function(input_data,
+                                 c = 1,
+                                 svm_kernel = "linear",
+                                 sample_wts = list("Control" = 1,
+                                                   "Schz" = 1),
+                                 shuffle_labels = FALSE) {
+  
+  # Shuffle labels if specified
+  if (shuffle_labels) {
+    input_data <- transform(input_data, Diagnosis = sample(Diagnosis, replace = FALSE))
+  }
+  
+  # Specify that Diagnosis is a factor so that createFolds creates stratified folds
+  input_data$Diagnosis <- factor(input_data$Diagnosis)
+  
+  # Create dataframe to store subject IDs and whether or not they were properly classified
+  subject_classification_list <- list()
+  
+  # Run linear SVM
+  svmModel <- e1071::svm(factor(Diagnosis) ~ .,
+                         kernel = svm_kernel,
+                         cost = c,
+                         data = input_data,
+                         class.weights = sample_wts)
+  
+  # Generate predictions based on SVM model
+  sample_pred <- predict(svmModel, input_data)
+  input_data$Diagnosis <- factor(input_data$Diagnosis, levels = levels(sample_pred))
+  
+  # Create dataframe containing subject ID and whether out-of-sample prediction was correct
+  predictions_by_subject <- data.frame(Sample_ID = input_data$Sample_ID,
+                                                Actual_Diagnosis = input_data$Diagnosis,
+                                                Predicted_Diagnosis = sample_pred) %>%
+    mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
+  
+  subject_classification_list <- list.append(subject_classification_list,
+                                             predictions_by_subject)
+  
+  # Compile classification res
+  classification_res <- do.call(plyr::rbind.fill, subject_classification_list)
+  
+  # Return results 
+  return(classification_res)
+}
 
 #-------------------------------------------------------------------------------
 # k-fold CV SVM with option to use inverse probability weighting
@@ -256,7 +303,8 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
         dplyr::mutate(grouping_var = group_var,
                       repeat_number = repeat_number,
                       feature_set = univariate_feature_set,
-                      Noise_Proc = noise_proc)
+                      Noise_Proc = noise_proc,
+                      num_SVM_features = ncol(data_for_SVM) - 2)
       
       # Append results to list
       class_res_list <- list.append(class_res_list, SVM_results)

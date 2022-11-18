@@ -25,6 +25,22 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript univariate_classification.R \
 echo $cmd
 $cmd
 
+# Generate null model PBS scripts
+# Run univariate classification
+cmd="/usr/physics/R/R-4.2.1/bin/Rscript generate_null_model_PBS_scripts.R \
+--github_dir $github_dir \
+--data_path $data_path \
+--sample_metadata_file $sample_metadata_file \
+--pairwise_feature_set $pairwise_feature_set \
+--univariate_feature_set $univariate_feature_set \
+--noise_procs $noise_procs \
+--noise_proc_for_null $main_noise_proc \
+--dataset_ID $dataset_ID \
+--run_number $run_number \
+--email $email"
+echo $cmd
+$cmd
+
 exit
 
 # Verify the host on which the job ran

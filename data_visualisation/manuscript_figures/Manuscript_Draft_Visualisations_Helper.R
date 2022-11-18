@@ -157,3 +157,26 @@ plot_SPI_with_without_univar <- function(dataset_ID,
           strip.text.y.left = element_blank(),
           axis.title.x = element_blank())
 }
+
+#-------------------------------------------------------------------------------
+# Function to read in file with average fractional displacement (FD)
+# As well as list of individual subject movement files
+# And output a CSV containing the Subject ID, diagnosis, and FD
+#-------------------------------------------------------------------------------
+compile_movement_data <- function(fd_path, 
+                                  input_dataset_name,
+                                  sample_metadata) {
+  mov_data <- read.table(paste0(fd_path, sprintf("fdAvgs_%s.txt",
+                                                 input_dataset_name)))
+  colnames(mov_data)[1] <- "FD"
+  
+  mov_data_subjects <- list.files(fd_path, pattern="_movData.txt") %>%
+    gsub("_movData.txt", "", .)
+  
+  mov_data$Sample_ID <- mov_data_subjects
+  
+  mov_data <- mov_data %>%
+    left_join(., sample_metadata) 
+  
+  return(mov_data)
+}
