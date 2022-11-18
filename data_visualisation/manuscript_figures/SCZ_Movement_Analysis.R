@@ -14,6 +14,7 @@ theme_set(theme_cowplot())
 
 github_dir <- "~/github/fMRI_FeaturesDisorders/"
 source(paste0(github_dir, "helper_functions/classification/Linear_SVM.R"))
+source(paste0(github_dir, "data_visualisation/manuscript_figures/Manuscript_Draft_Visualisations_Helper.R"))
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/FigureS1/")
 icesTAF::mkdir(plot_path)
 
@@ -26,7 +27,7 @@ SCZ_subject_metadata <- readRDS(paste0(SCZ_data_path, "UCLA_Schizophrenia_sample
 # Load fractional displacement (movement) data
 SCZ_movement_data <- compile_movement_data(fd_path = paste0(SCZ_data_path, "movementData/"),
                                            input_dataset_name = "UCLA_Schizophrenia",
-                                           sample_metadata = SCZ_subject_info) %>%
+                                           sample_metadata = SCZ_subject_metadata) %>%
   filter(!is.na(Diagnosis))
 
 ################################################################################
@@ -43,7 +44,7 @@ SCZ_movement_data %>%
   theme(legend.position="none",
         plot.title=element_text(hjust=0.5)) 
 ggsave(paste0(plot_path, "SCZ_FD_by_group_violin.png"),
-       width = 4, height = 4, units="in", dpi=300)
+       width = 4, height = 4, units="in", dpi=300, bg="white")
 
 ################################################################################
 # Plot # subjects retained per group by FD threshold
@@ -82,7 +83,7 @@ SCZ_threshold_data %>%
         strip.placement = "outside",
         plot.title=element_text(hjust=0.5))
 ggsave(paste0(plot_path, "SCZ_FD_threshold_num_subjects.png"),
-       width = 5, height = 2.75, units="in", dpi=300)
+       width = 5, height = 2.75, units="in", dpi=300, bg="white")
 
 # Plot % of subjects retained per FD threshold by group
 SCZ_threshold_data %>%
@@ -99,7 +100,7 @@ SCZ_threshold_data %>%
         strip.placement = "outside",
         plot.title=element_text(hjust=0.5))
 ggsave(paste0(plot_path, "SCZ_FD_threshold_percent_subjects.png"),
-       width = 5, height = 3, units="in", dpi=300)
+       width = 5, height = 3, units="in", dpi=300, bg="white")
 
 ################################################################################
 # Balanced accuracy as a function of FD threshold for top-performing ROI
@@ -187,4 +188,4 @@ SCZ_threshold_SVM_res %>%
   xlab("Fractional Displacement (FD) Maximum Threshold") +
   ylab("Balanced Accuracy") 
 ggsave(paste0(plot_path, "SCZ_FD_threshold_SVM_balanced_accuracy.png"),
-       width = 5, height = 2.5, units="in", dpi=300)
+       width = 5, height = 2.5, units="in", dpi=300, bg="white")

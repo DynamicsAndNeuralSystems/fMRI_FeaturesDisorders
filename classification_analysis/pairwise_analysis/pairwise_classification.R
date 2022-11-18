@@ -202,6 +202,4 @@ for (i in 1:nrow(grouping_param_df)) {
                                                                            pairwise_feature_set, 
                                                                            weighting_name)))
   }
-  
-  
 }

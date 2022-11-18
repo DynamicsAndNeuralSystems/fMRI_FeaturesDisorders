@@ -1,62 +1,78 @@
-library(argparse)
-parser <- ArgumentParser(description = "Define data paths and feature set")
+################################################################################
+# Load libraries
+################################################################################
 
-parser$add_argument("--project_path", default="/project/hctsa/annie/")
-parser$add_argument("--github_dir", default="/project/hctsa/annie/github/")
-parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
-parser$add_argument("--data_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/")
-parser$add_argument("--rdata_path", default="/project/hctsa/annie/data/UCLA_Schizophrenia/Rdata/")
-parser$add_argument("--plot_dir", default="/project/hctsa/annie/data/UCLA_Schizophrenia/plots/Misclassification_Analysis/")
-parser$add_argument("--univariate_feature_set", default="catch22")
-
-# Parse input arguments
-args <- parser$parse_args()
-project_path <- args$project_path
-dataset_ID <- args$dataset_ID
-github_dir <- args$github_dir
-data_path <- args$data_path
-rdata_path <- args$rdata_path
-univariate_feature_set <- args$univariate_feature_set
-
-# project_path <- "D:/Virtual_Machines/Shared_Folder/github/"
-# dataset_ID <- "UCLA_Schizophrenia"
-# github_dir <- "D:/Virtual_Machines/Shared_Folder/github/fMRI_FeaturesDisorders/"
-# data_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/"
-# plot_dir <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/plots/EDA/"
-# rdata_path <- "D:/Virtual_Machines/Shared_Folder/PhD_work/data/UCLA_Schizophrenia/Rdata/"
-# univariate_feature_set <- "catch22"
-
-# Load functions
 library(tidyverse)
+library(icesTAF)
 library(cowplot)
+
 theme_set(theme_cowplot())
-set.seed(127)
+
+################################################################################
+# Define study/data paths
+################################################################################
+
+github_dir <- "~/github/fMRI_FeaturesDisorders/"
+source(paste0(github_dir, "helper_functions/classification/Linear_SVM.R"))
+plot_path <- paste0(github_dir, "plots/EDA/")
+icesTAF::mkdir(plot_path)
+
+SCZ_data_path <- "~/data/UCLA_Schizophrenia/"
+SCZ_rdata_path <- paste0(SCZ_data_path, "processed_data/Rdata/")
+ASD_data_path <- "~/data/ABIDE_ASD/"
+ASD_rdata_path <- paste0(ASD_data_path, "processed_data/Rdata/")
 
 # Load subject metadata
-subject_metadata <- read.csv(paste0(data_path, "participants.csv")) %>%
-  dplyr::rename("Subject_ID" = "sampleID") %>%
-  filter(diagnosis %in% c("CONTROL", "SCHZ"),
-         rest == "1") %>%
-  dplyr::select(Subject_ID:gender)
+SCZ_subject_metadata <- readRDS(paste0(SCZ_data_path, "UCLA_Schizophrenia_sample_metadata.Rds")) %>%
+  dplyr::filter(Diagnosis %in% c("Control", "Schizophrenia"))
+ASD_subject_metadata <- readRDS(paste0(ASD_data_path, "ABIDE_ASD_sample_metadata.Rds"))
 
-# Summary of dataset 
-subject_metadata %>%
-  group_by(diagnosis) %>%
+# Summary of SCZ dataset 
+SCZ_subject_metadata %>%
+  group_by(Diagnosis) %>%
   summarise(N = n(),
             Percent_Female = 100*sum(gender=="F", na.rm=T)/n(),
             Num_Female = sum(gender=="F", na.rm=T),
             Age_Mean = mean(age, na.rm=T),
             Age_SD = sd(age, na.rm=T))
 
+# Summary of ASD dataset 
+ASD_subject_metadata %>%
+  mutate(Diagnosis = factor(Diagnosis, levels = c("Control", "ASD"))) %>%
+  group_by(Diagnosis) %>%
+  summarise(N = n(),
+            Percent_Female = 100*sum(sex=="F", na.rm=T)/n(),
+            Num_Female = sum(sex=="F", na.rm=T),
+            Age_Mean = mean(age, na.rm=T),
+            Age_SD = sd(age, na.rm=T))
+
 # Visualise age and sex distribution by diagnosis
-subject_metadata %>%
-  ggplot(data = ., mapping=aes(x = gender, y = age, fill = diagnosis)) +
-  geom_boxplot() +
-  scale_fill_manual(values = c("chartreuse4", "red")) +
-  ggtitle(paste0(dataset_ID, " Age\nvs. Sex and Diagnosis")) +
+SCZ_subject_metadata %>%
+  mutate(Diagnosis = factor(Diagnosis, levels = c("Control", "Schizophrenia"))) %>%
+  ggplot(data = ., mapping=aes(x = gender, y = age, fill = Diagnosis)) +
+  geom_violin(position = position_dodge(0.9)) +
+  geom_boxplot(color = "black", width=0.1, position = position_dodge(0.9)) +
+  scale_fill_manual(values = c("#00B06D", "#737373")) +
+  ggtitle("Schizophrenia Age\nvs. Sex and Diagnosis") +
   ylab("Age") +
   xlab("Sex") +
   theme(legend.position = "bottom",
         plot.title = element_text(hjust=0.5))
-ggsave(paste0(plot_dir, dataset_ID, "_Age_vs_Sex_and_Diagnosis.png"),
-       width=5, height=4, units="in", dpi=300)
+ggsave(paste0(plot_path, "SCZ_Age_vs_Sex_and_Diagnosis.png"),
+       width=5, height=4, units="in", dpi=300,
+       bg = "white")
+
+ASD_subject_metadata %>%
+  mutate(Diagnosis = factor(Diagnosis, levels = c("Control", "ASD"))) %>%
+  ggplot(data = ., mapping=aes(x = sex, y = age, fill = Diagnosis)) +
+  geom_violin(position = position_dodge(0.9)) +
+  geom_boxplot(color = "black", width=0.1, position = position_dodge(0.9)) +
+  scale_fill_manual(values = c("#00B06D", "#737373")) +
+  ggtitle("ASD Age\nvs. Sex and Diagnosis") +
+  ylab("Age") +
+  xlab("Sex") +
+  theme(legend.position = "bottom",
+        plot.title = element_text(hjust=0.5))
+ggsave(paste0(plot_path, "ASD_Age_vs_Sex_and_Diagnosis.png"),
+       width=5, height=4, units="in", dpi=300,
+       bg = "white")

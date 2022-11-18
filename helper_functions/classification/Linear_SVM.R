@@ -60,8 +60,8 @@ in_sample_linear_SVM <- function(input_data,
   
   # Create dataframe containing subject ID and whether out-of-sample prediction was correct
   predictions_by_subject <- data.frame(Sample_ID = input_data$Sample_ID,
-                                                Actual_Diagnosis = input_data$Diagnosis,
-                                                Predicted_Diagnosis = sample_pred) %>%
+                                       Actual_Diagnosis = input_data$Diagnosis,
+                                       Predicted_Diagnosis = sample_pred) %>%
     mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
   
   subject_classification_list <- list.append(subject_classification_list,
@@ -380,6 +380,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     
     # Filter by directionality
     pairwise_data <- pairwise_data %>%
+      filter(brain_region_1 != brain_region_2) %>%
       dplyr::rename("group_SPI" = "SPI") %>%
       group_by(group_SPI) %>%
       mutate(Direction = SPI_directionality %>% 
@@ -459,7 +460,8 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
         drop_na()
     }
     
-    if (nrow(data_for_SVM) > 0) {
+    # Only move forward if more than 50% of original data is retained
+    if (nrow(data_for_SVM) > 0.5*length(unique(pairwise_data$Sample_ID))) {
       # Run k-fold linear SVM
       tryCatch({SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
                                                     flds = flds,
@@ -472,7 +474,8 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                       repeat_number = repeat_number,
                       pairwise_feature_set = pairwise_feature_set,
                       use_inv_prob_weighting = use_inv_prob_weighting,
-                      Noise_Proc = noise_proc)
+                      Noise_Proc = noise_proc,
+                      num_SVM_features = ncol(data_for_SVM) - 2)
       
       # Append results to list
       class_res_list <- list.append(class_res_list, SVM_results)
@@ -481,7 +484,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
         message(e)
       })
     } else {
-      cat("\nNo observations available for", group_var, "after filtering.\n")
+      cat("\nNot enough observations available for", group_var, "after filtering.\n")
     }
   }
   

@@ -101,7 +101,7 @@ plot_NA_sample_ts <- function(dataset_ID = "UCLA_Schizophrenia",
     
     ts_data %>%
       filter(Sample_ID %in% NA_sample_IDs) %>%
-      ggplot(data=., mapping=aes_string(x="timepoint", y="value", color=grouping_var)) +
+      ggplot(data=., mapping=aes_string(x="timepoint", y="values", color=grouping_var)) +
       ggtitle(sprintf("Raw time-series for %s\nNA samples with %s",
                       gsub("_", " ", dataset_ID), univariate_feature_set)) +
       geom_line(alpha=0.6) +
