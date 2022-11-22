@@ -27,5 +27,5 @@ do
     --pyspi_config $config_file \
     --sample_yaml ${data_path}/raw_data/numpy_files/${noise_label}/sample.yaml \
     --pbs_notify a \
-    --email $email --walltime_hrs $walltime_hrs --cpu 1 --mem 20 --table_only
+    --email $email --walltime_hrs $walltime_hrs --cpu 2 --mem 30 --table_only
 done

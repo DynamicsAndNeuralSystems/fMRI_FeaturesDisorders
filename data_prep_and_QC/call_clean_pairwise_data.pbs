@@ -28,8 +28,7 @@ cmd="Rscript clean_pairwise_data.R \
 --brain_region_lookup $brain_region_lookup \
 --noise_procs $noise_procs \
 --main_noise_proc $main_noise_proc \
---dataset_ID $dataset_ID \
---run_number $run_number"
+--dataset_ID $dataset_ID"
 echo $cmd
 $cmd
 

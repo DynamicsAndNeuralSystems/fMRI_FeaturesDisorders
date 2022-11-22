@@ -38,15 +38,6 @@ export pyspi_walltime_hrs=8
 # export pyspi_walltime_hrs=12
 
 # # Prep univariate data
-# Round 1: Running 5 iterations as a sanity check that values are the same
-# for run_number in 1 2 3 4 5; do
-#   qsub -v run_number=$run_number,github_dir=$github_dir,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs \
-#   -N prepare_univariate_data_${dataset_ID}${run_number} \
-#   -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}${run_number}_out.txt \
-#   -m a \
-#   call_prepare_univariate_data.pbs
-# done
-# # Round 2: Running as main analysis
 # qsub -v dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs \
 # -N prepare_univariate_data_${dataset_ID}${run_number} \
 # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}_out.txt \
@@ -73,15 +64,6 @@ export pyspi_walltime_hrs=8
 # $pyspi_walltime_hrs
 
 # Integrate results from pyspi-distribute
-# Round 1: Running 5 iterations as a sanity check that values are the same
-# for run_number in 1 2 3 4 5; do
-#   qsub -v run_number=$run_number,github_dir=$github_dir,data_path=$data_path,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
-#   -N clean_pairwise_data_${dataset_ID}${run_number} \
-#   -o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}${run_number}_out.txt \
-#   -m a -M $email \
-#   call_clean_pairwise_data.pbs
-# done
-# Round 2: Running as main analysis
 # qsub -v github_dir=$github_dir,data_path=$data_path,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
 # -N clean_pairwise_data_${dataset_ID} \
 # -o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}_out.txt \
@@ -89,15 +71,6 @@ export pyspi_walltime_hrs=8
 # call_clean_pairwise_data.pbs
 
 # Merge subjects with univariate + pairwise data
-# Round 1: Running 5 iterations as a sanity check that values are the same
-# for run_number in 1 2 3 4 5; do
-#   qsub -v run_number=$run_number,github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set \
-#   -N merge_samples_univariate_pairwise_${dataset_ID}${run_number} \
-#   -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/merge_samples_univariate_pairwise_${dataset_ID}${run_number}_out.txt \
-#   -m a -M $email \
-#   call_merge_samples_univariate_pairwise.pbs
-# done
-# # Round 2: Running as main analysis
 # qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set \
 # -N merge_samples_univariate_pairwise_${dataset_ID} \
 # -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/merge_samples_univariate_pairwise_${dataset_ID}_out.txt \
@@ -108,15 +81,6 @@ export pyspi_walltime_hrs=8
 cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/
 
 # Univariate linear SVM
-# Round 1: Running 5 iterations as a sanity check that values are the same
-# for run_number in 1 2 3 4 5; do
-#   qsub -v run_number=$run_number,github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc \
-#   -N run_univariate_classification_${dataset_ID}${run_number} \
-#   -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}${run_number}_out.txt \
-#   -m a -M $email \
-#   call_univariate_classification.pbs 
-# done
-# # Round 2: Running as main analysis
 # qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc \
 # -N run_univariate_classification_${dataset_ID} \
 # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_out.txt \
@@ -131,14 +95,6 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysi
 # done
 
 # # Integrate null model fits and calculate p-values
-# for run_number in 1 2 3 4 5; do
-#   qsub -v run_number=$run_number,github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
-#   -N run_univariate_null_model_analysis${dataset_ID}${run_number} \
-#   -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}${run_number}_out.txt \
-#   -m a -M $email \
-#   call_univariate_null_model_analysis.pbs 
-# done
-# # Round 2: Running as main analysis
 qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
 -N run_univariate_null_model_analysis${dataset_ID} \
 -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_out.txt \
