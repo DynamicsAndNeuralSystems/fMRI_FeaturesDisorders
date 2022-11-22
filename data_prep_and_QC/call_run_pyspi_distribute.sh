@@ -12,6 +12,8 @@ export dataset_ID="$4"
 export data_path="$5"
 export noise_procs="$6"
 export walltime_hrs="$7"
+export mem="$8"
+export ncpus="$9"
 export calc_file_name="$8"
 
 noise_procs_list=$(echo $noise_procs | sed "s/;/ /g")
@@ -29,5 +31,5 @@ do
     --pyspi_config $config_file \
     --sample_yaml ${data_path}/raw_data/numpy_files/${noise_label}/sample.yaml \
     --pbs_notify a \
-    --email $email --walltime_hrs $walltime_hrs --cpu 2 --mem 30 --table_only
+    --email $email --walltime_hrs $walltime_hrs --cpu $ncpus --mem $mem --table_only
 done

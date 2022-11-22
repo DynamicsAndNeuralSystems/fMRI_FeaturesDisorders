@@ -17,7 +17,6 @@ export noise_procs="AROMA+2P+GMR"
 export main_noise_proc="AROMA+2P+GMR"
 export label_vars="Diagnosis"
 export pyspi_walltime_hrs=8
-export calc_file_name="calc_sgc_di_gaussian.pkl"
 
 # Run pyspi-distribute
 bash ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/call_run_pyspi_distribute.sh \

@@ -15,7 +15,9 @@ export brain_region_lookup="Brain_Region_info.csv"
 export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
 export main_noise_proc="AROMA+2P+GMR"
 export label_vars="Diagnosis"
-export pyspi_walltime_hrs=8
+export pyspi_walltime_hrs=12
+export pyspi_ncpus=2
+export pyspi_mem=40
 
 # # ABIDE ASD
 # export dataset_ID="ABIDE_ASD"
@@ -25,7 +27,9 @@ export pyspi_walltime_hrs=8
 # export noise_procs="FC1000"
 # export main_noise_proc="FC1000"
 # export label_vars="Diagnosis"
-# export pyspi_walltime_hrs=8
+# export pyspi_walltime_hrs=12
+# export pyspi_ncpus=2
+# export pyspi_mem=40
 
 # # HCP100
 # export dataset_ID="HCP100"
@@ -54,14 +58,17 @@ export pyspi_walltime_hrs=8
 # $cmd
 
 # Run pyspi-distribute
-# bash call_run_pyspi_distribute.sh \
-# $github_dir \
-# ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi14_config.yaml \
-# $email \
-# $dataset_ID \
-# $data_path \
-# $noise_procs \
-# $pyspi_walltime_hrs
+bash call_run_pyspi_distribute.sh \
+$github_dir \
+${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi14_mod_config.yaml \
+$email \
+$dataset_ID \
+$data_path \
+$noise_procs \
+$pyspi_walltime_hrs \
+$pyspi_ncpus \
+$pyspi_mem \
+calc_pyspi14_mod.pkl
 
 # Integrate results from pyspi-distribute
 # qsub -v github_dir=$github_dir,data_path=$data_path,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
@@ -95,11 +102,11 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysi
 # done
 
 # # Integrate null model fits and calculate p-values
-qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
--N run_univariate_null_model_analysis${dataset_ID} \
--o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_out.txt \
--m a -M $email \
-call_univariate_null_model_analysis.pbs 
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
+# -N run_univariate_null_model_analysis${dataset_ID} \
+# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_out.txt \
+# -m a -M $email \
+# call_univariate_null_model_analysis.pbs 
 
 ##########################################################################################
 # Pairwise analysis
