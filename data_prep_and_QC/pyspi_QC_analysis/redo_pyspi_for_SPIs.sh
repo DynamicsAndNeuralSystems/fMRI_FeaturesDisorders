@@ -12,30 +12,33 @@ export dataset_ID="UCLA_Schizophrenia"
 export data_path=/headnode1/abry4213/data/${dataset_ID}/
 export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
 export brain_region_lookup="Brain_Region_info.csv"
-export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
+export noise_procs="AROMA+2P+GMR"
+# export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
 export main_noise_proc="AROMA+2P+GMR"
 export label_vars="Diagnosis"
 export pyspi_walltime_hrs=8
+export calc_file_name="calc_sgc_di_gaussian.pkl"
 
 # Run pyspi-distribute
-# bash call_run_pyspi_distribute.sh \
-# $github_dir \
-# ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi14_config.yaml \
-# $email \
-# $dataset_ID \
-# $data_path \
-# $noise_procs \
-# $pyspi_walltime_hrs
+bash ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/call_run_pyspi_distribute.sh \
+$github_dir \
+${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_new_sgc_di_gaussian.yaml \
+$email \
+$dataset_ID \
+$data_path \
+$noise_procs \
+$pyspi_walltime_hrs \
+$calc_file_name
 
 # ABIDE ASD
-export dataset_ID="ABIDE_ASD"
-export data_path=/headnode1/abry4213/data/${dataset_ID}/
-export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
-export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
-export noise_procs="FC1000"
-export main_noise_proc="FC1000"
-export label_vars="Diagnosis"
-export pyspi_walltime_hrs=8
+# export dataset_ID="ABIDE_ASD"
+# export data_path=/headnode1/abry4213/data/${dataset_ID}/
+# export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
+# export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+# export noise_procs="FC1000"
+# export main_noise_proc="FC1000"
+# export label_vars="Diagnosis"
+# export pyspi_walltime_hrs=8
 
 # Run pyspi-distribute
 # bash call_run_pyspi_distribute.sh \
