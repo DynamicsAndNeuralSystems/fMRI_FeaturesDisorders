@@ -17,11 +17,11 @@ github_path = "/Users/abry4213/github/fMRI_FeaturesDisorders/data_visualisation/
 # Define data path
 SCZ_data_path = "/Users/abry4213/data/UCLA_Schizophrenia/raw_data/numpy_files/AROMA_2P_GMR/" 
 
-subject = "sub-10527"
+subject = "sub-10171"
 subject_data = np.load(SCZ_data_path + subject + ".npy")
 
 # config file
-config_file = github_path + "pyspi_sgc_config.yaml"
+config_file = github_path + "pyspi_di_gaussian_config.yaml"
 
 calc = Calculator(dataset=subject_data, configfile=config_file)
 calc.compute()

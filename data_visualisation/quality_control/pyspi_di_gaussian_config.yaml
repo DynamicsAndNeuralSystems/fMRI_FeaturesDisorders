@@ -1,0 +1,6 @@
+# Information-theoretic statistics
+.statistics.infotheory:
+
+  directed_info: # No theiler window yet
+
+    - estimator: gaussian
