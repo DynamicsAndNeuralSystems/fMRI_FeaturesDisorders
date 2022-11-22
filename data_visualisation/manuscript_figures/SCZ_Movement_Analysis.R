@@ -5,7 +5,8 @@
 library(tidyverse)
 library(icesTAF)
 library(cowplot)
-library(theft)
+library(ggpubr)
+library(ggsignif)
 theme_set(theme_cowplot())
 
 ################################################################################
@@ -34,6 +35,8 @@ SCZ_movement_data <- compile_movement_data(fd_path = paste0(SCZ_data_path, "move
 # Plot subject movement by diagnosis group
 ################################################################################
 
+wilcox.test(FD ~ Diagnosis, data = SCZ_movement_data)
+
 SCZ_movement_data %>%
   ggplot(data=., mapping=aes(x=Diagnosis, y=FD)) +
   geom_violin(aes(fill=Diagnosis)) +
@@ -42,7 +45,10 @@ SCZ_movement_data %>%
   xlab("Group") +
   scale_fill_manual(values = c("#00B06D", "#737373")) +
   theme(legend.position="none",
-        plot.title=element_text(hjust=0.5)) 
+        plot.title=element_text(hjust=0.5)) +
+  geom_signif(test = "wilcox.test",
+              comparisons = list(c("Schizophrenia", "Control")), 
+              map_signif_level=TRUE)
 ggsave(paste0(plot_path, "SCZ_FD_by_group_violin.png"),
        width = 4, height = 4, units="in", dpi=300, bg="white")
 

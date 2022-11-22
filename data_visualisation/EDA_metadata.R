@@ -76,3 +76,24 @@ ASD_subject_metadata %>%
 ggsave(paste0(plot_path, "ASD_Age_vs_Sex_and_Diagnosis.png"),
        width=5, height=4, units="in", dpi=300,
        bg = "white")
+
+
+# Look into sites for ASD data
+ASD_subject_metadata %>%
+  mutate(site = ifelse(site > 20, site - 20, site)) %>%
+  group_by(Diagnosis, site) %>%
+  count() %>%
+  pivot_wider(id_cols = site,
+              names_from = Diagnosis,
+              values_from = n) %>%
+  mutate(ASD = ifelse(is.na(ASD), 0, ASD),
+         Control = ifelse(is.na(Control), 0, Control))
+
+
+SVM_res <- readRDS(paste0(ASD_rdata_path, 
+                          "ROI_wise_CV_linear_SVM_catch22_inv_prob.Rds")) 
+
+SVM_res %>%
+  distinct(Sample_ID, Actual_Diagnosis) %>%
+  group_by(Actual_Diagnosis) %>%
+  count()

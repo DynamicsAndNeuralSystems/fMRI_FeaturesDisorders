@@ -8,7 +8,6 @@ parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
-parser$add_argument("--run_number", nargs="?")
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -18,33 +17,25 @@ data_path <- args$data_path
 noise_proc <- args$noise_proc
 univariate_feature_set <- args$univariate_feature_set
 dataset_ID <- args$dataset_ID
-run_number <- args$run_number
 
 # univariate_feature_set <- "catch22"
 # pairwise_feature_set <- "pyspi14"
-# github_dir <- "/headnode1/abry4213/github/"
+# github_dir <- "~/github/"
 
 # UCLA schizophrenia
-# data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
+# data_path <- "~/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
 # noise_proc <- "AROMA+2P+GMR"
-# run_number <- 2
 
 # ABIDE ASD
-# data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
+# data_path <- "~/data/ABIDE_ASD/"
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
 # dataset_ID <- "ABIDE_ASD"
 # noise_proc <- "FC1000"
 
-if (!is.null(run_number)) {
-  rdata_path <- paste0(data_path, "processed_data_run", run_number, "/Rdata/")
-  plot_dir <- paste0(data_path, "plots_run", run_number, "/")
-} else {
-  rdata_path <- paste0(data_path, "processed_data/Rdata/")
-  plot_dir <- paste0(data_path, "plots/")
-}
-
+rdata_path <- paste0(data_path, "processed_data/Rdata/")
+plot_dir <- paste0(data_path, "plots/")
 
 #-------------------------------------------------------------------------------
 # Source helper scripts

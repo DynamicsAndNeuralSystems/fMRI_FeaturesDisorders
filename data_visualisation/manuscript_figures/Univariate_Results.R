@@ -29,6 +29,10 @@ ABIDE_brain_region_info <- read.csv(paste0(ABIDE_data_path,
 
 icesTAF::mkdir(paste0(plot_path, "Figure2/"))
 
+UCLA_full <- readRDS(paste0(UCLA_rdata_path, 
+                            "UCLA_Schizophrenia_pyspi14_filtered_zscored.Rds"))
+UCLA_full_NA <- subset(UCLA_full, is.na(values) & brain_region_1 != brain_region_2)
+
 ################################################################################
 # Figure 2A univariate region-wise results
 ################################################################################
