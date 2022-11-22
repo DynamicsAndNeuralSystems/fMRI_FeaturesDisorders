@@ -1,3 +1,23 @@
+# Information-theoretic statistics
+.statistics.infotheory:
+
+  directed_info: # No theiler window yet
+
+    - estimator: gaussian
+
+  # Transfer entropy
+  transfer_entropy:
+
+    - estimator: kraskov
+      prop_k: 4
+      auto_embed_method: MAX_CORR_AIS
+      k_search_max: 10
+      tau_search_max: 4
+      dyn_corr_excl: AUTO
+
+  integrated_information:
+    - phitype: 'star'
+    
 # Basic statistics
 .statistics.basic:
 
@@ -19,25 +39,7 @@
   # Additive noise model
   anm:
 
-# Information-theoretic statistics
-.statistics.infotheory:
 
-  directed_info: # No theiler window yet
-
-    - estimator: gaussian
-
-  # Transfer entropy
-  transfer_entropy:
-
-    - estimator: kraskov
-      prop_k: 4
-      auto_embed_method: MAX_CORR_AIS
-      k_search_max: 10
-      tau_search_max: 4
-      dyn_corr_excl: AUTO
-
-  integrated_information:
-    - phitype: 'star'
 
 # statistics that analyse in the frequency-domain (see Schoegl and Supp, 2006)
 .statistics.spectral:

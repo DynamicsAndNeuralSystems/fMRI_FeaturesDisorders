@@ -12,12 +12,14 @@ export dataset_ID="UCLA_Schizophrenia"
 export data_path=/headnode1/abry4213/data/${dataset_ID}/
 export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
 export brain_region_lookup="Brain_Region_info.csv"
-export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
+# export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
+export noise_procs="AROMA+2P+GMR"
 export main_noise_proc="AROMA+2P+GMR"
 export label_vars="Diagnosis"
 export pyspi_walltime_hrs=12
 export pyspi_ncpus=2
 export pyspi_mem=40
+export sample_yaml="sample.yaml"
 
 # # ABIDE ASD
 # export dataset_ID="ABIDE_ASD"
@@ -30,6 +32,7 @@ export pyspi_mem=40
 # export pyspi_walltime_hrs=12
 # export pyspi_ncpus=2
 # export pyspi_mem=40
+# export sample_yaml="sample.yaml"
 
 # # HCP100
 # export dataset_ID="HCP100"
@@ -66,9 +69,10 @@ $dataset_ID \
 $data_path \
 $noise_procs \
 $pyspi_walltime_hrs \
-$pyspi_ncpus \
 $pyspi_mem \
-calc_pyspi14_mod.pkl
+$pyspi_ncpus \
+calc_pyspi14_mod.pkl \
+$sample_yaml
 
 # Integrate results from pyspi-distribute
 # qsub -v github_dir=$github_dir,data_path=$data_path,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
