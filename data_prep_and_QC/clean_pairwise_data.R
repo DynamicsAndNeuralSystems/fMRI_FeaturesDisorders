@@ -8,6 +8,7 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
+parser$add_argument("--pkl_file", default="calc.pkl")
 parser$add_argument("--python_to_use", default="/headnode1/abry4213/.conda/envs/pyspi/bin/python3")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--pairwise_feature_set", default="pyspi14")
@@ -21,6 +22,7 @@ parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 args <- parser$parse_args()
 github_dir <- args$github_dir
 data_path <- args$data_path
+pkl_file <- args$pkl_file
 python_to_use <- args$python_to_use
 univariate_feature_set <- args$univariate_feature_set
 pairwise_feature_set <- args$pairwise_feature_set
@@ -32,8 +34,9 @@ dataset_ID <- args$dataset_ID
 
 # python_to_use <- "/headnode1/abry4213/.conda/envs/pyspi/bin/python3"
 # univariate_feature_set <- "catch22"
-# pairwise_feature_set <- "pyspi14"
+# pairwise_feature_set <- "pyspi14_mod"
 # github_dir <- "/headnode1/abry4213/github/"
+# pkl_file <- "calc.pkl"
 
 # UCLA schizophrenia
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
@@ -101,7 +104,7 @@ cat("rdata_path:", rdata_path, "\n")
 cat("noise_procs:", paste(noise_procs, collapse=", "), "\n")
 
 #-------------------------------------------------------------------------------
-# Function to read in pyspi calc.pkl files per sample and convert
+# Function to read in pyspi pickle files per sample and convert
 # The SPI result data into an RDS file per sample
 #-------------------------------------------------------------------------------
 read_pyspi_pkl_into_RDS <- function(pkl_data_path,
@@ -130,7 +133,7 @@ read_pyspi_pkl_into_RDS <- function(pkl_data_path,
       if (!file.exists(paste0(np_rdata_path, sample, "_pyspi.Rds"))) {
         cat("\nNow prepping data for", sample, noise_label, "\n")
         tryCatch({
-          sample_pkl_data <- extract_df_from_pkl(paste0(np_data_path, sample, "/calc.pkl")) %>%
+          sample_pkl_data <- extract_df_from_pkl(paste0(np_data_path, sample, "/", pkl_file)) %>%
             mutate(Sample_ID = sample,
                    Noise_Proc = noise_proc,
                    brain_region_1 = as.numeric(gsub("proc-", "", brain_region_1)),

@@ -21,6 +21,7 @@ mkdir -p $github_dir/cluster_output/
 cmd="Rscript clean_pairwise_data.R \
 --github_dir $github_dir \
 --data_path $data_path \
+--pkl_file $pkl_file \
 --python_to_use $python_to_use \
 --univariate_feature_set $univariate_feature_set \
 --pairwise_feature_set $pairwise_feature_set \
