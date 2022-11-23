@@ -229,10 +229,19 @@ run_repeat_cv_linear_svm <- function(fd_list = seq(0.12, 0.5, by=0.02),
 }
 
 combo_catch22_svm_res <- run_repeat_cv_linear_svm(movement_data = SCZ_movement_data,
-                         catch22_data = SCZ_catch22_zscored,
-                         type = "Combo"
+                                                  catch22_data = SCZ_catch22_zscored,
+                                                  type = "Combo"
 )
-saveRDS(SCZ_threshold_SVM_res, "SCZ_threshold_SVM_res.Rds")
+ROI_catch22_svm_res <- run_repeat_cv_linear_svm(movement_data = SCZ_movement_data,
+                                                catch22_data = SCZ_catch22_zscored,
+                                                type = "Brain Region",
+                                                input_region = "ctx-rh-postcentral"
+)
+mvmt_svm_res <- run_repeat_cv_linear_svm(movement_data = SCZ_movement_data,
+                                         catch22_data = SCZ_catch22_zscored,
+                                         type = "FD Only"
+)
+saveRDS(combo_catch22_svm_res, "SCZ_threshold_SVM_res.Rds")
 
 SCZ_threshold_SVM_res %>%
   plyr::rbind.fill(., SCZ_threshold_SVM_mvmt_res) %>%
