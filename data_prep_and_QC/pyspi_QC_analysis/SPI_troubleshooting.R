@@ -82,18 +82,25 @@ plot_SPI_na(this_SPI="sgc_nonparametric_mean_fs-1_fmin-0_fmax-0-5",
             pyspi_data = SCZ_pyspi14)
 ggsave(paste0(plot_path, "SCZ_sgc_full_range_NaN_heatmap_UCLA_Schizophrenia.png"),
        width=12, height=3, units="in", dpi=1200, bg="white")
-# ABIDE ASD
-plot_SPI_na(this_SPI="sgc_nonparametric_mean_fs-1_fmin-0_fmax-0-5",
-            SPI_name="sgc_full_range",
-            pyspi_data = ASD_pyspi14)
-ggsave(paste0(plot_path, "ASD_sgc_full_range_NaN_heatmap_UCLA_Schizophrenia.png"),
-       width=12, height=3, units="in", dpi=1200, bg="white")
 
 plot_SPI_na(this_SPI="di_gaussian",
             SPI_name="di_gaussian",
             pyspi_data = SCZ_pyspi14)
 ggsave(paste0(plot_path, SPI_name, "_NaN_heatmap_UCLA_Schizophrenia.png"),
        width=12, height=3, units="in", dpi=1200, bg="white")
+
+# ABIDE ASD
+plot_SPI_na(this_SPI="sgc_nonparametric_mean_fs-1_fmin-0_fmax-0-5",
+            SPI_name="sgc_full_range",
+            pyspi_data = ASD_pyspi14)
+ggsave(paste0(plot_path, "sgc_full_range_NaN_heatmap_ABIDE_ASD.png"),
+       width=12, height=8, units="in", dpi=300, bg="white")
+
+plot_SPI_na(this_SPI="di_gaussian",
+            SPI_name="di_gaussian",
+            pyspi_data = ASD_pyspi14)
+ggsave(paste0(plot_path, "di_gaussian_NaN_heatmap_ABIDE_ASD.png"),
+       width=12, height=8, units="in", dpi=300, bg="white")
 
 # Load raw time-series data for UCLA Schizophrenia
 SCZ_TS <- readRDS(paste0(SCZ_data_path, 
@@ -167,6 +174,7 @@ ASD_pyspi14_mod <- readRDS(paste0(ASD_rdata_path,
   filter(Noise_Proc == "FC1000")
 
 # Check distribution of remaining NA for SGC
+### UCLA Schizophrenia
 SCZ_pyspi14_mod %>%
   filter(SPI=="sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5",
          brain_region_1 != brain_region_2) %>%
@@ -175,14 +183,13 @@ SCZ_pyspi14_mod %>%
   dplyr::select(-SPI, -Noise_Proc) %>%
   kable(.) %>%
   kable_styling(full_width=F)
-ASD_pyspi14_mod %>%
-  filter(SPI=="sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5",
+# Original full-range SGC comparison
+SCZ_pyspi14 %>%
+  filter(SPI=="sgc_nonparametric_mean_fs-1_fmin-0_fmax-0-5",
          brain_region_1 != brain_region_2) %>%
   filter(is.na(value)) %>%
   arrange(brain_region_1, brain_region_2, Sample_ID) %>%
-  dplyr::select(-SPI, -Noise_Proc) %>%
-  kable(.) %>%
-  kable_styling(full_width=F)
+  dplyr::select(-SPI, -Noise_Proc) 
 
 # Find # NaN for SGC for each brain region
 SCZ_pyspi14_mod %>%
@@ -215,7 +222,58 @@ SCZ_pyspi14_mod %>%
 ggsave(paste0(plot_path, "sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5_NaN_UCLA_Schizophrenia_pyramid.png"),
        width=8, height=5, units="in", dpi=300, bg="white")
 
+### ABIDE ASD
+ASD_pyspi14_mod %>%
+  filter(SPI=="sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5",
+         brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  arrange(brain_region_1, brain_region_2, Sample_ID) %>%
+  dplyr::select(-SPI, -Noise_Proc)
+# Original full-range SGC comparison
+ASD_pyspi14 %>%
+  filter(SPI=="sgc_nonparametric_mean_fs-1_fmin-0_fmax-0-5",
+         brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  arrange(brain_region_1, brain_region_2, Sample_ID) %>%
+  dplyr::select(-SPI, -Noise_Proc)  %>%
+  distinct(Sample_ID)
+# Find subjects with NaN still for 0.25-0.5 range
+ASD_pyspi14_mod %>%
+  filter(SPI=="sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5",
+         brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  arrange(brain_region_1, brain_region_2, Sample_ID) %>%
+  dplyr::select(-SPI, -Noise_Proc)
+
+# Find # NaN for SGC for each brain region
+ASD_pyspi14_mod %>%
+  filter(SPI=="sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5",
+         brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  dplyr::select(Sample_ID, brain_region_1, brain_region_2) %>%
+  pivot_longer(cols=c(-Sample_ID),
+               values_to="brain_region") %>%
+  group_by(brain_region) %>%
+  count() %>%
+  ggplot(data=., mapping=aes(y=n, x=fct_reorder(brain_region,
+                                                n,
+                                                .fun=max,
+                                                .desc=T))) +
+  geom_col(aes(fill = n)) +
+  ggtitle("sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5\nRemaining NaNs by Brain Region") +
+  xlab("Brain Region") +
+  ylab("# NaN in/out") + 
+  scale_fill_viridis_c() +
+  scale_x_discrete(labels = scales::wrap_format(30))+
+  theme(legend.position="none",
+        axis.text.x = element_text(angle=90, hjust=1, size=8, vjust=0.4),
+        plot.title=element_text(hjust=0.5))
+ggsave(paste0(plot_path, "sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5_NaN_ABIDE_ASD.png"),
+       width=15, height=5, units="in", dpi=300, bg="white")
+
 # di_gaussian redo
+  
+### UCLA Schizophrenia
 # There are some subjects with just a few regions returning NaN for di_gaussian,
 # which isn't overly concerning
 SCZ_pyspi14_mod %>%
@@ -242,7 +300,6 @@ SCZ_pyspi14_mod %>%
   ungroup() %>%
   pull(Sample_ID)
 
-
 # I re-ran just di_gaussian for these 13 subjects with one or more NaN directly 
 # within spyder on the physics cluster
 SCZ_pyspi14_mod_di_gaussian <- readRDS(paste0(UCLA_rdata_path, 
@@ -261,3 +318,45 @@ SCZ_pyspi14_mod_di_gaussian %>%
   kable_styling(full_width=F)
 
 # This time, there were no NaNs returned for any of these subjects.
+
+### ABIDE ASD
+ASD_pyspi14_mod %>%
+  filter(SPI=="di_gaussian",
+         brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  group_by(Sample_ID, Diagnosis) %>%
+  summarise(num_NA = n()) %>%
+  ungroup() %>%
+  summarise(num_full_NA = sum(num_NA == 2256),
+            num_nonfull_NA = sum(num_NA < 2256))
+
+# How many of these subjects with NaN were originally NaN?
+ASD_di_gauss_og_NaN <- ASD_pyspi14 %>%
+  filter(SPI=="di_gaussian",
+         brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  group_by(Sample_ID, Diagnosis) %>%
+  summarise(num_NA = n()) %>%
+  ungroup() %>%
+  distinct(Sample_ID, Diagnosis) %>%
+  pull(Sample_ID)
+ASD_di_gauss_mod_NaN <- ASD_pyspi14_mod %>%
+  filter(SPI=="di_gaussian",
+         brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  group_by(Sample_ID, Diagnosis) %>%
+  summarise(num_NA = n()) %>%
+  ungroup() %>%
+  distinct(Sample_ID, Diagnosis) %>%
+  pull(Sample_ID)
+
+# Find number of subjects that yielded NaN originally but no longer after
+# di_gaussian was run first
+length(ASD_di_gauss_og_NaN[!(ASD_di_gauss_og_NaN %in% ASD_di_gauss_mod_NaN)])
+# Find number of subjects that now yield NaN that didn't yield NaN previously
+length(ASD_di_gauss_mod_NaN[!(ASD_di_gauss_mod_NaN %in% ASD_di_gauss_og_NaN)])
+
+# Write subjects with NaN di_gaussian round 2 data to a CSV
+write.csv(ASD_di_gauss_mod_NaN,
+          "ABIDE_ASD_di_gaussian_NaN_subjects.csv",
+          row.names=F)
