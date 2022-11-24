@@ -35,3 +35,18 @@ config_file = github_path + "data_prep_and_QC/pyspi_QC_analysis/pyspi_di_gaussia
 #         with open(SCZ_data_path + subject + "/calc_di_gaussian.pkl", 'wb') as f:
 #             dill.dump(calc_res, f)
 
+
+subjects_to_run = pd.read_csv(github_path + "data_prep_and_QC/pyspi_QC_analysis/ABIDE_ASD_di_gaussian_NaN_subjects.csv")["x"].tolist()
+
+for subject in subjects_to_run:
+        if not os.path.exists(ASD_data_path + subject + "/calc_di_gaussian.pkl"):
+            subject_data = np.load(ASD_data_path + subject + ".npy")
+        
+            calc = Calculator(dataset=subject_data, configfile=config_file)
+            calc.compute()
+        
+            calc_res = calc.table
+        
+            # Save calc results to a pickle file
+            with open(ASD_data_path + subject + "/calc_di_gaussian.pkl", 'wb') as f:
+                dill.dump(calc_res, f)
