@@ -3,4 +3,6 @@
 cluster_output/
 *create_yamls.R*
 *.Rhistory
-*.DS_store
+*.DS_Store
+.gitignore
+
