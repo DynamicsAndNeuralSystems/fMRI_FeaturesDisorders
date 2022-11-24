@@ -17,17 +17,30 @@ github_dir <- "~/github/fMRI_FeaturesDisorders/"
 plot_path <- paste0(github_dir, "plots/QC/")
 TAF::mkdir(plot_path)
 
-UCLA_data_path <- "~/data/UCLA_Schizophrenia/"
-UCLA_rdata_path <- paste0(UCLA_data_path, "processed_data/Rdata/")
+SCZ_data_path <- "~/data/UCLA_Schizophrenia/"
+SCZ_rdata_path <- paste0(SCZ_data_path, "processed_data/Rdata/")
+ASD_data_path <- "~/data/ABIDE_ASD/"
+ASD_rdata_path <- paste0(ASD_data_path, "processed_data/Rdata/")
 
 # Load raw (non-normalized) pyspi14 data for UCLA Schizophrenia
-UCLA_pyspi14 <- readRDS(paste0(UCLA_rdata_path, 
-                          "UCLA_Schizophrenia_pyspi14_filtered.Rds")) %>%
+SCZ_pyspi14 <- readRDS(paste0(SCZ_rdata_path, 
+                              "UCLA_Schizophrenia_pyspi14_filtered.Rds")) %>%
   filter(Noise_Proc == "AROMA+2P+GMR",
          Diagnosis %in% c("Control", "Schizophrenia"))
+ASD_pyspi14 <- readRDS(paste0(ASD_rdata_path, 
+                              "ABIDE_ASD_pyspi14_filtered.Rds")) %>%
+  filter(Noise_Proc == "FC1000",
+         Diagnosis %in% c("Control", "ASD"))
 
 # Find SPIs that yielded NaN for at least one region pair and subject
-UCLA_pyspi14 %>%
+# SCZ
+SCZ_pyspi14 %>%
+  filter(brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  distinct(SPI) %>%
+  pull(SPI)
+# ASD
+ASD_pyspi14 %>%
   filter(brain_region_1 != brain_region_2) %>%
   filter(is.na(value)) %>%
   distinct(SPI) %>%
@@ -38,8 +51,10 @@ UCLA_pyspi14 %>%
 # di_gaussian
 
 # Heatmap for each of these showing the subjects (rows)  and brain region pairs (columns)
-plot_SPI_na <- function(this_SPI, SPI_name, pyspi_data) {
-  pyspi_data %>%
+plot_SPI_na <- function(this_SPI, 
+                        SPI_name, 
+                        pyspi_data) {
+  p <- pyspi_data %>%
     filter(brain_region_1 != brain_region_2,
            SPI == this_SPI) %>%
     mutate(fill = ifelse(is.na(value), T, F),
@@ -58,24 +73,36 @@ plot_SPI_na <- function(this_SPI, SPI_name, pyspi_data) {
           plot.title = element_text(hjust=0.5),
           axis.text = element_blank(),
           axis.ticks = element_blank())
-  ggsave(paste0(plot_path, SPI_name, "_NaN_heatmap_UCLA_Schizophrenia.png"),
-         width=12, height=3, units="in", dpi=1200, bg="white")
+  
+  return(p)
 }
+# UCLA Schizophrenia
 plot_SPI_na(this_SPI="sgc_nonparametric_mean_fs-1_fmin-0_fmax-0-5",
             SPI_name="sgc_full_range",
-            pyspi_data = UCLA_pyspi14)
+            pyspi_data = SCZ_pyspi14)
+ggsave(paste0(plot_path, "SCZ_sgc_full_range_NaN_heatmap_UCLA_Schizophrenia.png"),
+       width=12, height=3, units="in", dpi=1200, bg="white")
+# ABIDE ASD
+plot_SPI_na(this_SPI="sgc_nonparametric_mean_fs-1_fmin-0_fmax-0-5",
+            SPI_name="sgc_full_range",
+            pyspi_data = ASD_pyspi14)
+ggsave(paste0(plot_path, "ASD_sgc_full_range_NaN_heatmap_UCLA_Schizophrenia.png"),
+       width=12, height=3, units="in", dpi=1200, bg="white")
+
 plot_SPI_na(this_SPI="di_gaussian",
             SPI_name="di_gaussian",
-            pyspi_data = UCLA_pyspi14)
+            pyspi_data = SCZ_pyspi14)
+ggsave(paste0(plot_path, SPI_name, "_NaN_heatmap_UCLA_Schizophrenia.png"),
+       width=12, height=3, units="in", dpi=1200, bg="white")
 
 # Load raw time-series data for UCLA Schizophrenia
-UCLA_TS <- readRDS(paste0(UCLA_data_path, 
+SCZ_TS <- readRDS(paste0(SCZ_data_path, 
                           "raw_data/UCLA_Schizophrenia_fMRI_TS.Rds")) %>%
   filter(Noise_Proc == "AROMA+2P+GMR")
 
 # First pick a region pair that yielded NaN for sgc full range from pyspi
 # Focusing on sub-10527 with AROMA+2P+GMR noise processing
-UCLA_TS %>%
+SCZ_TS %>%
   filter(Sample_ID == "sub-10527",
          Brain_Region %in% c("ctx-lh-caudalanteriorcingulate",
                              "ctx-lh-bankssts")) %>%
@@ -97,7 +124,7 @@ ggsave(paste0(plot_path, "sgc_with_real_value_sub-10527_AROMA_2P_GMR.png"),
 # Plot left caudal anterior cingulate and left banks of the superior temporal
 # sulcus for a subject for whom di_gaussian returned a real value (sub-10159) 
 # versus a subject for whom di_gaussian returned NaN (sub-10171)
-UCLA_TS %>%
+SCZ_TS %>%
   filter(Sample_ID %in% c("sub-10159", "sub-10171", "sub-50014"),
          Brain_Region %in% c("ctx-lh-caudalanteriorcingulate",
                              "ctx-lh-bankssts")) %>%
@@ -132,12 +159,23 @@ ggsave(paste0(plot_path, "di_gaussian_comparison_fMRI_TS_UCLA_Schizophrenia.png"
 # Changing the order around made the difference
 
 # I named this dataset with pyspi14_mod instead of pyspi14
-UCLA_pyspi14_mod <- readRDS(paste0(UCLA_rdata_path, 
+SCZ_pyspi14_mod <- readRDS(paste0(SCZ_rdata_path, 
                                "UCLA_Schizophrenia_pyspi14_mod_filtered.Rds")) %>%
   filter(Noise_Proc == "AROMA+2P+GMR")
+ASD_pyspi14_mod <- readRDS(paste0(ASD_rdata_path, 
+                                  "ABIDE_ASD_pyspi14_mod_filtered.Rds")) %>%
+  filter(Noise_Proc == "FC1000")
 
 # Check distribution of remaining NA for SGC
-UCLA_pyspi14_mod %>%
+SCZ_pyspi14_mod %>%
+  filter(SPI=="sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5",
+         brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  arrange(brain_region_1, brain_region_2, Sample_ID) %>%
+  dplyr::select(-SPI, -Noise_Proc) %>%
+  kable(.) %>%
+  kable_styling(full_width=F)
+ASD_pyspi14_mod %>%
   filter(SPI=="sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5",
          brain_region_1 != brain_region_2) %>%
   filter(is.na(value)) %>%
@@ -147,7 +185,7 @@ UCLA_pyspi14_mod %>%
   kable_styling(full_width=F)
 
 # Find # NaN for SGC for each brain region
-UCLA_pyspi14_mod %>%
+SCZ_pyspi14_mod %>%
   filter(SPI=="sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5",
          brain_region_1 != brain_region_2) %>%
   filter(is.na(value)) %>%
@@ -180,7 +218,7 @@ ggsave(paste0(plot_path, "sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5_NaN_UCL
 # di_gaussian redo
 # There are some subjects with just a few regions returning NaN for di_gaussian,
 # which isn't overly concerning
-UCLA_pyspi14_mod %>%
+SCZ_pyspi14_mod %>%
   filter(SPI=="di_gaussian",
          brain_region_1 != brain_region_2) %>%
   filter(is.na(value)) %>%
@@ -193,9 +231,9 @@ UCLA_pyspi14_mod %>%
 
 plot_SPI_na(this_SPI="di_gaussian",
             SPI_name="di_gaussian_mod",
-            pyspi_data = UCLA_pyspi14_mod)
+            pyspi_data = SCZ_pyspi14_mod)
 
-UCLA_pyspi14_mod %>%
+SCZ_pyspi14_mod %>%
   filter(SPI=="di_gaussian",
          brain_region_1 != brain_region_2) %>%
   filter(is.na(value)) %>%
@@ -207,11 +245,11 @@ UCLA_pyspi14_mod %>%
 
 # I re-ran just di_gaussian for these 13 subjects with one or more NaN directly 
 # within spyder on the physics cluster
-UCLA_pyspi14_mod_di_gaussian <- readRDS(paste0(UCLA_rdata_path, 
+SCZ_pyspi14_mod_di_gaussian <- readRDS(paste0(UCLA_rdata_path, 
                                    "UCLA_Schizophrenia_pyspi14_mod_di_gaussian_filtered.Rds")) %>%
   filter(Noise_Proc == "AROMA+2P+GMR")
 
-UCLA_pyspi14_mod_di_gaussian %>%
+SCZ_pyspi14_mod_di_gaussian %>%
   filter(SPI=="di_gaussian",
          brain_region_1 != brain_region_2) %>%
   filter(is.na(value)) %>%

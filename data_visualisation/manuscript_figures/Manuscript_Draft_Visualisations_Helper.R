@@ -1,3 +1,14 @@
+# DIY rlist::list.append
+list.append <- function (.data, ...) 
+{
+  if (is.list(.data)) {
+    c(.data, list(...))
+  }
+  else {
+    c(.data, ..., recursive = FALSE)
+  }
+}
+
 # Plot the distribution of each significant region or feature across n=10 repeats
 # Show empirical null distribution as a shaded grey band
 plot_boxplot_shaded_null <- function(dataset_ID,
@@ -179,4 +190,45 @@ compile_movement_data <- function(fd_path,
     left_join(., sample_metadata) 
   
   return(mov_data)
+}
+
+#-------------------------------------------------------------------------------
+# Function to read in file with average fractional displacement (FD)
+# As well as list of individual subject movement files
+# And output a CSV containing the Subject ID, diagnosis, and FD
+#-------------------------------------------------------------------------------
+calculate_mean_displacement <- function(movement_data_path, 
+                                        input_dataset_name,
+                                        sample_metadata) {
+
+  samples <- list.dirs(movement_data_path, full.names = F, recursive = F)
+  
+  movement_df_list <- list()
+  for (sample in samples) {
+    sample_movement_data <- read.table(paste0(movement_data_path, sample, "/run_1/motions.txt"))
+    colnames(sample_movement_data) <- c("x_trans", "y_trans", "z_trans",
+                                        "x_rot", "y_rot", "z_rot")
+    sample_movement_data$Sample_ID <- sample 
+    
+    # Calculate mean absolute x, y, and z translation
+    movement_means <- sample_movement_data %>%
+      group_by(Sample_ID) %>%
+      summarise(x_mean = mean(abs(x_trans)),
+                y_mean = mean(abs(y_trans)),
+                z_mean = mean(abs(z_trans)))
+    
+    movement_df_list <- list.append(movement_df_list,
+                                    movement_means)
+  }
+  movement_df <- do.call(plyr::rbind.fill, movement_df_list)
+  
+  displacement_data <- movement_df %>%
+    rowwise() %>%
+    mutate(mean_displacement = mean(c(x_mean,
+                                      y_mean,
+                                      z_mean)),
+           .keep = "unused") %>%
+    left_join(., sample_metadata)
+  
+  return(displacement_data)
 }
