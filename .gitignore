@@ -2,7 +2,5 @@
 *checkpoint.ipynb
 cluster_output/
 *create_yamls.R*
-create_yamls.R
-create_yamls.R
-create_yamls.R
-create_yamls.R
+*.Rhistory
+*.DS_store
