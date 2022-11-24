@@ -23,7 +23,7 @@ TAF::mkdir(plot_path)
 SCZ_data_path <- "~/data/UCLA_Schizophrenia/"
 SCZ_rdata_path <- paste0(SCZ_data_path, "processed_data/Rdata/")
 ASD_data_path <- "~/data/ABIDE_ASD/"
-ASD_rdata_path <- paste0(ABIDE_data_path, "processed_data/Rdata/")
+ASD_rdata_path <- paste0(ASD_data_path, "processed_data/Rdata/")
 
 # Load subject metadata
 SCZ_subject_metadata <- readRDS(paste0(SCZ_data_path, "UCLA_Schizophrenia_sample_metadata.Rds"))
@@ -36,7 +36,7 @@ SCZ_movement_data <- compile_movement_data(fd_path = paste0(SCZ_data_path, "move
   filter(!is.na(Diagnosis))
 
 # Load mean displacement data for ABIDE ASD
-ASD_motion_path <- paste0(ABIDE_data_path, "raw_data/movement_data/")
+ASD_motion_path <- paste0(ASD_data_path, "raw_data/movement_data/")
 ASD_movement_data <- calculate_mean_displacement(movement_data_path = ASD_motion_path,
                                                    input_dataset_name = "ABIDE_ASD",
                                                    sample_metadata = ASD_subject_metadata)
@@ -416,7 +416,7 @@ ASD_ROI_catch22_svm_res <- run_repeat_cv_linear_svm(
   catch22_data = ASD_catch22_zscored,
   movement_var = "mean_displacement",
   type = "Brain Region",
-  input_region = "ctx-rh-postcentral",
+  input_region = "Superior Frontal Gyrus",
   sample_groups = ASD_sample_groups
   
 )

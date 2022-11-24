@@ -6,31 +6,31 @@ export email="abry4213@uni.sydney.edu.au"
 export python_to_use=/headnode1/abry4213/.conda/envs/pyspi/bin/python3
 export pkl_file="calc_pyspi14_mod.pkl"
 export sample_yaml="sample.yaml"
-# export pyspi_ncpus=2
-# export pyspi_mem=40
+export pyspi_ncpus=2
+export pyspi_mem=40
 
 cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
 
-# UCLA Schizophrenia
-export dataset_ID="UCLA_Schizophrenia"
-export data_path=/headnode1/abry4213/data/${dataset_ID}/
-export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
-export brain_region_lookup="Brain_Region_info.csv"
-# export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
-export noise_procs="AROMA+2P+GMR"
-export main_noise_proc="AROMA+2P+GMR"
-export label_vars="Diagnosis"
-export pyspi_walltime_hrs=8
-
-# # ABIDE ASD
-# export dataset_ID="ABIDE_ASD"
+# # UCLA Schizophrenia
+# export dataset_ID="UCLA_Schizophrenia"
 # export data_path=/headnode1/abry4213/data/${dataset_ID}/
 # export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
-# export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
-# export noise_procs="FC1000"
-# export main_noise_proc="FC1000"
+# export brain_region_lookup="Brain_Region_info.csv"
+# # export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
+# export noise_procs="AROMA+2P+GMR"
+# export main_noise_proc="AROMA+2P+GMR"
 # export label_vars="Diagnosis"
-# export pyspi_walltime_hrs=6
+# export pyspi_walltime_hrs=8
+
+# ABIDE ASD
+export dataset_ID="ABIDE_ASD"
+export data_path=/headnode1/abry4213/data/${dataset_ID}/
+export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
+export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+export noise_procs="FC1000"
+export main_noise_proc="FC1000"
+export label_vars="Diagnosis"
+export pyspi_walltime_hrs=4
 
 # # HCP100
 # export dataset_ID="HCP100"

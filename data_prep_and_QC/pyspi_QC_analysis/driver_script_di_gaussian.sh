@@ -9,14 +9,13 @@ export sample_yaml="sample.yaml"
 export pyspi_ncpus=2
 export pyspi_mem=40
 
-cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
+cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_QC_analysis/
 
 # UCLA Schizophrenia
 export dataset_ID="UCLA_Schizophrenia"
 export data_path=/headnode1/abry4213/data/${dataset_ID}/
 export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
 export brain_region_lookup="Brain_Region_info.csv"
-# export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
 export noise_procs="AROMA+2P+GMR"
 export main_noise_proc="AROMA+2P+GMR"
 export label_vars="Diagnosis"
