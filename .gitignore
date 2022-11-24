@@ -4,5 +4,5 @@ cluster_output/
 *create_yamls.R*
 *.Rhistory
 *.DS_Store
-.gitignore
+*.gitignore
 
