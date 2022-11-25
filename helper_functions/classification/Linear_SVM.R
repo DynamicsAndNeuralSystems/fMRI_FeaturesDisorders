@@ -336,7 +336,9 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                              flds = NULL,
                                              out_of_sample_only = TRUE,
                                              use_inv_prob_weighting = FALSE,
-                                             shuffle_labels = FALSE) {
+                                             shuffle_labels = FALSE,
+                                             drop_NaN = TRUE,
+                                             impute_NaN = FALSE) {
   
   
   if (is.null(rdata_path)) {
@@ -449,15 +451,30 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
       # Otherwise iterate over each separate group
       data_for_SVM <- subset(pairwise_data, get(grouping_var_name) == group_var) %>%
         dplyr::ungroup() %>%
-        dplyr::select(Sample_ID, Diagnosis, svm_feature_var_name, values) %>%
-        tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
-                           names_from = svm_feature_var_name,
-                           values_from 
-                           = values) %>%
+        dplyr::select(Sample_ID, Diagnosis, all_of(svm_feature_var_name), values) 
+      # Drop any NA/NaN if indicated
+      if (drop_NaN) {
         # Drop columns that are all NA/NAN
-        dplyr::select(where(function(x) any(!is.na(x)))) %>%
-        # Drop rows with NA for one or more column
-        drop_na()
+        data_for_SVM <- data_for_SVM %>%
+          tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
+                             names_from = svm_feature_var_name,
+                             values_from 
+                             = values) %>%
+          dplyr::select(where(function(x) any(!is.na(x)))) %>%
+          # Drop rows with NA for one or more column
+          drop_na()
+      } else if (impute_NaN) {
+        # Impute NaNs using mean of region pair if indicated
+        data_for_SVM <- data_for_SVM %>%
+          group_by(region_pair) %>%
+          mutate(values = ifelse(is.na(values),
+                                 mean(values, na.rm=T),
+                                 values)) %>%
+          tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
+                             names_from = svm_feature_var_name,
+                             values_from 
+                             = values)
+      }
     }
     
     # Only move forward if more than 50% of original data is retained

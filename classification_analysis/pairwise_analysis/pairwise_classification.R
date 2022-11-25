@@ -29,7 +29,7 @@ email <- args$email
 cat("noise_proc_for_null:", noise_proc_for_null, "\n")
 
 # univariate_feature_set <- "catch22"
-# pairwise_feature_set <- "pyspi14"
+# pairwise_feature_set <- "pyspi14_corrected"
 # github_dir <- "~/github/"
 
 # UCLA schizophrenia
@@ -47,7 +47,7 @@ cat("noise_proc_for_null:", noise_proc_for_null, "\n")
 rdata_path <- paste0(data_path, "processed_data/Rdata/")
 plot_dir <- paste0(data_path, "plots/")
 
-icesTAF::mkdir(plot_dir)
+TAF::mkdir(plot_dir)
 
 # Set the seed
 set.seed(127)
@@ -147,7 +147,9 @@ for (i in 1:nrow(grouping_param_df)) {
                                                        noise_proc = noise_proc_for_null,
                                                        out_of_sample_only = TRUE,
                                                        use_inv_prob_weighting = use_inv_prob_weighting,
-                                                       shuffle_labels = FALSE)
+                                                       shuffle_labels = FALSE,
+                                                       drop_NaN = FALSE,
+                                                       impute_NaN = TRUE)
         group_wise_SVM_CV_weighting_list <- list.append(group_wise_SVM_CV_weighting_list, repeat_res)
       }
       
