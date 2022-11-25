@@ -7,6 +7,7 @@ library(icesTAF)
 library(cowplot)
 library(knitr)
 library(kableExtra)
+library(theft)
 theme_set(theme_cowplot())
 
 ################################################################################
@@ -274,8 +275,6 @@ ggsave(paste0(plot_path, "sgc_nonparametric_mean_fs-1_fmin-0-25_fmax-0-5_NaN_ABI
 # di_gaussian redo
   
 ### UCLA Schizophrenia
-# There are some subjects with just a few regions returning NaN for di_gaussian,
-# which isn't overly concerning
 SCZ_pyspi14_mod %>%
   filter(SPI=="di_gaussian",
          brain_region_1 != brain_region_2) %>%
@@ -302,21 +301,35 @@ SCZ_pyspi14_mod %>%
 
 # I re-ran just di_gaussian for these 13 subjects with one or more NaN directly 
 # within spyder on the physics cluster
-SCZ_pyspi14_mod_di_gaussian <- readRDS(paste0(UCLA_rdata_path, 
-                                   "UCLA_Schizophrenia_pyspi14_mod_di_gaussian_filtered.Rds")) %>%
-  filter(Noise_Proc == "AROMA+2P+GMR")
-
-SCZ_pyspi14_mod_di_gaussian %>%
+SCZ_di_gauss_mod_NaN <- SCZ_pyspi14_mod %>%
   filter(SPI=="di_gaussian",
          brain_region_1 != brain_region_2) %>%
   filter(is.na(value)) %>%
   group_by(Sample_ID, Diagnosis) %>%
   summarise(num_NA = n()) %>%
   ungroup() %>%
-  arrange(desc(num_NA)) %>%
-  kable(.) %>%
-  kable_styling(full_width=F)
+  distinct(Sample_ID, Diagnosis) %>%
+  pull(Sample_ID)
 
+# Write subjects with NaN di_gaussian round 1 data to a CSV to read into spyder
+write.csv(SCZ_di_gauss_mod_NaN,
+          "UCLA_Schizophrenia_di_gaussian_NaN_subjects.csv",
+          row.names=F)
+
+# Load round 1 ABIDE ASD di_gaussian data
+SCZ_di_gaussian_v1 <- readRDS(paste0(SCZ_rdata_path,
+                                           "UCLA_Schizophrenia_di_gaussian.Rds"))
+SCZ_di_gauss_v1_NaN <- SCZ_di_gaussian_v1 %>%
+  filter(SPI=="di_gaussian",
+         brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  group_by(Sample_ID, Diagnosis) %>%
+  summarise(num_NA = n()) %>%
+  ungroup() %>%
+  distinct(Sample_ID, Diagnosis) %>%
+  pull(Sample_ID)
+
+SCZ_di_gauss_v1_NaN
 # This time, there were no NaNs returned for any of these subjects.
 
 ### ABIDE ASD
@@ -340,6 +353,7 @@ ASD_di_gauss_og_NaN <- ASD_pyspi14 %>%
   ungroup() %>%
   distinct(Sample_ID, Diagnosis) %>%
   pull(Sample_ID)
+
 ASD_di_gauss_mod_NaN <- ASD_pyspi14_mod %>%
   filter(SPI=="di_gaussian",
          brain_region_1 != brain_region_2) %>%
@@ -356,15 +370,36 @@ length(ASD_di_gauss_og_NaN[!(ASD_di_gauss_og_NaN %in% ASD_di_gauss_mod_NaN)])
 # Find number of subjects that now yield NaN that didn't yield NaN previously
 length(ASD_di_gauss_mod_NaN[!(ASD_di_gauss_mod_NaN %in% ASD_di_gauss_og_NaN)])
 
-# Write subjects with NaN di_gaussian round 2 data to a CSV
+# Write subjects with NaN di_gaussian round 1 data to a CSV
 write.csv(ASD_di_gauss_mod_NaN,
           "ABIDE_ASD_di_gaussian_NaN_subjects.csv",
           row.names=F)
 
-# Load round 2 ABIDE ASD di_gaussian data
-ABIDE_ASD_di_gaussian_v2 <- readRDS(paste0(ASD_rdata_path,
+# Load round 1 ABIDE ASD di_gaussian data
+ASD_di_gaussian_v1 <- readRDS(paste0(ASD_rdata_path,
                                            "ABIDE_ASD_di_gaussian.Rds"))
-ASD_di_gauss_v2_NaN <- ABIDE_ASD_di_gaussian_v2 %>%
+ASD_di_gauss_v1_NaN <- ASD_di_gaussian_v1 %>%
+  filter(SPI=="di_gaussian",
+         brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  group_by(Sample_ID, Diagnosis) %>%
+  summarise(num_NA = n()) %>%
+  ungroup() %>%
+  distinct(Sample_ID, Diagnosis) %>%
+  pull(Sample_ID)
+
+ASD_di_gauss_v1_NaN
+
+# Write subjects with NaN di_gaussian to be run in round 2 data to a CSV
+write.csv(ASD_di_gauss_v1_NaN,
+          "ABIDE_ASD_di_gaussian_NaN_subjects_v2.csv",
+          row.names=F)
+
+# Load round 2 ABIDE ASD di_gaussian data
+ASD_di_gaussian_v2 <- readRDS(paste0(ASD_rdata_path,
+                                     "ABIDE_ASD_di_gaussian_v2.Rds"))
+
+ASD_di_gauss_v2_NaN <- ASD_di_gaussian_v2 %>%
   filter(SPI=="di_gaussian",
          brain_region_1 != brain_region_2) %>%
   filter(is.na(value)) %>%
@@ -376,7 +411,61 @@ ASD_di_gauss_v2_NaN <- ABIDE_ASD_di_gaussian_v2 %>%
 
 ASD_di_gauss_v2_NaN
 
-# Write subjects with NaN di_gaussian round 2 data to a CSV
-write.csv(ASD_di_gauss_v2_NaN,
-          "ABIDE_ASD_di_gaussian_NaN_subjects_v2.csv",
-          row.names=F)
+
+################################################################################
+# Integrating corrected di_gaussian data with pyspi14_mod data
+# di_gaussian for UCLA SCZ, di_gaussian_v2 for ABIDE ASD
+
+# UCLA SCZ
+if (!file.exists(paste0(SCZ_rdata_path, "UCLA_Schizophrenia_pyspi14_corrected_filtered.Rds"))) {
+  # Find subjects in SCZ_di_gaussian_v1
+  SCZ_corrected_subjects <- unique(SCZ_di_gaussian_v1$Sample_ID)
+  # Replace original di_gaussian values with corrected (non-NaN) ones
+  SCZ_pyspi14_mod_corr <- SCZ_pyspi14_mod %>%
+    filter(!(Sample_ID %in% SCZ_corrected_subjects & SPI=="di_gaussian")) %>%
+    plyr::rbind.fill(., SCZ_di_gaussian_v1)
+  # Save to corrected Rds file
+  saveRDS(SCZ_pyspi14_mod_corr, 
+          paste0(SCZ_rdata_path, "UCLA_Schizophrenia_pyspi14_corrected_filtered.Rds"))
+  # z-score the corrected data
+  SCZ_pyspi14_mod_corr <- SCZ_pyspi14_mod_corr %>%
+    dplyr::rename("names"="SPI", "values"="value")
+  
+  SCZ_pyspi14_mod_corr_z <- normalise_feature_frame(SCZ_pyspi14_mod_corr, 
+                                                    names_var = "names",
+                                                    values_var = "values", 
+                                                    method = "z-score")
+  # Save the z-scored correct data to Rds file
+  saveRDS(SCZ_pyspi14_mod_corr, 
+          paste0(SCZ_rdata_path, "UCLA_Schizophrenia_pyspi14_corrected_filtered_zscored.Rds"))
+}
+
+# ABIDE ASD
+if (!file.exists(paste0(ASD_rdata_path, "ABIDE_ASD_pyspi14_corrected_filtered.Rds"))) {
+  # Find subjects in ASD_di_gaussian_v1
+  ASD_corrected_subjects_v1 <- unique(ASD_di_gaussian_v1$Sample_ID)
+  ASD_corrected_subjects_v2 <- unique(ASD_di_gaussian_v2$Sample_ID)
+  
+  # Replace original di_gaussian values with corrected (non-NaN) ones
+  ASD_pyspi14_mod_corr <- ASD_pyspi14_mod %>%
+    filter(!(Sample_ID %in% ASD_corrected_subjects_v1 & SPI=="di_gaussian")) %>%
+    plyr::rbind.fill(., ASD_di_gaussian_v1) %>%
+    # Iteratively replace the 5 subjects for whom di_gaussian still returned
+    # NaNs from the first run with only di_gaussian in spyder
+    filter(!(Sample_ID %in% ASD_corrected_subjects_v2 & SPI=="di_gaussian")) %>%
+    plyr::rbind.fill(., ASD_di_gaussian_v2)
+  # Save to corrected Rds file
+  saveRDS(ASD_pyspi14_mod_corr, 
+          paste0(ASD_rdata_path, "ABIDE_ASD_pyspi14_corrected_filtered.Rds"))
+  # z-score the corrected data
+  ASD_pyspi14_mod_corr <- ASD_pyspi14_mod_corr %>%
+    dplyr::rename("names"="SPI", "values"="value")
+  
+  ASD_pyspi14_mod_corr_z <- normalise_feature_frame(ASD_pyspi14_mod_corr, 
+                                                    names_var = "names",
+                                                    values_var = "values", 
+                                                    method = "z-score")
+  # Save the z-scored correct data to Rds file
+  saveRDS(ASD_pyspi14_mod_corr, 
+          paste0(ASD_rdata_path, "ABIDE_ASD_pyspi14_corrected_filtered_zscored.Rds"))
+}
