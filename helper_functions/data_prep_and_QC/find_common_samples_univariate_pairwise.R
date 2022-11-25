@@ -5,7 +5,6 @@ parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizo
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--pairwise_feature_set", default="pyspi14")
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
-parser$add_argument("--run_number", nargs="?")
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -13,16 +12,11 @@ data_path <- args$data_path
 univariate_feature_set <- args$univariate_feature_set
 pairwise_feature_set <- args$pairwise_feature_set
 dataset_ID <- args$dataset_ID
-run_number <- args$run_number
 
 library(tidyverse)
 
-if (!is.null(run_number)) {
-  rdata_path <- paste0(data_path, "processed_data_run", run_number, "/Rdata/")
-} else {
-  rdata_path <- paste0(data_path, "processed_data/Rdata/")
-}
-icesTAF::mkdir(rdata_path)
+rdata_path <- paste0(data_path, "processed_data/Rdata/")
+TAF::mkdir(rdata_path)
 
 # Read in univariate data
 univariate_samples <- readRDS(paste0(rdata_path, 

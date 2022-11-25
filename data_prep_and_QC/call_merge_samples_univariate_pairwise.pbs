@@ -15,8 +15,7 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript ${github_dir}/fMRI_FeaturesDisorders/hel
 --data_path ${data_path} \
 --univariate_feature_set ${univariate_feature_set} \
 --pairwise_feature_set ${pairwise_feature_set} \
---dataset_ID ${dataset_ID} \
---run_number $run_number"
+--dataset_ID ${dataset_ID}"
  
 echo $cmd
  

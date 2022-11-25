@@ -2,9 +2,6 @@
 # Define paths
 #-------------------------------------------------------------------------------
 
-# Parse arguments
-library(argparse)
-
 python_to_use <- "/headnode1/abry4213/.conda/envs/pyspi/bin/python3"
 univariate_feature_set <- "catch22"
 pairwise_feature_set <- "pyspi14_mod"
@@ -12,11 +9,11 @@ github_dir <- "/headnode1/abry4213/github/"
 pkl_file <- "calc.pkl"
 
 # UCLA schizophrenia
-# data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
-# sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
-# dataset_ID <- "UCLA_Schizophrenia"
-# noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
-# brain_region_lookup <- "Brain_Region_info.csv"
+data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
+sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
+dataset_ID <- "UCLA_Schizophrenia"
+noise_procs <- c("AROMA+2P+GMR")
+brain_region_lookup <- "Brain_Region_info.csv"
 
 # ABIDE ASD
 data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"

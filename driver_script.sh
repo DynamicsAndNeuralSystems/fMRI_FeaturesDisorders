@@ -12,25 +12,25 @@ export pyspi_mem=40
 cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
 
 # # UCLA Schizophrenia
-# export dataset_ID="UCLA_Schizophrenia"
-# export data_path=/headnode1/abry4213/data/${dataset_ID}/
-# export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
-# export brain_region_lookup="Brain_Region_info.csv"
-# # export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
-# export noise_procs="AROMA+2P+GMR"
-# export main_noise_proc="AROMA+2P+GMR"
-# export label_vars="Diagnosis"
-# export pyspi_walltime_hrs=8
-
-# ABIDE ASD
-export dataset_ID="ABIDE_ASD"
+export dataset_ID="UCLA_Schizophrenia"
 export data_path=/headnode1/abry4213/data/${dataset_ID}/
 export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
-export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
-export noise_procs="FC1000"
-export main_noise_proc="FC1000"
+export brain_region_lookup="Brain_Region_info.csv"
+# export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
+export noise_procs="AROMA+2P+GMR"
+export main_noise_proc="AROMA+2P+GMR"
 export label_vars="Diagnosis"
-export pyspi_walltime_hrs=4
+export pyspi_walltime_hrs=6
+
+# # ABIDE ASD
+# export dataset_ID="ABIDE_ASD"
+# export data_path=/headnode1/abry4213/data/${dataset_ID}/
+# export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
+# export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+# export noise_procs="FC1000"
+# export main_noise_proc="FC1000"
+# export label_vars="Diagnosis"
+# export pyspi_walltime_hrs=2
 
 # # HCP100
 # export dataset_ID="HCP100"
@@ -72,14 +72,17 @@ export pyspi_walltime_hrs=4
 # $pkl_file \
 # $sample_yaml
 
-# Integrate results from pyspi-distribute
-qsub -v github_dir=$github_dir,data_path=$data_path,pkl_file=$pkl_file,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
--N clean_pairwise_data_${dataset_ID} \
--o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}_out.txt \
--m a -M $email \
-call_clean_pairwise_data.pbs
+# # Integrate results from pyspi-distribute
+# qsub -v github_dir=$github_dir,data_path=$data_path,pkl_file=$pkl_file,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
+# -N clean_pairwise_data_${dataset_ID} \
+# -o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}_out.txt \
+# -m a -M $email \
+# call_clean_pairwise_data.pbs
 
-# Merge subjects with univariate + pairwise data
+# MANUAL: data cleaning with data_prep_and_QC/pyspi_QC_analysis/SPI_troubleshooting.R
+
+# # Merge subjects with univariate + pairwise data
+# pairwise_feature_set="pyspi14_corrected"
 # qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set \
 # -N merge_samples_univariate_pairwise_${dataset_ID} \
 # -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/merge_samples_univariate_pairwise_${dataset_ID}_out.txt \
