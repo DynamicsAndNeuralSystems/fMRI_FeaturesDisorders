@@ -4,39 +4,12 @@
 
 # Parse arguments
 library(argparse)
-parser <- ArgumentParser(description = "Define data paths and feature set")
 
-parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
-parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
-parser$add_argument("--pkl_file", default="calc_di_gaussian.pkl")
-parser$add_argument("--python_to_use", default="/headnode1/abry4213/.conda/envs/pyspi/bin/python3")
-parser$add_argument("--univariate_feature_set", default="catch22")
-parser$add_argument("--pairwise_feature_set", default="pyspi14_mod_di_gaussian")
-parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
-parser$add_argument("--brain_region_lookup", default="", nargs='?')
-parser$add_argument("--noise_procs", default=c(""))
-parser$add_argument("--main_noise_proc", default="AROMA+2P+GMR")
-parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
-
-# Parse input arguments
-args <- parser$parse_args()
-github_dir <- args$github_dir
-data_path <- args$data_path
-pkl_file <- args$pkl_file
-python_to_use <- args$python_to_use
-univariate_feature_set <- args$univariate_feature_set
-pairwise_feature_set <- args$pairwise_feature_set
-sample_metadata_file <- args$sample_metadata_file
-brain_region_lookup <- args$brain_region_lookup
-noise_procs <- args$noise_procs
-main_noise_proc <- args$main_noise_proc
-dataset_ID <- args$dataset_ID
-
-# python_to_use <- "/headnode1/abry4213/.conda/envs/pyspi/bin/python3"
-# univariate_feature_set <- "catch22"
-# pairwise_feature_set <- "pyspi14_mod"
-# github_dir <- "/headnode1/abry4213/github/"
-# pkl_file <- "calc.pkl"
+python_to_use <- "/headnode1/abry4213/.conda/envs/pyspi/bin/python3"
+univariate_feature_set <- "catch22"
+pairwise_feature_set <- "pyspi14_mod"
+github_dir <- "/headnode1/abry4213/github/"
+pkl_file <- "calc.pkl"
 
 # UCLA schizophrenia
 # data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
@@ -46,18 +19,11 @@ dataset_ID <- args$dataset_ID
 # brain_region_lookup <- "Brain_Region_info.csv"
 
 # ABIDE ASD
-# data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
-# sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
-# dataset_ID <- "ABIDE_ASD"
-# noise_procs <- c("FC1000")
-# brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
-
-# HCP100
-# data_path <- "/headnode1/abry4213/data/HCP100/"
-# sample_metadata_file <- "HCP100_sample_metadata.Rds"
-# dataset_ID <- "HCP100"
-# noise_procs <- c("AROMA+2P+GMR")
-# brain_region_lookup <- "Brain_Region_info.csv"
+data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
+sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
+dataset_ID <- "ABIDE_ASD"
+noise_procs <- c("FC1000")
+brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 
 sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
 pkl_data_path <- paste0(data_path, "raw_data/numpy_files/")
@@ -65,8 +31,8 @@ pkl_data_path <- paste0(data_path, "raw_data/numpy_files/")
 rdata_path <- paste0(data_path, "processed_data/Rdata/")
 plot_dir <- paste0(data_path, "plots/")
 
-icesTAF::mkdir(rdata_path)
-icesTAF::mkdir(plot_dir)
+TAF::mkdir(rdata_path)
+TAF::mkdir(plot_dir)
 
 # DIY rlist::list.append
 list.append <- function (.data, ...) 
@@ -108,7 +74,10 @@ cat("noise_procs:", paste(noise_procs, collapse=", "), "\n")
 # The SPI result data into an RDS file per sample
 #-------------------------------------------------------------------------------
 read_pyspi_pkl_into_RDS <- function(pkl_data_path,
+                                    pkl_file = "calc.pkl",
+                                    pairwise_feature_set = "pyspi14",
                                     rdata_path,
+                                    pyspi_Rds_file = "_pyspi.Rds",
                                     sample_metadata,
                                     noise_procs = c("AROMA+2P",
                                                     "AROMA+2P+GMR",
@@ -130,7 +99,7 @@ read_pyspi_pkl_into_RDS <- function(pkl_data_path,
       
       # If sample doesn't have a corresponding pyspi RDS file for this 
       # noise-processing method, create one
-      if (!file.exists(paste0(np_rdata_path, sample, "_pyspi.Rds"))) {
+      if (!file.exists(paste0(np_rdata_path, sample, pyspi_Rds_file))) {
         cat("\nNow prepping data for", sample, noise_label, "\n")
         tryCatch({
           sample_pkl_data <- extract_df_from_pkl(paste0(np_data_path, sample, "/", pkl_file)) %>%
@@ -144,7 +113,7 @@ read_pyspi_pkl_into_RDS <- function(pkl_data_path,
               mutate(Diagnosis = subset(sample_metadata, Sample_ID == sample) %>% pull(Diagnosis))
           }
           # Save results to an RDS file for this sample
-          saveRDS(sample_pkl_data, file=paste0(np_rdata_path, sample, "_pyspi.Rds"))},
+          saveRDS(sample_pkl_data, file=paste0(np_rdata_path, sample, pyspi_Rds_file))},
           error = function(e){
             cat("\nError for sample", sample, "\n")
             print(e)
@@ -158,6 +127,7 @@ read_pyspi_pkl_into_RDS <- function(pkl_data_path,
 #-------------------------------------------------------------------------------
 merge_pyspi_res_for_study <- function(rdata_path,
                                       dataset_ID = "UCLA_Schizophrenia",
+                                      pairwise_feature_set = "pyspi14",
                                       brain_region_lookup,
                                       noise_procs = c("AROMA+2P",
                                                       "AROMA+2P+GMR",
@@ -225,22 +195,32 @@ merge_pyspi_res_for_study <- function(rdata_path,
 #-------------------------------------------------------------------------------
 # Call functions
 #-------------------------------------------------------------------------------
+# di_gaussian 
 read_pyspi_pkl_into_RDS(pkl_data_path = pkl_data_path,
                         rdata_path = rdata_path,
+                        pairwise_feature_set = "di_gaussian",
+                        pyspi_Rds_file = "_di_gaussian.Rds",
+                        pkl_file = "calc_di_gaussian.pkl",
                         sample_metadata = sample_metadata,
                         noise_procs = noise_procs)
 
 merge_pyspi_res_for_study(rdata_path = rdata_path,
                           dataset_ID = dataset_ID,
+                          pairwise_feature_set = "di_gaussian",
                           brain_region_lookup = paste0(data_path, brain_region_lookup),
                           noise_procs = noise_procs)
 
-#-------------------------------------------------------------------------------
-# Perform QC for pairwise data
-#-------------------------------------------------------------------------------
-run_QC_for_dataset(data_path = data_path, 
-                   proc_rdata_path = rdata_path,
-                   sample_metadata_file = sample_metadata_file,
-                   dataset_ID = dataset_ID,
-                   pairwise_feature_set = pairwise_feature_set,
-                   noise_proc = main_noise_proc)
+# di_gaussian  round 2 for ABIDE ASD
+read_pyspi_pkl_into_RDS(pkl_data_path = pkl_data_path,
+                        rdata_path = rdata_path,
+                        pairwise_feature_set = "di_gaussian_v2",
+                        pyspi_Rds_file = "_di_gaussian_v2.Rds",
+                        pkl_file = "calc_di_gaussian_v2.pkl",
+                        sample_metadata = sample_metadata,
+                        noise_procs = noise_procs)
+
+merge_pyspi_res_for_study(rdata_path = rdata_path,
+                          dataset_ID = dataset_ID,
+                          pairwise_feature_set = "di_gaussian_v2",
+                          brain_region_lookup = paste0(data_path, brain_region_lookup),
+                          noise_procs = noise_procs)

@@ -35,11 +35,13 @@ config_file = github_path + "data_prep_and_QC/pyspi_QC_analysis/pyspi_di_gaussia
 #         with open(SCZ_data_path + subject + "/calc_di_gaussian.pkl", 'wb') as f:
 #             dill.dump(calc_res, f)
 
-
+# ABIDE ASD di_gaussian only, round 1
 subjects_to_run = pd.read_csv(github_path + "data_prep_and_QC/pyspi_QC_analysis/ABIDE_ASD_di_gaussian_NaN_subjects.csv")["x"].tolist()
+subjects_to_run = [str(s) for s in subjects_to_run]
 
 for subject in subjects_to_run:
         if not os.path.exists(ASD_data_path + subject + "/calc_di_gaussian.pkl"):
+            print("Now running di_gaussian for " + subject + "\n")
             subject_data = np.load(ASD_data_path + subject + ".npy")
         
             calc = Calculator(dataset=subject_data, configfile=config_file)
@@ -49,4 +51,22 @@ for subject in subjects_to_run:
         
             # Save calc results to a pickle file
             with open(ASD_data_path + subject + "/calc_di_gaussian.pkl", 'wb') as f:
+                dill.dump(calc_res, f)
+                
+# ABIDE ASD di_gaussian only, round 2
+subjects_to_run_v2 = pd.read_csv(github_path + "data_prep_and_QC/pyspi_QC_analysis/ABIDE_ASD_di_gaussian_NaN_subjects_v2.csv")["x"].tolist()
+subjects_to_run_v2 = [str(s) for s in subjects_to_run_v2]
+
+for subject in subjects_to_run_v2:
+        if not os.path.exists(ASD_data_path + subject + "/calc_di_gaussian_v2.pkl"):
+            print("Now running di_gaussian round 2 for " + subject + "\n")
+            subject_data = np.load(ASD_data_path + subject + ".npy")
+        
+            calc = Calculator(dataset=subject_data, configfile=config_file)
+            calc.compute()
+        
+            calc_res = calc.table
+        
+            # Save calc results to a pickle file
+            with open(ASD_data_path + subject + "/calc_di_gaussian_v2.pkl", 'wb') as f:
                 dill.dump(calc_res, f)
