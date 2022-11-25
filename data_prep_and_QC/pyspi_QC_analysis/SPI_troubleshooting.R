@@ -360,3 +360,23 @@ length(ASD_di_gauss_mod_NaN[!(ASD_di_gauss_mod_NaN %in% ASD_di_gauss_og_NaN)])
 write.csv(ASD_di_gauss_mod_NaN,
           "ABIDE_ASD_di_gaussian_NaN_subjects.csv",
           row.names=F)
+
+# Load round 2 ABIDE ASD di_gaussian data
+ABIDE_ASD_di_gaussian_v2 <- readRDS(paste0(ASD_rdata_path,
+                                           "ABIDE_ASD_di_gaussian.Rds"))
+ASD_di_gauss_v2_NaN <- ABIDE_ASD_di_gaussian_v2 %>%
+  filter(SPI=="di_gaussian",
+         brain_region_1 != brain_region_2) %>%
+  filter(is.na(value)) %>%
+  group_by(Sample_ID, Diagnosis) %>%
+  summarise(num_NA = n()) %>%
+  ungroup() %>%
+  distinct(Sample_ID, Diagnosis) %>%
+  pull(Sample_ID)
+
+ASD_di_gauss_v2_NaN
+
+# Write subjects with NaN di_gaussian round 2 data to a CSV
+write.csv(ASD_di_gauss_v2_NaN,
+          "ABIDE_ASD_di_gaussian_NaN_subjects_v2.csv",
+          row.names=F)

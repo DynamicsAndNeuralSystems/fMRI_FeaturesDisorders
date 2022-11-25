@@ -361,17 +361,18 @@ save(SCZ_combo_catch22_svm_res,
      SCZ_ROI_catch22_svm_res,
      SCZ_mvmt_svm_res,
      file=paste0(SCZ_rdata_path, "SCZ_catch22_SVM_with_Movement_Thresholds.Rdata"))
+# load(paste0(SCZ_rdata_path, "SCZ_catch22_SVM_with_Movement_Thresholds.Rdata"))
 
-combo_catch22_svm_res %>%
-  plyr::rbind.fill(., ROI_catch22_svm_res) %>%
-  plyr::rbind.fill(., mvmt_svm_res) %>%
-  mutate(Method = case_when(Method=="ctx-rh-postcentral" ~ "Right\nPostcentral\nGyrus",
-                            Method=="catch22 Combo" ~ "catch22\nCombo",
+SCZ_combo_catch22_svm_res %>%
+  plyr::rbind.fill(., SCZ_ROI_catch22_svm_res) %>%
+  plyr::rbind.fill(., SCZ_mvmt_svm_res) %>%
+  mutate(Method = case_when(Method=="ctx-rh-postcentral" ~ "Right Postcentral Gyrus",
+                            Method=="catch22 Combo" ~ "catch22 Combo",
                             T ~ Method)) %>%
-  mutate(Method = factor(Method, levels = c("FD Only",
-                                            "Right\nPostcentral\nGyrus",
-                                            "catch22\nCombo"))) %>%
-  ggplot(data=., mapping=aes(x=FD_threshold)) +
+  mutate(Method = factor(Method, levels = c("Movement Only",
+                                            "Right Postcentral Gyrus",
+                                            "catch22 Combo"))) %>%
+  ggplot(data=., mapping=aes(x=movement_threshold)) +
   scale_x_reverse() +
   geom_ribbon(aes(ymin = meanbacc - sdbacc,
                   ymax = meanbacc + sdbacc,
@@ -379,9 +380,12 @@ combo_catch22_svm_res %>%
               alpha=0.2) +
   geom_line(aes(y=meanbacc, color = Method)) +
   xlab("FD Maximum Threshold") +
-  ylab("Balanced Accuracy (%)") 
+  ylab("Balanced Accuracy (%)")  +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(nrow = 2),
+         fill = guide_legend(nrow = 2))
 ggsave(paste0(plot_path, "SCZ_FD_threshold_SVM_balanced_accuracy.png"),
-       width = 5, height = 2.5, units="in", dpi=300, bg="white")
+       width = 5, height = 3.5, units="in", dpi=300, bg="white")
 
 
 # Load ASD catch22 z-scored data
@@ -434,3 +438,25 @@ save(ASD_combo_catch22_svm_res,
      ASD_ROI_catch22_svm_res,
      ASD_mvmt_svm_res,
      file=paste0(ASD_rdata_path, "ASD_catch22_SVM_with_Movement_Thresholds.Rdata"))
+# load(paste0(ASD_rdata_path, "ASD_catch22_SVM_with_Movement_Thresholds.Rdata"))
+
+ASD_combo_catch22_svm_res %>%
+  plyr::rbind.fill(., ASD_ROI_catch22_svm_res) %>%
+  plyr::rbind.fill(., ASD_mvmt_svm_res) %>%
+  mutate(Method = factor(Method, levels = c("Movement Only",
+                                            "Superior Frontal Gyrus",
+                                            "catch22 Combo"))) %>%
+  ggplot(data=., mapping=aes(x=movement_threshold)) +
+  scale_x_reverse() +
+  geom_ribbon(aes(ymin = meanbacc - sdbacc,
+                  ymax = meanbacc + sdbacc,
+                  fill = Method),
+              alpha=0.2) +
+  geom_line(aes(y=meanbacc, color = Method)) +
+  xlab("Movement Maximum Threshold") +
+  ylab("Balanced Accuracy (%)") +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(nrow = 2),
+         fill = guide_legend(nrow = 2))
+ggsave(paste0(plot_path, "ASD_FD_threshold_SVM_balanced_accuracy.png"),
+       width = 5, height = 3.5, units="in", dpi=300, bg="white")
