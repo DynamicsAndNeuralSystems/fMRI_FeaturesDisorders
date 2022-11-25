@@ -427,6 +427,13 @@ if (!file.exists(paste0(SCZ_rdata_path, "UCLA_Schizophrenia_pyspi14_corrected_fi
   # Save to corrected Rds file
   saveRDS(SCZ_pyspi14_mod_corr, 
           paste0(SCZ_rdata_path, "UCLA_Schizophrenia_pyspi14_corrected_filtered.Rds"))
+  
+  # Save sample data post-filtering to an `.Rds` file:
+  filtered_sample_info <- SCZ_pyspi14_mod_corr %>%
+    distinct(Sample_ID)
+  saveRDS(filtered_sample_info, file=paste0(SCZ_rdata_path,
+                                            "UCLA_Schizophrenia_filtered_sample_info_pyspi14_corrected.Rds"))
+  
   # z-score the corrected data
   SCZ_pyspi14_mod_corr <- SCZ_pyspi14_mod_corr %>%
     dplyr::rename("names"="SPI", "values"="value")
@@ -436,7 +443,7 @@ if (!file.exists(paste0(SCZ_rdata_path, "UCLA_Schizophrenia_pyspi14_corrected_fi
                                                     values_var = "values", 
                                                     method = "z-score")
   # Save the z-scored correct data to Rds file
-  saveRDS(SCZ_pyspi14_mod_corr, 
+  saveRDS(SCZ_pyspi14_mod_corr_z, 
           paste0(SCZ_rdata_path, "UCLA_Schizophrenia_pyspi14_corrected_filtered_zscored.Rds"))
 }
 
@@ -457,6 +464,13 @@ if (!file.exists(paste0(ASD_rdata_path, "ABIDE_ASD_pyspi14_corrected_filtered.Rd
   # Save to corrected Rds file
   saveRDS(ASD_pyspi14_mod_corr, 
           paste0(ASD_rdata_path, "ABIDE_ASD_pyspi14_corrected_filtered.Rds"))
+  
+  # Save sample data post-filtering to an `.Rds` file:
+  filtered_sample_info <- ASD_pyspi14_mod_corr %>%
+    distinct(Sample_ID)
+  saveRDS(filtered_sample_info, file=paste0(ASD_rdata_path,
+                                            "ABIDE_ASD_filtered_sample_info_pyspi14_corrected.Rds"))
+  
   # z-score the corrected data
   ASD_pyspi14_mod_corr <- ASD_pyspi14_mod_corr %>%
     dplyr::rename("names"="SPI", "values"="value")
@@ -466,6 +480,7 @@ if (!file.exists(paste0(ASD_rdata_path, "ABIDE_ASD_pyspi14_corrected_filtered.Rd
                                                     values_var = "values", 
                                                     method = "z-score")
   # Save the z-scored correct data to Rds file
-  saveRDS(ASD_pyspi14_mod_corr, 
+  saveRDS(ASD_pyspi14_mod_corr_z, 
           paste0(ASD_rdata_path, "ABIDE_ASD_pyspi14_corrected_filtered_zscored.Rds"))
+  
 }
