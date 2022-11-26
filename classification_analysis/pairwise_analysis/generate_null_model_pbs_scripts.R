@@ -60,6 +60,18 @@ tryCatch({
   noise_procs <- stringr::str_split(noise_procs, ";")[[1]]
   noise_procs <- unlist(noise_procs)
 }, error = function(e) {})
+################################################################################
+# Load pyspi data
+################################################################################
+pyspi_data_file <- sprintf("%s/%s_%s_filtered_zscored.Rds",
+                           rdata_path, dataset_ID, pairwise_feature_set) 
+
+
+SPI_directionality_file <- paste0(github_dir, "fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/SPI_Direction_Info.csv")
+SPI_directionality <- read.csv(SPI_directionality_file)
+
+# Load sample metadata
+sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
 
 grouping_param_df <- data.frame(grouping_var = c("SPI"),
                                 SVM_feature_var = c("region_pair"))
@@ -104,8 +116,8 @@ for (i in 1:nrow(grouping_param_df)) {
   cat("Script location:", output_scripts_dir, "\n")
   
   # Make these directories
-  icesTAF::mkdir(output_data_dir)
-  icesTAF::mkdir(output_scripts_dir)
+  TAF::mkdir(output_data_dir)
+  TAF::mkdir(output_scripts_dir)
   
   
   # Lookup table for PBS script

@@ -13,7 +13,6 @@ parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_proc_for_null", default=c(""))
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 parser$add_argument("--email")
-parser$add_argument("--run_number", nargs='?')
 
 # Parse input arguments
 args <- parser$parse_args()

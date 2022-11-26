@@ -126,12 +126,6 @@ k_fold_CV_linear_SVM <- function(input_data,
     
     test_data <- test_data %>% dplyr::select(-Sample_ID) 
     
-    # Run linear SVM on fold
-    train_data  %>% select_if(~class(.) == 'factor')
-    which(is.na(train_data))
-    NA_sums <- sapply(train_data, function(x) sum(is.na(x)))
-    NA_sums[NA_sums > 0]
-    
     svmModel <- e1071::svm(factor(Diagnosis) ~ .,
                            kernel = svm_kernel,
                            cost = c,
