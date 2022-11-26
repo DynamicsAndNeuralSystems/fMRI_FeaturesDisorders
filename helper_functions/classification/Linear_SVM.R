@@ -127,6 +127,10 @@ k_fold_CV_linear_SVM <- function(input_data,
     test_data <- test_data %>% dplyr::select(-Sample_ID) 
     
     # Run linear SVM on fold
+    train_data  %>% select_if(~class(.) == 'factor')
+    which(is.na(train_data))
+    NA_sums <- sapply(train_data, function(x) sum(is.na(x)))
+    NA_sums[NA_sums > 0]
     
     svmModel <- e1071::svm(factor(Diagnosis) ~ .,
                            kernel = svm_kernel,
@@ -415,9 +419,6 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     
     # Filter by directionality
     pyspi_data <- pyspi_data %>%
-      # Special cases
-      filter(SPI != "sgc_nonparametric_mean_fs-1_fmin-0_fmax-0-5",
-             !(Sample_ID == "sub-10171" & SPI == "di_gaussian")) %>%
       rowwise() %>%
       tidyr::unite("region_pair", c(brain_region_1, brain_region_2), sep="_") %>%
       distinct(Sample_ID, SPI, region_pair, .keep_all = T) %>%
@@ -434,18 +435,27 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   for (group_var in unique(grouping_var_vector)) {
     if (grouping_var == "Combo") {
       data_for_SVM <- pairwise_data %>%
-        # Impute missing data with the mean
-        group_by(Diagnosis, Combo) %>%
-        mutate(values = ifelse(is.na(values), mean(values, na.rm=T), values)) %>%
-        dplyr::select(Sample_ID, Diagnosis, Combo, values) %>%
-        tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
-                           names_from = Combo,
-                           values_from 
-                           = values) %>%
-        # Drop columns that are all NA/NAN
-        dplyr::select(where(function(x) any(!is.na(x)))) %>%
-        # Drop rows with NA for one or more column
-        drop_na()
+        dplyr::ungroup() %>%
+        dplyr::select(Sample_ID, Diagnosis, Combo, values) 
+      
+      if (drop_NaN) {
+        data_for_SVM <- data_for_SVM %>%
+          tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
+                             names_from = Combo,
+                             values_from = values) %>%
+          # Drop columns that are all NA/NAN
+          dplyr::select(where(function(x) any(!is.na(x)))) %>%
+          # Drop rows with NA for one or more column
+          drop_na()
+      } else if (impute_NaN) {
+        data_for_SVM <- data_for_SVM %>%
+          # Impute missing data with the mean
+          group_by(Combo)  %>%
+          mutate(values = ifelse(is.na(values), mean(values, na.rm=T), values)) %>%
+          tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
+                             names_from = Combo,
+                             values_from = values)
+      }
       
     } else {
       # Otherwise iterate over each separate group
@@ -472,8 +482,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                  values)) %>%
           tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
                              names_from = svm_feature_var_name,
-                             values_from 
-                             = values)
+                             values_from = values)
       }
     }
     
@@ -531,7 +540,9 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(dataset_ID,
                                                           noise_proc = "AROMA+2P+GMR",
                                                           out_of_sample_only = TRUE,
                                                           use_inv_prob_weighting = FALSE,
-                                                          shuffle_labels = FALSE) {
+                                                          shuffle_labels = FALSE,
+                                                          drop_NaN = TRUE,
+                                                          impute_NaN = FALSE) {
   
   if (is.null(rdata_path)) {
     rdata_path <- paste0(data_path, "processed_data/Rdata/")
@@ -569,6 +580,7 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(dataset_ID,
   
   # Filter by directionality
   pairwise_feature_data <- pairwise_feature_data %>%
+    filter(brain_region_1 != brain_region_2) %>%
     dplyr::rename("group_SPI" = "SPI") %>%
     group_by(group_SPI) %>%
     mutate(Direction = SPI_directionality %>% 
@@ -601,16 +613,32 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(dataset_ID,
       left_join(., sample_metadata) %>%
       dplyr::select(Sample_ID, Diagnosis, Unique_ID, values)
     
-    # Combine univariate + pairwise data for SVM
+    # Otherwise iterate over each separate group
     combined_data_for_SVM <- plyr::rbind.fill(univariate_feature_data_combo, 
-                                              pairwise_feature_data_combo) %>%
-      tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
-                         names_from = Unique_ID, 
-                         values_from = values) %>%
+                                              pairwise_feature_data_combo)
+    
+    # Drop any NA/NaN if indicated
+    if (drop_NaN) {
       # Drop columns that are all NA/NAN
-      dplyr::select(where(function(x) any(!is.na(x)))) %>%
-      # Drop rows with NA for one or more column
-      drop_na()
+      combined_data_for_SVM <- combined_data_for_SVM %>%
+        tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
+                           names_from = Unique_ID,
+                           values_from = values) %>%
+        dplyr::select(where(function(x) any(!is.na(x)))) %>%
+        # Drop rows with NA for one or more column
+        drop_na()
+    } else if (impute_NaN) {
+      # Impute NaNs using mean of region pair if indicated
+      combined_data_for_SVM <- combined_data_for_SVM %>%
+        group_by(Unique_ID) %>%
+        mutate(values = ifelse(is.na(values),
+                               mean(values, na.rm=T),
+                               values)) %>%
+        ungroup() %>%
+        tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
+                           names_from = Unique_ID,
+                           values_from = values)
+    }
     
     if (nrow(combined_data_for_SVM) > 0) {
       # Run k-fold linear SVM

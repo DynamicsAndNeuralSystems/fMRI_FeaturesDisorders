@@ -8,7 +8,7 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
 parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
 parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
-parser$add_argument("--pairwise_feature_set", default="pyspi14")
+parser$add_argument("--pairwise_feature_set", default="pyspi14_corrected")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_procs", default=c(""))
 parser$add_argument("--noise_proc_for_null", default=c(""))
@@ -30,42 +30,36 @@ sample_metadata_file <- args$sample_metadata_file
 email <- args$email
 run_number <- args$run_number
 
-# 
 # univariate_feature_set <- "catch22"
-# pairwise_feature_set <- "pyspi14"
-# github_dir <- "/headnode1/abry4213/github/"
+# pairwise_feature_set <- "pyspi14_corrected"
+# github_dir <- "~/github/"
 # email <- "abry4213@uni.sydney.edu.au"
 
 # UCLA schizophrenia
-# data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
+# data_path <- "~/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
 # noise_procs <- "AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
+# noise_procs <- "AROMA+2P+GMR"
 # noise_proc_for_null <- "AROMA+2P+GMR"
 
 # ABIDE ASD
-# data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
+# data_path <- "~/data/ABIDE_ASD/"
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
 # dataset_ID <- "ABIDE_ASD"
 # noise_procs <- c("FC1000")
 # noise_proc_for_null <- "FC1000"
 
-if (!is.null(run_number)) {
-  rdata_path <- paste0(data_path, "processed_data_run", run_number, "/Rdata/")
-  plot_dir <- paste0(data_path, "plots_run", run_number, "/")
-} else {
-  rdata_path <- paste0(data_path, "processed_data/Rdata/")
-  plot_dir <- paste0(data_path, "plots/")
-}
+rdata_path <- paste0(data_path, "processed_data/Rdata/")
+plot_dir <- paste0(data_path, "plots/")
 
-icesTAF::mkdir(plot_dir)
+TAF::mkdir(plot_dir)
 
 # Set the seed
 set.seed(127)
 
 # Load tidyverse
 library(tidyverse)
-
 
 #-------------------------------------------------------------------------------
 # Source helper scripts
@@ -86,7 +80,6 @@ subjects_to_use <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariat
                                                       dataset_ID,
                                                       univariate_feature_set,
                                                       pairwise_feature_set)))
-
 
 if (!file.exists(paste0(rdata_path, dataset_ID, "_samples_per_10_folds_10_repeats.Rds"))) {
   sample_folds <- list()
