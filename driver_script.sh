@@ -11,26 +11,26 @@ export pyspi_mem=40
 
 cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
 
-# UCLA Schizophrenia
-export dataset_ID="UCLA_Schizophrenia"
-export data_path=/headnode1/abry4213/data/${dataset_ID}/
-export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
-export brain_region_lookup="Brain_Region_info.csv"
-# export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
-export noise_procs="AROMA+2P+GMR"
-export main_noise_proc="AROMA+2P+GMR"
-export label_vars="Diagnosis"
-export pyspi_walltime_hrs=6
-
-# # ABIDE ASD
-# export dataset_ID="ABIDE_ASD"
+# # UCLA Schizophrenia
+# export dataset_ID="UCLA_Schizophrenia"
 # export data_path=/headnode1/abry4213/data/${dataset_ID}/
 # export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
-# export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
-# export noise_procs="FC1000"
-# export main_noise_proc="FC1000"
+# export brain_region_lookup="Brain_Region_info.csv"
+# # export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
+# export noise_procs="AROMA+2P+GMR"
+# export main_noise_proc="AROMA+2P+GMR"
 # export label_vars="Diagnosis"
-# export pyspi_walltime_hrs=2
+# export pyspi_walltime_hrs=6
+
+# ABIDE ASD
+export dataset_ID="ABIDE_ASD"
+export data_path=/headnode1/abry4213/data/${dataset_ID}/
+export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
+export brain_region_lookup="Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+export noise_procs="FC1000"
+export main_noise_proc="FC1000"
+export label_vars="Diagnosis"
+export pyspi_walltime_hrs=2
 
 # # HCP100
 # export dataset_ID="HCP100"
@@ -99,7 +99,7 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysi
 # call_univariate_classification.pbs 
 
 # # Generate null model fits
-# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/null_pbs_scripts/*${dataset_ID}* -name "null_iter_*.pbs")
+# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/null_pbs_scripts/*${dataset_ID}*${univariate_feature_set}_inv_prob_null_model_fits* -name "null_iter_*.pbs")
 # for script in $null_perm_scripts; do
 #   echo "Now submitting $script"
 #   qsub $script
@@ -124,32 +124,32 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/
 # call_pairwise_classification.pbs 
 
 # # Generate null model fits
-# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/null_pbs_scripts/*${dataset_ID}*${pairwise_feature_set}* -name "null_iter*.pbs")
+# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/null_pbs_scripts/*${dataset_ID}*${pairwise_feature_set}_inv_prob_null_model_fits* -name "null_iter*.pbs")
 # for script in $null_perm_scripts; do
 #   echo "Now submitting $script"
 #   qsub $script
 # done
 
-# # Integrate null model fits and calculate p-values
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
-# -N pairwise_null_model_analysis${dataset_ID} \
-# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_null_model_analysis_${dataset_ID}_out.txt \
-# -m a -M $email \
-# call_pairwise_null_model_analysis.pbs 
+# Integrate null model fits and calculate p-values
+qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
+-N pairwise_null_model_analysis${dataset_ID} \
+-o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_null_model_analysis_${dataset_ID}_out.txt \
+-m a -M $email \
+call_pairwise_null_model_analysis.pbs 
 
 
 ##########################################################################################
 # Combined univariate + pairwise analysis
 cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise/
 
-qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc,email=$email  \
--N combined_univariate_pairwise_classification_${dataset_ID} \
--o $github_dir/fMRI_FeaturesDisorders/cluster_output/combined_univariate_pairwise_classification_${dataset_ID}_out.txt \
--m a -M $email \
-call_combined_univariate_pairwise_classification.pbs 
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc,email=$email  \
+# -N combined_univariate_pairwise_classification_${dataset_ID} \
+# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/combined_univariate_pairwise_classification_${dataset_ID}_out.txt \
+# -m a -M $email \
+# call_combined_univariate_pairwise_classification.pbs 
 
 # # Generate null model fits
-# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise/null_pbs_scripts/*${dataset_ID}* -name "null_iter_*.pbs")
+# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise/null_pbs_scripts/*${dataset_ID}*${univariate_feature_set}_pairwise_${pairwise_feature_set}_inv_prob_null_model_fits* -name "null_iter_*.pbs")
 # for script in $null_perm_scripts; do
 #   echo "Now submitting $script"
 #   qsub $script

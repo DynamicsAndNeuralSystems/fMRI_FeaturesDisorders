@@ -66,6 +66,19 @@ kernel = "linear"
 weighting_name <- "inv_prob"
 use_inv_prob_weighting <- TRUE
 
+# ###############################################################################
+# Define data
+# ###############################################################################
+noise_label = gsub("\\+", "_", noise_proc_for_null)
+
+univariate_data_file <- paste0(rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
+                                                   dataset_ID, univariate_feature_set))
+
+pairwise_data_file <- paste0(rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
+                                                 dataset_ID, pairwise_feature_set))
+
+SPI_directionality_file <- paste0(github_dir, "fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/SPI_Direction_Info.csv")
+
 ############################################################################
 # Null model fits
 ############################################################################
@@ -79,23 +92,19 @@ num_k_folds <- 10
 # Define the univariate+pairwise combined template PBS script
 template_pbs_file <- paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/classification/template_combined_univariate_pairwise_null_model_fit.pbs")
 
-run_number = ifelse(is.null(run_number), "", run_number)
-
 # Where to store null model fit results
-output_data_dir <- paste0(rdata_path, sprintf("%s_univariate_%s_pairwise_%s_%s_null_model_fits%s/",
+output_data_dir <- paste0(rdata_path, sprintf("%s_univariate_%s_pairwise_%s_%s_null_model_fits/",
                                               dataset_ID,
                                               univariate_feature_set,
                                               pairwise_feature_set,
-                                              weighting_name,
-                                              run_number))
+                                              weighting_name))
 
 # Where to save PBS script to
-output_scripts_dir <- paste0(github_dir, sprintf("fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise/null_pbs_scripts/%s_univariate_%s_pairwise_%s_%s_null_model_fits%s/",
+output_scripts_dir <- paste0(github_dir, sprintf("fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise/null_pbs_scripts/%s_univariate_%s_pairwise_%s_%s_null_model_fits/",
                                                  dataset_ID,
                                                  univariate_feature_set,
                                                  pairwise_feature_set,
-                                                 weighting_name,
-                                                 run_number))
+                                                 weighting_name))
 
 cat("\nNow generating null PBS scripts for.\n")
 cat("Script location:", output_scripts_dir, "\n")
@@ -105,10 +114,9 @@ TAF::mkdir(output_data_dir)
 TAF::mkdir(output_scripts_dir)
 
 # Lookup table for PBS script
-lookup_list <- list("NAME" = sprintf("univariate_%s_pairwise_%s_null_model_fit%s",
+lookup_list <- list("NAME" = sprintf("univariate_%s_pairwise_%s_null_model_fit",
                                      univariate_feature_set, 
-                                     pairwise_feature_set,
-                                     run_number),
+                                     pairwise_feature_set),
                     "MEMNUM" = "20",
                     "NCPUS" = "1",
                     "DATASET_ID" = dataset_ID,
