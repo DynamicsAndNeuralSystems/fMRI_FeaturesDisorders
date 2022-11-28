@@ -38,7 +38,7 @@ plot_boxplot_shaded_null <- function(dataset_ID,
                                              pull(balanced_accuracy))),
                        breaks = scales::breaks_pretty(n = 4)) +
     scale_y_discrete(labels = function(x) str_wrap(x, width = wrap_length)) +
-    xlab("Balanced Accuracy") +
+    xlab("Balanced Accuracy\nby CV Repeat") +
     ylab(grouping_var_name)
 }
 
@@ -59,7 +59,6 @@ plot_significant_regions_ggseg <- function(dataset_ID,
     ggseg(atlas = atlas_name, mapping = aes(fill = fillyes),
           position = "dispersed", colour = "darkgrey") +
     scale_fill_manual(values = c(fill_color), na.value = NA) +
-    labs(fill = "Balanced Accuracy") +
     theme_void() +
     theme(plot.title = element_blank(),
           legend.position = "none") 
@@ -97,7 +96,7 @@ plot_univar_region_vs_combo_violin <- function(dataset_ID,
     geom_boxplot(fill=NA, width=0.1, color="black") +
     scale_x_discrete(labels = function(x) str_wrap(x, width = 15)) +
     scale_fill_manual(values = c(region_fill_color)) +
-    ylab("Balanced Accuracy") +
+    ylab("Balanced Accuracy\nby CV Repeat") +
     theme(legend.position = "none",
           strip.placement = "outside",
           strip.background = element_blank(),
@@ -130,7 +129,7 @@ plot_SPI_with_without_univar <- function(dataset_ID,
   sig_SPIs_diff <- merged_SPI_combo_data %>%
     nest(data = -grouping_var) %>%
     mutate(test = map(data, ~ t.test(balanced_accuracy ~ Analysis, data = .x, paired=T)),
-           tidied = map(test, tidy)) %>%
+           tidied = map(test, broom::tidy)) %>%
     unnest(tidied) %>%
     ungroup() %>%
     mutate(p.adj = p.adjust(p.value, method="BH")) %>%
@@ -169,8 +168,37 @@ plot_SPI_with_without_univar <- function(dataset_ID,
           axis.title.x = element_blank())
 }
 
+
+
 #-------------------------------------------------------------------------------
-# Function to read in file with average fractional displacement (FD)
+#' Function to compute Nadeau & Bengio (2003) correlated t-statistic p-value for train-test splits
+#' @param x vector of classification accuracy values for classifier A
+#' @param y vector of classification accuracy values for classifier B
+#' @param n integer denoting number of repeat samples
+#' @param n1 integer denoting train set size
+#' @param n2 integer denoting test set size
+#' @author Trent Henderson
+#' from https://github.com/hendersontrent/feature-set-classification/blob/main/R/corr_t_test.R
+#-------------------------------------------------------------------------------
+
+repeated_corr_t_test_folds <- function(x, 
+                                       y, 
+                                       n, 
+                                       n1, 
+                                       n2, 
+                                       k = 10, 
+                                       r = 10) {
+  d <- x - y # Calculate differences
+  d_bar <- mean(d, na.rm = TRUE) # Calculate mean of differences
+  sigma_2 <- var(d, na.rm = TRUE) # Calculate variance
+  
+  
+  sigma_2_mod <- sigma_2 * (1/n + n2/n1) # Calculate modified variance
+  
+}
+
+#-------------------------------------------------------------------------------
+# Function to read in file with average framewise displacement (FD)
 # As well as list of individual subject movement files
 # And output a CSV containing the Subject ID, diagnosis, and FD
 #-------------------------------------------------------------------------------
@@ -193,14 +221,14 @@ compile_movement_data <- function(fd_path,
 }
 
 #-------------------------------------------------------------------------------
-# Function to read in file with average fractional displacement (FD)
-# As well as list of individual subject movement files
-# And output a CSV containing the Subject ID, diagnosis, and FD
+# Function to read in files containing x, y, and z translation (mm) per subject
+# And output a datafrmae containing the Subject ID, diagnosis, and 
+# mean displacement
 #-------------------------------------------------------------------------------
 calculate_mean_displacement <- function(movement_data_path, 
                                         input_dataset_name,
                                         sample_metadata) {
-
+  
   samples <- list.dirs(movement_data_path, full.names = F, recursive = F)
   
   movement_df_list <- list()
