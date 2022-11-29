@@ -484,3 +484,24 @@ if (!file.exists(paste0(ASD_rdata_path, "ABIDE_ASD_pyspi14_corrected_filtered.Rd
           paste0(ASD_rdata_path, "ABIDE_ASD_pyspi14_corrected_filtered_zscored.Rds"))
   
 }
+
+################################################################################
+# di_gaussian robustness analysis
+# Subject: sub-10159
+# brain region 1: ctx-lh-bankssts
+# brain region 2: ctx-lh-entorhinal
+# noise processing: AROMA+2P+GMR
+
+# Subset data down to just those two brain regions for sub-10159
+di_gaussian_robustness_TS_data <- SCZ_TS %>%
+  filter(Sample_ID == "sub-10159",
+         Noise_Proc == "AROMA+2P+GMR",
+         Brain_Region %in% c("ctx-lh-bankssts", "ctx-lh-entorhinal")) %>%
+  dplyr::select(Brain_Region, timepoint, values) %>%
+  pivot_wider(id_cols = Brain_Region,
+              names_from = "timepoint",
+              values_from = "values") %>%
+  dplyr::select(-Brain_Region)
+write.table(di_gaussian_robustness_TS_data, 
+            file="sub-10159_lh_bankssts_lh_entorhinal.csv", 
+            sep=",", col.names=F, row.names=F)

@@ -78,7 +78,7 @@ ASD_annie_FD_res %>%
   ylab("# Participants") +
   theme(plot.title = element_text(hjust=0.5))
 ggsave(paste0(plot_path, "Movement_FDjenk_Annie_dist_ABIDE_ASD.png"),
-       width=4.5, height=3, dpi=300, bg="white")
+       width=4.5, height=4, dpi=300, bg="white")
 
 # Divide mean FDjenk by 100 and re-plot
 ASD_annie_FD_res %>%
@@ -89,26 +89,4 @@ ASD_annie_FD_res %>%
   ylab("# Participants") +
   theme(plot.title = element_text(hjust=0.5))
 ggsave(paste0(plot_path, "Movement_FDjenk_Annie_dist_ABIDE_ASD_Divided.png"),
-       width=4.5, height=3, dpi=300, bg="white")
-
-# Plot data by <= 0.2 or > 0.2
-ASD_annie_FD_res %>%
-  filter(mFD_Annie > 5 & mFD_Annie <= 20) %>%
-  ggplot(data=., mapping=aes(x=mFD_Annie/100)) +
-  geom_histogram(bins=50, fill="lightsteelblue") +
-  ggtitle("0.01*FDjenk Distribution in\nABIDE ASD Dataset") +
-  xlab("Mean FDjenk (Annie) divided by 100") +
-  ylab("# Participants") +
-  theme(plot.title = element_text(hjust=0.5))
-ggsave(paste0(plot_path, "Movement_FDjenk_Annie_dist_ABIDE_ASD_Divided_lower.png"),
-       width=4.5, height=3, dpi=300, bg="white")
-ASD_annie_FD_res %>%
-  filter(mFD_Annie >20) %>%
-  ggplot(data=., mapping=aes(x=mFD_Annie/100)) +
-  geom_histogram(bins=50, fill="lightsteelblue") +
-  ggtitle("0.01*FDjenk Distribution in\nABIDE ASD Dataset") +
-  xlab("Mean FDjenk (Annie) divided by 100") +
-  ylab("# Participants") +
-  theme(plot.title = element_text(hjust=0.5))
-ggsave(paste0(plot_path, "Movement_FDjenk_Annie_dist_ABIDE_ASD_Divided_upper.png"),
-       width=4.5, height=3, dpi=300, bg="white")
+       width=4.5, height=4, dpi=300, bg="white")
