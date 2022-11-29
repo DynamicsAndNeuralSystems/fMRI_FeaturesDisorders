@@ -522,3 +522,5 @@ processed_di_gauss_data_1000x %>%
   ylab("# Iterations") +
   xlab("di_gaussian value") +
   theme(plot.title = element_text(hjust=0.5))
+ggsave(paste0(plot_path, "di_gaussian_robustness_1000x_histogram.png"), 
+       width=6, height=4, units="in", dpi=300, bg="white")
