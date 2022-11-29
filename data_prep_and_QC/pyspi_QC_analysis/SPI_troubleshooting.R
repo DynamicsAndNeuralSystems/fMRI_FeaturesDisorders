@@ -505,3 +505,20 @@ di_gaussian_robustness_TS_data <- SCZ_TS %>%
 write.table(di_gaussian_robustness_TS_data, 
             file="sub-10159_lh_bankssts_lh_entorhinal.csv", 
             sep=",", col.names=F, row.names=F)
+
+# Once data has been processed with pyspi for di_gaussian 1000x,
+# visualise it here
+SCZ_pydata_path <- paste0(SCZ_data_path, "raw_data/pydata/")
+processed_di_gauss_data_1000x <- read.csv(paste0(SCZ_pydata_path,
+                                                 "sub-10159_lh_bankssts_lh_entorhinal_di_gaussian.csv"),
+                                          header=F)
+colnames(processed_di_gauss_data_1000x) <- "di_gaussian"
+processed_di_gauss_data_1000x$Iteration <- 1:nrow(processed_di_gauss_data_1000x)
+
+processed_di_gauss_data_1000x %>%
+  ggplot(data=., mapping=aes(x=di_gaussian)) +
+  geom_histogram(fill="turquoise3") +
+  ggtitle("di_gaussian for sub-10159\nleft bankssts --> entorhinal") +
+  ylab("# Iterations") +
+  xlab("di_gaussian value") +
+  theme(plot.title = element_text(hjust=0.5))
