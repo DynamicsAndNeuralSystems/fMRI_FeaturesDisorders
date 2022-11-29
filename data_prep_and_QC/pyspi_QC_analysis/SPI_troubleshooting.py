@@ -6,6 +6,8 @@ import os
 import dill
 from pyspi.calculator import Calculator
 from pyspi.data import Data
+from copy import deepcopy
+import csv
 
 # github path
 github_path = "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
@@ -13,9 +15,12 @@ github_path = "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
 SCZ_data_path = "/headnode1/abry4213/data/UCLA_Schizophrenia/raw_data/numpy_files/AROMA_2P_GMR/" 
 ASD_data_path = "/headnode1/abry4213/data/ABIDE_ASD/raw_data/numpy_files/FC1000/" 
 
-############################# di_gaussian redo #################################
 # config file
 config_file = github_path + "data_prep_and_QC/pyspi_QC_analysis/pyspi_di_gaussian_config.yaml"
+
+############################# di_gaussian redo #################################
+
+############################ UCLA Schizophrenia ################################
 
 # subject_list = ["sub-10206", "sub-10292", "sub-10438", "sub-10624",
 #                 "sub-10674", "sub-11019", "sub-11066", "sub-11122",
@@ -35,38 +40,71 @@ config_file = github_path + "data_prep_and_QC/pyspi_QC_analysis/pyspi_di_gaussia
 #         with open(SCZ_data_path + subject + "/calc_di_gaussian.pkl", 'wb') as f:
 #             dill.dump(calc_res, f)
 
-# ABIDE ASD di_gaussian only, round 1
-subjects_to_run = pd.read_csv(github_path + "data_prep_and_QC/pyspi_QC_analysis/ABIDE_ASD_di_gaussian_NaN_subjects.csv")["x"].tolist()
-subjects_to_run = [str(s) for s in subjects_to_run]
+################################ ABIDE ASD ####################################
 
-for subject in subjects_to_run:
-        if not os.path.exists(ASD_data_path + subject + "/calc_di_gaussian.pkl"):
-            print("Now running di_gaussian for " + subject + "\n")
-            subject_data = np.load(ASD_data_path + subject + ".npy")
+# # ABIDE ASD di_gaussian only, round 1
+# subjects_to_run = pd.read_csv(github_path + "data_prep_and_QC/pyspi_QC_analysis/ABIDE_ASD_di_gaussian_NaN_subjects.csv")["x"].tolist()
+# subjects_to_run = [str(s) for s in subjects_to_run]
+
+# for subject in subjects_to_run:
+#         if not os.path.exists(ASD_data_path + subject + "/calc_di_gaussian.pkl"):
+#             print("Now running di_gaussian for " + subject + "\n")
+#             subject_data = np.load(ASD_data_path + subject + ".npy")
         
-            calc = Calculator(dataset=subject_data, configfile=config_file)
-            calc.compute()
+#             calc = Calculator(dataset=subject_data, configfile=config_file)
+#             calc.compute()
         
-            calc_res = calc.table
+#             calc_res = calc.table
         
-            # Save calc results to a pickle file
-            with open(ASD_data_path + subject + "/calc_di_gaussian.pkl", 'wb') as f:
-                dill.dump(calc_res, f)
+#             # Save calc results to a pickle file
+#             with open(ASD_data_path + subject + "/calc_di_gaussian.pkl", 'wb') as f:
+#                 dill.dump(calc_res, f)
                 
-# ABIDE ASD di_gaussian only, round 2
-subjects_to_run_v2 = pd.read_csv(github_path + "data_prep_and_QC/pyspi_QC_analysis/ABIDE_ASD_di_gaussian_NaN_subjects_v2.csv")["x"].tolist()
-subjects_to_run_v2 = [str(s) for s in subjects_to_run_v2]
+# # ABIDE ASD di_gaussian only, round 2
+# subjects_to_run_v2 = pd.read_csv(github_path + "data_prep_and_QC/pyspi_QC_analysis/ABIDE_ASD_di_gaussian_NaN_subjects_v2.csv")["x"].tolist()
+# subjects_to_run_v2 = [str(s) for s in subjects_to_run_v2]
 
-for subject in subjects_to_run_v2:
-        if not os.path.exists(ASD_data_path + subject + "/calc_di_gaussian_v2.pkl"):
-            print("Now running di_gaussian round 2 for " + subject + "\n")
-            subject_data = np.load(ASD_data_path + subject + ".npy")
+# for subject in subjects_to_run_v2:
+#         if not os.path.exists(ASD_data_path + subject + "/calc_di_gaussian_v2.pkl"):
+#             print("Now running di_gaussian round 2 for " + subject + "\n")
+#             subject_data = np.load(ASD_data_path + subject + ".npy")
         
-            calc = Calculator(dataset=subject_data, configfile=config_file)
-            calc.compute()
+#             calc = Calculator(dataset=subject_data, configfile=config_file)
+#             calc.compute()
         
-            calc_res = calc.table
+#             calc_res = calc.table
         
-            # Save calc results to a pickle file
-            with open(ASD_data_path + subject + "/calc_di_gaussian_v2.pkl", 'wb') as f:
-                dill.dump(calc_res, f)
+#             # Save calc results to a pickle file
+#             with open(ASD_data_path + subject + "/calc_di_gaussian_v2.pkl", 'wb') as f:
+#                 dill.dump(calc_res, f)
+
+################### Run di_gaussian the same brain region pair 1000x ####################
+
+SCZ_pydata_path = "/headnode1/abry4213/data/UCLA_Schizophrenia/raw_data/pydata/" 
+
+# Load sub-10159 AROMA+2P+GMR left bankssts and left entorhinal cortex time-series
+subject_data = pd.read_csv(SCZ_pydata_path + "sub-10159_lh_bankssts_lh_entorhinal.csv",
+                           header = None).to_numpy()
+basecalc = Calculator(configfile=config_file)
+
+di_gauss_res = []
+
+for i in range(1,1001):
+    calc = Calculator(dataset=subject_data, configfile=config_file)
+    calc.compute()
+
+    data = Data(data=subject_data,dim_order="ps",name="sub-10159",
+                normalise=True, procnames=["ctx-lh-bankssts",
+                                           "ctx-lh-entorhinal"])
+    calc = deepcopy(basecalc)
+    calc.load_dataset(data)
+    calc.compute()
+    calc_res = calc.table
+    lh_bankssts_to_lh_entorhinal = calc_res.iloc[0,1]
+    di_gauss_res.append(lh_bankssts_to_lh_entorhinal)
+    
+# write to CSV
+with open(SCZ_pydata_path + "out.csv", "w") as f:
+    writer = csv.writer(f)
+    for val in di_gauss_res:
+        writer.writerow([val])

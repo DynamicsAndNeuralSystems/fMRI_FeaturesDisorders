@@ -130,12 +130,12 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/
 #   qsub $script
 # done
 
-# Integrate null model fits and calculate p-values
-qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
--N pairwise_null_model_analysis${dataset_ID} \
--o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_null_model_analysis_${dataset_ID}_out.txt \
--m a -M $email \
-call_pairwise_null_model_analysis.pbs 
+# # Integrate null model fits and calculate p-values
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
+# -N pairwise_null_model_analysis${dataset_ID} \
+# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_null_model_analysis_${dataset_ID}_out.txt \
+# -m a -M $email \
+# call_pairwise_null_model_analysis.pbs 
 
 
 ##########################################################################################
@@ -155,9 +155,9 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/combined_univariat
 #   qsub $script
 # done
 
-# # Integrate null model fits and calculate p-values
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
-# -N uni_pairwise_null_model_analysis_${dataset_ID} \
-# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/combined_univariate_pairwise_null_model_analysis_${dataset_ID}_out.txt \
-# -m a -M $email \
-# call_combined_univariate_pairwise_null_model_analysis.pbs 
+# Integrate null model fits and calculate p-values
+qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
+-N uni_pairwise_null_model_analysis_${dataset_ID} \
+-o $github_dir/fMRI_FeaturesDisorders/cluster_output/combined_univariate_pairwise_null_model_analysis_${dataset_ID}_out.txt \
+-m a -M $email \
+call_combined_univariate_pairwise_null_model_analysis.pbs 
