@@ -80,25 +80,69 @@ config_file = github_path + "data_prep_and_QC/pyspi_QC_analysis/pyspi_di_gaussia
 
 ################### Run di_gaussian the same brain region pair 1000x ####################
 
+# # Load sub-10159 AROMA+2P+GMR left bankssts and left entorhinal cortex time-series
+# # prepared in SPI_troubleshooting.R
+# SCZ_pydata_path = "/headnode1/abry4213/data/UCLA_Schizophrenia/raw_data/pydata/" 
+# subject_data = pd.read_csv(SCZ_pydata_path + "sub-10159_lh_bankssts_lh_entorhinal.csv",
+#                            header = None).to_numpy()
+
+# # Initialize Calculator object to copy in each iteration
+# # using custom di_gaussian config file
+# basecalc = Calculator(configfile=config_file)
+
+# # Initialize a list to store the di_gaussian estimate for the given
+# # brain pair across iterations
+# di_gauss_res = []
+
+# for i in range(1,1001):
+#     # Load Data object using subject's data
+#     data = Data(data=subject_data,dim_order="ps",name="sub-10159",
+#                 normalise=True, procnames=["ctx-lh-bankssts",
+#                                            "ctx-lh-entorhinal"])
+
+#     # Create a deepcopy of the original basecalc
+#     calc = deepcopy(basecalc)
+
+#     # Load the data object
+#     calc.load_dataset(data)
+
+#     # Compute di_gaussian SPI
+#     calc.compute()
+    
+#     # Extract results and append to di_gauss_res list
+#     calc_res = calc.table
+#     lh_bankssts_to_lh_entorhinal = calc_res.iloc[0,1]
+#     di_gauss_res.append(lh_bankssts_to_lh_entorhinal)
+    
+# # Write resulting list of 1,000 di_gaussian values to a CSV
+# with open(SCZ_pydata_path + "sub-10159_lh_bankssts_lh_entorhinal_di_gaussian.csv", "w") as f:
+#     writer = csv.writer(f)
+#     for val in di_gauss_res:
+#         writer.writerow([val])
+
+
+################### Run all SPIs for the same brain region pair 100x ####################
+
 # Load sub-10159 AROMA+2P+GMR left bankssts and left entorhinal cortex time-series
 # prepared in SPI_troubleshooting.R
 SCZ_pydata_path = "/headnode1/abry4213/data/UCLA_Schizophrenia/raw_data/pydata/" 
-subject_data = pd.read_csv(SCZ_pydata_path + "sub-10159_lh_bankssts_lh_entorhinal.csv",
+# subject_data = pd.read_csv(SCZ_pydata_path + "sub-10159_lh_bankssts_lh_entorhinal.csv",
+#                            header = None).to_numpy()
+subject_data = pd.read_csv(SCZ_pydata_path + "sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal.csv",
                            header = None).to_numpy()
 
 # Initialize Calculator object to copy in each iteration
-# using custom di_gaussian config file
-basecalc = Calculator(configfile=config_file)
+basecalc = Calculator()
 
 # Initialize a list to store the di_gaussian estimate for the given
 # brain pair across iterations
-di_gauss_res = []
+full_pyspi_res = []
 
-for i in range(1,1001):
+for i in range(1,101):
     # Load Data object using subject's data
-    data = Data(data=subject_data,dim_order="ps",name="sub-10159",
-                normalise=True, procnames=["ctx-lh-bankssts",
-                                           "ctx-lh-entorhinal"])
+    data = Data(data=subject_data,dim_order="ps",name="sub-10527",
+                normalise=True, procnames=["ctx-lh-rostralanteriorcingulate",
+                                           "ctx-lh-caudalmiddlefrontal"])
 
     # Create a deepcopy of the original basecalc
     calc = deepcopy(basecalc)
@@ -106,16 +150,35 @@ for i in range(1,1001):
     # Load the data object
     calc.load_dataset(data)
 
-    # Compute di_gaussian SPI
+    # Compute all SPIs
     calc.compute()
     
-    # Extract results and append to di_gauss_res list
+    # Extract results and append to full_pyspi_res list
     calc_res = calc.table
-    lh_bankssts_to_lh_entorhinal = calc_res.iloc[0,1]
-    di_gauss_res.append(lh_bankssts_to_lh_entorhinal)
+    calc_res_filt = calc_res.filter(items = ["proc-0"], axis = 0)
     
-# Write resulting list of 1,000 di_gaussian values to a CSV
-with open(SCZ_pydata_path + "sub-10159_lh_bankssts_lh_entorhinal_di_gaussian.csv", "w") as f:
-    writer = csv.writer(f)
-    for val in di_gauss_res:
-        writer.writerow([val])
+    # Convert index to column
+    calc_res_filt.columns = calc_res_filt.columns.to_flat_index()
+    calc_res_filt.reset_index(level=0, inplace=True)
+    
+    # Rename index as first brain region
+    calc_res_filt = calc_res_filt.rename(columns={"index": "brain_region_from"})
+    
+    # Pivot data from wide to long
+    calc_res_filt_long = pd.melt(calc_res_filt, id_vars="brain_region_from")
+    calc_res_filt_long["SPI"], calc_res_filt_long["brain_region_to"] = calc_res_filt_long.variable.str
+    
+    # Remove variable column
+    calc_res_filt_long = calc_res_filt_long.drop("variable", 1)
+    
+    # Filter by region from = 0 and region to = 1
+    calc_res_filt_long = calc_res_filt_long.loc[(calc_res_filt_long["brain_region_from"] == "proc-0") & (calc_res_filt_long["brain_region_to"] == "proc-1")]
+
+    # Add iteration number
+    calc_res_filt_long["Iteration"] = i
+    full_pyspi_res.append(calc_res_filt_long)
+    
+full_pyspi_merged = pd.concat(full_pyspi_res)
+full_pyspi_merged.value = np.real(full_pyspi_merged.value)
+# Write resulting dataframe to a CSV
+full_pyspi_merged.to_csv(SCZ_pydata_path + "sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal_all_SPIs.csv")
