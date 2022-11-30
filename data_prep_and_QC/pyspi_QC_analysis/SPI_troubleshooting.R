@@ -491,9 +491,8 @@ if (!file.exists(paste0(ASD_rdata_path, "ABIDE_ASD_pyspi14_corrected_filtered.Rd
 # brain region 1: ctx-lh-bankssts
 # brain region 2: ctx-lh-entorhinal
 # noise processing: AROMA+2P+GMR
-
 # Subset data down to just those two brain regions for sub-10159
-di_gaussian_robustness_TS_data <- SCZ_TS %>%
+SCZ_TS %>%
   filter(Sample_ID == "sub-10159",
          Noise_Proc == "AROMA+2P+GMR",
          Brain_Region %in% c("ctx-lh-bankssts", "ctx-lh-entorhinal")) %>%
@@ -501,10 +500,33 @@ di_gaussian_robustness_TS_data <- SCZ_TS %>%
   pivot_wider(id_cols = Brain_Region,
               names_from = "timepoint",
               values_from = "values") %>%
-  dplyr::select(-Brain_Region)
-write.table(di_gaussian_robustness_TS_data, 
-            file="sub-10159_lh_bankssts_lh_entorhinal.csv", 
-            sep=",", col.names=F, row.names=F)
+  dplyr::select(-Brain_Region) %>%
+  write.table(., 
+              file="sub-10159_lh_bankssts_lh_entorhinal.csv", 
+              sep=",", col.names=F, row.names=F)
+
+# Subject: sub-10527
+# brain region 1: ctx-lh-rostralanteriorcingulate
+# brain region 2: ctx-lh-caudalmiddlefrontal
+# noise processing: AROMA+2P+GMR
+# Subset data down to just those two brain regions for sub-10159
+SCZ_TS %>%
+  filter(Sample_ID == "sub-10527",
+         Noise_Proc == "AROMA+2P+GMR",
+         Brain_Region %in% c("ctx-lh-rostralanteriorcingulate", 
+                             "ctx-lh-caudalmiddlefrontal")) %>%
+  mutate(Brain_Region = factor(Brain_Region, levels = c("ctx-lh-rostralanteriorcingulate",
+                                                        "ctx-lh-caudalmiddlefrontal"))) %>%
+  dplyr::select(Brain_Region, timepoint, values) %>%
+  pivot_wider(id_cols = Brain_Region,
+              names_from = "timepoint",
+              values_from = "values") %>%
+  arrange(Brain_Region) %>%
+  dplyr::select(-Brain_Region) %>%
+  write.table(., 
+              file=paste0(SCZ_data_path, 
+                          "raw_data/pydata/sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal.csv"), 
+              sep=",", col.names=F, row.names=F)
 
 # Once data has been processed with pyspi for di_gaussian 1000x,
 # visualise it here
@@ -524,3 +546,67 @@ processed_di_gauss_data_1000x %>%
   theme(plot.title = element_text(hjust=0.5))
 ggsave(paste0(plot_path, "di_gaussian_robustness_1000x_histogram.png"), 
        width=6, height=4, units="in", dpi=300, bg="white")
+
+################################################################################
+# All SPI robustness analysis
+# Subject: sub-10159
+# brain region 1: ctx-lh-bankssts
+# brain region 2: ctx-lh-entorhinal
+# noise processing: AROMA+2P+GMR
+
+all_SPI_100x_sub10159 <- read.csv(paste0(SCZ_pydata_path,
+                                "sub-10159_lh_bankssts_lh_entorhinal_all_SPIs.csv"),
+                         header=T) %>%
+  dplyr::select(SPI, brain_region_from, brain_region_to, value, Iteration)
+
+all_SPI_100x_sub10527 <- read.csv(paste0(SCZ_pydata_path,
+                                         "sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal_all_SPIs.csv"),
+                                  header=T) %>%
+  dplyr::select(SPI, brain_region_from, brain_region_to, value, Iteration)
+
+
+# Find SPIs where the value is not the same for all iterations
+non_deterministic_SPIs_sub10159 <- all_SPI_100x_sub10159 %>%
+  group_by(SPI, value) %>%
+  count() %>%
+  filter(n < 100) %>%
+  ungroup() %>%
+  group_by(SPI) %>%
+  summarise(value_mean = mean(value, na.rm=T),
+            value_SD = sd(value, na.rm=T),
+            num_unique_values = n()) %>%
+  arrange(desc(num_unique_values)) 
+
+non_deterministic_SPIs_sub10527 <- all_SPI_100x_sub10527 %>%
+  group_by(SPI, value) %>%
+  count() %>%
+  filter(n < 100) %>%
+  ungroup() %>%
+  group_by(SPI) %>%
+  summarise(value_mean = mean(value, na.rm=T),
+            value_SD = sd(value, na.rm=T),
+            num_unique_values = n()) %>%
+  arrange(desc(num_unique_values)) 
+
+non_deterministic_SPIs_sub10159 %>%
+  kable() %>%
+  kable_styling(full_width = F)
+
+non_deterministic_SPIs_sub10527 %>%
+  kable() %>%
+  kable_styling(full_width = F)
+
+# Find SPIs that yielded NaN
+all_SPI_100x_sub10159 %>%
+  filter(is.na(value)) %>%
+  group_by(SPI) %>%
+  count()%>%
+  kable() %>%
+  kable_styling(full_width = F)
+
+all_SPI_100x_sub10527 %>%
+  filter(is.na(value)) %>%
+  group_by(SPI) %>%
+  count()%>%
+  kable() %>%
+  kable_styling(full_width = F)

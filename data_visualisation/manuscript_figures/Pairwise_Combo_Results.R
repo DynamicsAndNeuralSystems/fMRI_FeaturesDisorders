@@ -7,6 +7,7 @@ library(icesTAF)
 library(plotly)
 library(cowplot)
 library(broom)
+library(scales)
 theme_set(theme_cowplot())
 
 ################################################################################
@@ -208,11 +209,11 @@ ggsave(paste0(plot_path, "UCLA_Schizophrenia_SPI_combo_sig_boxplot.png"),
 # ABIDE ASD
 plot_boxplot_shaded_null(dataset_ID = "ABIDE_ASD",
                          grouping_var_name = "SPI +\nUnivariate Combo",
-                         main_data_by_repeat = SCZ_SPI_combo_main_repeats_sig,
+                         main_data_by_repeat = ASD_SPI_combo_main_repeats_sig,
                          fill_color = "darkgoldenrod2",
                          wrap_length = 100,
-                         null_mean_value = mean(SCZ_SPI_combo_null$balanced_accuracy, na.rm=T),
-                         null_SD_value = sd(SCZ_SPI_combo_null$balanced_accuracy, na.rm=T))
+                         null_mean_value = mean(ASD_SPI_combo_null$balanced_accuracy, na.rm=T),
+                         null_SD_value = sd(ASD_SPI_combo_null$balanced_accuracy, na.rm=T))
 ggsave(paste0(plot_path, "ABIDE_ASD_SPI_combo_sig_boxplot.png"),
        width = 7, height = 3, units="in", dpi=300)
 
@@ -237,26 +238,31 @@ t_test_res_SCZ_SPIs <- merged_SCZ_SPI_combo_data %>%
   mutate(t_test_p_adj = p.adjust(p.value, method="BH")) %>%
   dplyr::select(grouping_var, statistic, t_test_p_adj)
 
-merged_SCZ_SPI_combo_data %>%
+data_to_plot <- merged_SCZ_SPI_combo_data %>%
   left_join(., t_test_res_SCZ_SPIs) %>%
   mutate(grouping_var_char = gsub("_", " ", as.character(grouping_var))) %>%
   mutate(grouping_var = factor(grouping_var, levels = rev(levels(grouping_var)))) %>%
   mutate(Analysis = as.character(Analysis)) %>%
   rowwise() %>%
-  mutate(tofill_violin = ifelse(bal_acc_p_adj < 0.05, Analysis, "no"),
-         tofill_bg = ifelse(t_test_p_adj < 0.05, "yes", "no")) %>%
-  ggplot(data=., mapping=aes(x = grouping_var,
-                             y = balanced_accuracy)) +
-  geom_rect(aes(fill = tofill_bg), xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, alpha=0.3) +
-  geom_violin(aes(fill = tofill_violin))  +
-  facet_wrap(grouping_var ~ ., scales="free_x", nrow=1) +
-  scale_fill_manual(values = c("gray90", "chartreuse3", "darkgoldenrod2", "gray90")) +
-  ylab("Balanced Accuracy") +
-  theme(legend.position = "bottom") +
-  guides(fill = guide_legend(nrow=2)) +
-  theme(axis.text.x = element_text(angle=90),
-        strip.text = element_blank())
+  mutate(violin_fill = ifelse(bal_acc_p_adj < 0.05, paste0(Analysis, "_sig"), Analysis),
+         t_test_res = ifelse(t_test_p_adj < 0.05, "t_sig", "t_insig"))
 
+data_to_plot %>%
+  ggplot(data=., mapping=aes(x = grouping_var_char,
+                             y = balanced_accuracy)) +
+  geom_rect(aes(fill = t_test_res), xmin=-Inf, xmax=Inf, ymin=-Inf, ymax=Inf, alpha=0.3) +
+  geom_violin(aes(fill = violin_fill))  +
+  facet_wrap(grouping_var ~ ., scales="free_x", nrow=1) +
+  scale_fill_manual(values = c("gray90", "chartreuse3", "gray90", "darkgoldenrod2", "gray90", "lightblue1"), na.value="gray90") +
+  ylab("Balanced Accuracy") +
+  xlab("SPI") +
+  theme(legend.position = "none") +
+  guides(fill = guide_legend(nrow=2)) +
+  scale_x_discrete(labels = wrap_format(25)) +
+  theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.4),
+        strip.text = element_blank())
+ggsave(paste0(plot_path, "UCLA_Schizophrenia_SPI_With_vs_Without_Univariate.png"),
+       width = 8.5, height = 4, units = "in", dpi = 300)
 
 ### Violin plots that show spaghetti lines colored by whether difference is significant
 # Find which SPIs are statistically different with vs without univariate
