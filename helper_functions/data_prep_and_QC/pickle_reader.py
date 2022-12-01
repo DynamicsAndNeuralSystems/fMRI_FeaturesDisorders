@@ -24,3 +24,11 @@ def extract_df_from_pkl(pkl_file):
     
     # Return final dictionary
     return(SPI_res_long)
+
+def read_in_df(pkl_file):
+
+    with open(pkl_file,'rb') as f:
+      SPI_res = dill.load(f)
+    
+    # Return dataframe
+    return(SPI_res)

@@ -133,7 +133,7 @@ read_pyspi_pkl_into_RDS <- function(pkl_data_path,
       if (!file.exists(paste0(np_rdata_path, sample, "_pyspi.Rds"))) {
         cat("\nNow prepping data for", sample, noise_label, "\n")
         tryCatch({
-          sample_pkl_data <- extract_df_from_pkl(paste0(np_data_path, sample, "/", pkl_file)) %>%
+          sample_pkl_data <- read_in_df(paste0(np_data_path, sample, "/", pkl_file)) %>%
             mutate(Sample_ID = sample,
                    Noise_Proc = noise_proc,
                    brain_region_1 = as.numeric(gsub("proc-", "", brain_region_1)),

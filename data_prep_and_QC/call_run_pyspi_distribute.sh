@@ -32,5 +32,10 @@ do
     --pyspi_config $config_file \
     --sample_yaml ${data_path}/raw_data/numpy_files/${noise_label}/${sample_yaml} \
     --pbs_notify a \
-    --email $email --walltime_hrs $walltime_hrs --cpu $ncpus --mem $mem --table_only
+    --email $email \
+    --walltime_hrs $walltime_hrs \
+    --cpu $ncpus \
+    --mem $mem \
+    --table_only \
+    --overwrite_pkl
 done
