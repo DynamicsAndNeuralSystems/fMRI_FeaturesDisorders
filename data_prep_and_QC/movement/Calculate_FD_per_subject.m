@@ -11,7 +11,7 @@ txt_files = dir(fullfile(SCZ_subject_movement_data_path, "*movData.txt"));
 % Instantiate matrix with two columns, one for subject ID and one for mean
 % FD
 num_subjects = length(txt_files);
-FD_m_mat = repmat("hello", num_subjects, 2);
+FD_m_mat = repmat("hello", num_subjects, 4);
 
 for i = 1:num_subjects
     % Define subject ID and movement data file
@@ -21,13 +21,22 @@ for i = 1:num_subjects
     % Read in movement data
     subject_movement_data = dlmread(fullfile(SCZ_subject_movement_data_path, file));
 
-    % Calculate framewise displacement with Jenkinson formula
-    subject_FD = GetFDJenk(subject_movement_data);
+    % Calculate framewise displacement
+    % Jenkinson formula
+    subject_FD_jenk = GetFDJenk(subject_movement_data);
+    % Power formula
+    subject_FD_power = GetFDPower(subject_movement_data);
+    % VanD formula
+    subject_FD_VanD = GetFDVanD(subject_movement_data);
 
     % Calculate and store mean FD
-    subject_m_FD = mean(subject_FD);
+    subject_m_FD_jenk = mean(subject_FD_jenk);
+    subject_m_FD_power = mean(subject_FD_power);
+    subject_m_FD_VanD = mean(subject_FD_VanD);
     FD_m_mat(i,1) = subject;
-    FD_m_mat(i,2) = subject_m_FD;
+    FD_m_mat(i,2) = subject_m_FD_jenk;
+    FD_m_mat(i,3) = subject_m_FD_power;
+    FD_m_mat(i,4) = subject_m_FD_VanD;
 end
 
 % Write my results to a .txt file
@@ -41,7 +50,7 @@ txt_files = dir(fullfile(ASD_subject_movement_data_path, "*movData.txt"));
 % Instantiate matrix with two columns, one for subject ID and one for mean
 % FD
 num_subjects = length(txt_files);
-FD_m_mat = repmat("hello", num_subjects, 2);
+FD_m_mat = repmat("hello", num_subjects, 4);
 
 for i = 1:num_subjects
     % Define subject ID and movement data file
@@ -54,17 +63,22 @@ for i = 1:num_subjects
     % 3dvolreg outputs (rot,trans) rather than SPM's (trans,rot)
     subject_movement_data_reordered = subject_movement_data(:, [4:6, 1:3]);
 
-    % Convert degrees to radians for rotation columns
-    subject_movement_data_reordered_degrees = subject_movement_data_reordered;
-    subject_movement_data_reordered_degrees(:, [4:6]) = deg2rad(subject_movement_data_reordered(:, [4:6]));
-
-    % Calculate framewise displacement with Jenkinson formula
-    subject_FD = GetFDJenk(subject_movement_data_reordered);
+    % Calculate framewise displacement
+    % Jenkinson formula
+    subject_FD_jenk = GetFDJenk(subject_movement_data_reordered);
+    % Power formula
+    subject_FD_power = GetFDPower(subject_movement_data_reordered);
+    % VanD formula
+    subject_FD_VanD = GetFDVanD(subject_movement_data_reordered);
 
     % Calculate and store mean FD
-    subject_m_FD = mean(subject_FD);
+    subject_m_FD_jenk = mean(subject_FD_jenk);
+    subject_m_FD_power = mean(subject_FD_power);
+    subject_m_FD_VanD = mean(subject_FD_VanD);
     FD_m_mat(i,1) = subject;
-    FD_m_mat(i,2) = subject_m_FD;
+    FD_m_mat(i,2) = subject_m_FD_jenk;
+    FD_m_mat(i,3) = subject_m_FD_power;
+    FD_m_mat(i,4) = subject_m_FD_VanD;
 end
 
 % Write my results to a .txt file
