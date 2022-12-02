@@ -21,7 +21,7 @@ Rscript prepare_univariate_data.R \
 --brain_region_lookup $brain_region_lookup \
 --noise_procs $noise_procs \
 --dataset_ID $dataset_ID \
---run_number $run_number
+--add_catch2
 
 exit
 

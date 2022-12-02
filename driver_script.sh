@@ -45,7 +45,7 @@ export pyspi_walltime_hrs=2
 
 # # Prep univariate data
 # qsub -v dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs \
-# -N prepare_univariate_data_${dataset_ID}${run_number} \
+# -N prepare_univariate_data_${dataset_ID} \
 # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}_out.txt \
 # -m a \
 # call_prepare_univariate_data.pbs

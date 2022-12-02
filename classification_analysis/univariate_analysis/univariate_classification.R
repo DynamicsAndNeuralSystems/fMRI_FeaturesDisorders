@@ -14,6 +14,7 @@ parser$add_argument("--noise_procs", default=c(""))
 parser$add_argument("--noise_proc_for_null", default=c(""))
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
 parser$add_argument("--email")
+parser$add_argument("--add_catch2", action="store_true", default=FALSE)
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -27,6 +28,7 @@ noise_proc_for_null <- args$noise_proc_for_null
 dataset_ID <- args$dataset_ID
 sample_metadata_file <- args$sample_metadata_file
 email <- args$email
+add_catch2 <- args$add_catch2
 
 cat("noise_procs:", noise_procs, "\n")
 cat("noise_proc_for_null:", noise_proc_for_null, "\n")
