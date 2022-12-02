@@ -61,9 +61,9 @@ z_score_feature_matrix <- function(noise_proc,
   TS_feature_data_np <- subset(TS_feature_data, Noise_Proc == noise_proc)
   
   TS_feature_data_z <- normalise_feature_frame(TS_feature_data_np, 
-                                             names_var = "names",
-                                             values_var = "values", 
-                                             method = "z-score")
+                                               names_var = "names",
+                                               values_var = "values", 
+                                               method = "z-score")
   
   return(TS_feature_data_z)
 }
@@ -76,9 +76,9 @@ z_score_all_noise_procs <- function(TS_feature_data,
   TS_feature_data_z <- noise_procs %>%
     purrr::map_df( ~ z_score_feature_matrix(noise_proc = .x,
                                             TS_feature_data = TS_feature_data))
-
+  
   return(TS_feature_data_z)
-
+  
 }
 
 
@@ -119,13 +119,13 @@ plot_NA_sample_ts <- function(dataset_ID = "UCLA_Schizophrenia",
 #-------------------------------------------------------------------------------
 
 remove_samples_from_feature_matrix <- function(TS_feature_data, 
-                                                sample_IDs_to_drop = c()) {
+                                               sample_IDs_to_drop = c()) {
   
   cat("\nDropping samples:", paste(sample_IDs_to_drop, collapse=", "), "\n")
   
   TS_feature_data_filtered <- TS_feature_data %>%
     dplyr::filter(!(Sample_ID %in% sample_IDs_to_drop))
-
+  
   return(TS_feature_data_filtered)
   
 }
@@ -135,7 +135,7 @@ remove_samples_from_feature_matrix <- function(TS_feature_data,
 #-------------------------------------------------------------------------------
 
 remove_features_from_feature_matrix <- function(TS_feature_data, 
-                                               features_to_drop = c()) {
+                                                features_to_drop = c()) {
   if (length(features_to_drop) > 0) {
     cat("\nDropping features:", paste(names, collapse=", "), "\n")
     
@@ -146,7 +146,7 @@ remove_features_from_feature_matrix <- function(TS_feature_data,
   } else {
     return(TS_feature_data)
   }
-
+  
 }
 
 #-------------------------------------------------------------------------------
@@ -171,13 +171,13 @@ run_QC_for_univariate_dataset <- function(data_path,
   
   # Load sample metadata
   sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
-
+  
   # Filter to schizophrenia and control for UCLA
   if (dataset_ID == "UCLA_Schizophrenia") {
     sample_metadata <- sample_metadata %>% 
       filter(Diagnosis %in% c("Control", "Schizophrenia"))
   }
-
+  
   # Load TS feature data and subset by noise_proc
   TS_feature_data <- readRDS(paste0(proc_rdata_path, dataset_ID, "_", 
                                     univariate_feature_set, ".Rds"))
@@ -192,54 +192,54 @@ run_QC_for_univariate_dataset <- function(data_path,
   # one or more noise-processing methods:
   TS_feature_data_filtered <- remove_samples_from_feature_matrix(TS_feature_data = TS_feature_data, 
                                                                  sample_IDs_to_drop = univar_NA_samples)
-
+  
   # Features identified with missing data for all samples:
   univar_NA_features <- find_univariate_feature_na(TS_feature_data_filtered,
-                                                 dataset_ID = dataset_ID,
-                                                 univariate_feature_set = univariate_feature_set) %>%
+                                                   dataset_ID = dataset_ID,
+                                                   univariate_feature_set = univariate_feature_set) %>%
     pull(names)
   
   # Drop any samples shown above with NA features for 
   # one or more noise-processing methods:
   TS_feature_data_filtered <- remove_features_from_feature_matrix(TS_feature_data = TS_feature_data_filtered, 
-                                                                 features_to_drop = univar_NA_features)                                                               
-
-
+                                                                  features_to_drop = univar_NA_features)                                                               
+  
+  
   # Filter to samples in metadata
   TS_feature_data_filtered <- TS_feature_data_filtered %>%
     dplyr::filter(Sample_ID %in% sample_metadata$Sample_ID)
-
+  
   # Save filtered data to RDS
   saveRDS(TS_feature_data_filtered, file=paste0(proc_rdata_path,
                                                 sprintf("%s_%s_filtered.Rds",
                                                         dataset_ID,
                                                         univariate_feature_set)))
-
+  
   # Save sample data post-filtering to an `.Rds` file:
   filtered_sample_info <- TS_feature_data_filtered %>%
     distinct(Sample_ID)                                            
-
+  
   saveRDS(filtered_sample_info, file=paste0(proc_rdata_path, 
                                             sprintf("%s_filtered_sample_info_%s.Rds",
                                                     dataset_ID,
                                                     univariate_feature_set)))
   
   cat("Sample info saved to:", paste0(proc_rdata_path, 
-                                       sprintf("%s_filtered_sample_info_%s.Rds",
-                                               dataset_ID,
-                                               univariate_feature_set)), "\n")
+                                      sprintf("%s_filtered_sample_info_%s.Rds",
+                                              dataset_ID,
+                                              univariate_feature_set)), "\n")
   
   # Data normalisation: z-score the feature matrix as well. 
   TS_df_z <- z_score_all_noise_procs(TS_feature_data = TS_feature_data_filtered,
-                                    noise_procs = noise_procs)
-
+                                     noise_procs = noise_procs)
+  
   saveRDS(TS_df_z, file = paste0(proc_rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
-                                                            dataset_ID,
-                                                            univariate_feature_set)))
+                                                          dataset_ID,
+                                                          univariate_feature_set)))
   
   cat("\nZ-scored data saved to:", paste0(proc_rdata_path, sprintf("%s_%s_filtered_zscored.Rds",
-                                                              dataset_ID,
-                                                              univariate_feature_set)),
+                                                                   dataset_ID,
+                                                                   univariate_feature_set)),
       "\n")
   
   # OPTIONAL -- if user specifies to add mean and SD, save separately
@@ -247,12 +247,19 @@ run_QC_for_univariate_dataset <- function(data_path,
     TS_catch2_data <- readRDS(paste0(proc_rdata_path, dataset_ID, "_catch2.Rds"))
     
     # Filter to samples in metadata
-    TS_catch2_filtered <- TS_catch2 %>%
+    TS_catch2_filtered <- TS_catch2_data %>%
       dplyr::filter(Sample_ID %in% sample_metadata$Sample_ID)
     
     # Save filtered data to RDS
     saveRDS(TS_catch2_filtered, file=paste0(proc_rdata_path,
                                             sprintf("%s_catch2_filtered.Rds",
                                                     dataset_ID)))
+    
+    # Data normalisation: z-score the feature matrix as well. 
+    TS_catch2_z <- z_score_all_noise_procs(TS_feature_data = TS_catch2_filtered,
+                                           noise_procs = noise_procs)
+    
+    saveRDS(TS_catch2_z, file = paste0(proc_rdata_path, sprintf("%s_catch2_filtered_zscored.Rds",
+                                                                dataset_ID)))
   }
 }

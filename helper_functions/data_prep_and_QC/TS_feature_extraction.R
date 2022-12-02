@@ -47,6 +47,7 @@ catch22_all_samples <- function(full_TS_data,
       TS_catch24 <- TS_catch22
       TS_catch22 <- TS_catch24 %>%
         filter(!(names %in% c("DN_Mean", "DN_Spread_Std")))
+      
       saveRDS(TS_catch22, file=paste0(rdata_path, sprintf("%s_catch22.Rds", 
                                                           dataset_ID)))
       TS_catch2 <- TS_catch24 %>%

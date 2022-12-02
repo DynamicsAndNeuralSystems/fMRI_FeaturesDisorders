@@ -189,7 +189,7 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
                                                svm_kernel = "linear",
                                                repeat_number = 1,
                                                univariate_feature_set = "catch22",
-                                               pairwise_feature_set = "pyspi14",
+                                               sample_groups,
                                                grouping_var = "Brain_Region",
                                                svm_feature_var = "Feature",
                                                noise_procs = c("AROMA+2P", 
@@ -204,14 +204,6 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
   if (is.null(rdata_path)) {
     rdata_path <- paste0(data_path, "processed_data/Rdata/")
   }
-  
-  # Get diagnosis proportions
-  sample_groups <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
-                                                      dataset_ID,
-                                                      univariate_feature_set,
-                                                      pairwise_feature_set))) %>%
-    left_join(., sample_metadata) %>%
-    distinct(Sample_ID, Diagnosis)
   
   # Define sample weights
   # Default is 1 and 1 if use_inv_prob_weighting is not included
@@ -255,7 +247,6 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
       
       grouping_var_vector <- c("All")
     }
-    
     
     # Reshape data from long to wide for SVM
     for (group_var in grouping_var_vector) {

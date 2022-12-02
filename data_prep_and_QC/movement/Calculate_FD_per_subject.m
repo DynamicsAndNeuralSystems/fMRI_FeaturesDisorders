@@ -40,11 +40,11 @@ for i = 1:num_subjects
 end
 
 % Write my results to a .txt file
-output_file = fullfile(SCZ_subject_movement_data_path, "fdAvgs_UCLA_Schizophrenia_Annie.txt");
+output_file = fullfile(SCZ_subject_movement_data_path, "UCLA_Schizophrenia_mFD.txt");
 writematrix(FD_m_mat, output_file)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ABIDE ASD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ASD_subject_movement_data_path = "/Users/abry4213/data/ABIDE_ASD/movement_data/";
+ASD_subject_movement_data_path = "/Users/abry4213/data/ABIDE_ASD/movementData/";
 txt_files = dir(fullfile(ASD_subject_movement_data_path, "*movData.txt"));
 
 % Instantiate matrix with two columns, one for subject ID and one for mean
@@ -82,5 +82,5 @@ for i = 1:num_subjects
 end
 
 % Write my results to a .txt file
-output_file = fullfile(ASD_subject_movement_data_path, "fdAvgs_ABIDE_ASD_Annie.txt");
+output_file = fullfile(ASD_subject_movement_data_path, "ABIDE_ASD_mFD.txt");
 writematrix(FD_m_mat, output_file)

@@ -37,15 +37,16 @@ cat("noise_proc_for_null:", noise_proc_for_null, "\n")
 # pairwise_feature_set <- "pyspi14"
 # github_dir <- "~/github/"
 # email <- "abry4213@uni.sydney.edu.au"
+# add_catch2 <- TRUE
 
-# UCLA schizophrenia
+# # UCLA schizophrenia
 # data_path <- "~/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
 # noise_procs <- "AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
 # noise_proc_for_null <- "AROMA+2P+GMR"
 
-# ABIDE ASD
+# # ABIDE ASD
 # data_path <- "~/data/ABIDE_ASD/"
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
 # dataset_ID <- "ABIDE_ASD"
@@ -55,7 +56,7 @@ cat("noise_proc_for_null:", noise_proc_for_null, "\n")
 rdata_path <- paste0(data_path, "processed_data/Rdata/")
 plot_dir <- paste0(data_path, "plots/")
 
-icesTAF::mkdir(plot_dir)
+TAF::mkdir(plot_dir)
 
 # Set the seed
 set.seed(127)
@@ -119,12 +120,18 @@ kernel = "linear"
 weighting_name <- "inv_prob"
 use_inv_prob_weighting <- TRUE
 
+# Get diagnosis proportions
+sample_groups <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
+                                                    dataset_ID,
+                                                    univariate_feature_set,
+                                                    pairwise_feature_set))) %>%
+  left_join(., sample_metadata) %>%
+  distinct(Sample_ID, Diagnosis)
+
 for (i in 1:nrow(grouping_param_df)) {
   grouping_type = grouping_param_df$grouping_type[i]
   grouping_var = grouping_param_df$grouping_var[i]
   SVM_feature_var = grouping_param_df$SVM_feature_var[i]
-  
-  #### 10-fold linear SVM with different weights
   
   # Run given weighting for 10-fold CV linear SVM
   if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
@@ -134,19 +141,19 @@ for (i in 1:nrow(grouping_param_df)) {
     
     group_wise_SVM_CV_weighting <- 1:length(sample_folds) %>%
       purrr::map_df( ~ run_univariate_cv_svm_by_input_var(data_path = data_path,
-                                                           rdata_path = rdata_path,
-                                                           dataset_ID = dataset_ID,
-                                                           sample_metadata = sample_metadata,
-                                                           univariate_feature_set = univariate_feature_set,
-                                                           pairwise_feature_set = pairwise_feature_set,
-                                                           svm_kernel = kernel,
-                                                           grouping_var = grouping_var,
-                                                           flds = sample_folds[[.x]],
-                                                           repeat_number = .x,
-                                                           svm_feature_var = SVM_feature_var,
-                                                           out_of_sample_only = TRUE,
-                                                           use_inv_prob_weighting = use_inv_prob_weighting,
-                                                           noise_procs = noise_procs))
+                                                          rdata_path = rdata_path,
+                                                          dataset_ID = dataset_ID,
+                                                          sample_metadata = sample_metadata,
+                                                          univariate_feature_set = univariate_feature_set,
+                                                          sample_groups = sample_groups,
+                                                          svm_kernel = kernel,
+                                                          grouping_var = grouping_var,
+                                                          flds = sample_folds[[.x]],
+                                                          repeat_number = .x,
+                                                          svm_feature_var = SVM_feature_var,
+                                                          out_of_sample_only = TRUE,
+                                                          use_inv_prob_weighting = use_inv_prob_weighting,
+                                                          noise_procs = noise_procs))
     
     saveRDS(group_wise_SVM_CV_weighting, file=paste0(rdata_path, 
                                                      sprintf("%s_wise_CV_linear_SVM_%s_%s.Rds",
@@ -160,39 +167,83 @@ for (i in 1:nrow(grouping_param_df)) {
                                                           univariate_feature_set, 
                                                           weighting_name)))
   }
+  if (add_catch2 & !file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_catch2_%s.Rds",
+                                                            grouping_type, 
+                                                            weighting_name)))) {
+    group_wise_SVM_CV_weighting_catch2 <- 1:length(sample_folds) %>%
+      purrr::map_df( ~ run_univariate_cv_svm_by_input_var(data_path = data_path,
+                                                          rdata_path = rdata_path,
+                                                          dataset_ID = dataset_ID,
+                                                          sample_metadata = sample_metadata,
+                                                          univariate_feature_set = "catch2",
+                                                          sample_groups = sample_groups,
+                                                          svm_kernel = kernel,
+                                                          grouping_var = grouping_var,
+                                                          flds = sample_folds[[.x]],
+                                                          repeat_number = .x,
+                                                          svm_feature_var = SVM_feature_var,
+                                                          out_of_sample_only = TRUE,
+                                                          use_inv_prob_weighting = use_inv_prob_weighting,
+                                                          noise_procs = noise_procs))
     
-    #### Calculate averaged balanced accuracy across all folds and repeats
-    if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc_across_repeats.Rds",
-                                                grouping_type, 
-                                                univariate_feature_set, 
-                                                weighting_name)))) {
-      # First find balanced accuracy per repeat across folds
-      group_wise_SVM_balanced_accuracy <- group_wise_SVM_CV_weighting %>%
-        group_by(grouping_var, Noise_Proc, Sample_Type, fold_number, repeat_number) %>%
-        summarise(accuracy = sum(Prediction_Correct) / n(),
-                  balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
-                                                             reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
-      saveRDS(group_wise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
-                                                                                grouping_type, 
-                                                                                univariate_feature_set, 
-                                                                                weighting_name))) 
-      
-      # Then find averaged balanced accuracy across all repeats
-      group_wise_SVM_balanced_accuracy_across_repeats <- group_wise_SVM_balanced_accuracy %>%
-        group_by(grouping_var, Noise_Proc, Sample_Type) %>%
-        summarise(mean_accuracy = mean(accuracy, na.rm=T),
-                  mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-        dplyr::rename("accuracy" = "mean_accuracy",
-                      "balanced_accuracy" = "mean_balanced_accuracy")
-      saveRDS(group_wise_SVM_balanced_accuracy_across_repeats, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc_across_repeats.Rds",
-                                                                                grouping_type, 
-                                                                                univariate_feature_set, 
-                                                                                weighting_name)))
-    } else {
-      group_wise_SVM_balanced_accuracy_across_repeats <- readRDS(paste0(rdata_path, 
-                                                                        sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc_across_repeats.Rds",
-                                                                             grouping_type, 
-                                                                             univariate_feature_set, 
-                                                                             weighting_name)))
-    }
+    saveRDS(group_wise_SVM_CV_weighting_catch2, file=paste0(rdata_path, 
+                                                     sprintf("%s_wise_CV_linear_SVM_catch2_%s.Rds",
+                                                             grouping_type,
+                                                             weighting_name)))
+  }
+  
+  #### Calculate averaged balanced accuracy across all folds and repeats
+  if (!file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc_across_repeats.Rds",
+                                              grouping_type, 
+                                              univariate_feature_set, 
+                                              weighting_name)))) {
+    # First find balanced accuracy per repeat across folds
+    group_wise_SVM_balanced_accuracy <- group_wise_SVM_CV_weighting %>%
+      group_by(grouping_var, Noise_Proc, Sample_Type, fold_number, repeat_number) %>%
+      summarise(accuracy = sum(Prediction_Correct) / n(),
+                balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
+                                                           reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
+    saveRDS(group_wise_SVM_balanced_accuracy, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc.Rds",
+                                                                              grouping_type, 
+                                                                              univariate_feature_set, 
+                                                                              weighting_name))) 
+    
+    # Then find averaged balanced accuracy across all repeats
+    group_wise_SVM_balanced_accuracy_across_repeats <- group_wise_SVM_balanced_accuracy %>%
+      group_by(grouping_var, Noise_Proc, Sample_Type) %>%
+      summarise(mean_accuracy = mean(accuracy, na.rm=T),
+                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+      dplyr::rename("accuracy" = "mean_accuracy",
+                    "balanced_accuracy" = "mean_balanced_accuracy")
+    saveRDS(group_wise_SVM_balanced_accuracy_across_repeats, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_%s_%s_balacc_across_repeats.Rds",
+                                                                                             grouping_type, 
+                                                                                             univariate_feature_set, 
+                                                                                             weighting_name)))
+  }
+  
+  #### OPTIONAL: catch2 mean + SD
+  if (add_catch2 & !file.exists(paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_catch2_%s_balacc_across_repeats.Rds",
+                                              grouping_type, 
+                                              weighting_name)))) {
+    # First find balanced accuracy per repeat across folds
+    group_wise_SVM_catch2_balanced_accuracy <- group_wise_SVM_CV_weighting_catch2 %>%
+      group_by(grouping_var, Noise_Proc, Sample_Type, fold_number, repeat_number) %>%
+      summarise(accuracy = sum(Prediction_Correct) / n(),
+                balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
+                                                           reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
+    saveRDS(group_wise_SVM_catch2_balanced_accuracy, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_catch2_%s_balacc.Rds",
+                                                                              grouping_type, 
+                                                                              weighting_name))) 
+    
+    # Then find averaged balanced accuracy across all repeats
+    group_wise_SVM_catch2_balanced_accuracy_across_repeats <- group_wise_SVM_catch2_balanced_accuracy %>%
+      group_by(grouping_var, Noise_Proc, Sample_Type) %>%
+      summarise(mean_accuracy = mean(accuracy, na.rm=T),
+                mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
+      dplyr::rename("accuracy" = "mean_accuracy",
+                    "balanced_accuracy" = "mean_balanced_accuracy")
+    saveRDS(group_wise_SVM_catch2_balanced_accuracy_across_repeats, file=paste0(rdata_path, sprintf("%s_wise_CV_linear_SVM_catch2_%s_balacc_across_repeats.Rds",
+                                                                                             grouping_type, 
+                                                                                             weighting_name)))
+  }
 }
