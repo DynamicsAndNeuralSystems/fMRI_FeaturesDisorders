@@ -136,8 +136,8 @@ read_pyspi_pkl_into_RDS <- function(pkl_data_path,
           sample_pkl_data <- read_in_df(paste0(np_data_path, sample, "/", pkl_file)) %>%
             mutate(Sample_ID = sample,
                    Noise_Proc = noise_proc,
-                   brain_region_1 = as.numeric(gsub("proc-", "", brain_region_1)),
-                   brain_region_2 = as.numeric(gsub("proc-", "", brain_region_2)))
+                   brain_region_from = as.numeric(gsub("proc-", "", brain_region_from)),
+                   brain_region_to = as.numeric(gsub("proc-", "", brain_region_to)))
           
           if ("Diagnosis" %in% colnames(sample_metadata)) {
             sample_pkl_data <- sample_pkl_data %>%
@@ -202,8 +202,8 @@ merge_pyspi_res_for_study <- function(rdata_path,
     all_pyspi_data <- do.call(plyr::rbind.fill, noise_proc_res)  %>%
       mutate(comparison = row_number(),
              group = stringr::str_to_sentence(Diagnosis)) %>%
-      pivot_longer(cols = c(brain_region_1,
-                            brain_region_2),
+      pivot_longer(cols = c(brain_region_from,
+                            brain_region_to),
                    names_to = "Region_Number",
                    values_to = "Index") %>%
       # Convert Index to number and add 1 since python is base 0

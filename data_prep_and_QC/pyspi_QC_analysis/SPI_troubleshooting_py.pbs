@@ -3,9 +3,9 @@
 #PBS -q yossarian
 #PBS -j oe
 #PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_QC_analysis/SPI_troubleshooting_py_pbs.out
-#PBS -l select=1:ncpus=1:mem=20GB
+#PBS -l select=1:ncpus=2:mem=40GB
 #PBS -l walltime=2:00:00
-#PBS -m abe
+#PBS -m a
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -V
 
@@ -16,7 +16,7 @@ module load Anaconda3-5.1.0
 source /usr/physics/python/anaconda3/etc/profile.d/conda.sh
 ###
 
-conda activate pyspi
+conda activate pyspi_annie
 
 # Verify python version
 python --version
@@ -26,4 +26,4 @@ hostname
 
 # Change to relevant directory and run our compute script
 cd /headnode1/abry4213/github/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_QC_analysis/
-python SPI_troubleshooting.py > /headnode1/abry4213/github/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_QC_analysis/SPI_troubleshooting_py.out
+python SPI_troubleshooting.py

@@ -10,9 +10,6 @@ from copy import deepcopy
 import csv
 import random
 
-# Set the seed
-random.seed(127)
-
 # github path
 github_path = "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
 # Define data path
@@ -23,9 +20,7 @@ ASD_pydata_path = "/headnode1/abry4213/data/ABIDE_ASD/raw_data/pydata/"
 config_file = github_path + "data_prep_and_QC/pyspi_QC_analysis/pyspi_di_gaussian_config.yaml"
 
 ################### Run all SPIs for the same brain region pair 100x ####################
-def process_SPIs_100x(sample_ID, pydata_path, subject_data_file):
-    # Read in subject's time-series data and convert to a numpy array
-    subject_data = pd.read_csv(pydata_path + subject_data_file + ".csv", header=None).to_numpy()
+def process_SPIs_100x(sample_ID, subject_data, pydata_path, data_out_file, set_seed = False):
 
     # Initialize Calculator object to copy in each iteration
     basecalc = Calculator()
@@ -38,6 +33,9 @@ def process_SPIs_100x(sample_ID, pydata_path, subject_data_file):
     full_pyspi_res = []
 
     for i in range(1,101):
+        # Set seed within loop if indicated
+        if set_seed:
+            random.seed(127)
 
         # Create a deepcopy of the original basecalc
         calc = deepcopy(basecalc)
@@ -77,24 +75,26 @@ def process_SPIs_100x(sample_ID, pydata_path, subject_data_file):
     full_pyspi_merged.value = np.real(full_pyspi_merged.value)
 
     # Write resulting dataframe to a CSV
-    full_pyspi_merged.to_csv(ASD_pydata_path + subject_data_file + "_all_SPIs.csv")
+    full_pyspi_merged.to_csv(pydata_path + data_out_file + "_all_SPIs.csv")
 
 
-# UCLA Schizophrenia with AROMA+2P+GMR
 
-# # sub-10159, left bankssts --> left entorhinal cortex
-# process_SPIs_100x(sample_ID="sub-10159", 
-#                   pydata_path=SCZ_pydata_path, 
-#                   subject_data_file="sub-10159_lh_bankssts_lh_entorhinal")
-# # sub-10527, left rostral anterior cingulate --> left caudal middle frontal
-# process_SPIs_100x(sample_ID="sub-10527",
-#                   pydata_path=SCZ_pydata_path,
-#                   subject_data_file="sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal")
+############ Run all SPIs for the same brain region pair 100x, w vs w/o global seed ############
 
+# sub-10527, left rostral anterior cingulate --> left caudal middle frontal
+# Read in subject's time-series data and convert to a numpy array
+subject_data = pd.read_csv(SCZ_pydata_path + "sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal.csv", 
+                           header=None).to_numpy()
 
-# ABIDE ASD with FC1000 noise-processing
-process_SPIs_100x(sample_ID="10021451277603445196",
-                  pydata_path=ASD_pydata_path,
-                  subject_data_file="subject_10021451277603445196_precentral_angular")
+# Not seeded
+process_SPIs_100x(sample_ID="sub-10527",
+                  subject_data = subject_data,
+                  pydata_path=SCZ_pydata_path,
+                  data_out_file="sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal")
 
-
+# Seeded
+random.seed(127)
+process_SPIs_100x(sample_ID="sub-10527",
+                  subject_data = subject_data,
+                  pydata_path=SCZ_pydata_path,
+                  data_out_file="sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal_seeded")

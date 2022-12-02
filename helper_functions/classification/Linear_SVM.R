@@ -380,7 +380,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     
     # Filter by directionality
     pairwise_data <- pairwise_data %>%
-      filter(brain_region_1 != brain_region_2) %>%
+      filter(brain_region_from != brain_region_to) %>%
       dplyr::rename("group_SPI" = "SPI") %>%
       group_by(group_SPI) %>%
       mutate(Direction = SPI_directionality %>% 
@@ -388,11 +388,11 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                distinct(Direction) %>%
                pull(Direction)) %>%
       dplyr::rename("SPI" = "group_SPI") %>%
-      mutate(region_pair = case_when(Direction == "Undirected" ~ ifelse(brain_region_1 < brain_region_2,
-                                                                        paste0(brain_region_1, "_", brain_region_2),
-                                                                        paste0(brain_region_2, "_", brain_region_1)),
-                                     Direction == "Directed" ~ paste0(brain_region_1, "_", brain_region_2))) %>%
-      dplyr::select(-brain_region_1, -brain_region_2)  %>%
+      mutate(region_pair = case_when(Direction == "Undirected" ~ ifelse(brain_region_from < brain_region_to,
+                                                                        paste0(brain_region_from, "_", brain_region_to),
+                                                                        paste0(brain_region_to, "_", brain_region_from)),
+                                     Direction == "Directed" ~ paste0(brain_region_from, "_", brain_region_to))) %>%
+      dplyr::select(-brain_region_from, -brain_region_to)  %>%
       distinct(Sample_ID, SPI, region_pair, .keep_all = T)
     
   } else if (svm_feature_var == "SPI") {
@@ -400,7 +400,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     # Don't want to filter by directionality
     pairwise_data <- pairwise_data %>%
       rowwise() %>%
-      tidyr::unite("region_pair", c(brain_region_1, brain_region_2), sep="_") %>%
+      tidyr::unite("region_pair", c(brain_region_from, brain_region_to), sep="_") %>%
       distinct(Sample_ID, SPI, region_pair, .keep_all = T)
     
     svm_feature_var_name = svm_feature_var
@@ -414,7 +414,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     # Filter by directionality
     pyspi_data <- pyspi_data %>%
       rowwise() %>%
-      tidyr::unite("region_pair", c(brain_region_1, brain_region_2), sep="_") %>%
+      tidyr::unite("region_pair", c(brain_region_from, brain_region_to), sep="_") %>%
       distinct(Sample_ID, SPI, region_pair, .keep_all = T) %>%
       group_by(SPI, region_pair) %>%
       filter(!all(is.na(values))) %>%
@@ -574,7 +574,7 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(dataset_ID,
   
   # Filter by directionality
   pairwise_feature_data <- pairwise_feature_data %>%
-    filter(brain_region_1 != brain_region_2) %>%
+    filter(brain_region_from != brain_region_to) %>%
     dplyr::rename("group_SPI" = "SPI") %>%
     group_by(group_SPI) %>%
     mutate(Direction = SPI_directionality %>% 
@@ -582,11 +582,11 @@ run_combined_uni_pairwise_cv_svm_by_input_var <- function(dataset_ID,
              distinct(Direction) %>%
              pull(Direction)) %>%
     dplyr::rename("SPI" = "group_SPI") %>%
-    mutate(region_pair = case_when(Direction == "Undirected" ~ ifelse(brain_region_1 < brain_region_2,
-                                                                      paste0(brain_region_1, "_", brain_region_2),
-                                                                      paste0(brain_region_2, "_", brain_region_1)),
-                                   Direction == "Directed" ~ paste0(brain_region_1, "_", brain_region_2))) %>%
-    dplyr::select(-brain_region_1, -brain_region_2)  %>%
+    mutate(region_pair = case_when(Direction == "Undirected" ~ ifelse(brain_region_from < brain_region_to,
+                                                                      paste0(brain_region_from, "_", brain_region_to),
+                                                                      paste0(brain_region_to, "_", brain_region_from)),
+                                   Direction == "Directed" ~ paste0(brain_region_from, "_", brain_region_to))) %>%
+    dplyr::select(-brain_region_from, -brain_region_to)  %>%
     distinct(Sample_ID, SPI, region_pair, .keep_all = T)
   
   # Merge brain region plus theft feature for univariate data

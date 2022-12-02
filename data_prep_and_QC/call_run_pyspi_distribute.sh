@@ -3,8 +3,8 @@
 #module load Anaconda3-5.1.0
 /usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
 source /usr/physics/python/anaconda3/etc/profile.d/conda.sh 
-conda activate pyspi
 
+# Command line arguments
 export github_dir="$1"
 export config_file="$2"
 export email="$3"
@@ -16,6 +16,10 @@ export mem="$8"
 export ncpus="$9"
 export calc_file_name="${10}"
 export sample_yaml="${11}"
+export conda_env="${12}"
+
+# Activate given conda env
+conda activate ${conda_env}
 
 noise_procs_list=$(echo $noise_procs | sed "s/;/ /g")
 export pyspi_script_dir=${github_dir}/pyspi-distribute/
