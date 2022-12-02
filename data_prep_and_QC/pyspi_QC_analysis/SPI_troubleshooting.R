@@ -204,6 +204,7 @@ subset_to_subject_region <- function(input_TS_data,
     pivot_wider(id_cols = Brain_Region,
                 names_from = "timepoint",
                 values_from = "values") %>%
+    arrange(Brain_Region) %>%
     dplyr::select(-Brain_Region) %>%
     write.table(., 
                 file=paste0(pydata_path, file_name), 
@@ -281,8 +282,6 @@ non_deterministic_SPIs_sub10159 <- find_nondeterministic_SPIs(all_SPI_100x_sub10
 non_deterministic_SPIs_sub10527 <- find_nondeterministic_SPIs(all_SPI_100x_sub10527)
 non_deterministic_SPIs_ASD_sub <- find_nondeterministic_SPIs(all_SPI_100x_ASD_sub)
 
-
-
 all_SPI_100x_ASD_sub %>%
   group_by(SPI, value) %>%
   mutate(n = n()) %>%
@@ -318,3 +317,22 @@ all_SPI_100x_ASD_sub %>%
   count()%>%
   kable() %>%
   kable_styling(full_width = F)
+
+################################################################################
+# SGC troubleshooting
+SGC_subject <- SCZ_TS %>%
+  filter(Sample_ID == "sub-10527",
+         Brain_Region %in% c("ctx-lh-rostralanteriorcingulate", 
+                             "ctx-lh-caudalmiddlefrontal")) %>%
+  group_by(Brain_Region) %>%
+  summarise(Region_FFT = abs(fft(values)/sqrt(128))^2) %>%
+  summarise(Power = (4/128)*Region_FFT[1:65],
+            frequency = (0:64)/128)
+
+SGC_subject %>%
+  ggplot(data=., mapping=aes(x=frequency, y=Power, group=Brain_Region, color=Brain_Region)) +
+  geom_vline(xintercept=0.25, linetype=2, color="black") +
+  geom_line() +
+  theme(legend.position = "bottom") 
+
+lmtest::grangertest(SGC_subject$f)
