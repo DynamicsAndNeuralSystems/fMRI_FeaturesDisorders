@@ -5,14 +5,14 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
-parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
-parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
+parser$add_argument("--github_dir", default="~/github/")
+parser$add_argument("--data_path", default="~/data/UCLA_Schizophrenia/")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
 parser$add_argument("--noise_procs", default=c(""))
 parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
-parser$add_argument("--run_number", nargs='?')
+parser$add_argument("--add_catch2", action="store_true", default=FALSE)
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -23,42 +23,38 @@ sample_metadata_file <- args$sample_metadata_file
 brain_region_lookup <- args$brain_region_lookup
 noise_procs <- args$noise_procs
 dataset_ID <- args$dataset_ID
-run_number <- args$run_number
+add_catch2 <- args$add_catch2
 
 # univariate_feature_set <- "catch22"
-# github_dir <- "/headnode1/abry4213/github/"
+# github_dir <- "~/github/"
+# add_catch2 <- TRUE
 
-# UCLA schizophrenia
-# data_path <- "/headnode1/abry4213/data/UCLA_Schizophrenia/"
+# # UCLA schizophrenia
+# data_path <- "~/data/UCLA_Schizophrenia/"
 # dataset_ID <- "UCLA_Schizophrenia"
 # sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # brain_region_lookup <- "Brain_Region_info.csv"
 
-# ABIDE ASD
-# data_path <- "/headnode1/abry4213/data/ABIDE_ASD/"
+# # ABIDE ASD
+# data_path <- "~/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
 # noise_procs <- c("FC1000")
 # brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 
 # HCP100
-# data_path <- "/headnode1/abry4213/data/HCP100/"
+# data_path <- "~/data/HCP100/"
 # dataset_ID <- "HCP100"
 # sample_metadata_file <- "HCP100_sample_metadata.Rds"
 # noise_procs <- c("AROMA+2P+GMR")
 # brain_region_lookup <- "Brain_Region_info.csv"
 
-if (!is.null(run_number)) {
-  rdata_path <- paste0(data_path, "processed_data_run", run_number, "/Rdata/")
-  plot_dir <- paste0(data_path, "plots_run", run_number, "/")
-} else {
-  rdata_path <- paste0(data_path, "processed_data/Rdata/")
-  plot_dir <- paste0(data_path, "plots/")
-}
+rdata_path <- paste0(data_path, "processed_data/Rdata/")
+plot_dir <- paste0(data_path, "plots/")
 
-icesTAF::mkdir(plot_dir)
-icesTAF::mkdir(rdata_path)
+TAF::mkdir(plot_dir)
+TAF::mkdir(rdata_path)
 
 # Set the seed
 set.seed(127)
@@ -84,7 +80,6 @@ helper_script_dir = paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/
 source(paste0(helper_script_dir, "data_prep_and_QC/TS_feature_extraction.R"))
 source(paste0(helper_script_dir, "data_prep_and_QC/QC_functions_univariate.R"))
 
-
 # DIY rlist::list.append
 list.append <- function (.data, ...) 
 {
@@ -95,7 +90,6 @@ list.append <- function (.data, ...)
     c(.data, ..., recursive = FALSE)
   }
 }
-
 
 #-------------------------------------------------------------------------------
 # Prepare data using dataset-specific script
@@ -157,7 +151,9 @@ catch22_all_samples(full_TS_data = full_TS_data,
                     rdata_path = rdata_path,
                     dataset_ID = dataset_ID,
                     unique_columns = c("Sample_ID", "Brain_Region", "Noise_Proc"),
-                    output_column_names = c("Sample_ID", "Brain_Region", "Noise_Proc"))
+                    output_column_names = c("Sample_ID", "Brain_Region", "Noise_Proc"),
+                    add_mean_SD = add_catch2,
+                    overwrite = FALSE)
 
 #-------------------------------------------------------------------------------
 # Perform QC for catch22 data
@@ -167,6 +163,7 @@ run_QC_for_univariate_dataset(data_path = data_path,
                               sample_metadata_file = sample_metadata_file,
                               dataset_ID = dataset_ID,
                               univariate_feature_set = univariate_feature_set,
+                              add_catch2 = add_catch2,
                               raw_TS_file = paste0(data_path, "raw_data/",
                                                    dataset_ID, "_fMRI_TS.Rds"),
                               noise_procs = noise_procs,

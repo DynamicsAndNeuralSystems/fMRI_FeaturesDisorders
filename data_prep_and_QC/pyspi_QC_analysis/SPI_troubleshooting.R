@@ -256,6 +256,11 @@ all_SPI_100x_sub10527 <- read.csv(paste0(SCZ_pydata_path,
                                   header=T) %>%
   dplyr::select(SPI, brain_region_from, brain_region_to, value, Iteration)
 
+all_SPI_100x_sub10527_seeded <- read.csv(paste0(SCZ_pydata_path,
+                                         "sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal_seeded_all_SPIs.csv"),
+                                  header=T) %>%
+  dplyr::select(SPI, brain_region_from, brain_region_to, value, Iteration)
+
 all_SPI_100x_ASD_sub <- read.csv(paste0(ASD_pydata_path,
                                         "subject_10021451277603445196_precentral_angular_all_SPIs.csv"),
                                  header=T) %>%
@@ -280,6 +285,7 @@ find_nondeterministic_SPIs <- function(pyspi_res) {
 # Find SPIs where the value is not the same for all iterations
 non_deterministic_SPIs_sub10159 <- find_nondeterministic_SPIs(all_SPI_100x_sub10159)
 non_deterministic_SPIs_sub10527 <- find_nondeterministic_SPIs(all_SPI_100x_sub10527)
+non_deterministic_SPIs_sub10527_seeded <- find_nondeterministic_SPIs(all_SPI_100x_sub10527_seeded)
 non_deterministic_SPIs_ASD_sub <- find_nondeterministic_SPIs(all_SPI_100x_ASD_sub)
 
 all_SPI_100x_ASD_sub %>%
@@ -317,22 +323,3 @@ all_SPI_100x_ASD_sub %>%
   count()%>%
   kable() %>%
   kable_styling(full_width = F)
-
-################################################################################
-# SGC troubleshooting
-SGC_subject <- SCZ_TS %>%
-  filter(Sample_ID == "sub-10527",
-         Brain_Region %in% c("ctx-lh-rostralanteriorcingulate", 
-                             "ctx-lh-caudalmiddlefrontal")) %>%
-  group_by(Brain_Region) %>%
-  summarise(Region_FFT = abs(fft(values)/sqrt(128))^2) %>%
-  summarise(Power = (4/128)*Region_FFT[1:65],
-            frequency = (0:64)/128)
-
-SGC_subject %>%
-  ggplot(data=., mapping=aes(x=frequency, y=Power, group=Brain_Region, color=Brain_Region)) +
-  geom_vline(xintercept=0.25, linetype=2, color="black") +
-  geom_line() +
-  theme(legend.position = "bottom") 
-
-lmtest::grangertest(SGC_subject$f)

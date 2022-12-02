@@ -20,6 +20,7 @@ catch22_all_samples <- function(full_TS_data,
                                 dataset_ID = "UCLA_Schizophrenia",
                                 output_column_names = c("Output"),
                                 unique_columns = c("Sample_ID", "Brain_Region", "Noise_Proc"),
+                                add_mean_SD = FALSE,
                                 overwrite = F) {
   
   # Save resulting time-series features to an .Rds file
@@ -36,13 +37,25 @@ catch22_all_samples <- function(full_TS_data,
                                             time_var = "timepoint", 
                                             values_var = "values", 
                                             feature_set = "catch22",
-                                            catch24 = F) %>%
+                                            catch24 = add_mean_SD) %>%
       tidyr::separate("id", c(output_column_names), sep="__")
     
     cat("\nNow saving resulting theft features to an .Rds file: \n", 
         paste0(rdata_path, sprintf("%s_catch22.Rds", 
                                    dataset_ID)))
-    saveRDS(TS_catch22, file=paste0(rdata_path, sprintf("%s_catch22.Rds", 
-                                                        dataset_ID)))
+    if (add_mean_SD) {
+      TS_catch24 <- TS_catch22
+      TS_catch22 <- TS_catch24 %>%
+        filter(!(names %in% c("DN_Mean", "DN_Spread_Std")))
+      saveRDS(TS_catch22, file=paste0(rdata_path, sprintf("%s_catch22.Rds", 
+                                                          dataset_ID)))
+      TS_catch2 <- TS_catch24 %>%
+        filter(names %in% c("DN_Mean", "DN_Spread_Std"))
+      saveRDS(TS_catch2, file=paste0(rdata_path, sprintf("%s_catch2.Rds", 
+                                                         dataset_ID)))
+    } else {
+      saveRDS(TS_catch22, file=paste0(rdata_path, sprintf("%s_catch22.Rds", 
+                                                          dataset_ID)))
+    }
   }
 }

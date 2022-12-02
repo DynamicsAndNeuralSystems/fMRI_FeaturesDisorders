@@ -159,6 +159,7 @@ run_QC_for_univariate_dataset <- function(data_path,
                                           dataset_ID = "UCLA_Schizophrenia",
                                           univariate_feature_set = "catch22",
                                           raw_TS_file = "UCLA_Schizophrenia_fMRI_data.Rds",
+                                          add_catch2 = FALSE,
                                           noise_procs = c("AROMA+2P",
                                                           "AROMA+2P+GMR",
                                                           "AROMA+2P+DiCER"),
@@ -186,18 +187,6 @@ run_QC_for_univariate_dataset <- function(data_path,
                                                  dataset_ID = dataset_ID,
                                                  univariate_feature_set = univariate_feature_set) %>%
     pull(Sample_ID)
-
-  # Plot the raw time-series data for these samples to confirm:
-  tryCatch({
-    plot_NA_sample_ts(dataset_ID = dataset_ID,
-                      raw_TS_file = raw_TS_file,
-                      NA_sample_IDs = univar_NA_samples,
-                      univariate_feature_set = "catch22",
-                      grouping_var = "Brain_Region",
-                      noise_procs = noise_procs)
-    ggsave(paste0(plot_dir, dataset_ID, "_NA_TimeSeries.png"),
-           width = 6, height = 6, units="in", dpi=300)
-  }, error = function(e) cat("No NA time-series to plot.\n"))
   
   # Drop any samples shown above with NA features for 
   # one or more noise-processing methods:
@@ -253,4 +242,17 @@ run_QC_for_univariate_dataset <- function(data_path,
                                                               univariate_feature_set)),
       "\n")
   
+  # OPTIONAL -- if user specifies to add mean and SD, save separately
+  if (add_catch2) {
+    TS_catch2_data <- readRDS(paste0(proc_rdata_path, dataset_ID, "_catch2.Rds"))
+    
+    # Filter to samples in metadata
+    TS_catch2_filtered <- TS_catch2 %>%
+      dplyr::filter(Sample_ID %in% sample_metadata$Sample_ID)
+    
+    # Save filtered data to RDS
+    saveRDS(TS_catch2_filtered, file=paste0(proc_rdata_path,
+                                            sprintf("%s_catch2_filtered.Rds",
+                                                    dataset_ID)))
+  }
 }

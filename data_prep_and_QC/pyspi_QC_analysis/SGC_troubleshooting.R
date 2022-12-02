@@ -116,5 +116,5 @@ SGC_subject %>%
   geom_vline(xintercept=0.25, linetype=2, alpha=0.7, color="black") +
   geom_line() +
   labs(color="Brain Region") +
-  guides(color=guide_legend(nrow=2,byrow=TRUE)) +
+  guides(color=guide_legend(nrow=1,byrow=TRUE)) +
   theme(legend.position = "bottom") 
