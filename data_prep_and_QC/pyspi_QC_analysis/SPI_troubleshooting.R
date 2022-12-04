@@ -52,13 +52,37 @@ ASD_pyspi14 <- readRDS(paste0(ASD_rdata_path,
 # Find SPIs that yielded NaN for at least one region pair and subject
 # SCZ
 SCZ_pyspi14 %>%
-  filter(brain_region_1 != brain_region_2) %>%
+  filter(brain_region_from != brain_region_to) %>%
   filter(is.na(value)) %>%
   distinct(SPI) %>%
   pull(SPI)
+
+res_round1 <- read.csv(paste0(SCZ_data_path, "raw_data/numpy_files/AROMA_2P_GMR/SPI_res_round1.csv")) %>%
+  dplyr::select(-X) %>%
+  filter(brain_region_from != brain_region_to) %>%
+  dplyr::rename("value_1" = "value")
+res_round2 <- read.csv(paste0(SCZ_data_path, "raw_data/numpy_files/AROMA_2P_GMR/SPI_res_round2.csv")) %>%
+  dplyr::select(-X)%>%
+  filter(brain_region_from != brain_region_to) %>%
+  dplyr::rename("value_2" = "value")
+merged = left_join(res_round1, res_round2)
+
+diffs <- subset(merged, value_1 != value_2)
+
+merged %>%
+  filter(str_detect(SPI, "sgc")) %>%
+  filter(is.nan(value_1) | is.nan(value_2))
+
+
+to_follow_up_on <- SCZ_pyspi14 %>%
+  filter(Sample_ID == "sub-10527",
+         str_detect(SPI, "sgc"),
+         brain_region_from != brain_region_to,
+         is.nan(value)) %>%
+  dplyr::select(brain_region_from, brain_region_to)
 # ASD
 ASD_pyspi14 %>%
-  filter(brain_region_1 != brain_region_2) %>%
+  filter(brain_region_from != brain_region_to) %>%
   filter(is.na(value)) %>%
   distinct(SPI) %>%
   pull(SPI)
@@ -72,10 +96,10 @@ plot_SPI_na <- function(this_SPI,
                         SPI_name, 
                         pyspi_data) {
   p <- pyspi_data %>%
-    filter(brain_region_1 != brain_region_2,
+    filter(brain_region_from != brain_region_to,
            SPI == this_SPI) %>%
     mutate(fill = ifelse(is.na(value), T, F),
-           region_pair = paste0(brain_region_1, brain_region_2)) %>%
+           region_pair = paste0(brain_region_from, brain_region_to)) %>%
     distinct(Sample_ID, region_pair, fill) %>%
     ggplot(data = ., mapping=aes(x=region_pair,
                                  y=Sample_ID,

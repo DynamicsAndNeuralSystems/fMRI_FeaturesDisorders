@@ -29,73 +29,146 @@ ASD_rdata_path <- paste0(ASD_data_path, "processed_data/Rdata/")
 SCZ_subject_metadata <- readRDS(paste0(SCZ_data_path, "UCLA_Schizophrenia_sample_metadata.Rds"))
 ASD_subject_metadata <- readRDS(paste0(ASD_data_path, "ABIDE_ASD_sample_metadata.Rds"))
 
-# Load framewise displacement (movement) data for UCLA Schizophrenia
-SCZ_movement_data <- compile_movement_data(fd_path = paste0(SCZ_data_path, "movementData/"),
-                                           input_dataset_name = "UCLA_Schizophrenia",
-                                           sample_metadata = SCZ_subject_metadata) %>%
-  filter(!is.na(Diagnosis))
+# Load mean framewise displacement (movement) data for UCLA Schizophrenia
+SCZ_movement_data_Linden <- read.table(paste0(SCZ_data_path, 
+                                              "movementData/fdAvgs_UCLA_Schizophrenia.txt"),
+                                       sep=",")
+colnames(SCZ_movement_data_Linden) <- c("Jenkinson_Linden")
 
-# Load mean displacement data for ABIDE ASD
-ASD_motion_path <- paste0(ASD_data_path, "raw_data/movement_data/")
-ASD_movement_data <- calculate_mean_displacement(movement_data_path = ASD_motion_path,
-                                                 input_dataset_name = "ABIDE_ASD",
-                                                 sample_metadata = ASD_subject_metadata)
+SCZ_movement_data <- read.table(paste0(SCZ_data_path, "movementData/UCLA_Schizophrenia_mFD.txt"),
+                                sep=",")
+colnames(SCZ_movement_data) <- c("Sample_ID", "Jenkinson", "Power", "VanDijk")
+SCZ_movement_data <- left_join(SCZ_movement_data, SCZ_subject_metadata) 
+
+SCZ_movement_data_Linden <- cbind(SCZ_movement_data_Linden, SCZ_movement_data)
+
+SCZ_movement_data <- SCZ_movement_data %>%
+  filter(!is.na(Diagnosis)) %>%
+  mutate(Cohort="SCZ Study")
+
+# Load mean framewise displacement (movement) data for UCLA Schizophrenia
+ASD_movement_data <- read.table(paste0(ASD_data_path, "movementData/ABIDE_ASD_mFD.txt"),
+                                sep=",", colClasses = c("V1" = "character"))
+colnames(ASD_movement_data) <- c("Sample_ID", "Jenkinson", "Power", "VanDijk")
+ASD_movement_data <- left_join(ASD_movement_data, ASD_subject_metadata) %>%
+  filter(!is.na(Diagnosis)) %>%
+  mutate(Cohort="ASD Study")
 
 ################################################################################
-# Plot subject movement by diagnosis group
+# Compare distributions of each mFD type by dataset
 ################################################################################
 
-# ABIDE ASD
-wilcox.test(mean_displacement ~ Diagnosis, data = ASD_movement_data)
+# NOTE: I'm plotting the 1 to the 95th percentiles for each dataset
+merged_midrange_data <- plyr::rbind.fill(SCZ_movement_data, ASD_movement_data) %>%
+  pivot_longer(cols=c(Jenkinson:VanDijk),
+               names_to = "Method",
+               values_to = "mFD") %>%
+  group_by(Cohort, Method) %>%
+  mutate(perc1 = quantile(mFD, probs=c(0.1))) %>%
+  mutate(perc95 = quantile(mFD, probs=c(0.95))) %>%
+  ungroup() %>%
+  rowwise() %>%
+  filter(perc1 <= mFD, mFD <= perc95) %>%
+  mutate(Diagnosis = factor(Diagnosis, levels = c("Control", "ASD", "Schizophrenia")))
 
-ASD_p <- ASD_movement_data %>%
-  filter(mean_displacement<=5) %>%
-  mutate(Diagnosis = factor(Diagnosis, levels = c("Control", "ASD")),
-         Method = "ASD") %>%
-  ggplot(data=., mapping=aes(x=Diagnosis, y=mean_displacement)) +
+merged_midrange_data %>%
+  ggplot(data=., mapping=aes(x=Diagnosis, y=mFD)) +
   geom_violin(aes(fill=Diagnosis)) +
   geom_boxplot(color="black", fill=NA, width=0.1) +
-  scale_fill_manual(values = c("#00B06D", "#737373")) +
+  facet_wrap(Cohort ~ Method, scales="free") +
+  geom_signif(data = subset(merged_midrange_data, Cohort=="ASD Study"),
+              test = "wilcox.test",
+              comparisons = list(c("ASD", "Control")), 
+              map_signif_level=TRUE) +
+  geom_signif(data = subset(merged_midrange_data, Cohort=="SCZ Study"),
+              test = "wilcox.test",
+              comparisons = list(c("Schizophrenia", "Control")), 
+              map_signif_level=TRUE) +
   scale_y_continuous(expand = c(0,0,0.15,0)) +
-  xlab("Group") +
-  ylab("Mean\nDisplacement (mm)") +
-  facet_grid(. ~ Method) +
-  theme(legend.position="none",
-        plot.title=element_text(hjust=0.5)) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_blank())
+ggsave(paste0(plot_path, "ASD_SCZ_mFD_by_Group.png"),
+       width = 6, height=4, units="in", dpi=300, bg="white")
+
+# Compare control subjects per cohort
+merged_midrange_data %>%
+  filter(Diagnosis=="Control") %>%
+  ggplot(data=., mapping=aes(x=mFD)) +
+  stat_density(aes(fill = Cohort, y=..scaled..),
+               position = "identity", alpha=0.6) +
+  ggtitle("mFD Values in Control Participants") +
+  ylab("# Control Participants") +
+  xlab("mFD By Method") +
+  facet_wrap(. ~ Method, scales="free") +
+  scale_x_continuous(breaks = scales::pretty_breaks(3)) +
+  theme(plot.title = element_text(hjust=0.5),
+        legend.position="bottom")
+ggsave(paste0(plot_path, "Control_mFD_Distribution.png"),
+       width = 7, height=3, units="in", dpi=300, bg="white")
+
+# Maybe we only focus on the FDpower estimates for the paper?
+ASD_power <- merged_midrange_data %>%
+  filter(Method == "Power",
+         Cohort == "ASD Study") 
+
+SCZ_power <- merged_midrange_data %>%
+  filter(Method == "Power",
+         Cohort == "SCZ Study") 
+
+ASD_power %>%
+  ggplot(data=., mapping=aes(x=Diagnosis, y=mFD)) +
+  geom_violin(aes(fill=Diagnosis)) +
+  geom_boxplot(color="black", fill=NA, width=0.1) +
+  facet_wrap(Cohort ~ ., scales="free_x") +
   geom_signif(test = "wilcox.test",
               comparisons = list(c("ASD", "Control")), 
-              map_signif_level=TRUE)
-
-# UCLA Schizophrenia
-wilcox.test(FD ~ Diagnosis, data = SCZ_movement_data)
-
-SCZ_p <- SCZ_movement_data %>%
-  mutate(Diagnosis = factor(Diagnosis, levels = c("Control", "Schizophrenia")),
-         Method = "SCZ") %>%
-  ggplot(data=., mapping=aes(x=Diagnosis, y=FD)) +
-  geom_violin(aes(fill=Diagnosis)) +
-  geom_boxplot(color="black", fill=NA, width=0.1) +
-  xlab("Group") +
-  ylab("Fractional\nDisplacement") +
+              map_signif_level=TRUE) +
   scale_fill_manual(values = c("#00B06D", "#737373")) +
   scale_y_continuous(expand = c(0,0,0.15,0)) +
-  facet_grid(. ~ Method) +
-  theme(legend.position="none",
-        plot.title=element_text(hjust=0.5)) +
+  ylab("Head Movement\n(mFD-Power)") +
+  xlab("Group") +
+  theme(legend.position = "none")
+ggsave(paste0(plot_path, "ASD_mFD_Power_by_Group.png"),
+       width = 3, height=2.25, units="in", dpi=300, bg="white")
+
+SCZ_power  %>%
+  ggplot(data=., mapping=aes(x=Diagnosis, y=mFD)) +
+  geom_violin(aes(fill=Diagnosis)) +
+  geom_boxplot(color="black", fill=NA, width=0.1) +
+  facet_wrap(Cohort ~ ., scales="free_x") +
   geom_signif(test = "wilcox.test",
               comparisons = list(c("Schizophrenia", "Control")), 
-              map_signif_level=TRUE)
+              map_signif_level=TRUE) +
+  scale_fill_manual(values = c("#00B06D", "#737373")) +
+  scale_y_continuous(expand = c(0,0,0.15,0)) +
+  ylab("Head Movement\n(mFD-Power)") +
+  xlab("Group") +
+  theme(legend.position = "none")
+ggsave(paste0(plot_path, "SCZ_mFD_Power_by_Group.png"),
+       width = 3, height=2.25, units="in", dpi=300, bg="white")
 
-ASD_p+SCZ_p
-ggsave(paste0(plot_path, "ASD_SCZ_Movement_by_Group.png"),
-       width = 6, height=2.5, units="in", dpi=300)
+################################################################################
+# Compare Linden's mFD-Jenkinson values with Annie's
+################################################################################
+
+SCZ_movement_data_Linden %>%
+  ggplot(data=., mapping=aes(x=Jenkinson_Linden, y=Power)) +
+  geom_point() +
+  geom_abline(color="red", slope=1, intercept=0, alpha=0.6, size=1) +
+  coord_equal() +
+  ggtitle("Mean Framewise Displacement with\nPower et al. 2012 Method") +
+  ylab("mFD-Power, Annie") +
+  xlab("mFD-Power, Linden") +
+  theme(plot.title=element_text(hjust=0.5, size=12))
+ggsave(paste0(plot_path, "SCZ_mFD_Power_Linden_Annie.png"),
+       width = 4, height=4, units="in", dpi=300, bg="white")
 
 ################################################################################
 # Plot # subjects retained per group by motion threshold
 ################################################################################
 # Function to find number of subjects retained per group by motion threshold
 subjects_retained_by_motion <- function(movement_data, 
-                                        motion_variable = "FD",
+                                        motion_variable = "Power",
                                         motion_range=seq(0, 1, by=0.05)) {
   df_list <- list()
   # Iterate over thresholds from 0 to 1 at intervals of 0.05
@@ -123,12 +196,12 @@ subjects_retained_by_motion <- function(movement_data,
 
 # Find # subjects retained per motion threshold by group
 SCZ_subjects_by_motion <- subjects_retained_by_motion(movement_data = SCZ_movement_data,
-                                                      motion_variable = "FD",
-                                                      motion_range=seq(0, 1, by=0.05))
+                                                      motion_variable = "Power",
+                                                      motion_range=seq(0, max(SCZ_movement_data$Power), by=0.02))
 ASD_subjects_by_motion <- subjects_retained_by_motion(movement_data = ASD_movement_data,
-                                                      motion_variable = "mean_displacement",
-                                                      motion_range=c(seq(0,0.5, by=0.005),
-                                                                     seq(0.5, 5, by=0.25)))
+                                                      motion_variable = "Power",
+                                                      motion_range=c(seq(0,0.2, by=0.005),
+                                                                     0.5, 1, 5, 10))
 
 
 # Plot # of subjects retained per FD threshold by group
@@ -152,7 +225,7 @@ ASD_num_motion <- ASD_subjects_by_motion %>%
   mutate(Diagnosis = factor(Diagnosis, levels=c("Control", "ASD"))) %>%
   ggplot(data=., mapping=aes(x=Motion_Threshold, y=Num_Subjects, 
                              color=Diagnosis, group=Diagnosis)) +
-  geom_rect(aes(ymin=-Inf, ymax=Inf, xmin=0.05, xmax=0.6),
+  geom_rect(aes(ymin=-Inf, ymax=Inf, xmin=0.01, xmax=1.25),
             color=NA, fill="gray85", alpha=0.5) +
   geom_line(size=1.75, alpha=0.8) +
   ylab("# Subjects") +
@@ -168,14 +241,14 @@ ASD_num_motion <- ASD_subjects_by_motion %>%
 SCZ_perc_motion <- SCZ_subjects_by_motion %>%
   group_by(Diagnosis) %>%
   mutate(Perc_Subjects = Num_Subjects / max(Num_Subjects, na.rm=T)) %>%
-  ggplot(data=., mapping=aes(x=Motion_Threshold, y=Perc_Subjects, 
+  ggplot(data=., mapping=aes(x=Motion_Threshold, y=100*Perc_Subjects, 
                              color=Diagnosis, group=Diagnosis)) +
   geom_rect(aes(ymin=-Inf, ymax=Inf, xmin=0.12, xmax=0.5),
             color=NA, fill="gray85", alpha=0.5) +
   geom_line(size=1.75, alpha=0.9) +
   ylab("% of Subjects") +
   labs(color="Group") +
-  xlab("Fractional Displacement (FD)\nMaximum Threshold") +
+  xlab("Movement (mFD-Power)\nMaximum Threshold") +
   scale_color_manual(values = c("#00B06D", "#737373")) +
   scale_x_reverse() +
   theme(legend.position="bottom",
@@ -186,14 +259,14 @@ ASD_perc_motion <- ASD_subjects_by_motion %>%
   mutate(Diagnosis = factor(Diagnosis, levels=c("Control", "ASD"))) %>%
   group_by(Diagnosis) %>%
   mutate(Perc_Subjects = Num_Subjects / max(Num_Subjects, na.rm=T)) %>%
-  ggplot(data=., mapping=aes(x=Motion_Threshold, y=Perc_Subjects, 
+  ggplot(data=., mapping=aes(x=Motion_Threshold, y=100*Perc_Subjects, 
                              color=Diagnosis, group=Diagnosis)) +
-  geom_rect(aes(ymin=-Inf, ymax=Inf, xmin=0.05, xmax=0.6),
+  geom_rect(aes(ymin=-Inf, ymax=Inf, xmin=0.01, xmax=1.25),
             color=NA, fill="gray85", alpha=0.5) +
   geom_line(size=1.75, alpha=0.9) +
   ylab("% of Subjects") +
   labs(color="Group") +
-  xlab("Mean Displacement (mm)\nMaximum Threshold") +
+  xlab("Movement (mFD-Power)\nMaximum Threshold") +
   scale_color_manual(values = c("#00B06D", "#737373")) +
   scale_x_reverse() +
   theme(legend.position="bottom",
@@ -202,11 +275,11 @@ ASD_perc_motion <- ASD_subjects_by_motion %>%
 
 ASD_num_motion/ASD_perc_motion
 ggsave(paste0(plot_path, "ASD_mvmt_threshold_num_subjects.png"),
-       width = 5, height = 4, units="in", dpi=300, bg="white")
+       width = 5, height = 4, units="in", dpi=300)
 
 SCZ_num_motion/SCZ_perc_motion
 ggsave(paste0(plot_path, "SCZ_mvmt_threshold_num_subjects.png"),
-       width = 5, height = 4, units="in", dpi=300, bg="white")
+       width = 5, height = 4, units="in", dpi=300)
 
 ################################################################################
 # Balanced accuracy as a function of FD threshold for univariate combo
@@ -221,7 +294,7 @@ svm_kernel <- "linear"
 # Function to run 10-repeat 10-fold linear SVM 
 run_repeat_cv_linear_svm <- function(mvmt_list = seq(0.12, 0.5, by=0.02),
                                      movement_data,
-                                     movement_var = "FD",
+                                     movement_var = "Power",
                                      sample_groups,
                                      catch22_data,
                                      type = "Brain Region",
@@ -363,31 +436,6 @@ save(SCZ_combo_catch22_svm_res,
      file=paste0(SCZ_rdata_path, "SCZ_catch22_SVM_with_Movement_Thresholds.Rdata"))
 # load(paste0(SCZ_rdata_path, "SCZ_catch22_SVM_with_Movement_Thresholds.Rdata"))
 
-SCZ_combo_catch22_svm_res %>%
-  plyr::rbind.fill(., SCZ_ROI_catch22_svm_res) %>%
-  plyr::rbind.fill(., SCZ_mvmt_svm_res) %>%
-  mutate(Method = case_when(Method=="ctx-rh-postcentral" ~ "Right Postcentral Gyrus",
-                            Method=="catch22 Combo" ~ "catch22 Combo",
-                            T ~ Method)) %>%
-  mutate(Method = factor(Method, levels = c("Movement Only",
-                                            "Right Postcentral Gyrus",
-                                            "catch22 Combo"))) %>%
-  ggplot(data=., mapping=aes(x=movement_threshold)) +
-  scale_x_reverse() +
-  geom_ribbon(aes(ymin = meanbacc - sdbacc,
-                  ymax = meanbacc + sdbacc,
-                  fill = Method),
-              alpha=0.2) +
-  geom_line(aes(y=meanbacc, color = Method)) +
-  xlab("FD Maximum Threshold") +
-  ylab("Balanced Accuracy (%)")  +
-  theme(legend.position = "bottom") +
-  guides(color = guide_legend(nrow = 2),
-         fill = guide_legend(nrow = 2))
-ggsave(paste0(plot_path, "SCZ_FD_threshold_SVM_balanced_accuracy.png"),
-       width = 5, height = 3.5, units="in", dpi=300, bg="white")
-
-
 # Load ASD catch22 z-scored data
 noise_proc <- "FC1000"
 
@@ -439,6 +487,34 @@ save(ASD_combo_catch22_svm_res,
      ASD_mvmt_svm_res,
      file=paste0(ASD_rdata_path, "ASD_catch22_SVM_with_Movement_Thresholds.Rdata"))
 # load(paste0(ASD_rdata_path, "ASD_catch22_SVM_with_Movement_Thresholds.Rdata"))
+
+
+SCZ_combo_catch22_svm_res %>%
+  plyr::rbind.fill(., SCZ_ROI_catch22_svm_res) %>%
+  plyr::rbind.fill(., SCZ_mvmt_svm_res) %>%
+  mutate(Method = case_when(Method=="ctx-rh-postcentral" ~ "Right Postcentral Gyrus",
+                            Method=="catch22 Combo" ~ "catch22 Combo",
+                            T ~ Method)) %>%
+  mutate(Method = factor(Method, levels = c("Movement Only",
+                                            "Right Postcentral Gyrus",
+                                            "catch22 Combo"))) %>%
+  ggplot(data=., mapping=aes(x=movement_threshold)) +
+  scale_x_reverse() +
+  geom_ribbon(aes(ymin = meanbacc - sdbacc,
+                  ymax = meanbacc + sdbacc,
+                  fill = Method),
+              alpha=0.2) +
+  geom_line(aes(y=meanbacc, color = Method)) +
+  xlab("FD Maximum Threshold") +
+  ylab("Balanced Accuracy (%)")  +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(nrow = 2),
+         fill = guide_legend(nrow = 2))
+ggsave(paste0(plot_path, "SCZ_FD_threshold_SVM_balanced_accuracy.png"),
+       width = 5, height = 3.5, units="in", dpi=300, bg="white")
+
+
+
 
 ASD_combo_catch22_svm_res %>%
   plyr::rbind.fill(., ASD_ROI_catch22_svm_res) %>%
