@@ -17,7 +17,7 @@ SCZ_pydata_path = "/headnode1/abry4213/data/UCLA_Schizophrenia/raw_data/pydata/"
 ASD_pydata_path = "/headnode1/abry4213/data/ABIDE_ASD/raw_data/pydata/" 
 
 # config file
-config_file = github_path + "data_prep_and_QC/pyspi_QC_analysis/pyspi_di_gaussian_config.yaml"
+config_file = github_path + "data_prep_and_QC/pyspi_QC_analysis/pyspi_SGC_config.yaml"
 
 ################### Run all SPIs for the same brain region pair 100x ####################
 def process_SPIs_100x(sample_ID, subject_data, pydata_path, data_out_file, set_seed = False):
@@ -86,15 +86,40 @@ def process_SPIs_100x(sample_ID, subject_data, pydata_path, data_out_file, set_s
 subject_data = pd.read_csv(SCZ_pydata_path + "sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal.csv", 
                            header=None).to_numpy()
 
-# Not seeded
-process_SPIs_100x(sample_ID="sub-10527",
-                  subject_data = subject_data,
-                  pydata_path=SCZ_pydata_path,
-                  data_out_file="sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal")
+calc = Calculator(Data(subject_data, dim_order="ps", normalise=True), configfile=config_file)
+calc.compute()
 
-# Seeded
-random.seed(127)
-process_SPIs_100x(sample_ID="sub-10527",
-                  subject_data = subject_data,
-                  pydata_path=SCZ_pydata_path,
-                  data_out_file="sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal_seeded")
+# Extract results and append to full_pyspi_res list
+calc_res = calc.table
+calc_res_filt = calc_res.filter(items = ["proc-0"], axis = 0)
+
+# Convert index to column
+calc_res_filt.columns = calc_res_filt.columns.to_flat_index()
+calc_res_filt.reset_index(level=0, inplace=True)
+
+# Rename index as first brain region
+calc_res_filt = calc_res_filt.rename(columns={"index": "brain_region_from"})
+
+# Pivot data from wide to long
+calc_res_filt_long = pd.melt(calc_res_filt, id_vars="brain_region_from")
+calc_res_filt_long["SPI"], calc_res_filt_long["brain_region_to"] = calc_res_filt_long.variable.str
+
+# Remove variable column
+calc_res_filt_long = calc_res_filt_long.drop("variable", 1)
+
+# Filter by region from = 0 and region to = 1
+calc_res_filt_long = calc_res_filt_long.loc[(calc_res_filt_long["brain_region_from"] == "proc-0") & (calc_res_filt_long["brain_region_to"] == "proc-1")]
+
+
+# # Not seeded
+# process_SPIs_100x(sample_ID="sub-10527",
+#                   subject_data = subject_data,
+#                   pydata_path=SCZ_pydata_path,
+#                   data_out_file="sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal")
+
+# # Seeded
+# random.seed(127)
+# process_SPIs_100x(sample_ID="sub-10527",
+#                   subject_data = subject_data,
+#                   pydata_path=SCZ_pydata_path,
+#                   data_out_file="sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal_seeded")
