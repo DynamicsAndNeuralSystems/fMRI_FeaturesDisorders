@@ -16,12 +16,13 @@ export data_path=/headnode1/abry4213/data/${dataset_ID}/
 export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
 export brain_region_lookup="Brain_Region_info.csv"
 export sample_yaml="sample_CTRL_SCZ.yaml"
-# export sample_yaml="sample_test.yaml"
 # export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
+export pyspi_config=${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_QC_analysis/pyspi_SGC_config.yaml
 export noise_procs="AROMA+2P+GMR"
 export main_noise_proc="AROMA+2P+GMR"
 export label_vars="Diagnosis"
 export pyspi_walltime_hrs=1
+export pkl_file_SGC="calc_SGC.pkl"
 export pkl_file_1="calc_pyspi14_run1.pkl"
 export pkl_file_2="calc_pyspi14_run2.pkl"
 
@@ -34,7 +35,9 @@ export pkl_file_2="calc_pyspi14_run2.pkl"
 # export noise_procs="FC1000"
 # export main_noise_proc="FC1000"
 # export label_vars="Diagnosis"
-# export pyspi_walltime_hrs=2
+# export pyspi_walltime_hrs=1
+# export pkl_file_1="calc_pyspi14_run1.pkl"
+# export pkl_file_2="calc_pyspi14_run2.pkl"
 
 # # HCP100
 # export dataset_ID="HCP100"
@@ -66,7 +69,7 @@ export pkl_file_2="calc_pyspi14_run2.pkl"
 # First run for subjects
 bash call_run_pyspi_distribute.sh \
 $github_dir \
-${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi14_config.yaml \
+$pyspi_config \
 $email \
 $dataset_ID \
 $data_path \
@@ -74,24 +77,24 @@ $noise_procs \
 $pyspi_walltime_hrs \
 $pyspi_mem \
 $pyspi_ncpus \
-$pkl_file_1 \
+$pkl_file_SGC \
 $sample_yaml \
 $conda_env
 
-# Second run for subjects
-bash call_run_pyspi_distribute.sh \
-$github_dir \
-${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi14_config.yaml \
-$email \
-$dataset_ID \
-$data_path \
-$noise_procs \
-$pyspi_walltime_hrs \
-$pyspi_mem \
-$pyspi_ncpus \
-$pkl_file_2 \
-$sample_yaml \
-$conda_env
+# # Second run for subjects
+# bash call_run_pyspi_distribute.sh \
+# $github_dir \
+# ${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi14_config.yaml \
+# $email \
+# $dataset_ID \
+# $data_path \
+# $noise_procs \
+# $pyspi_walltime_hrs \
+# $pyspi_mem \
+# $pyspi_ncpus \
+# $pkl_file_2 \
+# $sample_yaml \
+# $conda_env
 
 # # Integrate results from pyspi-distribute
 # # calc round 1

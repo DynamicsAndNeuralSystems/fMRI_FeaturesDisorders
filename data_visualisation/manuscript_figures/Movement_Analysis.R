@@ -369,7 +369,7 @@ run_repeat_cv_linear_svm <- function(mvmt_list = seq(0.12, 0.5, by=0.02),
                                                 out_of_sample_only = T)%>%
                            dplyr::mutate(repeat_number = .x,
                                          movement_threshold = movement_threshold))
-        df_list <- list.append(df_list, SVM_results)
+        df_list <<- list.append(df_list, SVM_results)
       }, error = function(e) {
         
       })
@@ -392,7 +392,7 @@ noise_proc <- "AROMA+2P+GMR"
 # Load SCZ catch22 z-scored data
 SCZ_catch22_zscored <- readRDS(paste0(SCZ_rdata_path, 
                                       "UCLA_Schizophrenia_catch22_filtered_zscored.Rds")) %>%
-  filter(Noise_Proc == noise_proc)
+  filter(Noise_Proc == "AROMA+2P+GMR")
 
 
 # Get diagnosis proportions
@@ -776,7 +776,11 @@ run_repeat_cv_linear_svm <- function(mvmt_list = seq(0.12, 0.5, by=0.02),
                                          movement_threshold = movement_threshold))
         df_list <- list.append(df_list, SVM_results)
       }, error = function(e) {
-        
+        SCZ_seq_list <- c(seq(0.12, 5, by=0.02), max(SCZ_movement_data$Power))
+ASD_seq_list <- c(seq(0,0.1, by=0.005),
+                  0.25, 0.5, 1, 5, 10,
+                  max(ASD_movement_data$Power))
+  
       })
     }
   }
@@ -813,6 +817,10 @@ ASD_seq_list <- c(seq(0,0.1, by=0.005),
                   0.25, 0.5, 1, 5, 10,
                   max(ASD_movement_data$Power))
 
+nrepeats = 10
+num_k_folds = 10
+svm_kernel = "linear"
+
 # Run SVM with various FD threshold cutoffs using univariate combo catch22
 SCZ_combo_catch22_svm_res <- run_repeat_cv_linear_svm(
   mvmt_list = SCZ_seq_list,
@@ -825,6 +833,7 @@ SCZ_combo_catch22_svm_res <- run_repeat_cv_linear_svm(
 # Run SVM with various FD threshold cutoffs using right postcentral cortex catch22
 SCZ_ROI_catch22_svm_res <- run_repeat_cv_linear_svm(movement_data = SCZ_movement_data,
                                                     mvmt_list = SCZ_seq_list,
+                                                    mvmt_list = SCZ_seq_list,
                                                     catch22_data = SCZ_catch22_zscored,
                                                     movement_var = "Power",
                                                     type = "Brain Region",
@@ -834,6 +843,7 @@ SCZ_ROI_catch22_svm_res <- run_repeat_cv_linear_svm(movement_data = SCZ_movement
 )
 # Run SVM with various FD threshold cutoffs using just movement data
 SCZ_mvmt_svm_res <- run_repeat_cv_linear_svm(movement_data = SCZ_movement_data,
+                                             mvmt_list = SCZ_seq_list,
                                              mvmt_list = SCZ_seq_list,
                                              catch22_data = SCZ_catch22_zscored,
                                              movement_var = "Power",
