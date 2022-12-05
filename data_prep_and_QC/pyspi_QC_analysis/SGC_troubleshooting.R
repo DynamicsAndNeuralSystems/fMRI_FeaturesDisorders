@@ -165,6 +165,8 @@ SGC_full_NaN %>%
 ggsave(paste0(plot_path, "sgc_with_NaN_all_frequencies_sub-10274_lingual_FFT_w_NaN.png"),
        width=6, height=4, units="in", dpi=300, bg="white")
 
+pyspi_SGC <- readRDS(paste0(SCZ_rdata_path, "UCLA_CNP_pyspi14_SGC.Rds")) 
+
 
 ################################################################################
 # Frequency domain visualization

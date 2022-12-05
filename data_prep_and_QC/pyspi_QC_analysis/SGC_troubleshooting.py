@@ -58,7 +58,7 @@ np.mean(SGC_df_fullnan.query("Freq > 0")["SGC"].to_numpy())
 np.nanmean(SGC_df_fullnan.query("Freq > 0")["SGC"].to_numpy())
 
 # full frequency range mean using pyspi
-SGC_pyspi_fullnan = spectral_granger().multivariate(data_np_fullnan_z)
+SGC_pyspi_fullnan = spectral_granger(ignore_NaN=False).multivariate(data_np_fullnan_z)
 SGC_pyspi_fullnan[0,1]
 
 # lower frequency range mean using spectral-connectivity
@@ -78,7 +78,7 @@ SGC_pyspi_fullnan_upper = spectral_granger(fmin=0.25, fmax=0.5).multivariate(dat
 SGC_pyspi_fullnan_upper[0,1]
 
 # Find NaN values at individual frequencies from spectral-connectivity
-SGC_df_fullnan.query("is.nan(SGC)")
+SGC_df_fullnan.query("SGC.isnull()")
 
 ###############################################################################
 # Parametric SGC from nitime
