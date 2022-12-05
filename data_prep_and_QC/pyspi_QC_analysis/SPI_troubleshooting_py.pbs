@@ -28,8 +28,8 @@ hostname
 cd /headnode1/abry4213/github/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_QC_analysis/
 
 export UCLA_data_path=/headnode1/abry4213/data/UCLA_CNP/raw_data/pydata/
-export sample_ID="sub-10527"
-export TS_file_base=${UCLA_data_path}/sub-10527_lh_lingual_rh_lingual
+export sample_ID="sub-10159"
+export TS_file_base=${UCLA_data_path}/sub-10159_lh_bankssts_lh_entorhinal
 
 # Run pyspi 100x for given region pair with no seeding
 python SPI_troubleshooting.py \

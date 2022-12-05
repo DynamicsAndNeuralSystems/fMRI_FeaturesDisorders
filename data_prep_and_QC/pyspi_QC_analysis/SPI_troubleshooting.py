@@ -35,7 +35,7 @@ import random
 
 # Set global seed to 27 if flag was indicated
 if set_global_seed:
-    set.seed(27)
+    random.seed(27)
 
 ################### Run all SPIs for the same brain region pair 100x ####################
 def process_SPIs_100x(sample_ID, TS_file, data_out_file, set_loop_seed = False):
