@@ -10,19 +10,19 @@ export python_to_use=/headnode1/abry4213/.conda/envs/${conda_env}/bin/python3
 
 cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
 
-# UCLA Schizophrenia
-export dataset_ID="UCLA_Schizophrenia"
+# UCLA CNP
+export dataset_ID="UCLA_CNP"
 export data_path=/headnode1/abry4213/data/${dataset_ID}/
 export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
 export brain_region_lookup="Brain_Region_info.csv"
 export sample_yaml="sample_CTRL_SCZ.yaml"
 # export noise_procs="AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
-export pyspi_config=${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_QC_analysis/pyspi_SGC_config.yaml
+export pyspi_config=${github_dir}/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi14_config.yaml
 export noise_procs="AROMA+2P+GMR"
 export main_noise_proc="AROMA+2P+GMR"
 export label_vars="Diagnosis"
 export pyspi_walltime_hrs=1
-export pkl_file_SGC="calc_SGC.pkl"
+export pkl_file="calc_pyspi14.pkl"
 export pkl_file_1="calc_pyspi14_run1.pkl"
 export pkl_file_2="calc_pyspi14_run2.pkl"
 
@@ -77,7 +77,7 @@ $noise_procs \
 $pyspi_walltime_hrs \
 $pyspi_mem \
 $pyspi_ncpus \
-$pkl_file_SGC \
+$pkl_file \
 $sample_yaml \
 $conda_env
 
@@ -111,6 +111,14 @@ $conda_env
 # -o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}_calc2_out.txt \
 # -m a -M $email \
 # call_clean_pairwise_data.pbs
+
+# SGC troubleshooting
+export pairwise_feature_set="pyspi14_SGC"
+qsub -v github_dir=$github_dir,data_path=$data_path,pkl_file=$pkl_file_SGC,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc,dataset_ID=$dataset_ID \
+-N clean_SGC_data_${dataset_ID} \
+-o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}_SGC_out.txt \
+-m a -M $email \
+call_clean_pairwise_data.pbs
 
 # # Merge subjects with univariate + pairwise data
 export pairwise_feature_set="pyspi14"

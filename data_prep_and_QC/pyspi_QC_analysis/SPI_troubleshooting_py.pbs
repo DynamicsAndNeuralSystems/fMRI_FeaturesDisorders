@@ -4,7 +4,7 @@
 #PBS -j oe
 #PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_QC_analysis/SPI_troubleshooting_py_pbs.out
 #PBS -l select=1:ncpus=2:mem=40GB
-#PBS -l walltime=2:00:00
+#PBS -l walltime=3:00:00
 #PBS -m a
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -V
@@ -26,4 +26,35 @@ hostname
 
 # Change to relevant directory and run our compute script
 cd /headnode1/abry4213/github/fMRI_FeaturesDisorders/data_prep_and_QC/pyspi_QC_analysis/
-python SPI_troubleshooting.py
+
+export UCLA_data_path=/headnode1/abry4213/data/UCLA_CNP/raw_data/pydata/
+export sample_ID="sub-10527"
+export TS_file_base=${UCLA_data_path}/sub-10527_lh_lingual_rh_lingual
+
+# Run pyspi 100x for given region pair with no seeding
+python SPI_troubleshooting.py \
+--sample_ID $sample_ID \
+--TS_file ${TS_file_base}.csv \
+--data_out_file ${TS_file_base}_all_SPIs_no_seed.csv
+
+# Run pyspi 100x for given region pair with global seeding
+python SPI_troubleshooting.py \
+--sample_ID $sample_ID \
+--TS_file ${TS_file_base}.csv \
+--data_out_file ${TS_file_base}_all_SPIs_global_seed.csv \
+--set_global_seed
+
+# Run pyspi 100x for given region pair with loop-wise seeding
+python SPI_troubleshooting.py \
+--sample_ID $sample_ID \
+--TS_file ${TS_file_base}.csv \
+--data_out_file ${TS_file_base}_all_SPIs_loop_seed.csv \
+--set_for_loop_seed
+
+# Run pyspi 100x for given region pair with global AND loop-wise seeding
+python SPI_troubleshooting.py \
+--sample_ID $sample_ID \
+--TS_file ${TS_file_base}.csv \
+--data_out_file ${TS_file_base}_all_SPIs_global_and_loop_seed.csv \
+--set_global_seed \
+--set_for_loop_seed
