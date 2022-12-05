@@ -100,18 +100,41 @@ ggsave(paste0(plot_path, "di_gaussian_comparison_fMRI_TS_UCLA_Schizophrenia.png"
 
 ################################################################################
 # Frequency domain visualization
-SGC_subject <- SCZ_TS %>%
+
+# Subject with NaN at low end of range: sub-10527, left RAC --> left CMF
+SGC_low_NaN <- SCZ_TS %>%
   filter(Sample_ID == "sub-10527",
          Brain_Region %in% c("ctx-lh-rostralanteriorcingulate", 
                              "ctx-lh-caudalmiddlefrontal")) %>%
   mutate(Brain_Region = factor(Brain_Region, levels=c("ctx-lh-rostralanteriorcingulate", 
-                                                        "ctx-lh-caudalmiddlefrontal"))) %>%
+                                                      "ctx-lh-caudalmiddlefrontal"))) %>%
   group_by(Brain_Region) %>%
   summarise(Region_FFT = abs(fft(values)/sqrt(128))^2) %>%
   summarise(Power = (4/128)*Region_FFT[1:65],
             frequency = (0:64)/128)
 
-SGC_subject %>%
+SGC_low_NaN %>%
+  ggplot(data=., mapping=aes(x=frequency, y=Power, group=Brain_Region, color=Brain_Region)) +
+  geom_vline(xintercept=0.25, linetype=2, alpha=0.7, color="black") +
+  geom_line() +
+  labs(color="Brain Region") +
+  guides(color=guide_legend(nrow=1,byrow=TRUE)) +
+  theme(legend.position = "bottom") 
+
+
+# Subject with NaN at high end of range: sub-10206, right precentral <--> right postcentral
+SGC_high_NaN <- SCZ_TS %>%
+  filter(Sample_ID == "sub-10206",
+         Brain_Region %in% c("ctx-rh-precentral", 
+                             "ctx-rh-postcentral")) %>%
+  mutate(Brain_Region = factor(Brain_Region, levels=c("ctx-rh-precentral", 
+                                                      "ctx-rh-postcentral"))) %>%
+  group_by(Brain_Region) %>%
+  summarise(Region_FFT = abs(fft(values)/sqrt(128))^2) %>%
+  summarise(Power = (4/128)*Region_FFT[1:65],
+            frequency = (0:64)/128)
+
+SGC_high_NaN %>%
   ggplot(data=., mapping=aes(x=frequency, y=Power, group=Brain_Region, color=Brain_Region)) +
   geom_vline(xintercept=0.25, linetype=2, alpha=0.7, color="black") +
   geom_line() +

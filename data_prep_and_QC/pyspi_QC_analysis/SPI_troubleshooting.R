@@ -235,32 +235,37 @@ subset_to_subject_region <- function(input_TS_data,
                 sep=",", col.names=F, row.names=F)
 }
 
-# Subject: sub-10159
-# brain region 1: ctx-lh-bankssts
-# brain region 2: ctx-lh-entorhinal
-# noise processing: AROMA+2P+GMR
-subset_to_subject_region(input_TS_data = SCZ_TS, pydata_path = SCZ_pydata_path,
-                         brain_regions = c("ctx-lh-bankssts", "ctx-lh-entorhinal"),
-                         noise_proc = SCZ_noise_proc,
-                         sample_ID = "sub-10159",
-                         file_name = "sub-10159_lh_bankssts_lh_entorhinal.csv")
-
 # Subject: sub-10527
 # brain region 1: ctx-lh-rostralanteriorcingulate
 # brain region 2: ctx-lh-caudalmiddlefrontal
 # noise processing: AROMA+2P+GMR
-subset_to_subject_region(input_TS_data = SCZ_TS, pydata_path = SCZ_pydata_path,
+subset_to_subject_region(input_TS_data = SCZ_TS, 
+                         pydata_path = SCZ_pydata_path,
                          brain_regions = c("ctx-lh-rostralanteriorcingulate", 
                                            "ctx-lh-caudalmiddlefrontal"),
                          noise_proc = SCZ_noise_proc,
                          sample_ID = "sub-10527",
                          file_name = "sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal.csv")
 
+# Subject: sub-10206
+# brain region 1: ctx-rh-precentral
+# brain region 2: ctx-rh-postcentral
+# noise processing: AROMA+2P+GMR
+subset_to_subject_region(input_TS_data = SCZ_TS, 
+                         pydata_path = SCZ_pydata_path,
+                         brain_regions = c("ctx-rh-precentral", 
+                                           "ctx-rh-postcentral"),
+                         noise_proc = SCZ_noise_proc,
+                         sample_ID = "sub-10206",
+                         file_name = "sub-10206_rh_precentral_rh_postcentral.csv")
+
+
 # Subject: 10021451277603445196
 # brain region from: Precentral Gyrus
 # brain region to: Angular Gyrus
 # noise processing: AROMA+2P+GMR
-subset_to_subject_region(input_TS_data = ASD_TS, pydata_path = ASD_pydata_path,
+subset_to_subject_region(input_TS_data = ASD_TS, 
+                         pydata_path = ASD_pydata_path,
                          brain_regions = c("Precentral Gyrus",
                                            "Angular Gyrus"),
                          noise_proc = ASD_noise_proc,
@@ -269,11 +274,6 @@ subset_to_subject_region(input_TS_data = ASD_TS, pydata_path = ASD_pydata_path,
 
 ################################################################################
 # Once data has been processed with pyspi 100x, visualise it here
-
-all_SPI_100x_sub10159 <- read.csv(paste0(SCZ_pydata_path,
-                                         "sub-10159_lh_bankssts_lh_entorhinal_all_SPIs.csv"),
-                                  header=T) %>%
-  dplyr::select(SPI, brain_region_from, brain_region_to, value, Iteration)
 
 all_SPI_100x_sub10527 <- read.csv(paste0(SCZ_pydata_path,
                                          "sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal_all_SPIs.csv"),
