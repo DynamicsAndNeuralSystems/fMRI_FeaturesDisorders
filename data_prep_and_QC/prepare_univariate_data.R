@@ -6,12 +6,12 @@ library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--github_dir", default="~/github/")
-parser$add_argument("--data_path", default="~/data/UCLA_Schizophrenia/")
+parser$add_argument("--data_path", default="~/data/UCLA_CNP/")
 parser$add_argument("--univariate_feature_set", default="catch22")
-parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
+parser$add_argument("--sample_metadata_file", default="UCLA_CNP_sample_metadata.Rds")
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
 parser$add_argument("--noise_procs", default=c(""))
-parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
+parser$add_argument("--dataset_ID", default="UCLA_CNP")
 parser$add_argument("--add_catch2", action="store_true", default=FALSE)
 
 # Parse input arguments
@@ -29,10 +29,10 @@ add_catch2 <- args$add_catch2
 # github_dir <- "~/github/"
 # add_catch2 <- TRUE
 
-# # UCLA schizophrenia
-# data_path <- "~/data/UCLA_Schizophrenia/"
-# dataset_ID <- "UCLA_Schizophrenia"
-# sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
+# # UCLA CNP
+# data_path <- "~/data/UCLA_CNP/"
+# dataset_ID <- "UCLA_CNP"
+# sample_metadata_file <- "UCLA_CNP_sample_metadata.Rds"
 # noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
 # brain_region_lookup <- "Brain_Region_info.csv"
 

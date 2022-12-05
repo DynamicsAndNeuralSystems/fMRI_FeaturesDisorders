@@ -172,12 +172,6 @@ run_QC_for_univariate_dataset <- function(data_path,
   # Load sample metadata
   sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
   
-  # Filter to schizophrenia and control for UCLA
-  if (dataset_ID == "UCLA_Schizophrenia") {
-    sample_metadata <- sample_metadata %>% 
-      filter(Diagnosis %in% c("Control", "Schizophrenia"))
-  }
-  
   # Load TS feature data and subset by noise_proc
   TS_feature_data <- readRDS(paste0(proc_rdata_path, dataset_ID, "_", 
                                     univariate_feature_set, ".Rds"))
