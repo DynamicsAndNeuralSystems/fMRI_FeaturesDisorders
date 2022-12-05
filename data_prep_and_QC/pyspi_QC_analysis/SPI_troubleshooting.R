@@ -18,7 +18,7 @@ github_dir <- "~/github/fMRI_FeaturesDisorders/"
 plot_path <- paste0(github_dir, "plots/QC/")
 TAF::mkdir(plot_path)
 
-SCZ_data_path <- "~/data/UCLA_Schizophrenia/"
+SCZ_data_path <- "~/data/UCLA_CNP/"
 SCZ_rdata_path <- paste0(SCZ_data_path, "processed_data/Rdata/")
 SCZ_pydata_path <- paste0(SCZ_data_path, "raw_data/pydata/")
 ASD_data_path <- "~/data/ABIDE_ASD/"
@@ -31,21 +31,21 @@ ASD_noise_proc <- "FC1000"
 
 # Load raw time-series data for UCLA Schizophrenia
 SCZ_TS <- readRDS(paste0(SCZ_data_path, 
-                         "raw_data/UCLA_Schizophrenia_fMRI_TS.Rds")) %>%
-  filter(Noise_Proc == "AROMA+2P+GMR")
+                         "raw_data/UCLA_CNP_fMRI_TS.Rds")) %>%
+  filter(Noise_Proc == SCZ_noise_proc)
 # Load raw time-series data for ABIDE ASD
 ASD_TS <- readRDS(paste0(ASD_data_path, 
                          "raw_data/ABIDE_ASD_fMRI_TS.Rds")) %>%
-  filter(Noise_Proc == "FC1000")
+  filter(Noise_Proc == ASD_noise_proc)
 
 # Load raw (non-normalized) pyspi14 data for UCLA Schizophrenia
 SCZ_pyspi14 <- readRDS(paste0(SCZ_rdata_path, 
                               "UCLA_Schizophrenia_pyspi14_filtered.Rds")) %>%
-  filter(Noise_Proc == "AROMA+2P+GMR",
+  filter(Noise_Proc == SCZ_noise_proc,
          Diagnosis %in% c("Control", "Schizophrenia"))
 ASD_pyspi14 <- readRDS(paste0(ASD_rdata_path, 
                               "ABIDE_ASD_pyspi14_filtered.Rds")) %>%
-  filter(Noise_Proc == "FC1000",
+  filter(Noise_Proc == ASD_noise_proc,
          Diagnosis %in% c("Control", "ASD"))
 
 ################################################################################
@@ -235,6 +235,19 @@ subset_to_subject_region <- function(input_TS_data,
                 sep=",", col.names=F, row.names=F)
 }
 
+# Subject: sub-10159
+# brain region 1: ctx-lh-bankssts
+# brain region 2: ctx-lh-entorhinal
+# noise processing: AROMA+2P+GMR
+subset_to_subject_region(input_TS_data = SCZ_TS, 
+                         pydata_path = SCZ_pydata_path,
+                         brain_regions = c("ctx-lh-bankssts", 
+                                           "ctx-lh-entorhinal"),
+                         noise_proc = SCZ_noise_proc,
+                         sample_ID = "sub-10159",
+                         file_name = "sub-10159_lh_bankssts_lh_entorhinal.csv")
+
+
 # Subject: sub-10527
 # brain region 1: ctx-lh-rostralanteriorcingulate
 # brain region 2: ctx-lh-caudalmiddlefrontal
@@ -274,21 +287,28 @@ subset_to_subject_region(input_TS_data = ASD_TS,
 
 ################################################################################
 # Once data has been processed with pyspi 100x, visualise it here
-
-all_SPI_100x_sub10527 <- read.csv(paste0(SCZ_pydata_path,
-                                         "sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal_all_SPIs.csv"),
+all_SPI_100x_no_seed <- read.csv(paste0(SCZ_pydata_path,
+                                         "sub-10159_lh_bankssts_lh_entorhinal_all_SPIs_no_seed.csv"),
                                   header=T) %>%
   dplyr::select(SPI, brain_region_from, brain_region_to, value, Iteration)
 
-all_SPI_100x_sub10527_seeded <- read.csv(paste0(SCZ_pydata_path,
-                                         "sub-10527_lh_rostralanteriorcingulate_lh_caudalmiddlefrontal_seeded_all_SPIs.csv"),
-                                  header=T) %>%
-  dplyr::select(SPI, brain_region_from, brain_region_to, value, Iteration)
-
-all_SPI_100x_ASD_sub <- read.csv(paste0(ASD_pydata_path,
-                                        "subject_10021451277603445196_precentral_angular_all_SPIs.csv"),
+all_SPI_100x_global_seed <- read.csv(paste0(SCZ_pydata_path,
+                                        "sub-10159_lh_bankssts_lh_entorhinal_all_SPIs_global_seed.csv"),
                                  header=T) %>%
   dplyr::select(SPI, brain_region_from, brain_region_to, value, Iteration)
+
+
+all_SPI_100x_loop_seed <- read.csv(paste0(SCZ_pydata_path,
+                                        "sub-10159_lh_bankssts_lh_entorhinal_all_SPIs_loop_seed.csv"),
+                                 header=T) %>%
+  dplyr::select(SPI, brain_region_from, brain_region_to, value, Iteration)
+
+
+all_SPI_100x_global_and_loop_seed <- read.csv(paste0(SCZ_pydata_path,
+                                        "sub-10159_lh_bankssts_lh_entorhinal_all_SPIs_global_and_loop_seed.csv"),
+                                 header=T) %>%
+  dplyr::select(SPI, brain_region_from, brain_region_to, value, Iteration)
+
 
 # Function to find the non-deterministic SPIs in a dataset
 find_nondeterministic_SPIs <- function(pyspi_res) {
@@ -300,50 +320,29 @@ find_nondeterministic_SPIs <- function(pyspi_res) {
     group_by(SPI) %>%
     summarise(value_mean = mean(value, na.rm=T),
               value_SD = sd(value, na.rm=T),
+              num_NA = sum(is.na(value)),
               num_unique_values = n()) %>%
     arrange(desc(num_unique_values)) 
   
   return(nd_SPIs)
 }
 
-# Find SPIs where the value is not the same for all iterations
-non_deterministic_SPIs_sub10159 <- find_nondeterministic_SPIs(all_SPI_100x_sub10159)
-non_deterministic_SPIs_sub10527 <- find_nondeterministic_SPIs(all_SPI_100x_sub10527)
-non_deterministic_SPIs_sub10527_seeded <- find_nondeterministic_SPIs(all_SPI_100x_sub10527_seeded)
-non_deterministic_SPIs_ASD_sub <- find_nondeterministic_SPIs(all_SPI_100x_ASD_sub)
-
-all_SPI_100x_ASD_sub %>%
-  group_by(SPI, value) %>%
-  mutate(n = n()) %>%
-  filter(n < 100) %>%
-  ungroup() %>%
-  ggplot(data=., mapping=aes(x=value, fill=SPI)) +
-  geom_histogram() +
-  scale_fill_viridis_d()+ 
-  xlab("SPI Value") +
-  ylab("# Iterations") +
-  facet_wrap(SPI ~ ., scales="free") +
-  theme(legend.position = "none",
-        axis.text.x = element_text(size=9))
-
-# Find SPIs that yielded NaN
-all_SPI_100x_sub10159 %>%
-  filter(is.na(value)) %>%
-  group_by(SPI) %>%
-  count()%>%
-  kable() %>%
+# No seed
+find_nondeterministic_SPIs(all_SPI_100x_no_seed) %>%
+  kable(.) %>%
   kable_styling(full_width = F)
 
-all_SPI_100x_sub10527 %>%
-  filter(is.na(value)) %>%
-  group_by(SPI) %>%
-  count()%>%
-  kable() %>%
+# Global seed
+find_nondeterministic_SPIs(all_SPI_100x_global_seed) %>%
+  kable(.) %>%
   kable_styling(full_width = F)
 
-all_SPI_100x_ASD_sub %>%
-  filter(is.na(value)) %>%
-  group_by(SPI) %>%
-  count()%>%
-  kable() %>%
+# Within-loop seed
+find_nondeterministic_SPIs(all_SPI_100x_loop_seed) %>%
+  kable(.) %>%
+  kable_styling(full_width = F)
+
+# Global seed and within-loop seed
+find_nondeterministic_SPIs(all_SPI_100x_global_and_loop_seed) %>%
+  kable(.) %>%
   kable_styling(full_width = F)

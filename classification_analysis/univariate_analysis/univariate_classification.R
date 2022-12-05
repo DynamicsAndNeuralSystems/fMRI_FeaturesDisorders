@@ -6,13 +6,13 @@ library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
-parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
-parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
+parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_CNP/")
+parser$add_argument("--sample_metadata_file", default="UCLA_CNP_sample_metadata.Rds")
 parser$add_argument("--pairwise_feature_set", default="pyspi14")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--noise_procs", default=c(""))
 parser$add_argument("--noise_proc_for_null", default=c(""))
-parser$add_argument("--dataset_ID", default="UCLA_Schizophrenia")
+parser$add_argument("--dataset_ID", default="UCLA_CNP")
 parser$add_argument("--email")
 parser$add_argument("--add_catch2", action="store_true", default=FALSE)
 
@@ -40,9 +40,9 @@ cat("noise_proc_for_null:", noise_proc_for_null, "\n")
 # add_catch2 <- TRUE
 
 # # UCLA schizophrenia
-# data_path <- "~/data/UCLA_Schizophrenia/"
-# dataset_ID <- "UCLA_Schizophrenia"
-# sample_metadata_file <- "UCLA_Schizophrenia_sample_metadata.Rds"
+# data_path <- "~/data/UCLA_CNP/"
+# dataset_ID <- "UCLA_CNP"
+# sample_metadata_file <- "UCLA_CNP_sample_metadata.Rds"
 # noise_procs <- "AROMA+2P;AROMA+2P+GMR;AROMA+2P+DiCER"
 # noise_proc_for_null <- "AROMA+2P+GMR"
 
