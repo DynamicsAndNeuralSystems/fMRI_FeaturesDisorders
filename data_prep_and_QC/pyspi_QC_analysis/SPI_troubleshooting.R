@@ -18,33 +18,31 @@ github_dir <- "~/github/fMRI_FeaturesDisorders/"
 plot_path <- paste0(github_dir, "plots/QC/")
 TAF::mkdir(plot_path)
 
-SCZ_data_path <- "~/data/UCLA_CNP/"
-SCZ_rdata_path <- paste0(SCZ_data_path, "processed_data/Rdata/")
-SCZ_pydata_path <- paste0(SCZ_data_path, "raw_data/pydata/")
-ASD_data_path <- "~/data/ABIDE_ASD/"
-ASD_rdata_path <- paste0(ASD_data_path, "processed_data/Rdata/")
-ASD_pydata_path <- paste0(ASD_data_path, "raw_data/pydata/")
+raw_data_path <- "~/data/UCLA_CNP_ABIDE_ASD/raw_data/"
+rdata_path <- "~/data/UCLA_CNP_ABIDE_ASD/processed_data/Rdata/"
 
 # Define constants
 SCZ_noise_proc <- "AROMA+2P+GMR"
 ASD_noise_proc <- "FC1000"
 
 # Load raw time-series data for UCLA Schizophrenia
-SCZ_TS <- readRDS(paste0(SCZ_data_path, 
-                         "raw_data/UCLA_CNP_fMRI_TS.Rds")) %>%
+SCZ_TS <- readRDS(paste0(raw_data_path, 
+                         "UCLA_CNP_fMRI_TS.Rds")) %>%
   filter(Noise_Proc == SCZ_noise_proc)
 # Load raw time-series data for ABIDE ASD
 ASD_TS <- readRDS(paste0(ASD_data_path, 
-                         "raw_data/ABIDE_ASD_fMRI_TS.Rds")) %>%
+                         "ABIDE_ASD_fMRI_TS.Rds")) %>%
   filter(Noise_Proc == ASD_noise_proc)
 
 # Load raw (non-normalized) pyspi14 data for UCLA Schizophrenia
-SCZ_pyspi14 <- readRDS(paste0(SCZ_rdata_path, 
-                              "UCLA_Schizophrenia_pyspi14_filtered.Rds")) %>%
+SCZ_pyspi14 <- readRDS(paste0(rdata_path, 
+                              "UCLA_CNP_pyspi14_filtered.Rds")) %>%
+  filter(brain_region_from != brain_region_to) %>%
   filter(Noise_Proc == SCZ_noise_proc,
          Diagnosis %in% c("Control", "Schizophrenia"))
-ASD_pyspi14 <- readRDS(paste0(ASD_rdata_path, 
+ASD_pyspi14 <- readRDS(paste0(rdata_path, 
                               "ABIDE_ASD_pyspi14_filtered.Rds")) %>%
+  filter(brain_region_from != brain_region_to) %>%
   filter(Noise_Proc == ASD_noise_proc,
          Diagnosis %in% c("Control", "ASD"))
 
@@ -52,10 +50,12 @@ ASD_pyspi14 <- readRDS(paste0(ASD_rdata_path,
 # Find SPIs that yielded NaN for at least one region pair and subject
 # SCZ
 SCZ_pyspi14 %>%
-  filter(brain_region_from != brain_region_to) %>%
   filter(is.na(value)) %>%
   distinct(SPI) %>%
   pull(SPI)
+
+SCZ_pyspi14 %>%
+  filter(is.na(value))
 
 res_round1 <- read.csv(paste0(SCZ_data_path, "raw_data/numpy_files/AROMA_2P_GMR/SPI_res_round1.csv")) %>%
   dplyr::select(-X) %>%
@@ -313,14 +313,16 @@ all_SPI_100x_global_and_loop_seed <- read.csv(paste0(SCZ_pydata_path,
 # Function to find the non-deterministic SPIs in a dataset
 find_nondeterministic_SPIs <- function(pyspi_res) {
   nd_SPIs <- pyspi_res %>%
-    group_by(SPI, value) %>%
-    count() %>%
+    group_by(SPI) %>%
+    mutate(num_NA = sum(is.na(value))) %>%
+    group_by(SPI, value, num_NA) %>%
+    summarise(n = n()) %>%
     filter(n < 100) %>%
     ungroup() %>%
-    group_by(SPI) %>%
+    group_by(SPI, num_NA) %>%
     summarise(value_mean = mean(value, na.rm=T),
               value_SD = sd(value, na.rm=T),
-              num_NA = sum(is.na(value)),
+              # num_NA = num_NA,
               num_unique_values = n()) %>%
     arrange(desc(num_unique_values)) 
   
@@ -331,6 +333,23 @@ find_nondeterministic_SPIs <- function(pyspi_res) {
 find_nondeterministic_SPIs(all_SPI_100x_no_seed) %>%
   kable(.) %>%
   kable_styling(full_width = F)
+
+# Plot non-deterministic SPI distributions
+find_nondeterministic_SPIs(all_SPI_100x_no_seed) %>%
+  dplyr::select(SPI) %>%
+  left_join(., all_SPI_100x_no_seed) %>%
+  ggplot(data=., mapping=aes(x=value, fill=SPI)) +
+  geom_histogram() +
+  facet_wrap(SPI ~ ., scales="free") +
+  scale_fill_viridis_d() +
+  ylab("# Iterations") +
+  ggtitle("Distribution of non-deterministic SPIs\nover 100 Iterations of the same ROI Pair") +
+  scale_x_continuous(breaks = scales::pretty_breaks(3)) +
+  theme(legend.position="none",
+        axis.text.x = element_text(size=9),
+        plot.title = element_text(hjust=0.5))
+ggsave(paste0(plot_path, "Nondeterministic_SPI_spread_histograms.png"),
+       width=6, height=4, units="in", dpi=300, bg="white")
 
 # Global seed
 find_nondeterministic_SPIs(all_SPI_100x_global_seed) %>%

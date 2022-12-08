@@ -6,3 +6,5 @@ cluster_output/
 *.DS_Store
 *.gitignore
 
+.DS_Store
+plots/.DS_Store
