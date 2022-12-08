@@ -37,6 +37,7 @@ do
     --sample_yaml ${data_path}/raw_data/numpy_files/${noise_label}/${sample_yaml} \
     --pbs_notify a \
     --email $email \
+    --conda_env $conda_env \
     --walltime_hrs $walltime_hrs \
     --cpu $ncpus \
     --mem $mem \
