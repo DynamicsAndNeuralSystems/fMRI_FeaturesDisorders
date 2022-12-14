@@ -225,9 +225,9 @@ if (!file.exists(output_file_RDS)) {
                                                             sample_groups = sample_groups,
                                                             svm_kernel = svm_kernel,
                                                             grouping_var = grouping_var,
+                                                            svm_feature_var = SVM_feature_var,
                                                             flds = group_folds[[.x]],
                                                             repeat_number = .x,
-                                                            svm_feature_var = SVM_feature_var,
                                                             out_of_sample_only = TRUE,
                                                             use_inv_prob_weighting = use_inv_prob_weighting)) %>%
         mutate(Study = study,

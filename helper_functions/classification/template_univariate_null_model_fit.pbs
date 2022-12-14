@@ -31,7 +31,6 @@ mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/DATASET_ID_null_model
 --num_perms_for_iter NUM_PERMS_PER_ITER \
 --pairwise_feature_set PAIRWISE_FEATURE_SET \
 --univariate_feature_set UNIVARIATE_FEATURE_SET \
---noise_proc NOISE_PROCS \
 --svm_kernel linear \
 --grouping_var GROUPING_VAR \
 --svm_feature_var SVM_FEATURE_VAR \

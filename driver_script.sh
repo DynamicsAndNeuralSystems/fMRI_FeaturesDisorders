@@ -20,6 +20,7 @@ export noise_proc_UCLA="AROMA+2P+GMR"
 export noise_proc_ABIDE="FC1000"
 export label_vars="Diagnosis"
 export pkl_file="calc_pyspi14.pkl"
+export add_catch2="TRUE"
 
 ##########################################################################################
 # Prepare the UCLA CNP data
@@ -36,11 +37,11 @@ Rscript $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/dataset_specific_fil
 cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/
 
 # Univariate linear SVM
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,noise_procs=$noise_procs,main_noise_proc=$main_noise_proc \
-# -N run_univariate_classification_${dataset_ID} \
-# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_out.txt \
-# -m a -M $email \
-# call_univariate_classification.pbs 
+qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file \
+-N run_univariate_classification_${dataset_ID} \
+-o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_out.txt \
+-m a -M $email \
+call_univariate_classification.pbs 
 
 # # Generate null model fits
 # null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/null_pbs_scripts/*${dataset_ID}*${univariate_feature_set}_inv_prob_null_model_fits* -name "null_iter_*.pbs")
@@ -50,7 +51,7 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysi
 # done
 
 # # Integrate null model fits and calculate p-values
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file \
 # -N run_univariate_null_model_analysis${dataset_ID} \
 # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_out.txt \
 # -m a -M $email \
@@ -61,7 +62,7 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysi
 cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/
 
 # # Pairwise linear SVM
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc  \
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file  \
 # -N pairwise_classification${dataset_ID} \
 # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_classification_${dataset_ID}_out.txt \
 # -m a -M $email \
@@ -75,7 +76,7 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/
 # done
 
 # # Integrate null model fits and calculate p-values
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file \
 # -N pairwise_null_model_analysis${dataset_ID} \
 # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_null_model_analysis_${dataset_ID}_out.txt \
 # -m a -M $email \
@@ -86,7 +87,7 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/
 # Combined univariate + pairwise analysis
 cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise/
 
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc,email=$email  \
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,email=$email  \
 # -N combined_univariate_pairwise_classification_${dataset_ID} \
 # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/combined_univariate_pairwise_classification_${dataset_ID}_out.txt \
 # -m a -M $email \
@@ -100,7 +101,7 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/combined_univariat
 # done
 
 # # Integrate null model fits and calculate p-values
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,main_noise_proc=$main_noise_proc \
+# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file \
 # -N uni_pairwise_null_model_analysis_${dataset_ID} \
 # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/combined_univariate_pairwise_null_model_analysis_${dataset_ID}_out.txt \
 # -m a -M $email \
