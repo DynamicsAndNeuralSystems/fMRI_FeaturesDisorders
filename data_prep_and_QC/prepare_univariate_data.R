@@ -10,7 +10,7 @@ parser$add_argument("--data_path", default="~/data/UCLA_CNP/")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--sample_metadata_file", default="UCLA_CNP_sample_metadata.Rds")
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
-parser$add_argument("--noise_procs", default=c(""))
+parser$add_argument("--noise_proc", default="")
 parser$add_argument("--dataset_ID", default="UCLA_CNP")
 parser$add_argument("--add_catch2", action="store_true", default=FALSE)
 
@@ -21,7 +21,7 @@ data_path <- args$data_path
 univariate_feature_set <- args$univariate_feature_set
 sample_metadata_file <- args$sample_metadata_file
 brain_region_lookup <- args$brain_region_lookup
-noise_procs <- args$noise_procs
+noise_proc <- args$noise_proc
 dataset_ID <- args$dataset_ID
 add_catch2 <- args$add_catch2
 
@@ -30,25 +30,18 @@ add_catch2 <- args$add_catch2
 # add_catch2 <- TRUE
 
 # # UCLA CNP
-# data_path <- "~/data/UCLA_CNP/"
+# data_path <- "~/data/UCLA_CNP_ABIDE_ASD/"
 # dataset_ID <- "UCLA_CNP"
 # sample_metadata_file <- "UCLA_CNP_sample_metadata.Rds"
-# noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+# noise_procs <- "AROMA+2P+GMR"
 # brain_region_lookup <- "Brain_Region_info.csv"
 
 # # ABIDE ASD
 # data_path <- "~/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
-# noise_procs <- c("FC1000")
+# noise_proc <- "FC1000"
 # brain_region_lookup <- "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
-
-# HCP100
-# data_path <- "~/data/HCP100/"
-# dataset_ID <- "HCP100"
-# sample_metadata_file <- "HCP100_sample_metadata.Rds"
-# noise_procs <- c("AROMA+2P+GMR")
-# brain_region_lookup <- "Brain_Region_info.csv"
 
 rdata_path <- paste0(data_path, "processed_data/Rdata/")
 plot_dir <- paste0(data_path, "plots/")
@@ -62,15 +55,6 @@ set.seed(127)
 # Load tidyverse
 library(tidyverse)
 library(theft)
-
-# Unlist noise-processing methods
-tryCatch({
-  noise_procs <- stringr::str_split(noise_procs, ";")[[1]]
-  noise_procs <- unlist(noise_procs)
-}, error = function(e) {
-  message(e)
-})
-
 
 #-------------------------------------------------------------------------------
 # Source helper scripts
@@ -166,5 +150,5 @@ run_QC_for_univariate_dataset(data_path = data_path,
                               add_catch2 = add_catch2,
                               raw_TS_file = paste0(data_path, "raw_data/",
                                                    dataset_ID, "_fMRI_TS.Rds"),
-                              noise_procs = noise_procs,
+                              noise_proc = noise_proc,
                               plot_dir = plot_dir)

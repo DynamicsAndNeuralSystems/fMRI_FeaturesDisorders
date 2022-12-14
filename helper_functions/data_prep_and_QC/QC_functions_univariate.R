@@ -16,7 +16,7 @@ library(theft)
 #-------------------------------------------------------------------------------
 
 find_univariate_sample_na <- function(TS_feature_data, 
-                                      dataset_ID = "UCLA_Schizophrenia",
+                                      dataset_ID = "UCLA_CNP",
                                       univariate_feature_set = "catch22") {
   
   NA_sample_data <- TS_feature_data %>%
@@ -40,7 +40,7 @@ find_univariate_sample_na <- function(TS_feature_data,
 #-------------------------------------------------------------------------------
 
 find_univariate_feature_na <- function(TS_feature_data, 
-                                       dataset_ID = "UCLA_Schizophrenia",
+                                       dataset_ID = "UCLA_CNP",
                                        univariate_feature_set = "catch22") {
   
   NA_feature_data <- TS_feature_data %>%
@@ -87,9 +87,9 @@ z_score_all_noise_procs <- function(TS_feature_data,
 # Plot raw time-series data for subjects with NA values for all ROIs/features
 #-------------------------------------------------------------------------------
 
-plot_NA_sample_ts <- function(dataset_ID = "UCLA_Schizophrenia",
+plot_NA_sample_ts <- function(dataset_ID = "UCLA_CNP",
                               grouping_var = "Brain_Region",
-                              raw_TS_file = "UCLA_Schizophrenia_fMRI_data.Rds",
+                              raw_TS_file = "UCLA_CNP_fMRI_data.Rds",
                               univariate_feature_set = "catch22",
                               NA_sample_IDs = c(),
                               noise_procs = c("AROMA+2P",
@@ -155,25 +155,21 @@ remove_features_from_feature_matrix <- function(TS_feature_data,
 
 run_QC_for_univariate_dataset <- function(data_path, 
                                           proc_rdata_path,
-                                          sample_metadata_file = "UCLA_Schizophrenia_sample_metadata.Rds",
-                                          dataset_ID = "UCLA_Schizophrenia",
+                                          sample_metadata_file = "UCLA_CNP_sample_metadata.Rds",
+                                          dataset_ID = "UCLA_CNP",
                                           univariate_feature_set = "catch22",
-                                          raw_TS_file = "UCLA_Schizophrenia_fMRI_data.Rds",
+                                          raw_TS_file = "UCLA_CNP_fMRI_data.Rds",
                                           add_catch2 = FALSE,
                                           noise_procs = c("AROMA+2P",
                                                           "AROMA+2P+GMR",
                                                           "AROMA+2P+DiCER"),
                                           plot_dir) {
   
-  if (is.null(proc_rdata_path)) {
-    proc_rdata_path <- paste0(data_path, "processed_data/Rdata/")
-  }
-  
   # Load sample metadata
-  sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
+  sample_metadata <- readRDS(paste0(data_path, "study_metadata/", sample_metadata_file))
   
   # Load TS feature data and subset by noise_proc
-  TS_feature_data <- readRDS(paste0(proc_rdata_path, dataset_ID, "_", 
+  TS_feature_data <- readRDS(paste0(rdata_path, dataset_ID, "_", 
                                     univariate_feature_set, ".Rds"))
   
   # Samples identified with missing data for all features:

@@ -83,7 +83,7 @@ k_fold_CV_linear_SVM <- function(input_data,
                                  c = 1,
                                  svm_kernel = "linear",
                                  sample_wts = list("Control" = 1,
-                                                   "Schz" = 1),
+                                                   "Schizophrenia" = 1),
                                  out_of_sample_only = TRUE,
                                  shuffle_labels = FALSE) {
   
@@ -104,27 +104,24 @@ k_fold_CV_linear_SVM <- function(input_data,
   # Create dataframe to store subject IDs and whether or not they were properly classified
   subject_classification_list <- list()
   
-  
   # Iterate over folds 1 through k
-  for (i in 1:k) {
+  for (fold in 1:k) {
     
     # Define test and train data
-    test_i <- flds[[i]]
-    train_i <- setdiff(1:nrow(input_data), test_i)
+    test_subjects <- flds[[fold]]
+    train_subjects <- setdiff(unique(input_data$Sample_ID), test_subjects)
     
     # Training data
-    train_data <- input_data[train_i, ] %>%
-      filter(!is.na(Diagnosis))
-    train_subjects <- train_data$Sample_ID
-    
-    train_data <- train_data %>% dplyr::select(-Sample_ID) 
+    train_data <- input_data %>%
+      filter(Sample_ID %in% train_subjects) %>%
+      filter(!is.na(Diagnosis)) %>% 
+      dplyr::select(-Sample_ID) 
     
     # Testing data
-    test_data <- input_data[test_i, ] %>%
-      filter(!is.na(Diagnosis))
-    test_subjects <- test_data$Sample_ID
-    
-    test_data <- test_data %>% dplyr::select(-Sample_ID) 
+    test_data <- input_data %>%
+      filter(Sample_ID %in% test_subjects) %>%
+      filter(!is.na(Diagnosis)) %>% 
+      dplyr::select(-Sample_ID) 
     
     svmModel <- e1071::svm(factor(Diagnosis) ~ .,
                            kernel = svm_kernel,
@@ -140,7 +137,7 @@ k_fold_CV_linear_SVM <- function(input_data,
       # Create dataframe containing subject ID and whether out-of-sample prediction was correct
       in_fold_predictions_by_subject <- data.frame(Sample_ID = train_subjects,
                                                    Sample_Type = "In-sample",
-                                                   fold_number = i,
+                                                   fold_number = fold,
                                                    Actual_Diagnosis = train_data$Diagnosis,
                                                    Predicted_Diagnosis = in_sample_pred) %>%
         mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
@@ -155,7 +152,7 @@ k_fold_CV_linear_SVM <- function(input_data,
     # Create dataframe containing subject ID and whether out-of-sample prediction was correct
     out_fold_predictions_by_subject <- data.frame(Sample_ID = test_subjects,
                                                   Sample_Type = "Out-of-sample",
-                                                  fold_number = i,
+                                                  fold_number = fold,
                                                   Actual_Diagnosis = test_data$Diagnosis,
                                                   Predicted_Diagnosis = out_sample_pred) %>%
       mutate(Prediction_Correct = Actual_Diagnosis == Predicted_Diagnosis)
@@ -182,28 +179,19 @@ k_fold_CV_linear_SVM <- function(input_data,
 # Run 10-fold cross-validated multi-feature linear SVM by given grouping var
 #-------------------------------------------------------------------------------
 
-run_univariate_cv_svm_by_input_var <- function(data_path,
-                                               rdata_path,
-                                               dataset_ID,
-                                               sample_metadata,
+run_univariate_cv_svm_by_input_var <- function(feature_matrix,
+                                               dataset_ID = "UCLA_CNP_ABIDE_ASD",
                                                svm_kernel = "linear",
                                                repeat_number = 1,
                                                univariate_feature_set = "catch22",
                                                sample_groups,
                                                grouping_var = "Brain_Region",
                                                svm_feature_var = "Feature",
-                                               noise_procs = c("AROMA+2P", 
-                                                               "AROMA+2P+GMR", 
-                                                               "AROMA+2P+DiCER"),
                                                flds = NULL,
                                                num_k_folds = 10,
                                                out_of_sample_only = TRUE,
                                                use_inv_prob_weighting = FALSE,
                                                shuffle_labels = FALSE) {
-  
-  if (is.null(rdata_path)) {
-    rdata_path <- paste0(data_path, "processed_data/Rdata/")
-  }
   
   # Define sample weights
   # Default is 1 and 1 if use_inv_prob_weighting is not included
@@ -217,87 +205,77 @@ run_univariate_cv_svm_by_input_var <- function(data_path,
     names(sample_wts) = unique(sample_groups$Diagnosis)
   }
   
+  # Instantiate list for classification results
   class_res_list <- list()
-  for (noise_proc in noise_procs) {
-    # Clean up names
-    noise_label <- gsub("\\+", "_", noise_proc)
+  
+  # Organise names
+  if (svm_feature_var == "Feature") {
+    svm_feature_var_name = "names"
+    grouping_var_name = "Brain_Region"
+    grouping_var_vector <- unique(feature_matrix$Brain_Region)
     
-    # Load z-scored feature data for current noise processing method and
-    # time-series feature set
-    feature_matrix <- readRDS(paste0(rdata_path, sprintf("%s_%s_filtered_zscored.Rds", 
-                                                         dataset_ID,
-                                                         univariate_feature_set))) %>%
-      dplyr::filter(Noise_Proc == noise_proc)
+  } else if (svm_feature_var == "Brain_Region") {
+    svm_feature_var_name = svm_feature_var
+    grouping_var_name = "names"
+    grouping_var_vector <- unique(feature_matrix$names)
+  } else {
+    svm_feature_var_name = "Combo"
+    grouping_var_name = "Group_Var"
     
-    if (svm_feature_var == "Feature") {
-      svm_feature_var_name = "names"
-      grouping_var_name = "Brain_Region"
-      grouping_var_vector <- unique(feature_matrix$Brain_Region)
+    feature_matrix <- feature_matrix %>%
+      unite("Combo", c("Brain_Region", "names"), sep="_", remove=F)
+    
+    grouping_var_vector <- c("All")
+  }
+  
+  # Reshape data from long to wide for SVM
+  for (group_var in grouping_var_vector) {
+    if (grouping_var == "Combo") {
+      data_for_SVM <- feature_matrix %>%
+        left_join(., sample_groups) %>%
+        dplyr::select(Sample_ID, Diagnosis, Combo, values) %>%
+        distinct(.keep_all = T) %>%
+        tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
+                           names_from = Combo,
+                           values_from 
+                           = values) %>%
+        # Drop columns that are all NA/NAN
+        dplyr::select(where(function(x) any(!is.na(x)))) %>%
+        # Drop rows with NA for one or more column
+        drop_na()
       
-    } else if (svm_feature_var == "Brain_Region") {
-      svm_feature_var_name = svm_feature_var
-      grouping_var_name = "names"
-      grouping_var_vector <- unique(feature_matrix$names)
     } else {
-      svm_feature_var_name = "Combo"
-      grouping_var_name = "Group_Var"
-      
-      feature_matrix <- feature_matrix %>%
-        unite("Combo", c("Brain_Region", "names"), sep="_", remove=F)
-      
-      grouping_var_vector <- c("All")
+      # Otherwise iterate over each separate group
+      data_for_SVM <- subset(feature_matrix, get(grouping_var_name) == group_var) %>%
+        dplyr::ungroup() %>%
+        left_join(., sample_groups) %>%
+        dplyr::select(Sample_ID, Diagnosis, all_of(svm_feature_var_name), values) %>%
+        distinct(.keep_all = T) %>%
+        tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
+                           names_from = svm_feature_var_name,
+                           values_from 
+                           = values) %>%
+        # Drop columns that are all NA/NAN
+        dplyr::select(where(function(x) any(!is.na(x)))) %>%
+        # Drop rows with NA for one or more column
+        drop_na()
     }
     
-    # Reshape data from long to wide for SVM
-    for (group_var in grouping_var_vector) {
-      if (grouping_var == "Combo") {
-        data_for_SVM <- feature_matrix %>%
-          left_join(., sample_groups) %>%
-          dplyr::select(Sample_ID, Diagnosis, Combo, values) %>%
-          distinct(.keep_all = T) %>%
-          tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
-                             names_from = Combo,
-                             values_from 
-                             = values) %>%
-          # Drop columns that are all NA/NAN
-          dplyr::select(where(function(x) any(!is.na(x)))) %>%
-          # Drop rows with NA for one or more column
-          drop_na()
-        
-      } else {
-        # Otherwise iterate over each separate group
-        data_for_SVM <- subset(feature_matrix, get(grouping_var_name) == group_var) %>%
-          dplyr::ungroup() %>%
-          left_join(., sample_groups) %>%
-          dplyr::select(Sample_ID, Diagnosis, svm_feature_var_name, values) %>%
-          distinct(.keep_all = T) %>%
-          tidyr::pivot_wider(id_cols = c(Sample_ID, Diagnosis),
-                             names_from = svm_feature_var_name,
-                             values_from 
-                             = values) %>%
-          # Drop columns that are all NA/NAN
-          dplyr::select(where(function(x) any(!is.na(x)))) %>%
-          # Drop rows with NA for one or more column
-          drop_na()
-      }
-      
-      # Pass data_for_SVM to in_sample_linear_SVM
-      SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
-                                          flds = flds,
-                                          k = num_k_folds,
-                                          svm_kernel = svm_kernel,
-                                          sample_wts = sample_wts,
-                                          shuffle_labels = shuffle_labels,
-                                          out_of_sample_only = out_of_sample_only) %>%
-        dplyr::mutate(grouping_var = group_var,
-                      repeat_number = repeat_number,
-                      feature_set = univariate_feature_set,
-                      Noise_Proc = noise_proc,
-                      num_SVM_features = ncol(data_for_SVM) - 2)
-      
-      # Append results to list
-      class_res_list <- list.append(class_res_list, SVM_results)
-    }
+    # Pass data_for_SVM to in_sample_linear_SVM
+    SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
+                                        flds = flds,
+                                        k = num_k_folds,
+                                        svm_kernel = svm_kernel,
+                                        sample_wts = sample_wts,
+                                        shuffle_labels = shuffle_labels,
+                                        out_of_sample_only = out_of_sample_only) %>%
+      dplyr::mutate(grouping_var = group_var,
+                    repeat_number = repeat_number,
+                    univariate_feature_set = univariate_feature_set,
+                    num_SVM_features = ncol(data_for_SVM) - 2)
+    
+    # Append results to list
+    class_res_list <- list.append(class_res_list, SVM_results)
   }
   
   # Combine results from all regions into a dataframe

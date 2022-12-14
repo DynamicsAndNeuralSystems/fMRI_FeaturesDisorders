@@ -8,7 +8,8 @@ export pyspi_ncpus=1
 export pyspi_mem=40
 export python_to_use=/headnode1/abry4213/.conda/envs/${conda_env}/bin/python3
 
-cd $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/
+# Activate the given conda environment
+conda activate $conda_env
 
 # Define data paths
 export dataset_ID="UCLA_CNP_ABIDE_ASD"
@@ -19,6 +20,17 @@ export noise_proc_UCLA="AROMA+2P+GMR"
 export noise_proc_ABIDE="FC1000"
 export label_vars="Diagnosis"
 export pkl_file="calc_pyspi14.pkl"
+
+##########################################################################################
+# Prepare the UCLA CNP data
+bash $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/dataset_specific_files/prepare_UCLA_data.sh
+
+# Prepare the ABIDE ASD data
+bash  $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/dataset_specific_files/prepare_ABIDE_data.sh
+
+##########################################################################################
+# Merge the UCLA CNP and ABIDE ASD datasets that were pre-processed separately
+Rscript $github_dir/fMRI_FeaturesDisorders/data_prep_and_QC/dataset_specific_files/merge_UCLA_CNP_ABIDE_ASD_data.R
 
 ##########################################################################################
 cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/
