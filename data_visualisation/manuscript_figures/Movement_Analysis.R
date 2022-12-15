@@ -14,31 +14,32 @@ theme_set(theme_cowplot())
 # Define study/data paths
 ################################################################################
 
+sample_metadata %>%
+  group_by(Study, Diagnosis) %>%
+  count()
+
 github_dir <- "~/github/fMRI_FeaturesDisorders/"
 source(paste0(github_dir, "helper_functions/classification/Linear_SVM.R"))
 source(paste0(github_dir, "data_visualisation/manuscript_figures/Manuscript_Draft_Visualisations_Helper.R"))
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/FigureS1/")
 TAF::mkdir(plot_path)
 
-SCZ_data_path <- "~/data/UCLA_Schizophrenia/"
-SCZ_rdata_path <- paste0(SCZ_data_path, "processed_data/Rdata/")
-ASD_data_path <- "~/data/ABIDE_ASD/"
-ASD_rdata_path <- paste0(ASD_data_path, "processed_data/Rdata/")
+data_path <- "~/data/UCLA_CNP_ABIDE_ASD/"
+rdata_path <- paste0(data_path, "processed_data/Rdata/")
 
 # Load subject metadata
-SCZ_subject_metadata <- readRDS(paste0(SCZ_data_path, "UCLA_Schizophrenia_sample_metadata.Rds"))
-ASD_subject_metadata <- readRDS(paste0(ASD_data_path, "ABIDE_ASD_sample_metadata.Rds"))
+sample_metadata <- readRDS(paste0(data_path, "study_metadata/UCLA_CNP_ABIDE_ASD_sample_metadata.Rds"))
 
-# Load mean framewise displacement (movement) data for UCLA Schizophrenia
-SCZ_movement_data_Linden <- read.table(paste0(SCZ_data_path, 
-                                              "movementData/fdAvgs_UCLA_Schizophrenia.txt"),
+# Load mean framewise displacement (movement) data for UCLA Schizophrenia + Control participants
+SCZ_movement_data_Linden <- read.table(paste0(data_path, 
+                                              "movement_data/UCLA_CNP/fdAvgs_UCLA_Schizophrenia.txt"),
                                        sep=",")
 colnames(SCZ_movement_data_Linden) <- c("Jenkinson_Linden")
 
-SCZ_movement_data <- read.table(paste0(SCZ_data_path, "movementData/UCLA_Schizophrenia_mFD.txt"),
+SCZ_movement_data <- read.table(paste0(data_path, "movement_data/UCLA_CNP/UCLA_CNP_mFD.txt"),
                                 sep=",")
 colnames(SCZ_movement_data) <- c("Sample_ID", "Jenkinson", "Power", "VanDijk")
-SCZ_movement_data <- left_join(SCZ_movement_data, SCZ_subject_metadata) 
+SCZ_movement_data <- left_join(SCZ_movement_data, sample_metadata) 
 
 SCZ_movement_data_Linden <- cbind(SCZ_movement_data_Linden, SCZ_movement_data)
 
@@ -46,11 +47,11 @@ SCZ_movement_data <- SCZ_movement_data %>%
   filter(!is.na(Diagnosis)) %>%
   mutate(Cohort="SCZ Study")
 
-# Load mean framewise displacement (movement) data for UCLA Schizophrenia
-ASD_movement_data <- read.table(paste0(ASD_data_path, "movementData/ABIDE_ASD_mFD.txt"),
+# Load mean framewise displacement (movement) data for ABIDE ASD + Control participants
+ASD_movement_data <- read.table(paste0(data_path, "movement_data/ABIDE_ASD/ABIDE_ASD_mFD.txt"),
                                 sep=",", colClasses = c("V1" = "character"))
 colnames(ASD_movement_data) <- c("Sample_ID", "Jenkinson", "Power", "VanDijk")
-ASD_movement_data <- left_join(ASD_movement_data, ASD_subject_metadata) %>%
+ASD_movement_data <- left_join(ASD_movement_data, sample_metadata) %>%
   filter(!is.na(Diagnosis)) %>%
   mutate(Cohort="ASD Study")
 
@@ -64,11 +65,11 @@ merged_midrange_data <- plyr::rbind.fill(SCZ_movement_data, ASD_movement_data) %
                names_to = "Method",
                values_to = "mFD") %>%
   group_by(Cohort, Method) %>%
-  mutate(perc1 = quantile(mFD, probs=c(0.1))) %>%
-  mutate(perc95 = quantile(mFD, probs=c(0.95))) %>%
+  mutate(perc025 = quantile(mFD, probs=c(0.025))) %>%
+  mutate(perc975 = quantile(mFD, probs=c(0.975))) %>%
   ungroup() %>%
   rowwise() %>%
-  filter(perc1 <= mFD, mFD <= perc95) %>%
+  filter(perc025 <= mFD, mFD <= perc975) %>%
   mutate(Diagnosis = factor(Diagnosis, levels = c("Control", "ASD", "Schizophrenia")))
 
 merged_midrange_data %>%
@@ -94,10 +95,10 @@ ggsave(paste0(plot_path, "ASD_SCZ_mFD_by_Group.png"),
 merged_midrange_data %>%
   filter(Diagnosis=="Control") %>%
   ggplot(data=., mapping=aes(x=mFD)) +
-  stat_density(aes(fill = Cohort, y=..scaled..),
+  stat_density(aes(fill = Cohort, y=after_stat(scaled)),
                position = "identity", alpha=0.6) +
   ggtitle("mFD Values in Control Participants") +
-  ylab("# Control Participants") +
+  ylab("Scaled Density\nof Control Participants") +
   xlab("mFD By Method") +
   facet_wrap(. ~ Method, scales="free") +
   scale_x_continuous(breaks = scales::pretty_breaks(3)) +

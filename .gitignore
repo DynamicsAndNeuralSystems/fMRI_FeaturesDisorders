@@ -5,7 +5,7 @@ cluster_output/
 *.Rhistory
 *.DS_Store
 *.gitignore
-
+scratch/
 .DS_Store
 plots/.DS_Store
 data_prep_and_QC/.DS_Store
