@@ -81,7 +81,7 @@ if (!file.exists(paste0(rdata_path, sprintf("%s_CV_SVM_model_permutation_null_%s
                                             feature_set,
                                             weighting_name)))) {
   
-  model_permutation_null_weighting <- grouping_type %>%
+  model_permutation_null_weighting <- grouping_types %>%
     purrr::map_df(~ read_in_files_from_dir(grouping_type = .x,
                                            dataset_ID = dataset_ID,
                                            univariate_feature_set = feature_set,
@@ -104,12 +104,11 @@ if (!file.exists(paste0(rdata_path, sprintf("%s_CV_SVM_permutation_null_%s_%s_pv
                                             feature_set,
                                             weighting_name)))) {
   cat("Now calculating p-values\n")
-  pvalues <- calc_empirical_nulls(class_res = subset(SVM_balanced_accuracy_across_repeats, Analysis_Type=="ROI"),
+  pvalues <- calc_empirical_nulls(class_res = SVM_balanced_accuracy_across_repeats,
                                   null_data = model_permutation_null_weighting,
                                   feature_set = feature_set,
                                   use_pooled_null = TRUE,
-                                  is_main_data_averaged = TRUE,
-                                  grouping_var = grouping_var)
+                                  is_main_data_averaged = TRUE)
   
   saveRDS(pvalues, file=paste0(rdata_path, sprintf("%s_CV_SVM_permutation_null_%s_%s_pvals.Rds",
                                                    dataset_ID,
@@ -117,4 +116,3 @@ if (!file.exists(paste0(rdata_path, sprintf("%s_CV_SVM_permutation_null_%s_%s_pv
                                                    weighting_name)))
   
 }
-
