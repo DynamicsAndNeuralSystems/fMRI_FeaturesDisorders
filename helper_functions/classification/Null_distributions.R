@@ -168,29 +168,11 @@ run_null_model_n_permutations_univariate_pairwise_combo <- function(univariate_d
 calc_empirical_nulls <- function(class_res,
                                  null_data,
                                  feature_set,
-                                 noise_proc = "AROMA+2P+GMR",
                                  use_pooled_null = TRUE,
                                  is_main_data_averaged = TRUE,
                                  is_null_data_averaged = TRUE,
                                  grouping_var = "Brain_Region") {
   merged_list <- list()
-  
-  # Subset main and null data by noise processing method
-  if ("Noise_Proc" %in% colnames(null_data)) {
-    null_data <- subset(null_data, Noise_Proc == noise_proc)
-  }
-  if ("Noise_Proc" %in% colnames(class_res)) {
-    class_res <- subset(class_res, Noise_Proc == noise_proc)
-  }
-  
-  # Copy null data if in/out of sample is not specified
-  if (!("Sample_Type" %in% colnames(null_data))) {
-    null_in <- null_data %>%
-      mutate(Sample_Type = "In-sample")
-    null_out <- null_data %>%
-      mutate(Sample_Type = "Out-of-sample")
-    null_data <- plyr::rbind.fill(null_in, null_out)
-  }
   
   # Create grouping_var column if it doesn't exist
   if (!("grouping_var" %in% colnames(class_res))) {
@@ -212,13 +194,12 @@ calc_empirical_nulls <- function(class_res,
   
   # Reshape main results
   main_res <- class_res %>%
-    dplyr::select(grouping_var, Sample_Type, Noise_Proc, accuracy, balanced_accuracy) %>%
+    dplyr::select(Study, Analysis_Type, Group_to_Compare, grouping_var, accuracy, balanced_accuracy) %>%
     mutate(Type = "main") %>%
     pivot_longer(cols=c(accuracy, balanced_accuracy),
                  names_to="Metric",
                  values_to="Value") %>%
-    pivot_wider(id_cols = c(grouping_var, Noise_Proc, 
-                            Type, Sample_Type),
+    pivot_wider(id_cols = c(Study, Analysis_Type, Group_to_Compare, grouping_var, Type),
                 names_from = Metric, values_from = Value)
   
   for (group_var in unique(class_res$grouping_var)) {
@@ -239,7 +220,7 @@ calc_empirical_nulls <- function(class_res,
     # Calculate p-values
     p_value_res <- plyr::rbind.fill(group_main,
                                     group_null) %>%
-      group_by(grouping_var, Noise_Proc, Sample_Type) %>%
+      group_by(grouping_var, Study, Group_to_Compare, Analysis_Type) %>%
       dplyr::summarise(num_null_obs = sum(Type == "null"),
                        main_accuracy = unique(accuracy[Type=="main"]),
                        main_balanced_accuracy = unique(balanced_accuracy[Type=="main"]),
@@ -257,7 +238,7 @@ calc_empirical_nulls <- function(class_res,
   }
   main_p_values <- do.call(plyr::rbind.fill, merged_list) %>%
     ungroup() %>%
-    group_by(Sample_Type, Noise_Proc) %>%
+    group_by(Study, Analysis_Type, Group_to_Compare) %>%
     mutate(acc_p_adj = p.adjust(acc_p, method="BH"),
            bal_acc_p_adj = p.adjust(bal_acc_p, method="BH"),
            feature_set = feature_set)
