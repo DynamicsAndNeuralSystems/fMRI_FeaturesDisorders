@@ -270,25 +270,6 @@ if (!file.exists(output_file_RDS)) {
 ################################################################################
 # Calculate balanced accuracy across folds/repeats
 
-# Function to calculate the repeat-wise balanced accuracy for the  given group and study
-find_balanced_accuracy_by_repeat <- function(group, study, univariate_class_res) {
-  repeat_wise_balanced_accuracy <- univariate_class_res %>%
-    # Filter by study and group to compare against controls
-    filter(Study == study, Group_to_Compare == group) %>%
-    
-    # Drop unused factor levels
-    droplevels() %>%
-    group_by(grouping_var, univariate_feature_set, num_SVM_features, 
-             Study, Analysis_Type, Group_to_Compare, repeat_number) %>%
-    
-    # calculate accuracy and balanced accuracy
-    summarise(accuracy = sum(Prediction_Correct) / n(),
-              balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
-                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
-  
-  return(repeat_wise_balanced_accuracy)
-}
-
 output_file_name <- ifelse(add_catch2,
                            paste0(rdata_path, sprintf("%s_univariate_CV_linear_SVM_%s_and_catch2_balanced_accuracy_by_repeats.Rds",
                                                       dataset_ID,

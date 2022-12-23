@@ -72,7 +72,7 @@ pairwise <- args$pairwise
 combined_univariate_pairwise <- args$combined_univariate_pairwise
 
 # Load sample metadata
-sample_metadata <- readRDS(paste0(data_path, sample_metadata_file))
+sample_metadata <- readRDS(paste0(data_path, "study_metadata/", sample_metadata_file))
 
 # Load contrasts to control participants
 study_comparisons_to_control <- readRDS(paste0(rdata_path, dataset_ID, "_comparisons_to_control.Rds"))
@@ -86,14 +86,45 @@ TAF::mkdir(output_data_dir)
 cat("\nNumber of k-folds:", num_k_folds, "\n")
 cat("\nNum permutations per iteration:", num_perms_for_iter, "\n")
 
+# Function to find balanced accuracy by null iteration
+find_balanced_accuracy_by_null_iter <- function(group, study, univariate_null_res) {
+  univariate_null_balanced_accuracy <- univariate_null_res %>%
+    # Filter by study and group to compare against controls
+    filter(Study == study, Group_to_Compare == group) %>%
+    
+    # Drop unused factor levels
+    droplevels() %>%
+    group_by(grouping_var, univariate_feature_set, num_SVM_features, 
+             Study, Group_to_Compare, Null_Iter_Number) %>%
+    
+    # calculate accuracy and balanced accuracy
+    summarise(accuracy = sum(Prediction_Correct) / n(),
+              balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
+                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]])
+  
+  return(univariate_null_balanced_accuracy)
+}
+
+# Define subjects to use
+subjects_to_use <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
+                                                      dataset_ID,
+                                                      univariate_feature_set,
+                                                      pairwise_feature_set)))
+
 if (univariate & !file.exists(sprintf("%s/%s_%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
                                       output_data_dir, dataset_ID,
                                       grouping_var, univariate_feature_set, 
                                       weighting_name, null_iter_number))) {
   # Load univariate features
-  univariate_features <- readRDS(paste0(rdata_path, dataset_ID, "_", univariate_feature_set,
-                                               "_and_catch2_filtered_zscored.Rds")) %>%
-    left_join(., sample_metadata) 
+  if (univariate_feature_set != "catch2") {
+    univariate_features <- readRDS(paste0(rdata_path, dataset_ID, "_", univariate_feature_set,
+                                                "_and_catch2_filtered_zscored.Rds")) %>%
+      left_join(., sample_metadata) 
+  } else {
+    univariate_features <- readRDS(paste0(rdata_path, dataset_ID, "_catch22_and_catch2_filtered_zscored.Rds")) %>%
+      left_join(., sample_metadata) 
+  }
+
   
   univariate_null_res_list <- list()
   
@@ -141,21 +172,16 @@ if (univariate & !file.exists(sprintf("%s/%s_%s_wise_%s_%s_null_model_fit_iter_%
   }
   
   # Concatenate results
-  univariate_null_res <- do.call(plyr::rbind.fill, univariate_null_res_list) %>% 
-    group_by(grouping_var, Study, Group_to_Compare, Sample_Type, fold_number, Null_Iter_Number) %>%
-    # First find accuracy and balanced accuracy by fold
-    summarise(accuracy = sum(Prediction_Correct) / n(),
-              balanced_accuracy = caret::confusionMatrix(data = Predicted_Diagnosis,
-                                                         reference = Actual_Diagnosis)$byClass[["Balanced Accuracy"]]) %>%
-    # Then take average acc/balacc across all ten folds per iteration
-    group_by(grouping_var, Study, Group_to_Compare, Sample_Type, Null_Iter_Number) %>%
-    summarise(mean_accuracy = mean(accuracy, na.rm=T),
-              mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-    dplyr::rename("accuracy" = "mean_accuracy",
-                  "balanced_accuracy" = "mean_balanced_accuracy")
+  univariate_null_res <- do.call(plyr::rbind.fill, univariate_null_res_list) 
+
+  # Find the balanced accuracy for each study and comparison group combo
+  univariate_null_balacc <- 1:nrow(study_comparisons_to_control) %>%
+    purrr::map_df(~ find_balanced_accuracy_by_null_iter(group = study_comparisons_to_control$Group_to_Compare[.x],
+                                                     study = study_comparisons_to_control$Study[.x],
+                                                     univariate_null_res = univariate_null_res))
   
   # Save null results to RDS
-  saveRDS(null_out, file=sprintf("%s/%s_%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
+  saveRDS(univariate_null_balacc, file=sprintf("%s/%s_%s_wise_%s_%s_null_model_fit_iter_%s.Rds",
                                  output_data_dir, dataset_ID, grouping_var, univariate_feature_set, 
                                  weighting_name, null_iter_number))
 }

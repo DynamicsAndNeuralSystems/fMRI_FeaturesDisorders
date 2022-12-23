@@ -14,8 +14,7 @@ mkdir -p $github_dir/cluster_output/
 cmd="/usr/physics/R/R-4.2.1/bin/Rscript univariate_null_model_analysis.R \
 --github_dir $github_dir \
 --data_path $data_path \
---univariate_feature_set ${univariate_feature_set} \
---noise_proc ${main_noise_proc} \
+--feature_set ${univariate_feature_set} \
 --dataset_ID $dataset_ID \
 --sample_metadata_file $sample_metadata_file"
 echo $cmd
