@@ -12,7 +12,7 @@ cd $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/
 
 # UCLA CNP
 export dataset_ID="UCLA_CNP"
-export data_path=/headnode1/abry4213/data/${dataset_ID}/
+export data_path=/headnode1/abry4213/data/UCLA_CNP_ABIDE_ASD/
 export sample_metadata_file=${dataset_ID}_sample_metadata.Rds
 export brain_region_lookup="Brain_Region_info.csv"
 export sample_yaml="sample.yaml"
@@ -33,7 +33,7 @@ export pkl_file="calc_pyspi14.pkl"
 # # Prep pairwise data
 # # Get data into .npy files
 # cmd="qsub -N prepare_pairwise_data_${dataset_ID} -q yossarian -j oe \
-# -v github_dir=$github_dir,data_path=$data_path,noise_procs=$noise_procs,dataset_ID=$dataset_ID,sample_metadata_file=$sample_metadata_file,label_vars=$label_vars \
+# -v github_dir=$github_dir,conda_env=$conda_env,data_path=$data_path/raw_data/${dataset_ID},noise_procs=$noise_procs,dataset_ID=$dataset_ID,sample_metadata_file=$sample_metadata_file,label_vars=$label_vars \
 # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_pairwise_data_${dataset_ID}.txt \
 # -l select=1:ncpus=1:mem=20GB -l walltime=2:00:00 -M $email -m a -V \
 # prepare_pairwise_data.sh"
@@ -45,7 +45,7 @@ $github_dir \
 $pyspi_config \
 $email \
 $dataset_ID \
-$data_path \
+$data_path/raw_data/${dataset_ID}/numpy_files \
 $noise_procs \
 $pyspi_walltime_hrs \
 $pyspi_mem \

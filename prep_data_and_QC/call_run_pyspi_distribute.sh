@@ -28,13 +28,13 @@ for noise_proc in $noise_procs_list
 do
     noise_label=$(echo $noise_proc | sed "s/\+/_/g")
     echo $noise_label
-    python $pyspi_script_dir/distribute_jobs.py \
-    --data_dir ${data_path}/raw_data/numpy_files/${noise_label}/ \
+    cmd="python $pyspi_script_dir/distribute_jobs.py \
+    --data_dir ${data_path}/${noise_label}/ \
     --calc_file_name $calc_file_name \
     --compute_file $pyspi_script_dir/pyspi_compute.py \
     --template_pbs_file $pyspi_script_dir/template.pbs \
     --pyspi_config $config_file \
-    --sample_yaml ${data_path}/raw_data/numpy_files/${noise_label}/${sample_yaml} \
+    --sample_yaml ${data_path}/${noise_label}/${sample_yaml} \
     --pbs_notify a \
     --email $email \
     --conda_env $conda_env \
@@ -42,5 +42,7 @@ do
     --cpu $ncpus \
     --mem $mem \
     --table_only \
-    --overwrite_pkl
+    --overwrite_pkl"
+    echo $cmd
+    $cmd
 done
