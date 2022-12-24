@@ -46,7 +46,7 @@ kernel = "linear"
 # Read in 10-fold 10-repeat CV SVM results
 ################################################################################
 
-SVM_balanced_accuracy_across_repeats <- readRDS(paste0(rdata_path, sprintf("%s_univariate_CV_linear_SVM_%s_and_catch2_balanced_accuracy.Rds",
+SVM_balanced_accuracy_across_repeats <- readRDS(paste0(rdata_path, sprintf("%s_univariate_CV_linear_SVM_%s_balanced_accuracy.Rds",
                                                                            dataset_ID,
                                                                            feature_set))) %>%
   filter(univariate_feature_set == feature_set)
