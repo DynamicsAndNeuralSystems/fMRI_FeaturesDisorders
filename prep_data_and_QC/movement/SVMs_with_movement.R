@@ -103,10 +103,10 @@ ABIDE_sample_groups <- readRDS(paste0(rdata_path,
   distinct(Sample_ID, Diagnosis)
 
 # Define movement ranges per study
-UCLA_seq_list <- seq(0.12, max(subset(UCLA_ABIDE_movement_data,
+UCLA_seq_list <- seq(0.24, max(subset(UCLA_ABIDE_movement_data,
                                       Study=="UCLA_CNP") %>%
                                  pull(Power)), by=0.02)
-ABIDE_seq_list <- seq(0.01, 1, by=0.04)
+ABIDE_seq_list <- seq(0.26, 1, by=0.02)
 
 ################################################################################
 # Balanced accuracy as a function of FD threshold for univariate combo

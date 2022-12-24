@@ -173,11 +173,38 @@ subjects_retained_by_motion <- function(movement_data,
 # Find # subjects retained per motion threshold by group
 UCLA_subjects_by_motion <- subjects_retained_by_motion(movement_data = subset(UCLA_ABIDE_movement_data, Study=="UCLA_CNP"),
                                                       motion_variable = "Power",
-                                                      motion_range=seq(0, 1.25, by=0.02))
+                                                      motion_range=seq(0, max(subset(UCLA_ABIDE_movement_data, Study=="UCLA_CNP") %>%
+                                                                                pull(Power)), by=0.02))
 ABIDE_subjects_by_motion <- subjects_retained_by_motion(movement_data = subset(UCLA_ABIDE_movement_data, Study=="ABIDE_ASD"),
                                                       motion_variable = "Power",
-                                                      motion_range=seq(0, 1.25, by=0.02))
+                                                      motion_range=seq(0, max(subset(UCLA_ABIDE_movement_data,
+                                                                                     Study=="ABIDE_ASD") %>%
+                                                                                pull(Power)), by=0.02))
 
+# Find threshold above which 75+ % of subjects are retained per group
+UCLA_range_to_evaluate <- UCLA_subjects_by_motion %>%
+  group_by(Diagnosis) %>%
+  # Find number of subjects needed to maintain 75% of sample size
+  mutate(Total_N_by_Group = max(Num_Subjects),
+         Threshold = ceiling(0.75*Total_N_by_Group)) %>% 
+  ungroup() %>%
+  group_by(Motion_Threshold) %>%
+  filter(all(Num_Subjects >= Threshold)) %>%
+  distinct(Motion_Threshold) %>%
+  pull(Motion_Threshold)
+
+ABIDE_range_to_evaluate <- ABIDE_subjects_by_motion %>%
+  group_by(Diagnosis) %>%
+  # Find number of subjects needed to maintain 75% of sample size
+  mutate(Total_N_by_Group = max(Num_Subjects),
+         Threshold = ceiling(0.75*Total_N_by_Group)) %>% 
+  ungroup() %>%
+  group_by(Motion_Threshold) %>%
+  filter(all(Num_Subjects >= Threshold)) %>%
+  distinct(Motion_Threshold) %>%
+  # Only look up to an FD power of 1
+  filter(Motion_Threshold <= 1) %>%
+  pull(Motion_Threshold)
 
 # Plot # of subjects retained per FD threshold by group
 # SCZ
@@ -185,12 +212,13 @@ UCLA_num_motion <- UCLA_subjects_by_motion %>%
   group_by(Diagnosis) %>%
   ggplot(data=., mapping=aes(x=Motion_Threshold, y=Num_Subjects, 
                              color=Diagnosis, group=Diagnosis)) +
-  geom_rect(aes(ymin=-Inf, ymax=Inf, xmin=0.12, xmax=0.5),
+  geom_rect(aes(ymin=-Inf, ymax=Inf, xmin=min(UCLA_range_to_evaluate), 
+                xmax=max(UCLA_range_to_evaluate)),
             color=NA, fill="gray85", alpha=0.5) +
   geom_line(size=1.75, alpha=0.9) +
   ylab("# Subjects") +
   scale_color_manual(values = c("#00B06D", "#737373")) +
-  scale_x_reverse(limits=c(1.2,0)) +
+  scale_x_reverse(limits=c(1,0)) +
   theme(legend.position="none",
         axis.title.x = element_blank(),
         strip.placement = "outside",
@@ -200,12 +228,14 @@ ABIDE_num_motion <- ABIDE_subjects_by_motion %>%
   mutate(Diagnosis = factor(Diagnosis, levels=c("Control", "ASD"))) %>%
   ggplot(data=., mapping=aes(x=Motion_Threshold, y=Num_Subjects, 
                              color=Diagnosis, group=Diagnosis)) +
-  geom_rect(aes(ymin=-Inf, ymax=Inf, xmin=0.01, xmax=1),
+  geom_rect(aes(ymin=-Inf, ymax=Inf, 
+                xmin=min(ABIDE_range_to_evaluate),
+                xmax=max(ABIDE_range_to_evaluate)),
             color=NA, fill="gray85", alpha=0.5) +
-  geom_line(size=1.75, alpha=0.8) +
+  geom_line(linewidth=1.75, alpha=0.8) +
   ylab("# Subjects") +
   scale_color_manual(values = c("#00B06D", "#737373")) +
-  scale_x_reverse(limits=c(1.2,0)) +
+  scale_x_reverse(limits=c(1,0)) +
   theme(legend.position="none",
         axis.title.x = element_blank(),
         strip.placement = "outside",
@@ -218,14 +248,16 @@ UCLA_perc_motion <- UCLA_subjects_by_motion %>%
   mutate(Perc_Subjects = Num_Subjects / max(Num_Subjects, na.rm=T)) %>%
   ggplot(data=., mapping=aes(x=Motion_Threshold, y=100*Perc_Subjects, 
                              color=Diagnosis, group=Diagnosis)) +
-  geom_rect(aes(ymin=-Inf, ymax=Inf, xmin=0.12, xmax=0.6),
+  geom_rect(aes(ymin=-Inf, ymax=Inf, 
+                xmin=min(UCLA_range_to_evaluate), 
+                xmax=max(UCLA_range_to_evaluate)),
             color=NA, fill="gray85", alpha=0.5) +
   geom_line(size=1.75, alpha=0.9) +
   ylab("% of Subjects") +
   labs(color="Group") +
   xlab("Movement (mFD-Power)\nMaximum Threshold") +
   scale_color_manual(values = c("#00B06D", "#737373")) +
-  scale_x_reverse(limits=c(1.2,0)) +
+  scale_x_reverse(limits=c(1,0)) +
   theme(legend.position="bottom",
         strip.placement = "outside",
         plot.title=element_text(hjust=0.5))
@@ -236,14 +268,16 @@ ABIDE_perc_motion <- ABIDE_subjects_by_motion %>%
   mutate(Perc_Subjects = Num_Subjects / max(Num_Subjects, na.rm=T)) %>%
   ggplot(data=., mapping=aes(x=Motion_Threshold, y=100*Perc_Subjects, 
                              color=Diagnosis, group=Diagnosis)) +
-  geom_rect(aes(ymin=-Inf, ymax=Inf, xmin=0.01, xmax=1),
+  geom_rect(aes(ymin=-Inf, ymax=Inf, 
+                xmin=min(ABIDE_range_to_evaluate),
+                xmax=max(ABIDE_range_to_evaluate)),
             color=NA, fill="gray85", alpha=0.5) +
   geom_line(size=1.75, alpha=0.9) +
   ylab("% of Subjects") +
   labs(color="Group") +
   xlab("Movement (mFD-Power)\nMaximum Threshold") +
   scale_color_manual(values = c("#00B06D", "#737373")) +
-  scale_x_reverse(limits=c(1.2,0)) +
+  scale_x_reverse(limits=c(1,0)) +
   theme(legend.position="bottom",
         strip.placement = "outside",
         plot.title=element_text(hjust=0.5))
