@@ -60,26 +60,42 @@ saveRDS(UCLA_CNP_ABIDE_ASD_movement,
 
 ############################# Univariate #######################################
 
-# Load UCLA CNP filtered and z-scored catch22 results
-UCLA_CNP_catch22 <- readRDS(paste0(rdata_path,
-                                   "UCLA_CNP_catch22_filtered_zscored.Rds")) %>%
+### univariate_feature_set 
+
+# Load UCLA CNP filtered and z-scored univariate_feature_set results
+UCLA_CNP_univariate_feature_set <- readRDS(paste0(rdata_path,
+                                                  sprintf("UCLA_CNP_%s_filtered_zscored.Rds",
+                                                          univariate_feature_set))) %>%
   filter(Noise_Proc == UCLA_CNP_noise_proc) %>%
   mutate(Study = "UCLA_CNP",
          feature_set = univariate_feature_set)
 
+# Load ABIDE ASD filtered and z-scored univariate_feature_set results
+ABIDE_ASD_univariate_feature_set <- readRDS(paste0(rdata_path,
+                                                   sprintf("ABIDE_ASD_%s_filtered_zscored.Rds",
+                                                           univariate_feature_set))) %>%
+  filter(Noise_Proc == ABIDE_ASD_noise_proc) %>%
+  mutate(Study = "ABIDE_ASD",
+         feature_set = univariate_feature_set)
+
+# Merge the univariate results
+UCLA_CNP_ABIDE_ASD_univariate_feature_set <- do.call(plyr::rbind.fill,
+                                                     list(UCLA_CNP_univariate_feature_set,
+                                                          ABIDE_ASD_univariate_feature_set)) %>%
+  dplyr::select(-method)
+
+# Save merged univariate features to an Rds file
+saveRDS(UCLA_CNP_ABIDE_ASD_univariate_feature_set, 
+        file=paste0(rdata_path, sprintf("UCLA_CNP_ABIDE_ASD_%s_filtered_zscored.Rds",
+                                        univariate_feature_set)))
+
+### catch2
 # Load UCLA CNP filtered catch2 results
 UCLA_CNP_catch2 <- readRDS(paste0(rdata_path, "UCLA_CNP_catch2_filtered.Rds")) %>%
   filter(Noise_Proc == UCLA_CNP_noise_proc) %>%
   filter(Sample_ID %in% unique(UCLA_CNP_catch22$Sample_ID)) %>%
   mutate(Study = "UCLA_CNP",
          feature_set = "catch2")
-
-# Load ABIDE ASD filtered and z-scored catch22 results
-ABIDE_ASD_catch22 <- readRDS(paste0(rdata_path,
-                                   "ABIDE_ASD_catch22_filtered_zscored.Rds")) %>%
-  filter(Noise_Proc == ABIDE_ASD_noise_proc) %>%
-  mutate(Study = "ABIDE_ASD",
-         feature_set = univariate_feature_set)
 
 # Load ABIDE ASD filtered catch2 results
 ABIDE_ASD_catch2 <- readRDS(paste0(rdata_path, "ABIDE_ASD_catch2_filtered.Rds")) %>%
@@ -89,17 +105,14 @@ ABIDE_ASD_catch2 <- readRDS(paste0(rdata_path, "ABIDE_ASD_catch2_filtered.Rds"))
          feature_set = "catch2")
 
 # Merge the univariate results
-UCLA_CNP_ABIDE_ASD_univariate_features <- do.call(plyr::rbind.fill,
-                                                  list(UCLA_CNP_catch22,
-                                                       UCLA_CNP_catch2,
-                                                       ABIDE_ASD_catch22,
-                                                       ABIDE_ASD_catch2)) %>%
+UCLA_CNP_ABIDE_ASD_catch2 <- do.call(plyr::rbind.fill,
+                                     list(UCLA_CNP_catch2,
+                                          ABIDE_ASD_catch2)) %>%
   dplyr::select(-method)
 
 # Save merged univariate features to an Rds file
-saveRDS(UCLA_CNP_ABIDE_ASD_univariate_features, 
-        file=paste0(rdata_path, "UCLA_CNP_ABIDE_ASD_", univariate_feature_set,
-                    "_and_catch2_filtered_zscored.Rds"))
+saveRDS(UCLA_CNP_ABIDE_ASD_catch2, 
+        file=paste0(rdata_path, "UCLA_CNP_ABIDE_ASD_catch2_filtered_zscored.Rds"))
 
 ############################ Pairwise ##########################################
 
@@ -110,14 +123,22 @@ saveRDS(UCLA_CNP_ABIDE_ASD_univariate_features,
 
 
 ################# Merge subjects with univariate + pairwise data ###############
-univariate_samples <- UCLA_CNP_ABIDE_ASD_univariate_features %>%
+
+# univariate_feature_set
+univariate_samples <- UCLA_CNP_ABIDE_ASD_univariate_feature_set %>%
   distinct(Sample_ID) %>%
   pull(Sample_ID)
-  
+
 saveRDS(univariate_samples,
         paste0(rdata_path, "UCLA_CNP_ABIDE_ASD_samples_with_univariate_",
                univariate_feature_set,
                "_and_pairwise_", pairwise_feature_set,
+               "_filtered.Rds"))
+
+# catch2
+saveRDS(univariate_samples,
+        paste0(rdata_path, "UCLA_CNP_ABIDE_ASD_samples_with_univariate_catch2_and_pairwise_", 
+               pairwise_feature_set,
                "_filtered.Rds"))
 
 ################# Organise the analysis contrasts per study ###############

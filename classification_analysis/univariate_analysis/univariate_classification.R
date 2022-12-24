@@ -5,14 +5,13 @@
 library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
-parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
-parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_CNP_ABIDE_ASD/")
+parser$add_argument("--github_dir", default="~/github/")
+parser$add_argument("--data_path", default="~/data/UCLA_CNP_ABIDE_ASD/")
 parser$add_argument("--sample_metadata_file", default="UCLA_CNP_ABIDE_ASD_sample_metadata.Rds")
 parser$add_argument("--pairwise_feature_set", default="pyspi14")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--dataset_ID", default="UCLA_CNP_ABIDE_ASD")
 parser$add_argument("--email")
-parser$add_argument("--add_catch2", action="store_true", default=FALSE)
 
 # Parse input arguments
 args <- parser$parse_args()
@@ -24,13 +23,11 @@ univariate_feature_set <- args$univariate_feature_set
 dataset_ID <- args$dataset_ID
 sample_metadata_file <- args$sample_metadata_file
 email <- args$email
-add_catch2 <- args$add_catch2
 # 
 # univariate_feature_set <- "catch22"
 # pairwise_feature_set <- "pyspi14"
 # github_dir <- "~/github/"
 # email <- "abry4213@uni.sydney.edu.au"
-# add_catch2 <- TRUE
 # data_path <- "~/data/UCLA_CNP_ABIDE_ASD/"
 # dataset_ID <- "UCLA_CNP_ABIDE_ASD"
 # sample_metadata_file <- "UCLA_CNP_ABIDE_ASD_sample_metadata.Rds"
@@ -151,30 +148,22 @@ svm_kernel = "linear"
 weighting_name <- "inv_prob"
 use_inv_prob_weighting <- TRUE
 
-if (add_catch2) {
-  output_file_RDS <- paste0(rdata_path, 
-                            sprintf("%s_univariate_CV_linear_SVM_%s_and_catch2_%s.Rds",
-                                    dataset_ID,
-                                    univariate_feature_set, 
-                                    weighting_name))
-} else {
-  output_file_RDS <- paste0(rdata_path, 
+output_file_RDS <- paste0(rdata_path, 
                             sprintf("%s_univariate_CV_linear_SVM_%s_%s.Rds",
                                     dataset_ID,
                                     univariate_feature_set, 
                                     weighting_name))
-}
 
 if (!file.exists(output_file_RDS)) {
   # Load non-control data 
   univariate_features_groups <- readRDS(paste0(rdata_path, "UCLA_CNP_ABIDE_ASD_", univariate_feature_set,
-                                               "_and_catch2_filtered_zscored.Rds")) %>%
+                                               "_filtered_zscored.Rds")) %>%
     left_join(., sample_metadata) %>%
     filter(Diagnosis != "Control")
   
   # Load control data
   univariate_features_controls <- readRDS(paste0(rdata_path, "UCLA_CNP_ABIDE_ASD_", univariate_feature_set,
-                                                 "_and_catch2_filtered_zscored.Rds")) %>%
+                                                 "_filtered_zscored.Rds")) %>%
     left_join(., sample_metadata) %>%
     filter(Diagnosis == "Control")
   
@@ -207,11 +196,6 @@ if (!file.exists(output_file_RDS)) {
     group_data_for_SVM_feature_set <- group_data_for_SVM %>%
       filter(feature_set == univariate_feature_set)
     
-    # If add catch2 flag is on, also prepare SVM data for catch2
-    if (add_catch2) {
-      group_data_for_SVM_catch2 <- subset(group_data_for_SVM, feature_set=="catch2")
-    }
-    
     # Run SVM
     for (j in 1:nrow(grouping_param_df)) {
       grouping_type = grouping_param_df$grouping_type[j]
@@ -235,29 +219,6 @@ if (!file.exists(output_file_RDS)) {
                Group_to_Compare = group_to_compare)
       
       univariate_class_res_list <- list.append(univariate_class_res_list, group_wise_SVM_CV_feature_set)
-      
-      # Check if add_catch2 flag is set
-      if (add_catch2) {
-        group_wise_SVM_CV_catch2 <- 1:length(group_folds) %>%
-          purrr::map_df( ~ run_univariate_cv_svm_by_input_var(feature_matrix = group_data_for_SVM_catch2,
-                                                              dataset_ID = dataset_ID,
-                                                              univariate_feature_set = "catch2",
-                                                              sample_groups = sample_groups,
-                                                              svm_kernel = svm_kernel,
-                                                              grouping_var = grouping_var,
-                                                              flds = group_folds[[.x]],
-                                                              repeat_number = .x,
-                                                              svm_feature_var = SVM_feature_var,
-                                                              out_of_sample_only = TRUE,
-                                                              use_inv_prob_weighting = use_inv_prob_weighting)) %>%
-          mutate(Study = study,
-                 Analysis_Type = grouping_type,
-                 Group_to_Compare = group_to_compare,
-                 univariate_feature_set = "catch2")
-        
-        
-        univariate_class_res_list <- list.append(univariate_class_res_list, group_wise_SVM_CV_catch2)
-      }
     }
   }
   univariate_class_res <- do.call(plyr::rbind.fill, univariate_class_res_list)
@@ -270,13 +231,9 @@ if (!file.exists(output_file_RDS)) {
 ################################################################################
 # Calculate balanced accuracy across folds/repeats
 
-output_file_name <- ifelse(add_catch2,
-                           paste0(rdata_path, sprintf("%s_univariate_CV_linear_SVM_%s_and_catch2_balanced_accuracy_by_repeats.Rds",
+output_file_name <- paste0(rdata_path, sprintf("%s_univariate_CV_linear_SVM_%s_balanced_accuracy_by_repeats.Rds",
                                                       dataset_ID,
-                                                      univariate_feature_set)),
-                           paste0(rdata_path, sprintf("%s_univariate_CV_linear_SVM_%s_balanced_accuracy_by_repeats.Rds",
-                                                      dataset_ID,
-                                                      univariate_feature_set)))
+                                                      univariate_feature_set))
 
 if (!file.exists(output_file_name)) { 
   # Find the balanced accuracy for each study and comparison group combo
@@ -325,13 +282,9 @@ find_balanced_accuracy_by_fold <- function(group, study, univariate_class_res) {
 
 
 # Save balanced accuracy results aggregated across repeats
-output_file_name <- ifelse(add_catch2,
-                           paste0(rdata_path, sprintf("%s_univariate_CV_linear_SVM_%s_and_catch2_balanced_accuracy.Rds",
+output_file_name <- paste0(rdata_path, sprintf("%s_univariate_CV_linear_SVM_%s_balanced_accuracy.Rds",
                                                       dataset_ID,
-                                                      univariate_feature_set)),
-                           paste0(rdata_path, sprintf("%s_univariate_CV_linear_SVM_%s_balanced_accuracy.Rds",
-                                                      dataset_ID,
-                                                      univariate_feature_set)))
+                                                      univariate_feature_set))
 
 if (!file.exists(output_file_name)) {
   balanced_accuracy_results <- 1:nrow(study_comparisons_to_control) %>%

@@ -1,6 +1,5 @@
 ##########################################################################################
 export github_dir=/headnode1/abry4213/github/
-export univariate_feature_set="catch22"
 export pairwise_feature_set="pyspi14"
 export email="abry4213@uni.sydney.edu.au"
 export conda_env="pyspi"
@@ -25,7 +24,6 @@ export noise_proc_UCLA="AROMA+2P+GMR"
 export noise_proc_ABIDE="FC1000"
 export label_vars="Diagnosis"
 export pkl_file="calc_pyspi14.pkl"
-export add_catch2="TRUE"
 
 # ##########################################################################################
 # Prepare the UCLA CNP data
@@ -42,40 +40,31 @@ bash $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/dataset_specific_files/
 cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/
 
 # # Univariate linear SVM
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file \
-# -N run_univariate_classification_${dataset_ID} \
-# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_out.txt \
-# -m a -M $email \
-# call_univariate_classification.pbs 
+# for univariate_feature_set in catch22 catch2; do
+#   qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file \
+#   -N run_univariate_classification_${dataset_ID} \
+#   -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_out.txt \
+#   -m a -M $email \
+#   call_univariate_classification.pbs 
+# done
 
 # Generate null model fits
-# # catch22
-# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/null_pbs_scripts/*${dataset_ID}*${univariate_feature_set}_inv_prob_null_model_fits* -name "null_iter_*.pbs")
-# for script in $null_perm_scripts; do
-#   echo "Now submitting $script"
-#   qsub $script
-# done
-# # catch2
-# null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/null_pbs_scripts/*${dataset_ID}*catch2_inv_prob_null_model_fits* -name "null_iter_*.pbs")
-# for script in $null_perm_scripts; do
-#   echo "Now submitting $script"
-#   qsub $script
+# for univariate_feature_set in catch22 catch2; do
+#   null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/null_pbs_scripts/*${dataset_ID}*${univariate_feature_set}_inv_prob_null_model_fits* -name "null_iter_*.pbs")
+#   for script in $null_perm_scripts; do
+#     echo "Now submitting $script"
+#     qsub $script
+#   done
 # done
 
 # # Integrate null model fits and calculate p-values
-# # catch22
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file \
-# -N run_univariate_null_model_analysis_${dataset_ID} \
-# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_${$univariate_feature_set}_out.txt \
-# -m a -M $email \
-# call_univariate_null_model_analysis.pbs 
-
-# # catch22
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=catch2,sample_metadata_file=$sample_metadata_file \
-# -N run_univariate_null_model_analysis_${dataset_ID} \
-# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_catch2_out.txt \
-# -m a -M $email \
-# call_univariate_null_model_analysis.pbs 
+# for univariate_feature_set in catch22 catch2; do
+#   qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file \
+#   -N run_univariate_null_model_analysis_${dataset_ID} \
+#   -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_${$univariate_feature_set}_out.txt \
+#   -m a -M $email \
+#   call_univariate_null_model_analysis.pbs 
+# done
 
 ##########################################################################################
 # Pairwise analysis

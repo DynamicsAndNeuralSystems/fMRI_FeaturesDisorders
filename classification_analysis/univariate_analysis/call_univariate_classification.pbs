@@ -18,8 +18,7 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript univariate_classification.R \
 --pairwise_feature_set $pairwise_feature_set \
 --univariate_feature_set $univariate_feature_set \
 --dataset_ID $dataset_ID \
---email $email \
---add_catch2"
+--email $email"
 echo $cmd
 $cmd
 
@@ -31,8 +30,7 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript generate_null_model_pbs_scripts.R \
 --pairwise_feature_set $pairwise_feature_set \
 --univariate_feature_set $univariate_feature_set \
 --dataset_ID $dataset_ID \
---email $email \
---add_catch2"
+--email $email"
 echo $cmd
 $cmd
 

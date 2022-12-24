@@ -119,9 +119,9 @@ k_fold_CV_linear_SVM <- function(input_data,
   # Use pre-specified folds if passed in,
   # Otherwise create train/test data folds
   if (is.null(flds) | shuffle_labels) {
-    flds <- caret::createFolds(input_data$Diagnosis, k = k, list = TRUE, returnTrain = FALSE)
+    flds_indices <- caret::createFolds(input_data$Diagnosis, k = k, list = TRUE, returnTrain = FALSE)
     # Map indices to sample IDs to avoid ambiguity
-    flds_subjects <- purrr::map(flds, ~ (input_data[.x,]) %>% pull(Sample_ID))
+    flds <- purrr::map(flds_indices, ~ (input_data[.x,]) %>% pull(Sample_ID))
   }
   
   # Create dataframe to store subject IDs and whether or not they were properly classified
@@ -131,7 +131,7 @@ k_fold_CV_linear_SVM <- function(input_data,
   for (fold in 1:k) {
     
     # Define test and train data
-    test_subjects <- flds_subjects[[fold]]
+    test_subjects <- flds[[fold]]
     train_subjects <- setdiff(unique(input_data$Sample_ID), test_subjects)
     
     # Training data
