@@ -56,7 +56,7 @@ SVM_balanced_accuracy_across_repeats <- readRDS(paste0(rdata_path, sprintf("%s_u
 ################################################################################
 
 weighting_name <- "inv_prob"
-grouping_types <- c("ROI", "Feature", "All")
+grouping_types <- c("ROI", "Feature", "Combo")
 grouping_vars <- c("Brain_Region", "Feature", "Combo")
 
 # Function to read in model permutatino null data for files in directory

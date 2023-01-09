@@ -108,30 +108,26 @@ read_in_sample_TS_data <- function(sample_ID, noise_proc,
 
 if (!file.exists(paste0(data_path, "raw_data/", dataset_ID, "_fMRI_TS.Rds"))) {
   noise_proc_TS_data_list <- list()
-  for (noise_proc in noise_procs) {
-    noise_label <- gsub("\\+", "_", noise_proc)
-    sample_IDs <- list.files(paste0(data_path, "raw_data/time_series_files/", noise_label)) %>%
-      gsub("_TS.csv", "", .)
-    np_TS_data <- sample_IDs %>%
-      purrr::map_df(~ read_in_sample_TS_data(sample_ID = .x,
-                                             noise_proc = noise_proc,
-                                             brain_region_lookup_table = brain_region_lookup_table))
-    noise_proc_TS_data_list <- list.append(noise_proc_TS_data_list, np_TS_data)
-  }
-  
-  full_TS_data <- do.call(plyr::rbind.fill, noise_proc_TS_data_list)
-  saveRDS(full_TS_data, paste0(data_path, "raw_data/",
-                               dataset_ID, "_fMRI_TS.Rds"))
+  noise_label <- gsub("\\+", "_", noise_proc)
+  sample_IDs <- list.files(paste0(data_path, "raw_data/time_series_files/", noise_label)) %>%
+    gsub("_TS.csv", "", .)
+  np_TS_data <- sample_IDs %>%
+    purrr::map_df(~ read_in_sample_TS_data(sample_ID = .x,
+                                            noise_proc = noise_proc,
+                                            brain_region_lookup_table = brain_region_lookup_table))
+
+  saveRDS(np_TS_data, paste0(data_path, "raw_data/",
+                               dataset_ID, "_", noise_label, "_fMRI_TS.Rds"))
 } else {
-  full_TS_data <- readRDS(paste0(data_path, "raw_data/",
-                                 dataset_ID, "_fMRI_TS.Rds"))
+  np_TS_data <- readRDS(paste0(data_path, "raw_data/",
+                                 dataset_ID, "_", noise_label,  "_fMRI_TS.Rds"))
 }
 
 
 #-------------------------------------------------------------------------------
 # Run catch22
 #-------------------------------------------------------------------------------
-catch22_all_samples(full_TS_data = full_TS_data,
+catch22_all_samples(np_TS_data = np_TS_data,
                     rdata_path = rdata_path,
                     dataset_ID = dataset_ID,
                     unique_columns = c("Sample_ID", "Brain_Region", "Noise_Proc"),

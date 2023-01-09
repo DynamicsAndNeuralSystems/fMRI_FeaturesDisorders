@@ -10,7 +10,7 @@ export config_file="$2"
 export email="$3"
 export dataset_ID="$4"
 export data_path="$5"
-export noise_procs="$6"
+export noise_proc="$6"
 export walltime_hrs="$7"
 export mem="$8"
 export ncpus="$9"
@@ -20,29 +20,24 @@ export conda_env="${12}"
 
 # Activate given conda env
 conda activate ${conda_env}
-
-noise_procs_list=$(echo $noise_procs | sed "s/;/ /g")
 export pyspi_script_dir=${github_dir}/pyspi-distribute/
 
-for noise_proc in $noise_procs_list
-do
-    noise_label=$(echo $noise_proc | sed "s/\+/_/g")
-    echo $noise_label
-    cmd="python $pyspi_script_dir/distribute_jobs.py \
-    --data_dir ${data_path}/${noise_label}/ \
-    --calc_file_name $calc_file_name \
-    --compute_file $pyspi_script_dir/pyspi_compute.py \
-    --template_pbs_file $pyspi_script_dir/template.pbs \
-    --pyspi_config $config_file \
-    --sample_yaml ${data_path}/${noise_label}/${sample_yaml} \
-    --pbs_notify a \
-    --email $email \
-    --conda_env $conda_env \
-    --walltime_hrs $walltime_hrs \
-    --cpu $ncpus \
-    --mem $mem \
-    --table_only \
-    --overwrite_pkl"
-    echo $cmd
-    $cmd
-done
+noise_label=$(echo $noise_proc | sed "s/\+/_/g")
+echo $noise_label
+cmd="python $pyspi_script_dir/distribute_jobs.py \
+--data_dir ${data_path}/${noise_label}/ \
+--calc_file_name $calc_file_name \
+--compute_file $pyspi_script_dir/pyspi_compute.py \
+--template_pbs_file $pyspi_script_dir/template.pbs \
+--pyspi_config $config_file \
+--sample_yaml ${data_path}/${noise_label}/${sample_yaml} \
+--pbs_notify a \
+--email $email \
+--conda_env $conda_env \
+--walltime_hrs $walltime_hrs \
+--cpu $ncpus \
+--mem $mem \
+--table_only \
+--overwrite_pkl"
+echo $cmd
+$cmd

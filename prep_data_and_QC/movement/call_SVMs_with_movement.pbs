@@ -16,7 +16,7 @@ github_dir=/headnode1/abry4213/github/fMRI_FeaturesDisorders
 mkdir -p $github_dir/cluster_output/
 
 # Run script
-Rscript $github_dir/data_prep_and_QC/movement/SVMs_with_movement.R 
+Rscript $github_dir/prep_data_and_QC/movement/SVMs_with_movement.R 
 
 exit
 

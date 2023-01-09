@@ -29,8 +29,8 @@ export pkl_file="calc_pyspi14.pkl"
 # # Prepare the UCLA CNP data
 # bash $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/dataset_specific_files/prepare_UCLA_data.sh
 
-# # Prepare the ABIDE ASD data
-# bash $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/dataset_specific_files/prepare_ABIDE_data.sh
+# Prepare the ABIDE ASD data
+bash $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/dataset_specific_files/prepare_ABIDE_data.sh
 
 # ##########################################################################################
 # # Merge the UCLA CNP and ABIDE ASD datasets that were pre-processed separately
@@ -58,13 +58,13 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysi
 # done
 
 # Integrate null model fits and calculate p-values
-for univariate_feature_set in catch22 catch2; do
-  qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file \
-  -N run_univariate_null_model_analysis_${dataset_ID}_${univariate_feature_set} \
-  -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_${univariate_feature_set}_out.txt \
-  -m a -M $email \
-  call_univariate_null_model_analysis.pbs
-done
+# for univariate_feature_set in catch22 catch2; do
+#   qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file \
+#   -N run_univariate_null_model_analysis_${dataset_ID}_${univariate_feature_set} \
+#   -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_${univariate_feature_set}_out.txt \
+#   -m a -M $email \
+#   call_univariate_null_model_analysis.pbs
+# done
 
 ##########################################################################################
 # Pairwise analysis
