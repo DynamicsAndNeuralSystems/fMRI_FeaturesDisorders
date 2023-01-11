@@ -162,7 +162,7 @@ if (!file.exists(paste0(rdata_path, dataset_ID, "_samples_per_10_folds_10_repeat
 # Define weighting parameters
 ################################################################################
 # Use a linear kernel
-kernel = "linear"
+svm_kernel = "linear"
 weighting_name <- "inv_prob"
 use_inv_prob_weighting <- TRUE
 
@@ -213,17 +213,22 @@ if (!file.exists(output_file_RDS)) {
       SVM_feature_var = grouping_param_df$SVM_feature_var[j]
       
       group_wise_SVM_CV_feature_set <- 1:length(group_folds) %>%
+        
+      test <- 1 %>%
         purrr::map_df( ~ run_pairwise_cv_svm_by_input_var(feature_matrix = group_data_for_SVM_feature_set,
-                                                            dataset_ID = dataset_ID,
-                                                            pairwise_feature_set = pairwise_feature_set,
-                                                            sample_groups = sample_groups,
-                                                            svm_kernel = svm_kernel,
-                                                            grouping_var = grouping_var,
-                                                            svm_feature_var = SVM_feature_var,
-                                                            flds = group_folds[[.x]],
-                                                            repeat_number = .x,
-                                                            out_of_sample_only = TRUE,
-                                                            use_inv_prob_weighting = use_inv_prob_weighting)) %>%
+                                                          dataset_ID = dataset_ID,
+                                                          pairwise_feature_set = pairwise_feature_set,
+                                                          sample_groups = sample_groups,
+                                                          SPI_directionality = SPI_directionality,
+                                                          svm_kernel = svm_kernel,
+                                                          grouping_var = grouping_var,
+                                                          svm_feature_var = SVM_feature_var,
+                                                          flds = group_folds[[.x]],
+                                                          repeat_number = .x,
+                                                          out_of_sample_only = TRUE,
+                                                          drop_NaN = FALSE,
+                                                          impute_NaN = TRUE,
+                                                          use_inv_prob_weighting = use_inv_prob_weighting)) %>%
         mutate(Study = study,
                Analysis_Type = grouping_type,
                Group_to_Compare = group_to_compare)

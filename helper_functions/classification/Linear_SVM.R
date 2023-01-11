@@ -312,10 +312,11 @@ run_univariate_cv_svm_by_input_var <- function(feature_matrix,
 # Run pairwise PYSPI multi-feature linear SVM by input feature
 #-------------------------------------------------------------------------------
 run_pairwise_cv_svm_by_input_var <- function(feature_matrix,
-                                               dataset_ID = "UCLA_CNP_ABIDE_ASD",
-                                               svm_kernel = "linear",
-                                               repeat_number = 1,
-                                               pairwise_feature_set = "pyspi14",
+                                             dataset_ID = "UCLA_CNP_ABIDE_ASD",
+                                             svm_kernel = "linear",
+                                             repeat_number = 1,
+                                             pairwise_feature_set = "pyspi14",
+                                             sample_groups,
                                              SPI_directionality,
                                              grouping_var = "SPI",
                                              svm_feature_var = "region_pair",
@@ -461,16 +462,16 @@ run_pairwise_cv_svm_by_input_var <- function(feature_matrix,
     # Only move forward if more than 50% of original data is retained
     if (nrow(data_for_SVM) > 0.5*length(unique(feature_matrix$Sample_ID))) {
       SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
-                                        flds = flds,
-                                        k = num_k_folds,
-                                        svm_kernel = svm_kernel,
-                                        sample_wts = sample_wts,
-                                        shuffle_labels = shuffle_labels,
-                                        out_of_sample_only = out_of_sample_only) %>%
-      dplyr::mutate(grouping_var = group_var,
-                    repeat_number = repeat_number,
-                    univariate_feature_set = univariate_feature_set,
-                    num_SVM_features = ncol(data_for_SVM) - 2)
+                                          flds = flds,
+                                          k = num_k_folds,
+                                          svm_kernel = svm_kernel,
+                                          sample_wts = sample_wts,
+                                          shuffle_labels = shuffle_labels,
+                                          out_of_sample_only = out_of_sample_only) %>%
+        dplyr::mutate(grouping_var = group_var,
+                      repeat_number = repeat_number,
+                      univariate_feature_set = univariate_feature_set,
+                      num_SVM_features = ncol(data_for_SVM) - 2)
     } else {
       cat("\nNot enough observations available for", group_var, "after filtering.\n")
     }
