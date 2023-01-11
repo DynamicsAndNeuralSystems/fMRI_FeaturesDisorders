@@ -8,8 +8,9 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 parser$add_argument("--github_dir", default="~/github/")
 parser$add_argument("--data_path", default="~/data/UCLA_CNP_ABIDE_ASD/")
 parser$add_argument("--sample_metadata_file", default="UCLA_CNP_ABIDE_ASD_sample_metadata.Rds")
-parser$add_argument("--pairwise_feature_set", default="pyspi14")
 parser$add_argument("--univariate_feature_set", default="catch22")
+parser$add_argument("--input_feature_data_file")
+parser$add_argument("--pairwise_feature_set", default="pyspi14")
 parser$add_argument("--dataset_ID", default="UCLA_CNP_ABIDE_ASD")
 parser$add_argument("--email")
 
@@ -20,6 +21,7 @@ data_path <- args$data_path
 rdata_path <- args$rdata_path
 pairwise_feature_set <- args$pairwise_feature_set
 univariate_feature_set <- args$univariate_feature_set
+input_feature_data_file <- args$input_feature_data_file
 dataset_ID <- args$dataset_ID
 sample_metadata_file <- args$sample_metadata_file
 email <- args$email
@@ -30,6 +32,7 @@ email <- args$email
 # email <- "abry4213@uni.sydney.edu.au"
 # data_path <- "~/data/UCLA_CNP_ABIDE_ASD/"
 # dataset_ID <- "UCLA_CNP_ABIDE_ASD"
+# input_feature_data_file <- "UCLA_CNP_AROMA_2P_GMR_ABIDE_ASD_FC1000_catch22_filtered_zscored.Rds"
 # sample_metadata_file <- "UCLA_CNP_ABIDE_ASD_sample_metadata.Rds"
 
 rdata_path <- paste0(data_path, "processed_data/Rdata/")
@@ -58,6 +61,21 @@ subjects_to_use <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariat
 # Load sample metadata
 sample_metadata <- readRDS(paste0(data_path, "study_metadata/", sample_metadata_file)) %>%
   filter(Sample_ID %in% subjects_to_use)
+
+################################################################################
+# Load univariate feature data
+################################################################################
+univariate_feature_data <- readRDS(paste0(rdata_path, input_feature_data_file))
+
+# Load case data
+univariate_features_groups <- univariate_feature_data %>%
+    left_join(., sample_metadata) %>%
+    filter(Diagnosis != "Control")
+  
+# Load control data
+univariate_features_controls <- univariate_feature_data %>%
+  left_join(., sample_metadata) %>%
+  filter(Diagnosis == "Control")
 
 ################################################################################
 # Create 10 repeats of 10 folds to use for all analyses
@@ -156,16 +174,6 @@ output_file_RDS <- paste0(rdata_path,
 
 if (!file.exists(output_file_RDS)) {
   # Load non-control data 
-  univariate_features_groups <- readRDS(paste0(rdata_path, "UCLA_CNP_ABIDE_ASD_", univariate_feature_set,
-                                               "_filtered_zscored.Rds")) %>%
-    left_join(., sample_metadata) %>%
-    filter(Diagnosis != "Control")
-  
-  # Load control data
-  univariate_features_controls <- readRDS(paste0(rdata_path, "UCLA_CNP_ABIDE_ASD_", univariate_feature_set,
-                                                 "_filtered_zscored.Rds")) %>%
-    left_join(., sample_metadata) %>%
-    filter(Diagnosis == "Control")
   
   univariate_class_res_list <- list()
   

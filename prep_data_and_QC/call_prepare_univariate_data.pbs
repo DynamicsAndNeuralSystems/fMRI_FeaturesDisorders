@@ -14,12 +14,11 @@ mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/
 # Call R script
 Rscript prepare_univariate_data.R \
 --github_dir $github_dir \
---data_path /headnode1/abry4213/data/$dataset_ID/ \
+--data_path $data_path \
 --univariate_feature_set $univariate_feature_set \
 --sample_metadata_file $sample_metadata_file \
---label_vars $label_vars \
 --brain_region_lookup $brain_region_lookup \
---noise_procs $noise_procs \
+--noise_proc $noise_proc \
 --dataset_ID $dataset_ID \
 --add_catch2
 

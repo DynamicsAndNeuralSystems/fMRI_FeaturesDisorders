@@ -1,11 +1,12 @@
 # Define paths specific to this dataset
 univariate_feature_set <- "catch22"
-subject_csv <- "participants.csv"
+subject_csv <- "UCLA_CNP_participants.csv"
 github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
-data_path <- "/headnode1/abry4213/data/UCLA_CNP/"
+data_path <- "/headnode1/abry4213/data/UCLA_CNP_ABIDE_ASD/"
 dataset_ID <- "UCLA_CNP"
 input_mat_file = "UCLA_time_series_four_groups.mat"
 noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
+subject_csv = "UCLA_CNP_participants.csv"
 
 # Load needed libraries
 require(plyr)
@@ -13,7 +14,7 @@ library(tidyverse)
 library(R.matlab)
 
 # Define output directory for time-series .txt files
-ts_output_dir <- paste0(data_path, "raw_data/time_series_files/")
+ts_output_dir <- paste0(data_path, "raw_data/", dataset_ID, "/time_series_files/")
 
 #-------------------------------------------------------------------------------
 # Function to load matlab .mat data and output time-series data as .txt files
@@ -36,10 +37,8 @@ mat_data_into_TXT_files <- function(input_mat_file,
   #-----------------------------------------------------------------------------
   # Load noise processing info
   cat("Cleaning noise-processing info:\n")
-  Noise_Proc <- reshape2::melt(mat_data$noiseOptions) %>%
-    dplyr::rename("noiseOptions" = "L1",
-                  "Noise_Proc" = "value") %>%
-    distinct(Noise_Proc, noiseOptions)
+  Noise_Proc <- data.frame(Noise_Proc = unlist(mat_data$noiseOptions)) %>%
+    mutate(noiseOptions = 1:n())
   print(Noise_Proc)
 
   
@@ -58,12 +57,8 @@ mat_data_into_TXT_files <- function(input_mat_file,
   
   #-----------------------------------------------------------------------------
   # Get unique IDs to join in identifiers
-  ids <- reshape2::melt(mat_data$subject.list) %>% 
-    group_by(value, L1) %>% 
-    distinct() %>%
-    dplyr::rename(Sample_ID = value,
-                  Subject_Index = L1) %>%
-    dplyr::select(c(Sample_ID, Subject_Index))
+  ids <- data.frame(Sample_ID = unlist(mat_data$subject.list)) %>% 
+    mutate(Subject_Index = dplyr::row_number())
   
   #-----------------------------------------------------------------------------
   
@@ -71,13 +66,17 @@ mat_data_into_TXT_files <- function(input_mat_file,
   # Retrieve labels and clean up diagnosis names
   subject_info <- read.csv(subject_csv) %>%
     dplyr::rename(Sample_ID = 1) %>%
-    distinct(Sample_ID, Diagnosis, age, gender) %>%
+    distinct(Sample_ID, diagnosis, age, gender) %>%
     semi_join(., ids) %>%
-    mutate(diagnosis = str_to_title(Diagnosis)) %>%
-    mutate(diagnosis = ifelse(Diagnosis == "Adhd", "ADHD", Diagnosis)) 
+    mutate(diagnosis = str_to_title(diagnosis)) %>%
+    mutate(diagnosis = ifelse(diagnosis == "Adhd", "ADHD", diagnosis)) %>%
+    dplyr::rename("Diagnosis" = "diagnosis",
+                  "Age" = "age",
+                  "Sex" = "gender") %>%
+    dplyr::select(Sample_ID:Sex)
   
   # Save .Rds file containing list of subjects with time-series data and diagnoses
-  saveRDS(subject_info, paste0(data_path, sprintf("%s_subjects_with_fMRI_TS_data.Rds",
+  saveRDS(subject_info, paste0(data_path, sprintf("processed_data/Rdata/%s_subjects_with_fMRI_TS_data.Rds",
                                                      dataset_ID)))
   
   #-----------------------------------------------------------------------------
@@ -91,7 +90,7 @@ mat_data_into_TXT_files <- function(input_mat_file,
     mutate(Brain_Region = gsub(" +", "", Brain_Region))
   
   # Save RDS mapping index to brain region name
-  saveRDS(ROI_info, file=paste0(data_path, sprintf("%s_Brain_Region_Lookup.Rds",
+  saveRDS(ROI_info, file=paste0(data_path, sprintf("study_metadata/%s_Brain_Region_Lookup.Rds",
                                                    dataset_ID)))
   
   #-----------------------------------------------------------------------------
@@ -106,8 +105,8 @@ mat_data_into_TXT_files <- function(input_mat_file,
   
   # Separate data into TS versus metadata
   metadata <- TS_data_full %>%
-    distinct(Sample_ID, Diagnosis, age, gender)
-  saveRDS(metadata, file=paste0(data_path, sprintf("%s_sample_metadata.Rds",
+    distinct(Sample_ID, Diagnosis, Age, Sex)
+  saveRDS(metadata, file=paste0(data_path, sprintf("study_metadata/%s_sample_metadata.Rds",
                                                     dataset_ID)))
   
   for (noise_proc in Noise_Proc$Noise_Proc) {
@@ -118,7 +117,7 @@ mat_data_into_TXT_files <- function(input_mat_file,
     
     # Make output directory
     np_output_dir = paste0(ts_output_dir, noise_label, "/")
-    icesTAF::mkdir(np_output_dir)
+    TAF::mkdir(np_output_dir)
     
     # Save a .csv file per sample
     for (sample in unique(noise_proc_subset$Sample_ID)) {
@@ -141,8 +140,8 @@ mat_data_into_TXT_files <- function(input_mat_file,
 # Prep data from .mat file
 #-------------------------------------------------------------------------------
 mat_data_into_TXT_files(input_mat_file=paste0(data_path, 
-                                              "raw_data/",
+                                              "raw_data/", dataset_ID, "/",
                                               input_mat_file), 
                         dataset_ID = dataset_ID,
-                        subject_csv=paste0(data_path, subject_csv), 
-                        data_path=data_path)
+                        subject_csv = paste0(data_path, "study_metadata/", subject_csv), 
+                        data_path = data_path)

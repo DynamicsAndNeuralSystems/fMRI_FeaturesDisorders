@@ -20,8 +20,11 @@ export data_path=/headnode1/abry4213/data/${dataset_ID}/
 export UCLA_sample_metadata_file=UCLA_sample_metadata.Rds
 export ABIDE_sample_metadata_file=ABIDE_sample_metadata.Rds
 export sample_metadata_file=UCLA_CNP_ABIDE_ASD_sample_metadata.Rds
-export noise_proc_UCLA="AROMA+2P+GMR"
-export noise_proc_ABIDE="FC1000"
+export noise_proc_UCLA_CNP="AROMA+2P+GMR"
+export noise_label_UCLA_CNP="AROMA_2P_GMR"
+export noise_proc_ABIDE_ASD="FC1000"
+export noise_label_ABIDE_ASD="FC1000"
+export uni_input_feature_data_file=
 export label_vars="Diagnosis"
 export pkl_file="calc_pyspi14.pkl"
 
@@ -29,19 +32,21 @@ export pkl_file="calc_pyspi14.pkl"
 # # Prepare the UCLA CNP data
 # bash $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/dataset_specific_files/prepare_UCLA_data.sh
 
-# Prepare the ABIDE ASD data
-bash $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/dataset_specific_files/prepare_ABIDE_data.sh
+# # Prepare the ABIDE ASD data
+# bash $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/dataset_specific_files/prepare_ABIDE_data.sh
 
 # ##########################################################################################
 # # Merge the UCLA CNP and ABIDE ASD datasets that were pre-processed separately
 # Rscript $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/dataset_specific_files/merge_UCLA_CNP_ABIDE_ASD_data.R
 
 ##########################################################################################
-cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/
+# Univariate analysis
+# cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/
 
 # # Univariate linear SVM
-# for univariate_feature_set in catch22 catch2; do
-#   qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file \
+# # for univariate_feature_set in catch22 catch24 catch2; do
+# for univariate_feature_set in catch22; do
+#   qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,input_feature_data_file=UCLA_CNP_${noise_label_UCLA_CNP}_ABIDE_ASD_${noise_label_ABIDE_ASD}_${univariate_feature_set}_filtered_zscored.Rds,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file \
 #   -N run_univariate_classification_${dataset_ID} \
 #   -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_out.txt \
 #   -m a -M $email \
@@ -49,7 +54,7 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysi
 # done
 
 # Generate null model fits
-# for univariate_feature_set in catch22 catch2; do
+# for univariate_feature_set in catch22 catch24 catch2; do
 #   null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/null_pbs_scripts/*${dataset_ID}*${univariate_feature_set}_inv_prob_null_model_fits* -name "null_iter_*.pbs")
 #   for script in $null_perm_scripts; do
 #     echo "Now submitting $script"
@@ -58,7 +63,7 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysi
 # done
 
 # Integrate null model fits and calculate p-values
-# for univariate_feature_set in catch22 catch2; do
+# for univariate_feature_set in catch22 catch24 catch2; do
 #   qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file \
 #   -N run_univariate_null_model_analysis_${dataset_ID}_${univariate_feature_set} \
 #   -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_null_model_analysis_${dataset_ID}_${univariate_feature_set}_out.txt \
@@ -69,13 +74,14 @@ cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysi
 ##########################################################################################
 # Pairwise analysis
 cd $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/
+export univariate_feature_set="catch22"
 
-# # Pairwise linear SVM
-# qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file  \
-# -N pairwise_classification${dataset_ID} \
-# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_classification_${dataset_ID}_out.txt \
-# -m a -M $email \
-# call_pairwise_classification.pbs 
+# Pairwise linear SVM
+qsub -v github_dir=$github_dir,data_path=$data_path,dataset_ID=$dataset_ID,input_feature_data_file=UCLA_CNP_${noise_label_UCLA_CNP}_ABIDE_ASD_${noise_label_ABIDE_ASD}_${pairwise_feature_set}_filtered_zscored.Rds,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file  \
+-N pairwise_classification${dataset_ID} \
+-o $github_dir/fMRI_FeaturesDisorders/cluster_output/pairwise_classification_${dataset_ID}_out.txt \
+-m a -M $email \
+call_pairwise_classification.pbs 
 
 # # Generate null model fits
 # null_perm_scripts=$(find ${github_dir}/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/null_pbs_scripts/*${dataset_ID}*${pairwise_feature_set}_inv_prob_null_model_fits* -name "null_iter*.pbs")

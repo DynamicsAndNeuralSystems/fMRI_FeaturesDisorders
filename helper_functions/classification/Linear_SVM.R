@@ -311,18 +311,16 @@ run_univariate_cv_svm_by_input_var <- function(feature_matrix,
 #-------------------------------------------------------------------------------
 # Run pairwise PYSPI multi-feature linear SVM by input feature
 #-------------------------------------------------------------------------------
-run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
-                                             dataset_ID,
-                                             data_path,
-                                             rdata_path,
-                                             sample_metadata,
+run_pairwise_cv_svm_by_input_var <- function(feature_matrix,
+                                               dataset_ID = "UCLA_CNP_ABIDE_ASD",
+                                               svm_kernel = "linear",
+                                               repeat_number = 1,
+                                               pairwise_feature_set = "pyspi14",
                                              SPI_directionality,
-                                             svm_kernel = "linear",
                                              grouping_var = "SPI",
                                              svm_feature_var = "region_pair",
                                              noise_proc = "AROMA+2P+GMR",
                                              num_k_folds = 10,
-                                             repeat_number = 1,
                                              flds = NULL,
                                              out_of_sample_only = TRUE,
                                              use_inv_prob_weighting = FALSE,
@@ -330,18 +328,6 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
                                              drop_NaN = TRUE,
                                              impute_NaN = FALSE) {
   
-  
-  if (is.null(rdata_path)) {
-    rdata_path <- paste0(data_path, "processed_data/Rdata/")
-  }
-  
-  # Get diagnosis proportions
-  sample_groups <- readRDS(paste0(rdata_path, sprintf("%s_samples_with_univariate_%s_and_pairwise_%s_filtered.Rds",
-                                                      dataset_ID,
-                                                      univariate_feature_set,
-                                                      pairwise_feature_set))) %>%
-    left_join(., sample_metadata) %>%
-    dplyr::select(Sample_ID, Diagnosis)
   
   # Define sample weights
   # Default is 1 and 1 if use_inv_prob_weighting is not included
@@ -359,8 +345,8 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   class_res_list <- list()
   
   # Rename names to SPI
-  if ("names" %in% colnames(pairwise_data)) {
-    pairwise_data <- pairwise_data %>%
+  if ("names" %in% colnames(feature_matrix)) {
+    feature_matrix <- feature_matrix %>%
       dplyr::rename("SPI" = "names")
   }
   
@@ -368,10 +354,10 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   if (svm_feature_var == "region_pair") {
     svm_feature_var_name = svm_feature_var
     grouping_var_name = "SPI"
-    grouping_var_vector <- unique(pairwise_data$SPI)
+    grouping_var_vector <- unique(feature_matrix$SPI)
     
     # Filter by directionality
-    pairwise_data <- pairwise_data %>%
+    feature_matrix <- feature_matrix %>%
       filter(brain_region_from != brain_region_to) %>%
       dplyr::rename("group_SPI" = "SPI") %>%
       group_by(group_SPI) %>%
@@ -390,21 +376,21 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   } else if (svm_feature_var == "SPI") {
     
     # Don't want to filter by directionality
-    pairwise_data <- pairwise_data %>%
+    feature_matrix <- feature_matrix %>%
       rowwise() %>%
       tidyr::unite("region_pair", c(brain_region_from, brain_region_to), sep="_") %>%
       distinct(Sample_ID, SPI, region_pair, .keep_all = T)
     
     svm_feature_var_name = svm_feature_var
     grouping_var_name = "region_pair"
-    grouping_var_vector <- unique(pairwise_data$region_pair)
+    grouping_var_vector <- unique(feature_matrix$region_pair)
     
   } else {
     svm_feature_var_name = "Combo"
     grouping_var_name = "Group_Var"
     
     # Filter by directionality
-    pyspi_data <- pyspi_data %>%
+    feature_matrix <- feature_matrix %>%
       rowwise() %>%
       tidyr::unite("region_pair", c(brain_region_from, brain_region_to), sep="_") %>%
       distinct(Sample_ID, SPI, region_pair, .keep_all = T) %>%
@@ -420,7 +406,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
   # Reshape data from long to wide for SVM
   for (group_var in unique(grouping_var_vector)) {
     if (grouping_var == "Combo") {
-      data_for_SVM <- pairwise_data %>%
+      data_for_SVM <- feature_matrix %>%
         dplyr::ungroup() %>%
         dplyr::select(Sample_ID, Diagnosis, Combo, values) 
       
@@ -445,7 +431,7 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
       
     } else {
       # Otherwise iterate over each separate group
-      data_for_SVM <- subset(pairwise_data, get(grouping_var_name) == group_var) %>%
+      data_for_SVM <- subset(feature_matrix, get(grouping_var_name) == group_var) %>%
         dplyr::ungroup() %>%
         dplyr::select(Sample_ID, Diagnosis, all_of(svm_feature_var_name), values) 
       # Drop any NA/NaN if indicated
@@ -473,28 +459,18 @@ run_pairwise_cv_svm_by_input_var <- function(pairwise_data,
     }
     
     # Only move forward if more than 50% of original data is retained
-    if (nrow(data_for_SVM) > 0.5*length(unique(pairwise_data$Sample_ID))) {
-      # Run k-fold linear SVM
-      tryCatch({SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
-                                                    flds = flds,
-                                                    k = num_k_folds,
-                                                    svm_kernel = svm_kernel,
-                                                    sample_wts = sample_wts,
-                                                    shuffle_labels = shuffle_labels,
-                                                    out_of_sample_only = out_of_sample_only) %>%
-        dplyr::mutate(grouping_var = group_var,
-                      repeat_number = repeat_number,
-                      pairwise_feature_set = pairwise_feature_set,
-                      use_inv_prob_weighting = use_inv_prob_weighting,
-                      Noise_Proc = noise_proc,
-                      num_SVM_features = ncol(data_for_SVM) - 2)
-      
-      # Append results to list
-      class_res_list <- list.append(class_res_list, SVM_results)
-      }, error = function(e) {
-        cat("Error for", group_var, "\n")
-        message(e)
-      })
+    if (nrow(data_for_SVM) > 0.5*length(unique(feature_matrix$Sample_ID))) {
+      SVM_results <- k_fold_CV_linear_SVM(input_data = data_for_SVM,
+                                        flds = flds,
+                                        k = num_k_folds,
+                                        svm_kernel = svm_kernel,
+                                        sample_wts = sample_wts,
+                                        shuffle_labels = shuffle_labels,
+                                        out_of_sample_only = out_of_sample_only) %>%
+      dplyr::mutate(grouping_var = group_var,
+                    repeat_number = repeat_number,
+                    univariate_feature_set = univariate_feature_set,
+                    num_SVM_features = ncol(data_for_SVM) - 2)
     } else {
       cat("\nNot enough observations available for", group_var, "after filtering.\n")
     }

@@ -22,12 +22,12 @@ export label_vars="Diagnosis"
 export pyspi_walltime_hrs=1
 export pkl_file="calc_pyspi14.pkl"
 
-# # Prep univariate data
-# qsub -v dataset_ID=$dataset_ID,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_proc=$noise_proc \
-# -N prepare_univariate_data_${dataset_ID} \
-# -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}_out.txt \
-# -m a \
-# call_prepare_univariate_data.pbs
+# Prep univariate data
+qsub -v dataset_ID=$dataset_ID,data_path=$data_path,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_proc=$noise_proc \
+-N prepare_univariate_data_${dataset_ID} \
+-o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}_out.txt \
+-m a \
+call_prepare_univariate_data.pbs
 
 # # Prep pairwise data
 # # Get data into .npy files
@@ -54,9 +54,9 @@ export pkl_file="calc_pyspi14.pkl"
 # $sample_yaml \
 # $conda_env
 
-# Integrate results from pyspi-distribute
-qsub -v github_dir=$github_dir,data_path=$data_path,pkl_file=$pkl_file,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_proc=$noise_proc,dataset_ID=$dataset_ID \
--N clean_pairwise_data_${dataset_ID} \
--o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}_out.txt \
--m a -M $email \
-call_clean_pairwise_data.pbs
+# # Integrate results from pyspi-distribute
+# qsub -v github_dir=$github_dir,data_path=$data_path,pkl_file=$pkl_file,python_to_use=$python_to_use,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_proc=$noise_proc,dataset_ID=$dataset_ID \
+# -N clean_pairwise_data_${dataset_ID} \
+# -o ${github_dir}/fMRI_FeaturesDisorders/cluster_output/clean_pairwise_data_${dataset_ID}_out.txt \
+# -m a -M $email \
+# call_clean_pairwise_data.pbs

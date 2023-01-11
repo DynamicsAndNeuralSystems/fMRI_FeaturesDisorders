@@ -15,8 +15,9 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript univariate_classification.R \
 --github_dir $github_dir \
 --data_path $data_path \
 --sample_metadata_file $sample_metadata_file \
---pairwise_feature_set $pairwise_feature_set \
 --univariate_feature_set $univariate_feature_set \
+--pairwise_feature_set $pairwise_feature_set \
+--input_feature_data_file $input_feature_data_file \
 --dataset_ID $dataset_ID \
 --email $email"
 echo $cmd
@@ -27,8 +28,9 @@ cmd="/usr/physics/R/R-4.2.1/bin/Rscript generate_null_model_pbs_scripts.R \
 --github_dir $github_dir \
 --data_path $data_path \
 --sample_metadata_file $sample_metadata_file \
---pairwise_feature_set $pairwise_feature_set \
 --univariate_feature_set $univariate_feature_set \
+--pairwise_feature_set $pairwise_feature_set \
+--input_feature_data_file $input_feature_data_file \
 --dataset_ID $dataset_ID \
 --email $email"
 echo $cmd
