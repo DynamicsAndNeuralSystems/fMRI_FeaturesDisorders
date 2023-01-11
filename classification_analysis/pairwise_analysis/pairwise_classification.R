@@ -213,8 +213,6 @@ if (!file.exists(output_file_RDS)) {
       SVM_feature_var = grouping_param_df$SVM_feature_var[j]
       
       group_wise_SVM_CV_feature_set <- 1:length(group_folds) %>%
-        
-      test <- 1 %>%
         purrr::map_df( ~ run_pairwise_cv_svm_by_input_var(feature_matrix = group_data_for_SVM_feature_set,
                                                           dataset_ID = dataset_ID,
                                                           pairwise_feature_set = pairwise_feature_set,
