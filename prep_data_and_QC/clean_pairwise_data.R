@@ -7,12 +7,12 @@ library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--github_dir", default="/headnode1/abry4213/github/")
-parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_Schizophrenia/")
+parser$add_argument("--data_path", default="/headnode1/abry4213/data/UCLA_CNP/")
 parser$add_argument("--pkl_file", default="calc.pkl")
 parser$add_argument("--python_to_use", default="/headnode1/abry4213/.conda/envs/pyspi/bin/python3")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--pairwise_feature_set", default="pyspi14")
-parser$add_argument("--sample_metadata_file", default="UCLA_Schizophrenia_sample_metadata.Rds")
+parser$add_argument("--sample_metadata_file", default="UCLA_CNP_sample_metadata.Rds")
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
 parser$add_argument("--noise_proc", default="AROMA+2P+GMR")
 parser$add_argument("--dataset_ID", default="UCLA_CNP")
@@ -35,21 +35,22 @@ dataset_ID <- args$dataset_ID
 # pairwise_feature_set <- "pyspi14"
 # github_dir <- "/headnode1/abry4213/github/"
 # pkl_file <- "calc_pyspi14.pkl"
-# data_path <- "/headnode1/abry4213/data/UCLA_CNP_ABIDE_ASD/"
 
 # UCLA CNP
+# data_path <- "/headnode1/abry4213/data/UCLA_CNP/"
 # sample_metadata_file <- "UCLA_CNP_sample_metadata.Rds"
 # dataset_ID <- "UCLA_CNP"
 # noise_proc <- "AROMA+2P+GMR"
 # brain_region_lookup <- "UCLA_CNP_Brain_Region_info.csv"
 
 # ABIDE ASD
+# data_path <- "/headnode1/abry4213/data/UCLA_CNP/"
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
 # dataset_ID <- "ABIDE_ASD"
 # noise_proc <- "FC1000"
 # brain_region_lookup <- "ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 
-
+noise_label = gsub("\\+", "_", noise_proc)
 sample_metadata <- readRDS(paste0(data_path, "/study_metadata/", sample_metadata_file))
 pkl_data_path <- paste0(data_path, "raw_data/", dataset_ID, "/numpy_files/")
 
@@ -75,6 +76,7 @@ reticulate::use_python(python_to_use)
 library(reticulate)
 reticulate::source_python(paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/pickle_reader.py"))
 library(tidyverse)
+library(arrow)
 
 # Source QC functions
 source(paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/QC_functions_pairwise.R"))
@@ -92,9 +94,9 @@ read_pyspi_pkl_into_RDS <- function(pkl_data_path,
                                     rdata_path,
                                     sample_metadata,
                                     noise_proc = "AROMA+2P+GMR") {
+  
   noise_label = gsub("\\+", "_", noise_proc)
   cat("\nNow processing", noise_label, "\n")
-  
   # Define data path for this noise processing method
   np_data_path <- paste0(pkl_data_path, noise_label, "/")
   
@@ -215,3 +217,15 @@ run_QC_for_dataset(data_path = data_path,
                    dataset_ID = dataset_ID,
                    pairwise_feature_set = pairwise_feature_set,
                    noise_proc = noise_proc)
+
+# save filtered pyspi14 data to an apache feather file
+pyspi14_filtered_zscored <- readRDS(paste0(rdata_path, sprintf("%s_%s_%s_filtered_zscored.Rds",
+                                                               dataset_ID,
+                                                               noise_label,
+                                                               pairwise_feature_set))) %>%
+  filter(brain_region_from != brain_region_to)
+
+write_feather(pyspi14_filtered_zscored, paste0(rdata_path, sprintf("%s_%s_%s_filtered_zscored.feather",
+                                                                   dataset_ID,
+                                                                   noise_label,
+                                                                   pairwise_feature_set)))

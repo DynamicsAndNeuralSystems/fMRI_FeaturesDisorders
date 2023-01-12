@@ -24,7 +24,6 @@ export noise_proc_UCLA_CNP="AROMA+2P+GMR"
 export noise_label_UCLA_CNP="AROMA_2P_GMR"
 export noise_proc_ABIDE_ASD="FC1000"
 export noise_label_ABIDE_ASD="FC1000"
-export uni_input_feature_data_file=
 export label_vars="Diagnosis"
 export pkl_file="calc_pyspi14.pkl"
 

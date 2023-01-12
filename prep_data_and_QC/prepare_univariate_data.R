@@ -6,7 +6,7 @@ library(argparse)
 parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--github_dir", default="~/github/")
-parser$add_argument("--data_path", default="~/data/UCLA_CNP_ABIDE_ASD/")
+parser$add_argument("--data_path", default="~/data/UCLA_CNP/")
 parser$add_argument("--univariate_feature_set", default="catch22")
 parser$add_argument("--sample_metadata_file", default="UCLA_CNP_sample_metadata.Rds")
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
@@ -152,3 +152,14 @@ run_QC_for_univariate_dataset(data_path = data_path,
                                                    dataset_ID, "_", noise_label, "_fMRI_TS.Rds"),
                               noise_proc = noise_proc,
                               plot_dir = plot_dir)
+
+# save filtered catch22 data to a CSV
+catch22_filtered_zscored <- readRDS(paste0(rdata_path, sprintf("%s_%s_%s_filtered_zscored.Rds",
+                                                          dataset_ID,
+                                                          noise_label,
+                                                          univariate_feature_set)))
+                                                          
+write_feather(catch22_filtered_zscored, paste0(rdata_path, sprintf("%s_%s_%s_filtered_zscored.feather",
+                                                                   dataset_ID,
+                                                                   noise_label,
+                                                                   univariate_feature_set)))                                                     
