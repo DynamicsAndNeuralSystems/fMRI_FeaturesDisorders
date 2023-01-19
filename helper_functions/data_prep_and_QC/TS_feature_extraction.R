@@ -10,6 +10,7 @@
 
 require(theft) 
 require(tidyr)
+require(feather)
 
 #-------------------------------------------------------------------------------
 # Helper function to run catch22 with theft for all subject/brain region combos
@@ -49,23 +50,23 @@ catch22_all_samples <- function(full_TS_data,
     if (add_mean_SD) {
       # Save full catch24 feature set
       TS_catch24 <- TS_catch22
-      arrow::write_feather(TS_catch24, paste0(rdata_path, sprintf("%s_%s_catch24.feather",
+      feather::write_feather(TS_catch24, paste0(rdata_path, sprintf("%s_%s_catch24.feather",
                                                           dataset_ID, noise_label)))
       
       # Also save just catch22
       TS_catch22 <- TS_catch24 %>%
         filter(!(names %in% c("DN_Mean", "DN_Spread_Std")))
       
-      arrow::write_feather(TS_catch22, paste0(rdata_path, sprintf("%s_%s_catch22.feather", 
+      feather::write_feather(TS_catch22, paste0(rdata_path, sprintf("%s_%s_catch22.feather", 
                                                           dataset_ID, noise_label)))
       
       # Also save just catch2
       TS_catch2 <- TS_catch24 %>%
         filter(names %in% c("DN_Mean", "DN_Spread_Std"))
-      arrow::write_feather(TS_catch2, paste0(rdata_path, sprintf("%s_%s_catch2.feather", 
+      feather::write_feather(TS_catch2, paste0(rdata_path, sprintf("%s_%s_catch2.feather", 
                                                          dataset_ID, noise_label)))
     } else {
-      arrow::write_feather(TS_catch22, paste0(rdata_path, sprintf("%s_%s_catch22.feather", 
+      feather::write_feather(TS_catch22, paste0(rdata_path, sprintf("%s_%s_catch22.feather", 
                                                           dataset_ID, noise_label)))
     }
   }

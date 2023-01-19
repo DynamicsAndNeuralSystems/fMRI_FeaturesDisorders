@@ -1,5 +1,6 @@
 # Load needed libraries
 library(tidyverse)
+library(feather)
 
 # Define paths specific to the UCLA CNP dataset
 univariate_feature_set <- "catch22"
@@ -27,7 +28,7 @@ if (!file.exists(paste0(data_path,
     mutate(Diagnosis = ifelse(Diagnosis == "ADHD", "ADHD", str_to_title(Diagnosis)))
   
   # Save to a joint Rds file
-  arrow::write_feather(UCLA_CNP_metadata, 
+  feather::write_feather(UCLA_CNP_metadata, 
           paste0(data_path,
                       "study_metadata/UCLA_CNP_sample_metadata.feather"))
   

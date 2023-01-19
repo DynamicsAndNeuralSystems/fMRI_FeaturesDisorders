@@ -12,7 +12,7 @@ subject_csv = "UCLA_CNP_participants.csv"
 require(plyr)
 library(tidyverse)
 library(R.matlab)
-library(arrow)
+library(feather)
 
 # Define output directory for time-series .txt files
 ts_output_dir <- paste0(data_path, "raw_data/time_series_files/")
@@ -77,7 +77,7 @@ mat_data_into_TXT_files <- function(input_mat_file,
     dplyr::select(Sample_ID:Sex)
   
   # Save feather file containing list of subjects with time-series data and diagnoses
-  arrow::write_feather(subject_info, paste0(data_path, sprintf("processed_data/%s_subjects_with_fMRI_TS_data.feather",
+  feather::write_feather(subject_info, paste0(data_path, sprintf("processed_data/%s_subjects_with_fMRI_TS_data.feather",
                                                                dataset_ID)))
   
   #-----------------------------------------------------------------------------
@@ -91,7 +91,7 @@ mat_data_into_TXT_files <- function(input_mat_file,
     mutate(Brain_Region = gsub(" +", "", Brain_Region))
   
   # Save feather mapping index to brain region name
-  arrow::write_feather(ROI_info, paste0(data_path, sprintf("study_metadata/%s_Brain_Region_Lookup.feather",
+  feather::write_feather(ROI_info, paste0(data_path, sprintf("study_metadata/%s_Brain_Region_Lookup.feather",
                                                            dataset_ID)))
   
   #-----------------------------------------------------------------------------
@@ -107,7 +107,7 @@ mat_data_into_TXT_files <- function(input_mat_file,
   # Separate data into TS versus metadata
   metadata <- TS_data_full %>%
     distinct(Sample_ID, Diagnosis, Age, Sex)
-  arrow::write_feather(metadata, paste0(data_path, sprintf("study_metadata/%s_sample_metadata.feather",
+  feather::write_feather(metadata, paste0(data_path, sprintf("study_metadata/%s_sample_metadata.feather",
                                                            dataset_ID)))
   
   for (noise_proc in Noise_Proc$Noise_Proc) {

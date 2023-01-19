@@ -10,6 +10,7 @@ raw_data_input_dir <- paste0(data_path, "raw_data/harvard_oxford_cort_prob_2mm/"
 # Load needed libraries
 library(tidyverse)
 library(purrr)
+library(feather)
 
 # Define output directory for time-series .txt files
 ts_output_dir <- paste0(data_path, "raw_data/time_series_files/FC1000/")
@@ -38,5 +39,5 @@ metadata <- read.csv(paste0(data_path, "study_metadata/", participant_csv),
                 "Sex" = "sex",
                 "Age" = "age",
                 "ASD" = "asd")
-arrow::write_feather(metadata, paste0(data_path, sprintf("study_metadata/%s_sample_metadata.feather",
+feather::write_feather(metadata, paste0(data_path, sprintf("study_metadata/%s_sample_metadata.feather",
                                                          dataset_ID)))

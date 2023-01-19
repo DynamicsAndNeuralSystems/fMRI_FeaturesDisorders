@@ -42,13 +42,12 @@ call_prepare_univariate_data.pbs
 # ########################################################################################
 # Prep pairwise data
 # Get data into .npy files
-cmd="qsub -N prepare_pairwise_data_${dataset_ID} -q yossarian -j oe \
+qsub -N prepare_pairwise_data_${dataset_ID} -q yossarian -j oe \
 -v github_dir=$github_dir,conda_env=$conda_env,data_path=$data_path/raw_data/${dataset_ID},noise_proc=$noise_proc,dataset_ID=$dataset_ID,sample_metadata_file=$sample_metadata_file,label_vars=$label_vars \
 -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_pairwise_data_${dataset_ID}.txt \
 -l select=1:ncpus=1:mem=20GB -l walltime=2:00:00 -M $email -m a -V \
-prepare_pairwise_data.sh"
+prepare_pairwise_data.sh
 echo "Now preparing pairwise data"
-$cmd
 
 # Run pyspi-distribute
 echo "Now submitting pyspi-distribute jobs"

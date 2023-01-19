@@ -8,7 +8,7 @@
 
 library(tidyverse)
 library(theft)
-library(arrow)
+library(feather)
 
 #-------------------------------------------------------------------------------
 # Function to read in univariate TS feature data and return subjects with NA 
@@ -80,7 +80,7 @@ plot_NA_sample_ts <- function(dataset_ID = "UCLA_CNP",
                               noise_proc = "AROMA+2P+GMR") {
   
   if (length(NA_sample_IDs) > 0) {
-    ts_data <- arrow::read_feather(raw_TS_file)
+    ts_data <- feather::read_feather(raw_TS_file)
     
     ts_data %>%
       filter(Sample_ID %in% NA_sample_IDs) %>%
@@ -148,10 +148,10 @@ run_QC_for_univariate_dataset <- function(data_path,
   noise_label = gsub("\\+", "_", noise_proc)
   
   # Load sample metadata
-  sample_metadata <- arrow::read_feather(paste0(data_path, "study_metadata/", sample_metadata_file))
+  sample_metadata <- feather::read_feather(paste0(data_path, "study_metadata/", sample_metadata_file))
   
   # Load TS feature data and subset by noise_proc
-  TS_feature_data <- arrow::read_feather(paste0(rdata_path, dataset_ID, "_", noise_label, "_", 
+  TS_feature_data <- feather::read_feather(paste0(rdata_path, dataset_ID, "_", noise_label, "_", 
                                                 univariate_feature_set, ".feather")) %>%
     mutate(Feature_Set = univariate_feature_set)
   
@@ -182,7 +182,7 @@ run_QC_for_univariate_dataset <- function(data_path,
     dplyr::filter(Sample_ID %in% sample_metadata$Sample_ID)
   
   # Save filtered data to feather
-  arrow::write_feather(TS_feature_data_filtered, paste0(proc_rdata_path,
+  feather::write_feather(TS_feature_data_filtered, paste0(proc_rdata_path,
                                                         sprintf("%s_%s_%s_filtered.feather",
                                                                 dataset_ID,
                                                                 noise_label,
@@ -192,7 +192,7 @@ run_QC_for_univariate_dataset <- function(data_path,
   filtered_sample_info <- TS_feature_data_filtered %>%
     distinct(Sample_ID)                                            
   
-  arrow::write_feather(filtered_sample_info, paste0(proc_rdata_path, 
+  feather::write_feather(filtered_sample_info, paste0(proc_rdata_path, 
                                                     sprintf("%s_filtered_sample_info_%s_%s.feather",
                                                             dataset_ID,
                                                             noise_label,
@@ -208,7 +208,7 @@ run_QC_for_univariate_dataset <- function(data_path,
   TS_df_z <- z_score_feature_matrix(TS_feature_data = TS_feature_data_filtered,
                                     noise_proc = noise_proc)
   
-  arrow::write_feather(TS_df_z, paste0(proc_rdata_path, sprintf("%s_%s_%s_filtered_zscored.feather",
+  feather::write_feather(TS_df_z, paste0(proc_rdata_path, sprintf("%s_%s_%s_filtered_zscored.feather",
                                                                 dataset_ID,
                                                                 noise_label,
                                                                 univariate_feature_set)))

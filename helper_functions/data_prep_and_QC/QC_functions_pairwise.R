@@ -79,12 +79,12 @@ z_score_pairwise_feature_matrix <- function(TS_feature_data_filtered,
                                                values_var = "values", 
                                                method = "z-score")
   
-  saveRDS(TS_feature_data_z, file = paste0(proc_rdata_path, sprintf("%s_%s_%s_filtered_zscored.Rds",
+  feather::write_feather(TS_feature_data_z, file = paste0(proc_rdata_path, sprintf("%s_%s_%s_filtered_zscored.feather",
                                                                dataset_ID,
                                                                noise_label,
                                                                pairwise_feature_set)))
   
-  cat("\nZ-scored data saved to:", paste0(proc_rdata_path, sprintf("%s_%s_%s_filtered_zscored.Rds",
+  cat("\nZ-scored data saved to:", paste0(proc_rdata_path, sprintf("%s_%s_%s_filtered_zscored.feather",
                                                                         dataset_ID,
                                                                noise_label,
                                                               pairwise_feature_set)),
@@ -147,7 +147,7 @@ run_QC_for_dataset <- function(data_path = "/headnode1/abry4213/data/UCLA_CNP_AB
   
   # Load TS feature data and subset by noise_proc
   TS_feature_data <- readRDS(paste0(proc_rdata_path, dataset_ID, "_", noise_label, "_",
-                                    pairwise_feature_set, ".Rds")) %>%
+                                    pairwise_feature_set, ".feather")) %>%
     filter(Noise_Proc == noise_proc)
   
   # Samples identified with missing data for all SPIs:
@@ -181,24 +181,24 @@ run_QC_for_dataset <- function(data_path = "/headnode1/abry4213/data/UCLA_CNP_AB
     dplyr::filter(Sample_ID %in% sample_metadata$Sample_ID)
   
   # Save filtered data to RDS
-  saveRDS(TS_feature_data_filtered, file=paste0(proc_rdata_path,
-                                                sprintf("%s_%s_%s_filtered.Rds",
+  feather::write_feather(TS_feature_data_filtered, paste0(proc_rdata_path,
+                                                sprintf("%s_%s_%s_filtered.feather",
                                                         dataset_ID,
                                                         noise_label,
                                                         pairwise_feature_set)))
 
-  # Save sample data post-filtering to an `.Rds` file:
+  # Save sample data post-filtering to an `.feather` file:
   filtered_sample_info <- TS_feature_data_filtered %>%
     distinct(Sample_ID)
   
-  saveRDS(filtered_sample_info, file=paste0(proc_rdata_path, 
-                                            sprintf("%s_%s_filtered_sample_info_%s.Rds",
+  feather::write_feather(filtered_sample_info, paste0(proc_rdata_path, 
+                                            sprintf("%s_%s_filtered_sample_info_%s.feather",
                                                     dataset_ID,
                                                     noise_label,
                                                     pairwise_feature_set)))
   
   cat("Sample info saved to:", paste0(proc_rdata_path, 
-                                       sprintf("%s_%s_filtered_sample_info_%s.Rds",
+                                       sprintf("%s_%s_filtered_sample_info_%s.feather",
                                                dataset_ID,
                                                noise_label,
                                                pairwise_feature_set)), "\n")

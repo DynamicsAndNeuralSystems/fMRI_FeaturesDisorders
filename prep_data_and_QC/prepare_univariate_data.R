@@ -56,7 +56,7 @@ set.seed(127)
 # Load tidyverse
 library(tidyverse)
 library(theft)
-library(arrow)
+library(feather)
 
 #-------------------------------------------------------------------------------
 # Source helper scripts
@@ -125,10 +125,10 @@ if (!file.exists(paste0(data_path, "raw_data/",
                                            noise_proc = noise_proc,
                                            brain_region_lookup_table = brain_region_lookup_table))
   
-  arrow::write_feather(np_TS_data, paste0(data_path, "raw_data/",
+  feather::write_feather(np_TS_data, paste0(data_path, "raw_data/",
                                           dataset_ID, "_", noise_label, "_fMRI_TS.feather"))
 } else {
-  np_TS_data <- arrow::read_feather(paste0(data_path, "raw_data/",
+  np_TS_data <- feather::read_feather(paste0(data_path, "raw_data/",
                                            dataset_ID, "_", noise_label,  "_fMRI_TS.feather"))
 }
 

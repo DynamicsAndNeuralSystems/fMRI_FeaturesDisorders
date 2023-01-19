@@ -1,6 +1,6 @@
 # Load needed libraries
 library(tidyverse)
-library(arrow)
+library(feather)
 
 # Define paths specific to the UCLA CNP dataset
 univariate_feature_set <- "catch22"
@@ -26,7 +26,7 @@ if (!file.exists(paste0(data_path,
     filter(!is.na(Diagnosis))
   
   # Save to a joint feather file
-  arrow::write_feather(ABIDE_ASD_metadata, 
+  feather::write_feather(ABIDE_ASD_metadata, 
           paste0(data_path,
                       "study_metadata/ABIDE_ASD_sample_metadata.feather"))
   
