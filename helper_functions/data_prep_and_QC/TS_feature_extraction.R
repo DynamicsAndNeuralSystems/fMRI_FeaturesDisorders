@@ -27,7 +27,7 @@ catch22_all_samples <- function(full_TS_data,
   noise_label = gsub("\\+", "_", noise_proc)
   
   # Save resulting time-series features to an .Rds file
-  if (!file.exists(paste0(rdata_path, sprintf("%s_catch22.Rds", 
+  if (!file.exists(paste0(rdata_path, sprintf("%s_catch22.feather", 
                                               dataset_ID))) | overwrite) {
     
     # Merge columns into unique ID
@@ -43,29 +43,29 @@ catch22_all_samples <- function(full_TS_data,
                                             catch24 = add_mean_SD) %>%
       tidyr::separate("id", c(output_column_names), sep="__")
     
-    cat("\nNow saving resulting theft features to an .Rds file: \n", 
-        paste0(rdata_path, sprintf("%s_%s_catch22.Rds", 
+    cat("\nNow saving resulting theft features to a .feather file: \n", 
+        paste0(rdata_path, sprintf("%s_%s_catch22.feather", 
                                    dataset_ID, noise_label)))
     if (add_mean_SD) {
       # Save full catch24 feature set
       TS_catch24 <- TS_catch22
-      saveRDS(TS_catch24, file=paste0(rdata_path, sprintf("%s_%s_catch24.Rds",
+      arrow::write_feather(TS_catch24, paste0(rdata_path, sprintf("%s_%s_catch24.feather",
                                                           dataset_ID, noise_label)))
       
       # Also save just catch22
       TS_catch22 <- TS_catch24 %>%
         filter(!(names %in% c("DN_Mean", "DN_Spread_Std")))
       
-      saveRDS(TS_catch22, file=paste0(rdata_path, sprintf("%s_%s_catch22.Rds", 
+      arrow::write_feather(TS_catch22, paste0(rdata_path, sprintf("%s_%s_catch22.feather", 
                                                           dataset_ID, noise_label)))
       
       # Also save just catch2
       TS_catch2 <- TS_catch24 %>%
         filter(names %in% c("DN_Mean", "DN_Spread_Std"))
-      saveRDS(TS_catch2, file=paste0(rdata_path, sprintf("%s_%s_catch2.Rds", 
+      arrow::write_feather(TS_catch2, paste0(rdata_path, sprintf("%s_%s_catch2.feather", 
                                                          dataset_ID, noise_label)))
     } else {
-      saveRDS(TS_catch22, file=paste0(rdata_path, sprintf("%s_%s_catch22.Rds", 
+      arrow::write_feather(TS_catch22, paste0(rdata_path, sprintf("%s_%s_catch22.feather", 
                                                           dataset_ID, noise_label)))
     }
   }

@@ -1,8 +1,8 @@
 # Define paths specific to this dataset
 univariate_feature_set <- "catch22"
 subject_csv <- "UCLA_CNP_participants.csv"
-github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
-data_path <- "/headnode1/abry4213/data/UCLA_CNP_ABIDE_ASD/"
+github_dir <- "~/github/fMRI_FeaturesDisorders/"
+data_path <- "~/data/UCLA_CNP/"
 dataset_ID <- "UCLA_CNP"
 input_mat_file = "UCLA_time_series_four_groups.mat"
 noise_procs <- c("AROMA+2P", "AROMA+2P+GMR", "AROMA+2P+DiCER")
@@ -12,9 +12,10 @@ subject_csv = "UCLA_CNP_participants.csv"
 require(plyr)
 library(tidyverse)
 library(R.matlab)
+library(arrow)
 
 # Define output directory for time-series .txt files
-ts_output_dir <- paste0(data_path, "raw_data/", dataset_ID, "/time_series_files/")
+ts_output_dir <- paste0(data_path, "raw_data/time_series_files/")
 
 #-------------------------------------------------------------------------------
 # Function to load matlab .mat data and output time-series data as .txt files
@@ -40,7 +41,7 @@ mat_data_into_TXT_files <- function(input_mat_file,
   Noise_Proc <- data.frame(Noise_Proc = unlist(mat_data$noiseOptions)) %>%
     mutate(noiseOptions = 1:n())
   print(Noise_Proc)
-
+  
   
   #-----------------------------------------------------------------------------
   
@@ -75,9 +76,9 @@ mat_data_into_TXT_files <- function(input_mat_file,
                   "Sex" = "gender") %>%
     dplyr::select(Sample_ID:Sex)
   
-  # Save .Rds file containing list of subjects with time-series data and diagnoses
-  saveRDS(subject_info, paste0(data_path, sprintf("processed_data/Rdata/%s_subjects_with_fMRI_TS_data.Rds",
-                                                     dataset_ID)))
+  # Save feather file containing list of subjects with time-series data and diagnoses
+  arrow::write_feather(subject_info, paste0(data_path, sprintf("processed_data/%s_subjects_with_fMRI_TS_data.feather",
+                                                               dataset_ID)))
   
   #-----------------------------------------------------------------------------
   
@@ -89,9 +90,9 @@ mat_data_into_TXT_files <- function(input_mat_file,
                   "Brain_Region"="value") %>%
     mutate(Brain_Region = gsub(" +", "", Brain_Region))
   
-  # Save RDS mapping index to brain region name
-  saveRDS(ROI_info, file=paste0(data_path, sprintf("study_metadata/%s_Brain_Region_Lookup.Rds",
-                                                   dataset_ID)))
+  # Save feather mapping index to brain region name
+  arrow::write_feather(ROI_info, paste0(data_path, sprintf("study_metadata/%s_Brain_Region_Lookup.feather",
+                                                           dataset_ID)))
   
   #-----------------------------------------------------------------------------
   
@@ -106,8 +107,8 @@ mat_data_into_TXT_files <- function(input_mat_file,
   # Separate data into TS versus metadata
   metadata <- TS_data_full %>%
     distinct(Sample_ID, Diagnosis, Age, Sex)
-  saveRDS(metadata, file=paste0(data_path, sprintf("study_metadata/%s_sample_metadata.Rds",
-                                                    dataset_ID)))
+  arrow::write_feather(metadata, paste0(data_path, sprintf("study_metadata/%s_sample_metadata.feather",
+                                                           dataset_ID)))
   
   for (noise_proc in Noise_Proc$Noise_Proc) {
     noise_label = gsub("\\+", "_", noise_proc)
@@ -132,7 +133,7 @@ mat_data_into_TXT_files <- function(input_mat_file,
                     col.names = F, row.names=F)
       }
     }
-
+    
   }
 }
 
@@ -140,7 +141,7 @@ mat_data_into_TXT_files <- function(input_mat_file,
 # Prep data from .mat file
 #-------------------------------------------------------------------------------
 mat_data_into_TXT_files(input_mat_file=paste0(data_path, 
-                                              "raw_data/", dataset_ID, "/",
+                                              "raw_data/",
                                               input_mat_file), 
                         dataset_ID = dataset_ID,
                         subject_csv = paste0(data_path, "study_metadata/", subject_csv), 

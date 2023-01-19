@@ -1,18 +1,18 @@
 # Define paths specific to this dataset
 univariate_feature_set <- "catch22"
 participant_csv <- "ABIDE_ASD_participants.csv"
-github_dir <- "/headnode1/abry4213/github/fMRI_FeaturesDisorders/"
-data_path <- "/headnode1/abry4213/data/UCLA_CNP_ABIDE_ASD/"
+github_dir <- "~/github/fMRI_FeaturesDisorders/"
+data_path <- "~/data/ABIDE_ASD/"
 dataset_ID <- "ABIDE_ASD"
 noise_procs <- "FC1000"
-raw_data_input_dir <- paste0(data_path, "raw_data/", dataset_ID, "/harvard_oxford_cort_prob_2mm/")
+raw_data_input_dir <- paste0(data_path, "raw_data/harvard_oxford_cort_prob_2mm/")
 
 # Load needed libraries
 library(tidyverse)
 library(purrr)
 
 # Define output directory for time-series .txt files
-ts_output_dir <- paste0(data_path, "raw_data/", dataset_ID, "/time_series_files/FC1000/")
+ts_output_dir <- paste0(data_path, "raw_data/time_series_files/FC1000/")
 TAF::mkdir(ts_output_dir)
 
 # Find list of subjects with rsfMRI data
@@ -38,5 +38,5 @@ metadata <- read.csv(paste0(data_path, "study_metadata/", participant_csv),
                 "Sex" = "sex",
                 "Age" = "age",
                 "ASD" = "asd")
-saveRDS(metadata, file=paste0(data_path, sprintf("study_metadata/%s_sample_metadata.Rds",
-                                                 dataset_ID)))
+arrow::write_feather(metadata, paste0(data_path, sprintf("study_metadata/%s_sample_metadata.feather",
+                                                         dataset_ID)))

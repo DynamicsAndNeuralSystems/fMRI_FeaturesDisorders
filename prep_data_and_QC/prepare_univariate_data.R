@@ -30,21 +30,21 @@ add_catch2 <- args$add_catch2
 # add_catch2 <- TRUE
 
 # # UCLA CNP
-# data_path <- "~/data/UCLA_CNP_ABIDE_ASD/"
+# data_path <- "~/data/UCLA_CNP/"
 # dataset_ID <- "UCLA_CNP"
-# sample_metadata_file <- "UCLA_CNP_sample_metadata.Rds"
+# sample_metadata_file <- "UCLA_CNP_sample_metadata.feather"
 # noise_proc <- "AROMA+2P+GMR"
 # brain_region_lookup <- "UCLA_CNP_Brain_Region_info.csv"
 
 # # ABIDE ASD
-# data_path <- "~/data/UCLA_CNP_ABIDE_ASD/"
+# data_path <- "~/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
-# sample_metadata_file <- "ABIDE_ASD_sample_metadata.Rds"
+# sample_metadata_file <- "ABIDE_ASD_sample_metadata.feather"
 # noise_proc <- "FC1000"
 # brain_region_lookup <- "ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 
 noise_label <- gsub("\\+", "_", noise_proc)
-rdata_path <- paste0(data_path, "processed_data/Rdata/")
+rdata_path <- paste0(data_path, "processed_data/")
 plot_dir <- paste0(data_path, "plots/")
 
 TAF::mkdir(plot_dir)
@@ -56,6 +56,7 @@ set.seed(127)
 # Load tidyverse
 library(tidyverse)
 library(theft)
+library(arrow)
 
 #-------------------------------------------------------------------------------
 # Source helper scripts
@@ -91,11 +92,11 @@ brain_region_lookup_table <- read.csv(paste0(data_path, "study_metadata/", brain
 read_in_sample_TS_data <- function(sample_ID, dataset_ID, noise_proc,
                                    brain_region_lookup_table) {
   noise_label <- gsub("\\+", "_", noise_proc)
-  TS_data <- read.csv(paste0(data_path,
-                             "raw_data/", dataset_ID, "/time_series_files/",
-                             noise_label, "/",
-                             sample_ID, "_TS.csv"),
-                      header=F) %>%
+  tryCatch({TS_data <- read.csv(paste0(data_path,
+                                       "raw_data/time_series_files/",
+                                       noise_label, "/",
+                                       sample_ID, "_TS.csv"),
+                                header=F) %>%
     mutate(timepoint = 1:nrow(.)) %>%
     pivot_longer(cols = c(-timepoint),
                  names_to = "Index",
@@ -105,25 +106,30 @@ read_in_sample_TS_data <- function(sample_ID, dataset_ID, noise_proc,
            Index = as.numeric(gsub("X|V", "", Index))) %>%
     left_join(., brain_region_lookup_table) %>%
     dplyr::select(Sample_ID, Noise_Proc, Brain_Region, timepoint, values)
+  return(TS_data)},
+  error = function(e) {
+    cat("\nError for subject", sample_ID, "\n")
+    message(e)
+  })
 }
 
 if (!file.exists(paste0(data_path, "raw_data/",
-                        dataset_ID, "_", noise_label, "_fMRI_TS.Rds"))) {
+                        dataset_ID, "_", noise_label, "_fMRI_TS.feather"))) {
   noise_proc_TS_data_list <- list()
   noise_label <- gsub("\\+", "_", noise_proc)
-  sample_IDs <- list.files(paste0(data_path, "raw_data/", dataset_ID, "/time_series_files/", noise_label)) %>%
+  sample_IDs <- list.files(paste0(data_path, "raw_data/time_series_files/", noise_label)) %>%
     gsub("_TS.csv", "", .)
   np_TS_data <- sample_IDs %>%
     purrr::map_df(~ read_in_sample_TS_data(sample_ID = .x,
                                            dataset_ID = dataset_ID,
-                                            noise_proc = noise_proc,
-                                            brain_region_lookup_table = brain_region_lookup_table))
-
-  saveRDS(np_TS_data, paste0(data_path, "raw_data/",
-                               dataset_ID, "_", noise_label, "_fMRI_TS.Rds"))
+                                           noise_proc = noise_proc,
+                                           brain_region_lookup_table = brain_region_lookup_table))
+  
+  arrow::write_feather(np_TS_data, paste0(data_path, "raw_data/",
+                                          dataset_ID, "_", noise_label, "_fMRI_TS.feather"))
 } else {
-  np_TS_data <- readRDS(paste0(data_path, "raw_data/",
-                                 dataset_ID, "_", noise_label,  "_fMRI_TS.Rds"))
+  np_TS_data <- arrow::read_feather(paste0(data_path, "raw_data/",
+                                           dataset_ID, "_", noise_label,  "_fMRI_TS.feather"))
 }
 
 
@@ -142,24 +148,15 @@ catch22_all_samples(full_TS_data = np_TS_data,
 #-------------------------------------------------------------------------------
 # Perform QC for catch22 data
 #-------------------------------------------------------------------------------
-run_QC_for_univariate_dataset(data_path = data_path, 
-                              proc_rdata_path = rdata_path,
-                              sample_metadata_file = sample_metadata_file,
-                              dataset_ID = dataset_ID,
-                              univariate_feature_set = univariate_feature_set,
-                              add_catch2 = add_catch2,
-                              raw_TS_file = paste0(data_path, "raw_data/",
-                                                   dataset_ID, "_", noise_label, "_fMRI_TS.Rds"),
-                              noise_proc = noise_proc,
-                              plot_dir = plot_dir)
+for (feature_set in c("catch2", "catch22", "catch24")) {
+  run_QC_for_univariate_dataset(data_path = data_path, 
+                                proc_rdata_path = rdata_path,
+                                sample_metadata_file = sample_metadata_file,
+                                dataset_ID = dataset_ID,
+                                univariate_feature_set = feature_set,
+                                raw_TS_file = paste0(data_path, "raw_data/",
+                                                     dataset_ID, "_", noise_label, "_fMRI_TS.feather"),
+                                noise_proc = noise_proc,
+                                plot_dir = plot_dir)
+}
 
-# save filtered catch22 data to a CSV
-catch22_filtered_zscored <- readRDS(paste0(rdata_path, sprintf("%s_%s_%s_filtered_zscored.Rds",
-                                                          dataset_ID,
-                                                          noise_label,
-                                                          univariate_feature_set)))
-                                                          
-write_feather(catch22_filtered_zscored, paste0(rdata_path, sprintf("%s_%s_%s_filtered_zscored.feather",
-                                                                   dataset_ID,
-                                                                   noise_label,
-                                                                   univariate_feature_set)))                                                     
