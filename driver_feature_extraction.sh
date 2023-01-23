@@ -5,6 +5,7 @@ export email="abry4213@uni.sydney.edu.au"
 export conda_env="pyspi"
 export pyspi_ncpus=1
 export pyspi_mem=40
+export pyspi_config=${github_dir}/prep_data_and_QC/pyspi14_config.yaml
 export python_to_use=/headnode1/abry4213/.conda/envs/${conda_env}/bin/python3
 
 #module load Anaconda3-5.1.0
@@ -23,21 +24,25 @@ export noise_label="AROMA_2P_GMR"
 export label_vars="Diagnosis"
 export pkl_file="calc_pyspi14.pkl"
 
+cd $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/
+
 # ##########################################################################################
 # Read metadata into R and python
 echo "Now preparing metadata"
-Rscript prep_data_and_QC/dataset_specific_files/parse_metadata_${dataset_ID}.R
+Rscript dataset_specific_files/parse_metadata_${dataset_ID}.R
 
 # ##########################################################################################
 # Prep univariate data
 
 # Prep univariate data in R
 echo "Now preparing univariate data"
-qsub -v dataset_ID=$dataset_ID,data_path=$data_path,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_proc=$noise_proc \
--N prepare_univariate_data_${dataset_ID} \
--o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}_out.txt \
--m a \
-call_prepare_univariate_data.pbs
+for feature_set in catch2 catch22 catch24; do
+    qsub -v dataset_ID=$dataset_ID,data_path=$data_path,univariate_feature_set=$feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_proc=$noise_proc \
+    -N prepare_univariate_data_${dataset_ID} \
+    -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}_out.txt \
+    -m a \
+    call_prepare_univariate_data.pbs
+done
 
 # ########################################################################################
 # Prep pairwise data
@@ -51,7 +56,7 @@ echo "Now preparing pairwise data"
 
 # Run pyspi-distribute
 echo "Now submitting pyspi-distribute jobs"
-bash $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/call_run_pyspi_distribute.sh \
+cmd="bash $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/call_run_pyspi_distribute.sh \
 $github_dir \
 $pyspi_config \
 $email \
@@ -63,5 +68,7 @@ $pyspi_mem \
 $pyspi_ncpus \
 $pkl_file \
 $sample_yaml \
-$conda_env
+$conda_env"
+echo $cmd
+
 

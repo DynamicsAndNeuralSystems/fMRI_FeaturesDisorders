@@ -18,7 +18,7 @@ conda activate pyspi
 mkdir -p $github_dir/cluster_output/
 
 # Run script
-cmd="Rscript clean_pairwise_data.R \
+cmd="Rscript $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/clean_pairwise_data.R \
 --github_dir $github_dir \
 --data_path $data_path \
 --pkl_file $pkl_file \

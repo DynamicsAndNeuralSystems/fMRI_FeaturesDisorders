@@ -12,7 +12,7 @@ cd "$PBS_O_WORKDIR"
 mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/
 
 # Call R script
-Rscript prepare_univariate_data.R \
+Rscript $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/prepare_univariate_data.R \
 --github_dir $github_dir \
 --data_path $data_path \
 --univariate_feature_set $univariate_feature_set \
