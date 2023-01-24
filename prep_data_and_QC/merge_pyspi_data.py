@@ -103,7 +103,6 @@ def merge_calcs_into_df(proc_data_path,
 def filter_pyspi_data(proc_data_path,
                       dataset_ID,
                       noise_proc,
-                      univariate_feature_set,
                       pairwise_feature_set):
     
     # Set noise label for file paths
@@ -112,9 +111,6 @@ def filter_pyspi_data(proc_data_path,
     # Check if feather data file already exists
     if not os.path.isfile(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered.feather"):
         raw_pyspi_res = pd.read_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}.feather")
-        
-        # Load in data on samples with univariate feature data
-        univariate_data_to_keep = pd.read_feather(f"{proc_data_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}.feather")
         
         # Merge data into region pairs
         raw_pyspi_res["Region_Pair"] = raw_pyspi_res.brain_region_from + "_" + raw_pyspi_res.brain_region_to
@@ -145,17 +141,11 @@ def filter_pyspi_data(proc_data_path,
         # Drop any samples retained in samples_to_drop
         filtered_pyspi_res = (raw_pyspi_res[~raw_pyspi_res.Sample_ID.isin(samples_to_drop)]
                               .drop(["Region_Pair"], axis=1))
-        
-        # Filter by samples with univariate data available as well
-        filtered_pyspi_res = filtered_pyspi_res[filtered_pyspi_res.Sample_ID.isin(univariate_data_to_keep.Sample_ID)]
 
-        # Save file containing just the sample IDs
-        pairwise_data_to_keep = filtered_pyspi_res.Sample_ID.unique()
-        pairwise_data_to_keep.to_feather(f"{proc_data_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{pairwise_feature_set}.feather")
-        
+
         # Save filtered pyspi results to a feather file
         filtered_pyspi_res.to_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered.feather")
-
+       
 def z_score_filtered_pyspi_data(proc_data_path,
                       dataset_ID,
                       noise_proc,
@@ -178,6 +168,23 @@ def z_score_filtered_pyspi_data(proc_data_path,
         # Save to a feather file
         filtered_pyspi_data_zscored.to_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered_zscored.feather")
 
+def intersection_univariate_pairwise(proc_data_path, dataset_ID, noise_proc, univariate_feature_set, pairwise_feature_set):
+    # Set noise label for file paths
+    noise_label = noise_proc.replace("+", "_")
+
+    # Load in data on samples with univariate feature data
+    univariate_data_to_keep = pd.read_feather(f"{proc_data_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}.feather")
+    
+    # Load in data on samples with pairwise feature data
+    filtered_pyspi_data_zscored = pd.read_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered_zscored.feather")
+    pairwise_data_to_keep = pd.DataFrame(filtered_pyspi_data_zscored.Sample_ID.unique(), columns=["Sample_ID"])
+    pairwise_data_to_keep.to_feather(f"{proc_data_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{pairwise_feature_set}.feather")
+    
+    # Merge the two datasets
+    merged_sample_info = pd.merge(univariate_data_to_keep, pairwise_data_to_keep, how="inner")
+    merged_sample_info.to_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")
+    
+        
 merge_calcs_into_df(proc_data_path = proc_data_path,
                     pkl_data_path = pkl_data_path,
                     brain_region_lookup = data_path + "study_metadata/" + brain_region_lookup,
@@ -186,9 +193,15 @@ merge_calcs_into_df(proc_data_path = proc_data_path,
 filter_pyspi_data(proc_data_path = proc_data_path,
                   dataset_ID = dataset_ID,
                   noise_proc = noise_proc,
-                  univariate_feature_set = univariate_feature_set,
                   pairwise_feature_set = pairwise_feature_set)
 z_score_filtered_pyspi_data(proc_data_path = proc_data_path,
                   dataset_ID = dataset_ID,
                   noise_proc = noise_proc,
                   pairwise_feature_set = pairwise_feature_set)
+intersection_univariate_pairwise(proc_data_path = proc_data_path, 
+                  dataset_ID = dataset_ID, 
+                  noise_proc = noise_proc, 
+                  univariate_feature_set = univariate_feature_set, 
+                  pairwise_feature_set = pairwise_feature_set)
+
+

@@ -20,8 +20,9 @@ python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_an
 --data_path $data_path \
 --metadata_file $sample_metadata_file \
 --comparison_group $comparison_group \
---univariate_feature_set $feature_set \
---univariate_feature_file $feature_file \
+--univariate_feature_set $univariate_feature_set \
+--pairwise_feature_set $pairwise_feature_set \
+--univariate_feature_file $univariate_feature_file \
 --noise_proc $noise_proc \
 --num_null_iters $num_null_iters \
 --dataset_ID $dataset_ID

@@ -35,3 +35,9 @@ noise_label = noise_proc.replace("+", "_")
 univariate_sample_info = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}.feather")
 
 # Load info on subjects with pairwise data
+pairwise_sample_info = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{pairwise_feature_set}.feather")
+
+# Merge the two datasets
+merged_sample_info = pd.merge(univariate_sample_info, pairwise_sample_info, how="inner")
+merged_sample_info.to_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")
+

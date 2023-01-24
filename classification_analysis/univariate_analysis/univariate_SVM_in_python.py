@@ -11,6 +11,7 @@ parser.add_argument('--data_path', default="/headnode1/abry4213/data/UCLA_CNP/",
 parser.add_argument('--metadata_file', default="UCLA_CNP_sample_metadata.feather", dest='metadata_file')
 parser.add_argument('--comparison_group', default="Schizophrenia", dest='comparison_group')
 parser.add_argument('--univariate_feature_set', default='catch22', dest='univariate_feature_set')
+parser.add_argument('--pairwise_feature_set', default='pyspi14', dest='pairwise_feature_set')
 parser.add_argument('--univariate_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather", dest='univariate_feature_file')
 parser.add_argument('--noise_proc', dest='noise_proc')
 parser.add_argument('--num_null_iters', default=1000, dest='num_null_iters')
@@ -22,6 +23,7 @@ data_path = args.data_path
 metadata_file = args.metadata_file
 comparison_group = args.comparison_group
 univariate_feature_set = args.univariate_feature_set
+pairwise_feature_set = args.pairwise_feature_set
 univariate_feature_file = args.univariate_feature_file
 noise_proc = args.noise_proc
 num_null_iters = args.num_null_iters
@@ -32,6 +34,7 @@ dataset_ID = args.dataset_ID
 # metadata_file = "UCLA_CNP_sample_metadata.feather"
 # comparison_group = "Schizophrenia"
 # univariate_feature_set = "catch22"
+# pairwise_feature_set = "pyspi14"
 # univariate_feature_file ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather"
 # noise_proc = "AROMA+2P+GMR"
 # num_null_iters = 10
@@ -169,19 +172,31 @@ def run_nulls(feature_data,
         return null_balanced_accuracy
     
 def run_univariate_SVM(univariate_feature_file,
+                       univariate_feature_set, 
+                       pairwise_feature_set,
                        dataset_ID,
                        metadata_file,
                        comparison_to_control_group,
                        pydata_path,
+                       noise_proc,
                        num_null_iters):
+
+    # 
+    noise_label = noise_proc.replace("+", "_")
 
     # Load metadata
     metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
+
+    # Load in data containing subjects with both univariate and pairwise data available
+    samples_to_keep = pd.read_feather(f"{pydata_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
     
     # Univariate feature data
     univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
                                                                                axis = 1)
-    
+
+    # Filter univariate data by samples with both univariate and pairwise
+    # Filter by samples with univariate data available as well
+    univariate_feature_data = univariate_feature_data[univariate_feature_data.Sample_ID.isin(samples_to_keep.Sample_ID)]                                                                           
 
     # Initialise lists for results
     fold_assignments_list = []
