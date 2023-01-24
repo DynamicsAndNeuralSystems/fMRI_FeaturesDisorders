@@ -5,6 +5,7 @@ from scipy.stats import zscore
 import dill
 import argparse
 import os
+import pyarrow.feather as feather
 
 # Command-line arguments to parse
 parser = argparse.ArgumentParser(description='Process inputs for pairwise data preparation.')
@@ -26,9 +27,9 @@ pairwise_feature_set = args.pairwise_feature_set
 univariate_feature_set = args.univariate_feature_set
 brain_region_lookup = args.brain_region_lookup
 
-# data_path = "/Users/abry4213/data/UCLA_CNP/"
+# data_path = "/headnode1/abry4213/data/UCLA_CNP/"
 # dataset_ID = "UCLA_CNP"
-# pkl_file = "calc14_pyspi.pkl"
+# pkl_file = "calc_pyspi14.pkl"
 # noise_proc="AROMA+2P+GMR"
 # pairwise_feature_set = "pyspi14"
 # univariate_feature_set = "catch22"
@@ -50,7 +51,7 @@ def merge_calcs_into_df(proc_data_path,
     if not os.path.isfile(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}.feather"):
         # Where individual pickle data files will be read in from
         input_np_data_path = pkl_data_path + noise_label + "/"
-        
+    
         # Read in ROI index data
         ROI_lookup = pd.read_feather(brain_region_lookup)
         
@@ -98,7 +99,7 @@ def merge_calcs_into_df(proc_data_path,
                                       )
         
         # Save merged res into a feather file
-        full_pyspi_res_ROI.to_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}.feather")
+        feather.write_feather(full_pyspi_res_ROI, f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}.feather", version=1)
 
 def filter_pyspi_data(proc_data_path,
                       dataset_ID,
@@ -144,7 +145,7 @@ def filter_pyspi_data(proc_data_path,
 
 
         # Save filtered pyspi results to a feather file
-        filtered_pyspi_res.to_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered.feather")
+        feather.write_feather(filtered_pyspi_res, f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered.feather", version=1)
        
 def z_score_filtered_pyspi_data(proc_data_path,
                       dataset_ID,
@@ -160,14 +161,16 @@ def z_score_filtered_pyspi_data(proc_data_path,
         filtered_pyspi_data["value_zscored"] = (filtered_pyspi_data
          .groupby(['SPI'])
          .value
-         .transform(lambda x : zscore(x,ddof=1)))
+         .transform(lambda x : zscore(x,ddof=0, nan_policy='omit')))
         # Rename dataframe
         filtered_pyspi_data_zscored = (filtered_pyspi_data
                                        .drop(["value"], axis=1)
                                        .rename(columns={"value_zscored": "value"}))
         # Save to a feather file
-        filtered_pyspi_data_zscored.to_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered_zscored.feather")
-
+        feather.write_feather(filtered_pyspi_data_zscored, 
+                              f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered_zscored.feather",
+                              version=1)
+        
 def intersection_univariate_pairwise(proc_data_path, dataset_ID, noise_proc, univariate_feature_set, pairwise_feature_set):
     # Set noise label for file paths
     noise_label = noise_proc.replace("+", "_")
@@ -178,11 +181,15 @@ def intersection_univariate_pairwise(proc_data_path, dataset_ID, noise_proc, uni
     # Load in data on samples with pairwise feature data
     filtered_pyspi_data_zscored = pd.read_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered_zscored.feather")
     pairwise_data_to_keep = pd.DataFrame(filtered_pyspi_data_zscored.Sample_ID.unique(), columns=["Sample_ID"])
-    pairwise_data_to_keep.to_feather(f"{proc_data_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{pairwise_feature_set}.feather")
+    feather.write_feather(pairwise_data_to_keep,
+                          f"{proc_data_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{pairwise_feature_set}.feather",
+                          version=1)
     
     # Merge the two datasets
     merged_sample_info = pd.merge(univariate_data_to_keep, pairwise_data_to_keep, how="inner")
-    merged_sample_info.to_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")
+    feather.write_feather(merged_sample_info,
+                          f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather",
+                          version=1)
     
         
 merge_calcs_into_df(proc_data_path = proc_data_path,

@@ -33,21 +33,24 @@ export pyspi_walltime_hrs=2
 # # Run feature extraction
 # bash $github_dir/fMRI_FeaturesDisorders/run_feature_extraction.sh 
 
-# # Run feature cleaning
-# bash $github_dir/fMRI_FeaturesDisorders/run_feature_cleaning.sh
+# Run feature cleaning
+bash $github_dir/fMRI_FeaturesDisorders/run_feature_cleaning.sh
 
 # Run univariate linear SVM
 for comparison_group in Schizophrenia Bipolar ADHD; do
     for univariate_feature_set in catch2 catch22 catch24; do
-        qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_null_iters=$num_null_iters \
-        -N ${dataset_ID}_${comparison_group}_${feature_set} \
-        -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_${comparison_group}_${feature_set}_out.txt \
-        -m a \
+        univariate_feature_file=$data_path/processed_data/UCLA_CNP_AROMA_2P_GMR_${univariate_feature_set}_filtered_zscored.feather
+
+        qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_null_iters=$num_null_iters \
+        -N ${dataset_ID}_${comparison_group}_${univariate_feature_set} \
+        -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_out.txt \
+        -m a -M $email \
         $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_analysis/call_univariate_classification.pbs
     done
 done
+
 ##########################################################################################
-# # ABIDE ASD
+# ABIDE ASD
 
 # # Define data paths
 # export dataset_ID="ABIDE_ASD"

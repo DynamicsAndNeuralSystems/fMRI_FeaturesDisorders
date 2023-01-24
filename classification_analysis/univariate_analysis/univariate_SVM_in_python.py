@@ -2,6 +2,7 @@ import argparse
 import pandas as pd
 import numpy as np
 import random
+import pyarrow.feather as feather
 from sklearn import svm
 from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_validate, cross_val_score
 
@@ -356,12 +357,11 @@ def run_univariate_SVM(univariate_feature_file,
     null_balanced_accuracy_res["Comparison Group"] = comparison_to_control_group
         
     # Save results
-    fold_assignments_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_catch22_SVM_fold_assigments.feather")
-    SVM_coefficients_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_catch22_SVM_fold_SVM_coefficients.feather")
-    balanced_accuracy_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_catch22_SVM_balanced_accuracy.feather")
-    CV_sample_predictions_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_catch22_SVM_sample_predictions.feather")
-    null_balanced_accuracy_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_catch22_SVM_null_balanced_accuracy.feather")
-
+    feather.to_feather(fold_assignments_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_fold_assigments.feather", version=1)
+    feather.to_feather(SVM_coefficients_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_fold_SVM_coefficients.feather", version=1)
+    feather.to_feather(balanced_accuracy_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_balanced_accuracy.feather", version=1)
+    feather.to_feather(CV_sample_predictions_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_sample_predictions.feather", version=1)
+    feather.to_feather(null_balanced_accuracy_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_null_balanced_accuracy.feather", version=1)
 
                                
 ###############################################################################
@@ -369,9 +369,12 @@ def run_univariate_SVM(univariate_feature_file,
 ###############################################################################
 
 run_univariate_SVM(univariate_feature_file=univariate_feature_file,
+                       univariate_feature_set=univariate_feature_set, 
+                       pairwise_feature_set=pairwise_feature_set,
                        num_null_iters=num_null_iters,
                        dataset_ID=dataset_ID,
                        metadata_file=metadata_file,
+                       noise_proc=noise_proc,
                        comparison_to_control_group=comparison_group,
                        pydata_path=data_path + "processed_data/")
 
