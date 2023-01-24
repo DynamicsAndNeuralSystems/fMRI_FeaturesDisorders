@@ -24,10 +24,10 @@ $cmd
 noise_label=$(echo $noise_proc | sed "s/\+/_/g")
 
 cmd="Rscript $github_dir/pyspi-distribute/create_yaml_for_samples.R \
---data_dir ${data_path}/numpy_files/${noise_label}/ \
+--data_dir ${data_path}/raw_data/numpy_files/${noise_label}/ \
 --sample_metadata_file ${data_path}/study_metadata/${sample_metadata_file} \
 --ID_var Sample_ID \
 --label_vars $label_vars \
---dim_order ps \
---overwrite"
+--dim_order ps"
+echo $cmd
 $cmd

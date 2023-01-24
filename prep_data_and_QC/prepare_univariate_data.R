@@ -34,14 +34,14 @@ add_catch2 <- args$add_catch2
 # dataset_ID <- "UCLA_CNP"
 # sample_metadata_file <- "UCLA_CNP_sample_metadata.feather"
 # noise_proc <- "AROMA+2P+GMR"
-# brain_region_lookup <- "UCLA_CNP_Brain_Region_info.csv"
+# brain_region_lookup <- "UCLA_CNP_Brain_Region_Lookup.feather"
 
 # # ABIDE ASD
 # data_path <- "~/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.feather"
 # noise_proc <- "FC1000"
-# brain_region_lookup <- "ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
+# brain_region_lookup <- "ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.feather"
 
 noise_label <- gsub("\\+", "_", noise_proc)
 rdata_path <- paste0(data_path, "processed_data/")
@@ -88,7 +88,7 @@ system(sprintf("Rscript %s/fMRI_FeaturesDisorders/prep_data_and_QC/dataset_speci
 #-------------------------------------------------------------------------------
 
 # Load brain region lookup table
-brain_region_lookup_table <- read.csv(paste0(data_path, "study_metadata/", brain_region_lookup))
+brain_region_lookup_table <- feather::read_feather(paste0(data_path, "study_metadata/", brain_region_lookup))
 read_in_sample_TS_data <- function(sample_ID, dataset_ID, noise_proc,
                                    brain_region_lookup_table) {
   noise_label <- gsub("\\+", "_", noise_proc)
@@ -125,8 +125,13 @@ if (!file.exists(paste0(data_path, "raw_data/",
                                            noise_proc = noise_proc,
                                            brain_region_lookup_table = brain_region_lookup_table))
   
-  feather::write_feather(np_TS_data, paste0(data_path, "raw_data/",
-                                          dataset_ID, "_", noise_label, "_fMRI_TS.feather"))
+  if (nrow(np_TS_data) > 0) {
+    feather::write_feather(np_TS_data, paste0(data_path, "raw_data/",
+                                              dataset_ID, "_", noise_label, "_fMRI_TS.feather"))
+  } else {
+    stop("No time-series data available to save.")
+  }
+  
 } else {
   np_TS_data <- feather::read_feather(paste0(data_path, "raw_data/",
                                            dataset_ID, "_", noise_label,  "_fMRI_TS.feather"))

@@ -11,7 +11,7 @@ rdata_path <- paste0(data_path, "processed_data/")
 metadata_CSV <- paste0(data_path, "study_metadata/UCLA_CNP_participants.csv")
 noise_proc <- "AROMA+2P+GMR"
 
-############################## Save to Rds ########################################
+############################## Save to feather ########################################
 
 
 if (!file.exists(paste0(data_path,
@@ -25,7 +25,8 @@ if (!file.exists(paste0(data_path,
                   "Age" = "age") %>%
     mutate(Study = "UCLA_CNP") %>%
     filter(!is.na(Diagnosis)) %>%
-    mutate(Diagnosis = ifelse(Diagnosis == "ADHD", "ADHD", str_to_title(Diagnosis)))
+    mutate(Diagnosis = ifelse(Diagnosis == "ADHD", "ADHD", str_to_title(Diagnosis))) %>%
+    mutate(Diagnosis = ifelse(Diagnosis == "Schz", "Schizophrenia", Diagnosis))
   
   # Save to a joint Rds file
   feather::write_feather(UCLA_CNP_metadata, 

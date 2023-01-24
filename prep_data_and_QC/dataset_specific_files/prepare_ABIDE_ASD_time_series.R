@@ -5,12 +5,18 @@ github_dir <- "~/github/fMRI_FeaturesDisorders/"
 data_path <- "~/data/ABIDE_ASD/"
 dataset_ID <- "ABIDE_ASD"
 noise_procs <- "FC1000"
+brain_region_lookup <- "ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
 raw_data_input_dir <- paste0(data_path, "raw_data/harvard_oxford_cort_prob_2mm/")
 
 # Load needed libraries
 library(tidyverse)
 library(purrr)
 library(feather)
+
+# Save brain region info to a feather file
+ROI_info <- read.csv(paste0(data_path, "study_metadata/", brain_region_lookup))
+feather::write_feather(ROI_info, paste0(data_path, sprintf("study_metadata/%s_Brain_Region_Lookup.feather",
+                                                          dataset_ID)))
 
 # Define output directory for time-series .txt files
 ts_output_dir <- paste0(data_path, "raw_data/time_series_files/FC1000/")

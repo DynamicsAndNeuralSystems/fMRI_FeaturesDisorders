@@ -1,17 +1,14 @@
 import argparse
-import dill
 import pandas as pd
 import numpy as np
 import random
 from sklearn import svm
 from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_validate, cross_val_score
 
-
 # Command-line arguments to parse
 parser = argparse.ArgumentParser(description='Process inputs for pairwise data preparation.')
-parser.add_argument('--github_dir', default="/headnode1/abry4213/github/", dest='github_dir')
 parser.add_argument('--data_path', default="/headnode1/abry4213/data/UCLA_CNP/", dest='data_path')
-parser.add_argument('--metadata_file', default="ABIDE_ASD_sample_metadata.pkl", dest='metadata_file')
+parser.add_argument('--metadata_file', default="UCLA_CNP_sample_metadata.feather", dest='metadata_file')
 parser.add_argument('--comparison_group', default="Schizophrenia", dest='comparison_group')
 parser.add_argument('--univariate_feature_set', default='catch22', dest='univariate_feature_set')
 parser.add_argument('--univariate_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather", dest='univariate_feature_file')
@@ -21,7 +18,6 @@ parser.add_argument('--dataset_ID', default="UCLA_CNP", dest='dataset_ID')
 
 # Parse arguments
 args = parser.parse_args()
-github_dir = args.github_dir
 data_path = args.data_path
 metadata_file = args.metadata_file
 comparison_group = args.comparison_group
@@ -30,12 +26,19 @@ univariate_feature_file = args.univariate_feature_file
 noise_proc = args.noise_proc
 num_null_iters = args.num_null_iters
 dataset_ID = args.dataset_ID
-fmri_github_dir = github_dir + "fMRI_FeaturesDisorders/"
+
+# dataset_ID = "UCLA_CNP"
+# data_path = "/headnode1/abry4213/data/UCLA_CNP/"
+# metadata_file = "UCLA_CNP_sample_metadata.feather"
+# comparison_group = "Schizophrenia"
+# univariate_feature_set = "catch22"
+# univariate_feature_file ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather"
+# noise_proc = "AROMA+2P+GMR"
+# num_null_iters = 10
 
 ###############################################################################
 # Function definitions
 ###############################################################################
-
 
 def run_k_fold_SVM_for_feature(feature_data, 
                                feature_list,
@@ -141,7 +144,7 @@ def run_nulls(feature_data,
         null_balanced_accuracy_list = []
         
         # Shuffle labels and run SVM per null iteration
-        for i in range(num_iters):
+        for i in range(int(num_iters)):
             
             # Shuffle class labels
             class_labels_shuffled = random.sample(class_labels, len(class_labels))
@@ -161,7 +164,7 @@ def run_nulls(feature_data,
         null_balanced_accuracy = pd.DataFrame(null_balanced_accuracy_list, columns=["Balanced_Accuracy"])
         null_balanced_accuracy["group_var"] = grouping_var_name
         null_balanced_accuracy["Grouping_Type"] = grouping_type
-        null_balanced_accuracy["Null_Iteration"] = range(num_iters)
+        null_balanced_accuracy["Null_Iteration"] = range(int(num_iters))
         
         return null_balanced_accuracy
     
@@ -173,11 +176,10 @@ def run_univariate_SVM(univariate_feature_file,
                        num_null_iters):
 
     # Load metadata
-    with open(data_path + "study_metadata/" + metadata_file, "rb") as f:
-        metadata = dill.load(f)
+    metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
     
     # Univariate feature data
-    univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex", "Study"],
+    univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
                                                                                axis = 1)
     
 

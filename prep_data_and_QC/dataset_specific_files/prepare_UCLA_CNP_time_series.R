@@ -18,11 +18,12 @@ library(feather)
 ts_output_dir <- paste0(data_path, "raw_data/time_series_files/")
 
 #-------------------------------------------------------------------------------
-# Function to load matlab .mat data and output time-series data as .txt files
+# Function to load matlab .mat data and output time-series data as .csv files
 #-------------------------------------------------------------------------------
-mat_data_into_TXT_files <- function(input_mat_file, 
+mat_data_into_CSV_files <- function(input_mat_file, 
                                     dataset_ID, 
-                                    subject_csv, 
+                                    metadata_csv,
+                                    ts_output_dir, 
                                     data_path, 
                                     overwrite=F) {
   
@@ -65,7 +66,7 @@ mat_data_into_TXT_files <- function(input_mat_file,
   
   #-----------------------------------------------------------------------------
   # Retrieve labels and clean up diagnosis names
-  subject_info <- read.csv(subject_csv) %>%
+  subject_info <- read.csv(metadata_csv) %>%
     dplyr::rename(Sample_ID = 1) %>%
     distinct(Sample_ID, diagnosis, age, gender) %>%
     semi_join(., ids) %>%
@@ -140,9 +141,10 @@ mat_data_into_TXT_files <- function(input_mat_file,
 #-------------------------------------------------------------------------------
 # Prep data from .mat file
 #-------------------------------------------------------------------------------
-mat_data_into_TXT_files(input_mat_file=paste0(data_path, 
+mat_data_into_CSV_files(input_mat_file=paste0(data_path, 
                                               "raw_data/",
                                               input_mat_file), 
                         dataset_ID = dataset_ID,
-                        subject_csv = paste0(data_path, "study_metadata/", subject_csv), 
+                        metadata_csv = paste0(data_path, "study_metadata/", subject_csv),
+                        ts_output_dir = ts_output_dir, 
                         data_path = data_path)

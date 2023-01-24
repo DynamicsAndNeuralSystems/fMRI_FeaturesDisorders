@@ -11,7 +11,7 @@ rdata_path <- paste0(data_path, "processed_data/")
 metadata_CSV <- paste0(data_path, "study_metadata/ABIDE_ASD_participants.csv")
 noise_proc <- "FC1000"
 
-############################## Save to Rds ########################################
+############################## Save to feather ########################################
 
 if (!file.exists(paste0(data_path,
                         "study_metadata/ABIDE_ASD_sample_metadata.feather"))) {
@@ -19,6 +19,7 @@ if (!file.exists(paste0(data_path,
   ABIDE_ASD_metadata <- read.csv(metadata_CSV, colClasses = "character") %>%
     dplyr::rename("Sample_ID" = "subject_id",
                   "ASD" = "asd",
+                  "Age" = "age",
                   "Sex" = "sex", 
                   "Site" = "site") %>%
     mutate(Study = "ABIDE_ASD",

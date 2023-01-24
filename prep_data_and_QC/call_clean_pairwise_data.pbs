@@ -12,23 +12,20 @@ cd "$PBS_O_WORKDIR"
 /usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
 source /usr/physics/python/anaconda3/etc/profile.d/conda.sh 
 
-conda activate pyspi
+conda activate $conda_env
 
 # Define directories
 mkdir -p $github_dir/cluster_output/
 
 # Run script
-cmd="Rscript $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/clean_pairwise_data.R \
---github_dir $github_dir \
+cmd="python3 $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/merge_pyspi_data.py \
 --data_path $data_path \
+--dataset_ID $dataset_ID \
 --pkl_file $pkl_file \
---python_to_use $python_to_use \
---univariate_feature_set $univariate_feature_set \
 --pairwise_feature_set $pairwise_feature_set \
---sample_metadata_file $sample_metadata_file \
+--univariate_feature_set $univariate_feature_set \
 --brain_region_lookup $brain_region_lookup \
---noise_proc $noise_proc \
---dataset_ID $dataset_ID"
+--noise_proc $noise_proc"
 echo $cmd
 $cmd
 
