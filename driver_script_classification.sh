@@ -11,7 +11,7 @@ export python_to_use=/headnode1/abry4213/.conda/envs/${conda_env}/bin/python3
 export SPI_directionality_file=${github_dir}/fMRI_FeaturesDisorders/classification_analysis/SPI_Direction_Info.csv
 export pkl_file="calc_pyspi14.pkl"
 export label_vars="Diagnosis"
-export num_null_iters=5
+export num_null_iters=1000
 
 #module load Anaconda3-5.1.0
 /usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
@@ -35,18 +35,16 @@ export pyspi_walltime_hrs=2
 # Run univariate and pairwise linear SVM
 pairwise_feature_file=$data_path/processed_data/${dataset_ID}_${noise_label}_${pairwise_feature_set}_filtered_zscored.feather
 
-# for comparison_group in Schizophrenia Bipolar ADHD; do
-#     for univariate_feature_set in catch2 catch22 catch24; do
-for comparison_group in Schizophrenia; do
-    for univariate_feature_set in catch22; do
+for comparison_group in Schizophrenia Bipolar ADHD; do
+    for univariate_feature_set in catch2 catch22 catch24; do
         univariate_feature_file=$data_path/processed_data/${dataset_ID}_${noise_label}_${univariate_feature_set}_filtered_zscored.feather
 
-        # # Run univariate SVM
-        # qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_null_iters=$num_null_iters \
-        # -N ${dataset_ID}_${comparison_group}_${univariate_feature_set} \
-        # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_out.txt \
-        # -m a -M $email \
-        # $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_classification.pbs
+        # Run univariate SVM
+        qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_null_iters=$num_null_iters \
+        -N ${dataset_ID}_${comparison_group}_${univariate_feature_set} \
+        -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_out.txt \
+        -m a -M $email \
+        $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_classification.pbs
 
         # Run pairwise SVM
         qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,pairwise_feature_file=$pairwise_feature_file,SPI_directionality_file=$SPI_directionality_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_null_iters=$num_null_iters \
@@ -83,25 +81,25 @@ for comparison_group in ASD; do
     for univariate_feature_set in catch2 catch22 catch24; do
         univariate_feature_file=$data_path/processed_data/ABIDE_ASD_FC1000_${univariate_feature_set}_filtered_zscored.feather
 
-        # # Run univariate SVM
-        # qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_null_iters=$num_null_iters \
-        # -N ${dataset_ID}_${comparison_group}_${univariate_feature_set} \
-        # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_out.txt \
-        # -m a -M $email \
-        # $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_classification.pbs
+        # Run univariate SVM
+        qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_null_iters=$num_null_iters \
+        -N ${dataset_ID}_${comparison_group}_${univariate_feature_set} \
+        -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_out.txt \
+        -m a -M $email \
+        $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_classification.pbs
 
-        # # Run pairwise SVM
-        # qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,pairwise_feature_file=$pairwise_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_null_iters=$num_null_iters \
-        # -N ${dataset_ID}_${comparison_group}_${pairwise_feature_set} \
-        # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_pairwise_classification_${dataset_ID}_${comparison_group}_${pairwise_feature_set}_out.txt \
-        # -m a -M $email \
-        # $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_pairwise_classification.pbs
+        # Run pairwise SVM
+        qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,pairwise_feature_file=$pairwise_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_null_iters=$num_null_iters \
+        -N ${dataset_ID}_${comparison_group}_${pairwise_feature_set} \
+        -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_pairwise_classification_${dataset_ID}_${comparison_group}_${pairwise_feature_set}_out.txt \
+        -m a -M $email \
+        $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_pairwise_classification.pbs
 
-        #  # Run combined univariate+pairwise SVM
-        # qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,univariate_feature_file=$univariate_feature_file,pairwise_feature_set=$pairwise_feature_set,pairwise_feature_file=$pairwise_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_null_iters=$num_null_iters \
-        # -N ${dataset_ID}_${comparison_group}_${univariate_feature_set}_${pairwise_feature_set} \
-        # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_combo_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${pairwise_feature_set}_out.txt \
-        # -m a -M $email \
-        # $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_combined_univariate_pairwise_classification.pbs
+         # Run combined univariate+pairwise SVM
+        qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,univariate_feature_file=$univariate_feature_file,pairwise_feature_set=$pairwise_feature_set,pairwise_feature_file=$pairwise_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_null_iters=$num_null_iters \
+        -N ${dataset_ID}_${comparison_group}_${univariate_feature_set}_${pairwise_feature_set} \
+        -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_combo_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${pairwise_feature_set}_out.txt \
+        -m a -M $email \
+        $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_combined_univariate_pairwise_classification.pbs
     done
 done

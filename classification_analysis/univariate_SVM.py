@@ -1,3 +1,6 @@
+from sklearnex import patch_sklearn
+patch_sklearn()
+
 from core_classification_functions import *
 import argparse
 
@@ -25,19 +28,15 @@ noise_proc = args.noise_proc
 num_null_iters = args.num_null_iters
 dataset_ID = args.dataset_ID
 
-# dataset_ID = "ABIDE_ASD"
-# data_path = "/headnode1/abry4213/data/ABIDE_ASD/"
-# metadata_file = "ABIDE_ASD_sample_metadata.feather"
-# comparison_group = "ASD"
+# dataset_ID = "UCLA_CNP"
+# data_path = "/headnode1/abry4213/data/UCLA_CNP/"
+# metadata_file = "UCLA_CNP_sample_metadata.feather"
+# comparison_group = "Schizophrenia"
 # univariate_feature_set = "catch22"
 # pairwise_feature_set = "pyspi14"
-# univariate_feature_file ="/headnode1/abry4213/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch22_filtered_zscored.feather"
-# noise_proc = "FC1000"
-# num_null_iters = 2
-                               
-###############################################################################
-# Main analysis
-###############################################################################
+# univariate_feature_file ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather"
+# noise_proc = "AROMA+2P+GMR"
+# num_null_iters = 1000
 
 run_univariate_SVM(univariate_feature_file=univariate_feature_file,
                        univariate_feature_set=univariate_feature_set, 
@@ -47,5 +46,5 @@ run_univariate_SVM(univariate_feature_file=univariate_feature_file,
                        noise_proc=noise_proc,
                        comparison_to_control_group=comparison_group,
                        pydata_path=data_path + "processed_data/",
-                       data_path=data_path)
-
+                       data_path=data_path,
+                       num_null_iters = int(num_null_iters))

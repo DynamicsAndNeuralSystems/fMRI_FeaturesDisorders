@@ -1,3 +1,6 @@
+from sklearnex import patch_sklearn
+patch_sklearn()
+
 from core_classification_functions import *
 import argparse
 
@@ -41,19 +44,15 @@ dataset_ID = args.dataset_ID
 # noise_proc = "AROMA+2P+GMR"
 # num_null_iters = 2
                                
-###############################################################################
-# Main analysis
-###############################################################################
-
 run_combined_SVM(univariate_feature_file=univariate_feature_file,
-    pairwise_feature_file=pairwise_feature_file,
+                 pairwise_feature_file=pairwise_feature_file,
                  SPI_directionality_file = SPI_directionality_file,
                  univariate_feature_set=univariate_feature_set,
                  pairwise_feature_set=pairwise_feature_set,
-                       noise_proc = noise_proc,
-                       dataset_ID=dataset_ID,
-                       metadata_file=metadata_file,
-                       comparison_to_control_group=comparison_group,
-                       pydata_path=data_path + "processed_data/",
-                       data_path=data_path)
-
+                 noise_proc = noise_proc,
+                 dataset_ID=dataset_ID,
+                 metadata_file=metadata_file,
+                 comparison_to_control_group=comparison_group,
+                 pydata_path=data_path + "processed_data/",
+                 data_path=data_path,
+                 num_null_iters = int(num_null_iters))

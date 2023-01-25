@@ -1,3 +1,6 @@
+from sklearnex import patch_sklearn
+patch_sklearn()
+
 from core_classification_functions import *
 import argparse
 
@@ -38,10 +41,6 @@ dataset_ID = args.dataset_ID
 # noise_proc = "AROMA+2P+GMR"
 # num_null_iters = 2
 
-###############################################################################
-# Main analysis
-###############################################################################
-
 run_pairwise_SVM(pairwise_feature_file=pairwise_feature_file,
                  SPI_directionality_file = SPI_directionality_file,
                  univariate_feature_set=univariate_feature_set,
@@ -50,5 +49,6 @@ run_pairwise_SVM(pairwise_feature_file=pairwise_feature_file,
                        dataset_ID=dataset_ID,
                        metadata_file=metadata_file,
                        comparison_to_control_group=comparison_group,
-                       pydata_path=data_path + "processed_data/")
-
+                       pydata_path=data_path + "processed_data/",
+                       data_path=data_path,
+                       num_null_iters = int(num_null_iters))
