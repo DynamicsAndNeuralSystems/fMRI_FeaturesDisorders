@@ -10,10 +10,11 @@ from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_va
 parser = argparse.ArgumentParser(description='Process inputs for pairwise data preparation.')
 parser.add_argument('--data_path', default="/headnode1/abry4213/data/UCLA_CNP/", dest='data_path')
 parser.add_argument('--metadata_file', default="UCLA_CNP_sample_metadata.feather", dest='metadata_file')
+parser.add_argument('--SPI_directionality_file', default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/SPI_Direction_Info.csv", dest='SPI_directionality_file')
 parser.add_argument('--comparison_group', default="Schizophrenia", dest='comparison_group')
 parser.add_argument('--univariate_feature_set', default='catch22', dest='univariate_feature_set')
 parser.add_argument('--pairwise_feature_set', default='pyspi14', dest='pairwise_feature_set')
-parser.add_argument('--univariate_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather", dest='univariate_feature_file')
+parser.add_argument('--pairwise_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather", dest='pairwise_feature_file')
 parser.add_argument('--noise_proc', dest='noise_proc')
 parser.add_argument('--num_null_iters', default=1000, dest='num_null_iters')
 parser.add_argument('--dataset_ID', default="UCLA_CNP", dest='dataset_ID')
@@ -22,22 +23,24 @@ parser.add_argument('--dataset_ID', default="UCLA_CNP", dest='dataset_ID')
 args = parser.parse_args()
 data_path = args.data_path
 metadata_file = args.metadata_file
+SPI_directionality_file = args.SPI_directionality_file
 comparison_group = args.comparison_group
 univariate_feature_set = args.univariate_feature_set
 pairwise_feature_set = args.pairwise_feature_set
-univariate_feature_file = args.univariate_feature_file
+pairwise_feature_file = args.pairwise_feature_file
 noise_proc = args.noise_proc
 num_null_iters = args.num_null_iters
 dataset_ID = args.dataset_ID
 
-# dataset_ID = "ABIDE_ASD"
-# data_path = "/headnode1/abry4213/data/ABIDE_ASD/"
-# metadata_file = "ABIDE_ASD_sample_metadata.feather"
-# comparison_group = "ASD"
+# dataset_ID = "UCLA_CNP"
+# data_path = "/headnode1/abry4213/data/UCLA_CNP/"
+# metadata_file = "UCLA_CNP_sample_metadata.feather"
+# SPI_directionality_file = "/headnode1/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/pairwise_analysis/SPI_Direction_Info.csv"
+# comparison_group = "Schizophrenia"
 # univariate_feature_set = "catch22"
 # pairwise_feature_set = "pyspi14"
-# univariate_feature_file ="/headnode1/abry4213/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch22_filtered_zscored.feather"
-# noise_proc = "FC1000"
+# pairwise_feature_file ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather"
+# noise_proc = "AROMA+2P+GMR"
 # num_null_iters = 2
 
 ###############################################################################
@@ -172,7 +175,8 @@ def run_nulls(feature_data,
         
         return null_balanced_accuracy
     
-def run_univariate_SVM(univariate_feature_file,
+def run_pairwise_SVM(pairwise_feature_file,
+                     SPI_directionality_file,
                        univariate_feature_set, 
                        pairwise_feature_set,
                        dataset_ID,
@@ -182,8 +186,12 @@ def run_univariate_SVM(univariate_feature_file,
                        noise_proc,
                        num_null_iters):
 
-    # 
+    # Define noise label
     noise_label = noise_proc.replace("+", "_")
+    
+    # Read in directionality data
+    SPI_directionality_data = pd.read_csv(SPI_directionality_file)
+    SPI_directionality_dict = dict(SPI_directionality_data.values)
 
     # Load metadata
     metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
@@ -191,13 +199,13 @@ def run_univariate_SVM(univariate_feature_file,
     # Load in data containing subjects with both univariate and pairwise data available
     samples_to_keep = pd.read_feather(f"{pydata_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
     
-    # Univariate feature data
-    univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
+    # Pairwise feature data
+    pairwise_feature_data = pd.read_feather(pairwise_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
                                                                                axis = 1)
 
     # Filter univariate data by samples with both univariate and pairwise
     # Filter by samples with univariate data available as well
-    univariate_feature_data = univariate_feature_data[univariate_feature_data.Sample_ID.isin(samples_to_keep.Sample_ID)]                                                                           
+    pairwise_feature_data = pairwise_feature_data[pairwise_feature_data.Sample_ID.isin(samples_to_keep.Sample_ID)]                                                                           
 
     # Initialise lists for results
     fold_assignments_list = []
@@ -207,40 +215,58 @@ def run_univariate_SVM(univariate_feature_file,
     null_balanced_accuracy_list = []
     
     ###########################################################################
-    # Region-wise
+    # SPI-wise
 
-    for ROI in univariate_feature_data.Brain_Region.unique().tolist():
+    for this_SPI in pairwise_feature_data.SPI.unique().tolist():
         
-        # Subset data to ROI
-        region_data = univariate_feature_data.query("Brain_Region == @ROI & Diagnosis in ['Control', @comparison_to_control_group]").drop(["Brain_Region", "Noise_Proc",
-                                                                                  "method"], axis=1)
+        # Subset data to SPI
+        SPI_data = pairwise_feature_data.query("SPI == @this_SPI & Diagnosis in ['Control', @comparison_to_control_group]").drop(["SPI"], axis=1)
+        
+        # Find directionality of SPI
+        SPI_directionality = SPI_directionality_dict[this_SPI]
+        
+        # Merge brain regions according to directionality
+        if SPI_directionality == "Directed":
+            SPI_data["region_pair"] = SPI_data.brain_region_from + "_" + SPI_data.brain_region_to
+            SPI_data = SPI_data.drop(["brain_region_from", "brain_region_to"], axis=1)
+        else:
+            SPI_data_sorted = [sorted(pair) for pair in SPI_data[["brain_region_from", "brain_region_to"]].values.tolist()]
+            SPI_data['region_pair'] = ['_'.join(string) for string in SPI_data_sorted]
+            SPI_data = (SPI_data
+                        .drop(["brain_region_from", "brain_region_to"], axis=1)
+                        .drop_duplicates(ignore_index=True,
+                                                                   subset=['Sample_ID', 'region_pair'])
+                        )
         
         # Pivot from long to wide
-        region_data_wide = region_data.pivot(index=['Sample_ID', 'Diagnosis'], columns='names', values='values')
+        SPI_data_wide = SPI_data.pivot(index=['Sample_ID', 'Diagnosis'], columns='region_pair', values='value')
         
         # Extract name of features
-        feature_list = region_data_wide.columns.tolist()
+        feature_list = SPI_data_wide.columns.tolist()
         
         # Extract sample ID and diagnosis as lists
-        index_data = region_data_wide.index.to_frame().reset_index(drop=True)
+        index_data = SPI_data_wide.index.to_frame().reset_index(drop=True)
         class_labels = index_data["Diagnosis"].tolist()
         
+        # Impute any NaN with column mean
+        SPI_data_imputed = SPI_data_wide.fillna(SPI_data_wide.mean())
+        
         # Extract only the feature data
-        features_only = region_data_wide.reset_index(drop=True).to_numpy()
+        features_only = SPI_data_imputed.reset_index(drop=True).to_numpy()
         
         # Run main SVM
         (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                        feature_list = feature_list,
-                                       grouping_var_name = ROI,
+                                       grouping_var_name = this_SPI,
                                        scoring_method = "balanced_accuracy",
                                        sample_and_class_df = index_data,
                                        class_labels = class_labels)
         
         # Run empirical null model permutations
-        null_balacc = run_nulls(features_only, 
+        null_balacc = run_nulls(feature_data=features_only, 
                                 num_iters = num_null_iters,
-                                grouping_var_name=ROI,
-                                grouping_type = "Brain_Region",
+                                grouping_var_name=this_SPI,
+                                grouping_type = "SPI",
                                 scoring_method = "balanced_accuracy",
                                 class_labels = class_labels)
         
@@ -250,96 +276,6 @@ def run_univariate_SVM(univariate_feature_file,
         balanced_accuracy_list.append(balanced_accuracy)
         CV_sample_predictions_list.append(CV_sample_predictions)
         null_balanced_accuracy_list.append(null_balacc)
-        
-    ###########################################################################
-    # TS Feature-wise
-    for TS_feature in univariate_feature_data.names.unique().tolist():
-        
-        # Subset data to TS feature
-        TS_feature_data = univariate_feature_data.query("names == @TS_feature & Diagnosis in ['Control', @comparison_to_control_group]").drop(["names", "Noise_Proc",
-                                                                                  "method"], axis=1)
-        
-        # Pivot from long to wide
-        TS_feature_data_wide = TS_feature_data.pivot(index=['Sample_ID', 'Diagnosis'], columns='Brain_Region', values='values')
-        
-        # Extract name of features
-        region_list = TS_feature_data_wide.columns.tolist()
-        
-        # Extract sample ID and diagnosis as lists
-        index_data = TS_feature_data_wide.index.to_frame().reset_index(drop=True)
-        class_labels = index_data["Diagnosis"].tolist()
-        
-        # Extract only the feature data
-        features_only = TS_feature_data_wide.reset_index(drop=True).to_numpy()
-        
-        (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
-                                       feature_list = region_list,
-                                       grouping_var_name = TS_feature,
-                                       scoring_method = "balanced_accuracy",
-                                       sample_and_class_df = index_data,
-                                       class_labels = class_labels)
-        
-        # Run empirical null model permutations
-        null_balacc = run_nulls(features_only, 
-                                num_iters = num_null_iters,
-                                grouping_var_name=TS_feature,
-                                grouping_type = "TS_Feature",
-                                scoring_method = "balanced_accuracy",
-                                class_labels = class_labels)
-        
-        # Save to list of dataframes
-        fold_assignments_list.append(fold_assignments)
-        SVM_coefficients_list.append(SVM_coefficients)
-        balanced_accuracy_list.append(balanced_accuracy)
-        CV_sample_predictions_list.append(CV_sample_predictions)
-        null_balanced_accuracy_list.append(null_balacc)
-        
-    ###########################################################################
-    # Combo-wise
-    
-    # Merge brain region + univariate feature name
-    combo_data = (univariate_feature_data
-                  .query("Diagnosis in ['Control', @comparison_to_control_group]")
-                  .drop(["method", "Noise_Proc"], axis=1))
-    combo_data["Combo_Feature"] = combo_data.Brain_Region + "_" + combo_data.names
-    combo_data = combo_data.drop(["Brain_Region", "names"], axis=1)
-    
-    # Pivot from long to wide
-    combo_data_wide = combo_data.pivot(index=["Sample_ID", "Diagnosis"],
-                                       columns = "Combo_Feature",
-                                       values = "values")
-    
-    # Extract name of combo features
-    combo_features = combo_data_wide.columns.tolist()
-    
-    # Extract only the combo feature data
-    features_only = combo_data_wide.reset_index(drop=True).to_numpy()
-    
-    # Extract sample ID and diagnosis as lists
-    index_data = combo_data_wide.index.to_frame().reset_index(drop=True)
-    class_labels = index_data["Diagnosis"].tolist()
-    
-    (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
-                                   feature_list = combo_features,
-                                   grouping_var_name = "Combo",
-                                   scoring_method = "balanced_accuracy",
-                                   sample_and_class_df = index_data,
-                                   class_labels = class_labels)
-    
-    # Run empirical null model permutations
-    null_balacc = run_nulls(features_only, 
-                            num_iters = num_null_iters,
-                            grouping_var_name="Combo",
-                            grouping_type = "Combo",
-                            scoring_method = "balanced_accuracy",
-                            class_labels = class_labels)
-    
-    # Save to list of dataframes
-    fold_assignments_list.append(fold_assignments)
-    SVM_coefficients_list.append(SVM_coefficients)
-    balanced_accuracy_list.append(balanced_accuracy)
-    CV_sample_predictions_list.append(CV_sample_predictions)
-    null_balanced_accuracy_list.append(null_balacc)
     
     ###########################################################################
     # Merge + save results
@@ -357,24 +293,25 @@ def run_univariate_SVM(univariate_feature_file,
     null_balanced_accuracy_res["Comparison Group"] = comparison_to_control_group
         
     # Save results
-    feather.write_feather(fold_assignments_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_fold_assigments.feather", version=1)
-    feather.write_feather(SVM_coefficients_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_fold_SVM_coefficients.feather", version=1)
-    feather.write_feather(balanced_accuracy_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_balanced_accuracy.feather", version=1)
-    feather.write_feather(CV_sample_predictions_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_sample_predictions.feather", version=1)
-    feather.write_feather(null_balanced_accuracy_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_null_balanced_accuracy.feather", version=1)
+    feather.write_feather(fold_assignments_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_SVM_fold_assigments.feather", version=1)
+    feather.write_feather(SVM_coefficients_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_SVM_fold_SVM_coefficients.feather", version=1)
+    feather.write_feather(balanced_accuracy_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_SVM_balanced_accuracy.feather", version=1)
+    feather.write_feather(CV_sample_predictions_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_SVM_sample_predictions.feather", version=1)
+    feather.write_feather(null_balanced_accuracy_res, pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_SVM_null_balanced_accuracy.feather", version=1)
 
                                
 ###############################################################################
 # Main analysis
 ###############################################################################
 
-run_univariate_SVM(univariate_feature_file=univariate_feature_file,
-                       univariate_feature_set=univariate_feature_set, 
-                       pairwise_feature_set=pairwise_feature_set,
+run_pairwise_SVM(pairwise_feature_file=pairwise_feature_file,
+                 SPI_directionality_file = SPI_directionality_file,
+                 univariate_feature_set=univariate_feature_set,
+                 pairwise_feature_set=pairwise_feature_set,
                        num_null_iters=num_null_iters,
+                       noise_proc = noise_proc,
                        dataset_ID=dataset_ID,
                        metadata_file=metadata_file,
-                       noise_proc=noise_proc,
                        comparison_to_control_group=comparison_group,
                        pydata_path=data_path + "processed_data/")
 
