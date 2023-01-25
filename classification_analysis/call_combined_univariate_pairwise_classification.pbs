@@ -1,0 +1,32 @@
+#!/bin/bash
+#PBS -q yossarian
+#PBS -j oe
+#PBS -l select=1:ncpus=1:mem=40GB
+#PBS -l walltime=48:00:00
+#PBS -V
+
+cd "$PBS_O_WORKDIR"
+
+# Run classification
+cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/combined_univariate_pairwise_SVM.py \
+--data_path $data_path \
+--metadata_file $sample_metadata_file \
+--comparison_group $comparison_group \
+--univariate_feature_set $univariate_feature_set \
+--univariate_feature_file $univariate_feature_file \
+--pairwise_feature_set $pairwise_feature_set \
+--pairwise_feature_file $pairwise_feature_file \
+--SPI_directionality_file $SPI_directionality_file \
+--noise_proc $noise_proc \
+--num_null_iters $num_null_iters \
+--dataset_ID $dataset_ID"
+echo $cmd
+$cmd
+
+
+exit
+
+# Verify the host on which the job ran
+hostname
+
+
