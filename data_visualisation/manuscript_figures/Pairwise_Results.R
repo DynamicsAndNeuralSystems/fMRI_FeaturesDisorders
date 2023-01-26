@@ -1,166 +1,106 @@
 ################################################################################
-# Load libraries
-################################################################################
-
-library(tidyverse)
-library(icesTAF)
-library(plotly)
-library(cowplot)
-theme_set(theme_cowplot())
-
-################################################################################
 # Define study/data paths
 ################################################################################
 
 github_dir <- "~/github/fMRI_FeaturesDisorders/"
-source(paste0(github_dir, "data_visualisation/manuscript_figures/Manuscript_Draft_Visualisations_Helper.R"))
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/Figure3/")
 TAF::mkdir(plot_path)
 
-SCZ_data_path <- "~/data/UCLA_Schizophrenia/"
-SCZ_rdata_path <- paste0(SCZ_data_path, "processed_data/Rdata/")
-ASD_data_path <- "~/data/ABIDE_ASD/"
-ASD_rdata_path <- paste0(ASD_data_path, "processed_data/Rdata/")
+python_to_use <- "~/.conda/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
+pairwise_feature_set <- "pyspi14"
+data_path <- "~/data/TS_feature_manuscript"
+study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
+                             Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
+                             Comparison_Group = c("Schizophrenia", "ADHD", "Bipolar", "ASD"))
+univariate_feature_sets <- c("catch22", "catch2", "catch24")
 
-noise_proc_SCZ <- "AROMA+2P+GMR"
-noise_proc_ASD <- "FC1000"
+ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv")
 
-pairwise_feature_set <- "pyspi14_corrected"
+reticulate::use_python(python_to_use)
+
+library(reticulate)
+
+# Import pyarrow.feather as pyarrow_feather
+pyarrow_feather <- import("pyarrow.feather")
 
 ################################################################################
-# Figure 3A pairwise SPI-wise analysis results
+# Load libraries
+################################################################################
+library(feather)
+library(tidyverse)
+library(glue)
+library(icesTAF)
+library(cowplot)
+library(ggseg)
+library(ggsegHO)
+theme_set(theme_cowplot())
+
+# Source visualisation script
+source(glue("{github_dir}/data_visualisation/manuscript_figures/Manuscript_Draft_Visualisations_Helper.R"))
+
+# Load in SPI info
+SPI_info <- read.csv(glue("{github_dir}/data_visualisation/manuscript_figures/SPI_info.csv"))
+
+# Load data
+pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_balanced_accuracy_all_folds.feather"))
+pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_empirical_p_values.feather"))
+pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_null_balanced_accuracy_distributions.feather"))
+
+# Aggregate balanced accuracy by repeats
+pairwise_balanced_accuracy_by_repeats <- pairwise_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
+  summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+            Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
+  left_join(., pairwise_p_values %>% dplyr::select(Study:group_var, p_value:p_value_BH))
+
+
+################################################################################
+# Figure 3 SPI-wise SVM results
 ################################################################################
 
-### Load subject-wise predictions
-SCZ_SPI_subject_preds <- readRDS(paste0(SCZ_rdata_path,
-                                        sprintf("SPI_wise_CV_linear_SVM_%s_inv_prob.Rds",
-                                                pairwise_feature_set)))
-ASD_SPI_subject_preds <- readRDS(paste0(ASD_rdata_path,
-                                        sprintf("SPI_wise_CV_linear_SVM_%s_inv_prob.Rds",
-                                                pairwise_feature_set)))
-
-### Load pairwise SPI-wise p-value data
-# UCLA Schizophrenia
-SCZ_SPI_pvals <- readRDS(paste0(SCZ_rdata_path, 
-                                sprintf("SPI_wise_CV_linear_SVM_model_permutation_null_%s_inv_prob_pvals.Rds",
-                                        pairwise_feature_set))) %>%
-  filter(Noise_Proc == noise_proc_SCZ) %>%
-  ungroup() %>%
-  mutate(bal_acc_p_adj_bonf = p.adjust(bal_acc_p, method="bonferroni")) %>%
-  dplyr::select(grouping_var, bal_acc_p, bal_acc_p_adj, bal_acc_p_adj_bonf)
-
-# ABIDE ASD
-ASD_SPI_pvals <- readRDS(paste0(ASD_rdata_path, 
-                                sprintf("SPI_wise_CV_linear_SVM_model_permutation_null_%s_inv_prob_pvals.Rds",
-                                        pairwise_feature_set))) %>%
-  filter(Noise_Proc == noise_proc_ASD) %>%
-  ungroup() %>%
-  mutate(bal_acc_p_adj_bonf = p.adjust(bal_acc_p, method="bonferroni")) %>%
-  dplyr::select(grouping_var, bal_acc_p, bal_acc_p_adj, bal_acc_p_adj_bonf)
-
-### Load full pairwise SPI-wise data
-# UCLA Schizophrenia
-SCZ_SPI_main_full <- readRDS(paste0(SCZ_rdata_path, 
-                                    sprintf("SPI_wise_CV_linear_SVM_%s_inv_prob_balacc.Rds",
-                                            pairwise_feature_set))) %>%
-  filter(Noise_Proc == noise_proc_SCZ) 
-
-# ABIDE ASD
-ASD_SPI_main_full <- readRDS(paste0(ASD_rdata_path, 
-                                      sprintf("SPI_wise_CV_linear_SVM_%s_inv_prob_balacc.Rds",
-                                              pairwise_feature_set))) %>%
-  filter(Noise_Proc == noise_proc_ASD) 
-
-### Aggregate pairwise SPI-wise data per repeat 
-# And filter by BH adjusted p-value < 0.05
-# UCLA Schizophrenia
-SCZ_SPI_main_repeats <- SCZ_SPI_main_full %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., SCZ_SPI_pvals) %>%
-  ungroup() %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-
-SCZ_SPI_main_repeats_sig <- SCZ_SPI_main_repeats %>%
-  filter(bal_acc_p_adj < 0.05)
-
-# ABIDE ASD
-ASD_SPI_main_repeats <- ASD_SPI_main_full %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., ASD_SPI_pvals) %>%
-  ungroup() %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-ASD_SPI_main_repeats_sig <- ASD_SPI_main_repeats %>%
-  filter(bal_acc_p_adj < 0.05)
-
-### Aggregate all pairwise SPI-wise data across repeats
-# UCLA Schizophrenia
-SCZ_SPI_main <- SCZ_SPI_main_repeats %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T),
-            mean_SD = sd(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., SCZ_SPI_pvals) %>%
-  ungroup() %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-
-SCZ_SPI_main_sig <- SCZ_SPI_main %>%
-  filter(bal_acc_p_adj < 0.05)
-
-# ABIDE ASD
-ASD_SPI_main <- ASD_SPI_main_repeats %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T),
-            mean_SD = sd(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., ASD_SPI_pvals) %>%
-  ungroup() %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-
-ASD_SPI_main_sig <- ASD_SPI_main %>%
-  filter(bal_acc_p_adj < 0.05)
-
-### Load pairwise SPI-wise empirical null distributions
-# UCLA Schizophrenia
-SCZ_SPI_null <- readRDS(paste0(SCZ_rdata_path, 
-                               sprintf("UCLA_Schizophrenia_SPI_wise_model_permutation_null_%s_inv_prob.Rds",
-                                       pairwise_feature_set)))
-# ABIDE ASD
-ASD_SPI_null <- readRDS(paste0(ASD_rdata_path, 
-                               sprintf("ABIDE_ASD_SPI_wise_model_permutation_null_%s_inv_prob.Rds",
-                                       pairwise_feature_set)))
-
-### SPI boxplot with shaded null region
-# UCLA Schizophrenia
-plot_boxplot_shaded_null(dataset_ID = "UCLA_Schizophrenia",
-                         grouping_var_name = "Pairwise SPI",
-                         main_data_by_repeat = SCZ_SPI_main_repeats_sig,
-                         fill_color = "chartreuse3",
-                         wrap_length = 100,
-                         null_mean_value = mean(SCZ_SPI_null$balanced_accuracy, na.rm=T),
-                         null_SD_value = sd(SCZ_SPI_null$balanced_accuracy, na.rm=T))
-ggsave(paste0(plot_path, "UCLA_Schizophrenia_SPI_sig_boxplot.png"),
-       width = 8, height = 2.5, units="in", dpi=300)
-# ABIDE ASD
-plot_boxplot_shaded_null(dataset_ID = "ABIDE_ASD",
-                         grouping_var_name = "Pairwise SPI",
-                         main_data_by_repeat = ASD_SPI_main_repeats_sig,
-                         fill_color = "chartreuse3",
-                         wrap_length = 100,
-                         null_mean_value = mean(ASD_SPI_null$balanced_accuracy, na.rm=T),
-                         null_SD_value = sd(ASD_SPI_null$balanced_accuracy, na.rm=T))
-ggsave(paste0(plot_path, "ABIDE_ASD_SPI_sig_boxplot.png"),
-       width = 8, height = 2.5, units="in", dpi=300)
-
-
+for (i in 1:nrow(study_group_df)) {
+  dataset_ID <- study_group_df$Study[i]
+  comparison_group <- study_group_df$Comparison_Group[i]
+  
+  significant_SPIs <- pairwise_p_values %>%
+    filter(Study == dataset_ID,
+           Comparison_Group == comparison_group,
+           Analysis_Type == "SPI") %>%
+    filter(p_value_BH < 0.05) %>%
+    pull(group_var)
+  
+  # Only move forward if 1+ significant brain regions was detected 
+  if (length(significant_SPIs) > 0) {
+    # Pull out relevant null data
+    null_data_to_plot <- pairwise_null_distribution %>%
+      dplyr::rename("SPI" = "group_var") %>%
+      filter(Study == dataset_ID,
+             Comparison_Group == comparison_group,
+             Analysis_Type == "SPI") %>%
+      left_join(., SPI_info) %>%
+      dplyr::rename("group_var" = "Nickname")
+    
+    # Pull out data for repeats
+    repeat_data_to_plot <- pairwise_balanced_accuracy_by_repeats %>%
+      dplyr::rename("SPI" = "group_var") %>%
+      filter(Study == dataset_ID,
+             Comparison_Group == comparison_group,
+             SPI %in% significant_SPIs,
+             Analysis_Type == "SPI")  %>%
+      left_join(., SPI_info) %>%
+      dplyr::rename("group_var" = "Nickname")
+    
+    ### UCLA boxplot with shaded null region
+    plot_boxplot_shaded_null(dataset_ID = dataset_ID,
+                             grouping_var_name = "",
+                             main_data_by_repeat = repeat_data_to_plot,
+                             fill_color = "chartreuse3",
+                             wrap_length=50,
+                             null_mean_value = mean(null_data_to_plot$Null_Balanced_Accuracy, na.rm=T),
+                             null_SD_value = sd(null_data_to_plot$Null_Balanced_Accuracy, na.rm=T))
+    ggsave(glue("{plot_path}/{dataset_ID}_{comparison_group}_{pairwise_feature_set}_SPI_sig_boxplot.png"),
+           width=max(5, 3.5+sqrt(length(significant_SPIs))), 
+           height=max(1.25, sqrt(length(significant_SPIs))), units="in", dpi=300)
+  }
+}

@@ -5,7 +5,7 @@
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% UCLA Schizophrenia %%%%%%%%%%%%%%%%%%%%%%%%%%%
-SCZ_subject_movement_data_path = "/Users/abry4213/data/UCLA_Schizophrenia/movementData/";
+SCZ_subject_movement_data_path = "/Users/abry4213/data/UCLA_CNP/movement_data/";
 txt_files = dir(fullfile(SCZ_subject_movement_data_path, "*movData.txt"));
 
 % Instantiate matrix with two columns, one for subject ID and one for mean
@@ -40,11 +40,11 @@ for i = 1:num_subjects
 end
 
 % Write my results to a .txt file
-output_file = fullfile(SCZ_subject_movement_data_path, "UCLA_Schizophrenia_mFD.txt");
+output_file = fullfile(SCZ_subject_movement_data_path, "UCLA_CNP_mFD.txt");
 writematrix(FD_m_mat, output_file)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ABIDE ASD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ASD_subject_movement_data_path = "/Users/abry4213/data/ABIDE_ASD/movementData/";
+ASD_subject_movement_data_path = "/Users/abry4213/data/ABIDE_ASD/movement_data/";
 txt_files = dir(fullfile(ASD_subject_movement_data_path, "*movData.txt"));
 
 % Instantiate matrix with two columns, one for subject ID and one for mean

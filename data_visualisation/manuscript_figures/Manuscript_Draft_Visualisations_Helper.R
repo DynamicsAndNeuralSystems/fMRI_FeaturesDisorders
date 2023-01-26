@@ -20,12 +20,13 @@ plot_boxplot_shaded_null <- function(dataset_ID,
                                      null_SD_value) {
   ggplot() +
     geom_boxplot(data = main_data_by_repeat %>%
-                   mutate(grouping_var = str_replace_all(grouping_var, "ctx-lh-|Left-", "Left ")) %>%
-                   mutate(grouping_var = str_replace_all(grouping_var, "ctx-rh-|Right-", "Right ")) %>%
-                   mutate(grouping_var = fct_reorder(grouping_var, 
-                                                     balanced_accuracy,
-                                                     .fun = mean)), 
-                 aes(y=grouping_var, x=balanced_accuracy),
+                   ungroup() %>%
+                   mutate(group_var = str_replace_all(group_var, "ctx-lh-|Left-", "Left ")) %>%
+                   mutate(group_var = str_replace_all(group_var, "ctx-rh-|Right-", "Right ")) %>%
+                   mutate(group_var = fct_reorder(group_var, 
+                                                     Balanced_Accuracy_Across_Folds,
+                                                     .fun = mean,)), 
+                 aes(y=group_var, x=Balanced_Accuracy_Across_Folds),
                  fill = fill_color, color="black") +
     geom_rect(data = main_data_by_repeat, 
               xmin = null_mean_value - null_SD_value,
@@ -34,8 +35,9 @@ plot_boxplot_shaded_null <- function(dataset_ID,
     geom_vline(xintercept = null_mean_value) +
     scale_x_continuous(limits = c(0.975*(null_mean_value - null_SD_value),
                                   1.025*max(main_data_by_repeat %>% 
-                                             filter(bal_acc_p_adj < 0.05) %>% 
-                                             pull(balanced_accuracy))),
+                                              ungroup() %>%
+                                             filter(p_value_BH < 0.05) %>% 
+                                             pull(Balanced_Accuracy_Across_Folds))),
                        breaks = scales::breaks_pretty(n = 4)) +
     scale_y_discrete(labels = function(x) str_wrap(x, width = wrap_length)) +
     xlab("Balanced Accuracy\nby CV Repeat") +
@@ -57,7 +59,7 @@ plot_significant_regions_ggseg <- function(dataset_ID,
   
   sig_region_ggseg_data %>%
     ggseg(atlas = atlas_name, mapping = aes(fill = fillyes),
-          position = "dispersed", colour = "darkgrey") +
+          position = "stacked", colour = "darkgrey") +
     scale_fill_manual(values = c(fill_color), na.value = NA) +
     theme_void() +
     theme(plot.title = element_blank(),
@@ -169,94 +171,3 @@ plot_SPI_with_without_univar <- function(dataset_ID,
 }
 
 
-
-#-------------------------------------------------------------------------------
-#' Function to compute Nadeau & Bengio (2003) correlated t-statistic p-value for train-test splits
-#' @param x vector of classification accuracy values for classifier A
-#' @param y vector of classification accuracy values for classifier B
-#' @param n integer denoting number of repeat samples
-#' @param n1 integer denoting train set size
-#' @param n2 integer denoting test set size
-#' @author Trent Henderson
-#' from https://github.com/hendersontrent/feature-set-classification/blob/main/R/corr_t_test.R
-#-------------------------------------------------------------------------------
-
-repeated_corr_t_test_folds <- function(x, 
-                                       y, 
-                                       n, 
-                                       n1, 
-                                       n2, 
-                                       k = 10, 
-                                       r = 10) {
-  d <- x - y # Calculate differences
-  d_bar <- mean(d, na.rm = TRUE) # Calculate mean of differences
-  sigma_2 <- var(d, na.rm = TRUE) # Calculate variance
-  
-  
-  sigma_2_mod <- sigma_2 * (1/n + n2/n1) # Calculate modified variance
-  
-}
-
-#-------------------------------------------------------------------------------
-# Function to read in file with average framewise displacement (FD)
-# As well as list of individual subject movement files
-# And output a CSV containing the Subject ID, diagnosis, and FD
-#-------------------------------------------------------------------------------
-compile_movement_data <- function(fd_path, 
-                                  input_dataset_name,
-                                  sample_metadata) {
-  mov_data <- read.table(paste0(fd_path, sprintf("fdAvgs_%s.txt",
-                                                 input_dataset_name)))
-  colnames(mov_data)[1] <- "FD"
-  
-  mov_data_subjects <- list.files(fd_path, pattern="_movData.txt") %>%
-    gsub("_movData.txt", "", .)
-  
-  mov_data$Sample_ID <- mov_data_subjects
-  
-  mov_data <- mov_data %>%
-    left_join(., sample_metadata) 
-  
-  return(mov_data)
-}
-
-#-------------------------------------------------------------------------------
-# Function to read in files containing x, y, and z translation (mm) per subject
-# And output a datafrmae containing the Subject ID, diagnosis, and 
-# mean displacement
-#-------------------------------------------------------------------------------
-calculate_mean_displacement <- function(movement_data_path, 
-                                        input_dataset_name,
-                                        sample_metadata) {
-  
-  samples <- list.dirs(movement_data_path, full.names = F, recursive = F)
-  
-  movement_df_list <- list()
-  for (sample in samples) {
-    sample_movement_data <- read.table(paste0(movement_data_path, sample, "/run_1/motions.txt"))
-    colnames(sample_movement_data) <- c("x_trans", "y_trans", "z_trans",
-                                        "x_rot", "y_rot", "z_rot")
-    sample_movement_data$Sample_ID <- sample 
-    
-    # Calculate mean absolute x, y, and z translation
-    movement_means <- sample_movement_data %>%
-      group_by(Sample_ID) %>%
-      summarise(x_mean = mean(abs(x_trans)),
-                y_mean = mean(abs(y_trans)),
-                z_mean = mean(abs(z_trans)))
-    
-    movement_df_list <- list.append(movement_df_list,
-                                    movement_means)
-  }
-  movement_df <- do.call(plyr::rbind.fill, movement_df_list)
-  
-  displacement_data <- movement_df %>%
-    rowwise() %>%
-    mutate(mean_displacement = mean(c(x_mean,
-                                      y_mean,
-                                      z_mean)),
-           .keep = "unused") %>%
-    left_join(., sample_metadata)
-  
-  return(displacement_data)
-}
