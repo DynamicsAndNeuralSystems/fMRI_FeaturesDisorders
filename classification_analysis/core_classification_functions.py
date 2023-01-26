@@ -277,7 +277,7 @@ def run_univariate_SVM(univariate_feature_file,
         null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
             
         # Save results
-        fold_assignments_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_fold_assigments.feather")
+        fold_assignments_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_fold_assignments.feather")
         SVM_coefficients_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_fold_SVM_coefficients.feather")
         balanced_accuracy_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_balanced_accuracy.feather")
         CV_sample_predictions_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_SVM_sample_predictions.feather")
@@ -400,7 +400,7 @@ def run_pairwise_SVM(pairwise_feature_file,
         null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
             
         # Save results
-        fold_assignments_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_SVM_fold_assigments.feather")
+        fold_assignments_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_SVM_fold_assignments.feather")
         SVM_coefficients_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_SVM_fold_SVM_coefficients.feather")
         balanced_accuracy_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_SVM_balanced_accuracy.feather")
         CV_sample_predictions_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_SVM_sample_predictions.feather")
@@ -546,7 +546,7 @@ def run_combined_SVM(univariate_feature_file,
         null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
             
         # Save results
-        fold_assignments_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_SVM_fold_assigments.feather")
+        fold_assignments_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_SVM_fold_assignments.feather")
         SVM_coefficients_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_SVM_fold_SVM_coefficients.feather")
         balanced_accuracy_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_SVM_balanced_accuracy.feather")
         CV_sample_predictions_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_SVM_sample_predictions.feather")
