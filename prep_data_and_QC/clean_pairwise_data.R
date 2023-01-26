@@ -76,7 +76,7 @@ reticulate::use_python(python_to_use)
 library(reticulate)
 reticulate::source_python(paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/pickle_reader.py"))
 library(tidyverse)
-library(arrow)
+library(feather)
 
 # Source QC functions
 source(paste0(github_dir, "fMRI_FeaturesDisorders/helper_functions/data_prep_and_QC/QC_functions_pairwise.R"))
@@ -218,14 +218,3 @@ run_QC_for_dataset(data_path = data_path,
                    pairwise_feature_set = pairwise_feature_set,
                    noise_proc = noise_proc)
 
-# save filtered pyspi14 data to an apache feather file
-pyspi14_filtered_zscored <- readRDS(paste0(rdata_path, sprintf("%s_%s_%s_filtered_zscored.Rds",
-                                                               dataset_ID,
-                                                               noise_label,
-                                                               pairwise_feature_set))) %>%
-  filter(brain_region_from != brain_region_to)
-
-write_feather(pyspi14_filtered_zscored, paste0(rdata_path, sprintf("%s_%s_%s_filtered_zscored.feather",
-                                                                   dataset_ID,
-                                                                   noise_label,
-                                                                   pairwise_feature_set)))
