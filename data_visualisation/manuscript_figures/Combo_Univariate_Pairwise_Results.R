@@ -10,7 +10,10 @@ python_to_use <- "~/.conda/envs/pyspi/bin/python3"
 python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
 data_path <- "~/data/TS_feature_manuscript"
+UCLA_CNP_sample_metadata <- "~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather"
+ABIDE_ASD_sample_metadata <- "~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
+                             Num_Samples = c(166, 157, 167, 1150), 
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "ADHD", "Bipolar", "ASD"))
 univariate_feature_sets <- c("catch22", "catch2", "catch24")
@@ -32,30 +35,54 @@ library(tidyverse)
 library(glue)
 library(icesTAF)
 library(cowplot)
-library(ggseg)
-library(ggsegHO)
+library(correctR)
+library(scales)
 theme_set(theme_cowplot())
 
 # Source visualisation script
 source(glue("{github_dir}/data_visualisation/manuscript_figures/Manuscript_Draft_Visualisations_Helper.R"))
 
+# Load in metadata
+UCLA_CNP_metadata <- pyarrow_feather$read_feather(UCLA_CNP_sample_metadata)
+ABIDE_ASD_metadata <- pyarrow_feather$read_feather(ABIDE_ASD_sample_metadata)
+
 # Load in SPI info
 SPI_info <- read.csv(glue("{github_dir}/data_visualisation/manuscript_figures/SPI_info.csv"))
 
 # Load data
+pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_balanced_accuracy_all_folds.feather"))
+pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_empirical_p_values.feather"))
+pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_null_balanced_accuracy_distributions.feather"))
 combo_univariate_pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combo_univariate_pairwise_balanced_accuracy_all_folds.feather"))
 combo_univariate_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combo_univariate_pairwise_empirical_p_values.feather"))
 combo_univariate_pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combo_univariate_pairwise_null_balanced_accuracy_distributions.feather"))
 
 # Aggregate balanced accuracy by repeats
-combo_univariate_pairwise_balanced_accuracy_by_repeats <- combo_univariate_pairwise_balanced_accuracy_all_folds %>%
+pairwise_balanced_accuracy_by_repeats <- pairwise_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
+  summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+            Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
+  left_join(., pairwise_p_values %>% dplyr::select(Study:group_var, p_value:p_value_BH))
+
+combo_univariate_pairwise_balanced_accuracy_by_repeats <- combo_univariate_pairwise_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
   summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
             Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
   left_join(., combo_univariate_pairwise_p_values %>% dplyr::select(Study:group_var, p_value:p_value_BH))
 
+# Aggregate the main results across all folds, independent of repeat
+pairwise_balanced_accuracy <- pairwise_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
+  summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+            Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T))
+
+combo_univariate_pairwise_balanced_accuracy <- combo_univariate_pairwise_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
+  summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+            Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T))
+
 ################################################################################
-# Figure 4 SPI- and univariate combo-wise SVM results
+# Figure 4A SPI- and univariate combo-wise SVM results
 ################################################################################
 
 for (i in 1:nrow(study_group_df)) {
@@ -106,5 +133,104 @@ for (i in 1:nrow(study_group_df)) {
              width=max(5, 3.5+sqrt(length(significant_SPIs))), 
              height=max(1.25, sqrt(length(significant_SPIs))), units="in", dpi=300)
     }
+  }
+}
+
+################################################################################
+# Figure 4B Comparison of each SPI with vs. without univariate info
+################################################################################
+
+# Merge the pairwise and combo balanced accuracy datasets
+merged_balanced_accuracy_all_folds <- plyr::rbind.fill(pairwise_balanced_accuracy_all_folds,
+                                                        combo_univariate_pairwise_balanced_accuracy_all_folds) %>%
+  mutate(Analysis_Type = factor(Analysis_Type, levels = c("SPI",
+                                                          "SPI_Combo")))
+
+
+# Run repeated k-fold cross-validation correction
+for (i in 1:nrow(study_group_df)) {
+  dataset_ID <- study_group_df$Study[i]
+  comparison_group <- study_group_df$Comparison_Group[i]
+  num_samples <- study_group_df$Num_Samples[i]
+  
+  for (featset in c("catch2", "catch22", "catch24")) {
+    
+    data_for_correction <- merged_balanced_accuracy_all_folds %>%
+      filter(Comparison_Group == comparison_group) %>%
+      dplyr::rename("model" = "Analysis_Type",
+                    "values" = "Balanced_Accuracy",
+                    "k" = "Fold",
+                    "r" = "Repeat_Number") %>%
+      mutate(r = r + 1)
+    
+    SPI_only_data <- data_for_correction %>% 
+      filter(model == "SPI")
+    SPI_combo_data <- data_for_correction %>% 
+      filter(model == "SPI_Combo", 
+             Univariate_Feature_Set == featset)
+    merged_data_for_correction <- plyr::rbind.fill(SPI_only_data,
+                                                   SPI_combo_data)
+
+
+    # Iterate over each SPI
+    for (this_SPI in unique(merged_data_for_correction$group_var)) {
+      tryCatch({SPI_rkcv <- repkfold_ttest(data = subset(merged_data_for_correction, group_var == this_SPI),
+                                 n1 = ceiling(0.9*num_samples), 
+                                 n2 = floor(0.1*num_samples), 
+                                 k = 10, 
+                                 r = 10)
+      
+      SPI_rkcv$SPI <- this_SPI
+      SPI_rkcv$Study <- dataset_ID
+      SPI_rkcv$Comparison_Group <- comparison_group
+      SPI_rkcv$Univariate_Feature_Set <- featset
+      
+      # Append to list
+      rkcv_list <- list.append(rkcv_list, SPI_rkcv)
+      }, error = function(e) {
+        cat("Error for SPI:", this_SPI, "\n")
+      })
+    }
+  }
+}
+
+rkcv_results <- do.call(plyr::rbind.fill, rkcv_list)
+
+# Plot each SPI with vs without univariate info as a violin
+for (i in 1:nrow(study_group_df)) {
+  dataset_ID <- study_group_df$Study[i]
+  comparison_group <- study_group_df$Comparison_Group[i]
+  
+  for (featset in c("catch2", "catch22", "catch24")) {
+    SPI_data <- pairwise_balanced_accuracy_by_repeats %>%
+      filter(Comparison_Group == comparison_group)
+    SPI_combo_data <- combo_univariate_pairwise_balanced_accuracy_by_repeats %>%
+      filter(Comparison_Group == comparison_group,
+             Univariate_Feature_Set == featset)
+    
+    merged_data_to_plot <- plyr::rbind.fill(SPI_data, SPI_combo_data) %>%
+      mutate(fill_color = case_when(Analysis_Type == "SPI" & p_value_BH < 0.05 ~ "chartreuse3",
+                                    Analysis_Type == "SPI_Combo" & p_value_BH < 0.05 ~ "darkgoldenrod2",
+                                    Analysis_Type == "SPI" & p_value_BH > 0.05 ~ "gray90_1",
+                                    T ~ "gray90_2")) %>%
+      dplyr::rename("SPI" = "group_var")  %>%
+      left_join(., SPI_info) %>%
+      mutate(Nickname = fct_reorder(Nickname, Balanced_Accuracy_Across_Folds, 
+                                     .fun=mean, .desc=T)) 
+    
+    merged_data_to_plot %>%
+      ggplot(data=., mapping=aes(x = Nickname, y = Balanced_Accuracy_Across_Folds,
+                                 fill = fill_color)) +
+      geom_violin() +
+      facet_wrap(Nickname ~ ., scales="free_x", nrow=1) +
+      xlab("Pairwise Statistic (SPI)") + 
+      ylab("Balanced Accuracy\nby Repeat CV") +
+      scale_fill_manual(values = c("chartreuse3", "darkgoldenrod2", "gray90", "gray90")) +
+      scale_x_discrete(labels = wrap_format(20)) +
+      theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.4),
+            strip.text = element_blank()) +
+      theme(legend.position = "none")
+    ggsave(glue("{plot_path}/{dataset_ID}_{comparison_group}_combo_{pairwise_feature_set}_{featset}_violins.png"),
+           width = 8.5, height = 4, units = "in", dpi = 300)
   }
 }
