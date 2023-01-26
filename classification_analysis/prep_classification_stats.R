@@ -332,7 +332,7 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combo_univariate_pa
   feather::write_feather(combo_univariate_pairwise_balanced_accuracy_all_folds,
                          glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combo_univariate_pairwise_balanced_accuracy_all_folds.feather"))
 } else {
-  combo_univariate_pairwise_balanced_accuracy_all_folds <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_balanced_accuracy_all_folds.feather"))
+  combo_univariate_pairwise_balanced_accuracy_all_folds <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combo_univariate_pairwise_balanced_accuracy_all_folds.feather"))
 }
 
 # Aggregate the main results by repeat
