@@ -2,7 +2,8 @@
 # Define paths
 #-------------------------------------------------------------------------------
 
-python_to_use <- "~/.conda/envs/pyspi/bin/python3"
+# python_to_use <- "~/.conda/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
 github_dir <- "~/github/"
 data_path <- "~/data/"
@@ -197,7 +198,7 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_bal
 }
 
 # Calculate p-values based on empirical nulls
-
+# Sanity check the p-value correction
 if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather"))) {
   univariate_split <- univariate_balanced_accuracy %>%
     group_by(Study, Comparison_Group, Analysis_Type, Univariate_Feature_Set, group_var) %>%
@@ -212,6 +213,8 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirica
     mutate(p_value_BH = p.adjust(p_value, method="BH"))
   
   feather::write_feather(univariate_p_values, glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather"))
+} else {
+  univariate_p_values <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather"))
 }
 
 # PAIRWISE

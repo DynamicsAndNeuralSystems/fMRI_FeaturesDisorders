@@ -1,13 +1,4 @@
 ################################################################################
-# Load libraries
-################################################################################
-
-library(tidyverse)
-library(icesTAF)
-library(cowplot)
-theme_set(theme_cowplot())
-
-################################################################################
 # Define study/data paths
 ################################################################################
 
@@ -15,301 +6,243 @@ github_dir <- "~/github/fMRI_FeaturesDisorders/"
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/Figure2/")
 TAF::mkdir(plot_path)
 
-source(paste0(github_dir, "helper_functions/data_prep_and_QC/QC_functions_univariate.R"))
-source(paste0(github_dir, "helper_functions/Visualization.R"))
+python_to_use <- "~/.conda/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
+pairwise_feature_set <- "pyspi14"
+data_path <- "~/data/TS_feature_manuscript"
+study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
+                             Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
+                             Comparison_Group = c("Schizophrenia", "ADHD", "Bipolar", "ASD"))
+univariate_feature_sets <- c("catch22", "catch2", "catch24")
 
-SCZ_data_path <- "~/data/UCLA_Schizophrenia/"
-SCZ_rdata_path <- paste0(SCZ_data_path, "processed_data/Rdata/")
-ASD_data_path <- "~/data/ABIDE_ASD/"
-ASD_rdata_path <- paste0(ASD_data_path, "processed_data/Rdata/")
+ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv")
 
-noise_proc_SCZ <- "AROMA+2P+GMR"
-noise_proc_ASD <- "FC1000"
-univariate_feature_set <- "catch22"
-pairwise_feature_set <- "pyspi14_corrected"
+reticulate::use_python(python_to_use)
 
-ASD_brain_region_info <- read.csv(paste0(ASD_data_path, 
-                                           "Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"))
+library(reticulate)
+
+# Import pyarrow.feather as pyarrow_feather
+pyarrow_feather <- import("pyarrow.feather")
+
+################################################################################
+# Load libraries
+################################################################################
+library(feather)
+library(tidyverse)
+library(glue)
+library(icesTAF)
+library(cowplot)
+library(ggseg)
+library(ggsegHO)
+theme_set(theme_cowplot())
+
+# Source visualisation script
+source(glue("{github_dir}/data_visualisation/manuscript_figures/Manuscript_Draft_Visualisations_Helper.R"))
+
+# Load in univariate time-series feature info
+TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/manuscript_figures/catch24_info.csv"))
+
+# Load data
+univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_balanced_accuracy_all_folds.feather"))
+univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather"))
+univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_balanced_accuracy_distributions.feather"))
+
+# Aggregate balanced accuracy by repeats
+univariate_balanced_accuracy_by_repeats <- univariate_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
+  summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+            Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
+  left_join(., univariate_p_values %>% dplyr::select(Study:group_var, p_value:p_value_BH))
 
 ################################################################################
 # Figure 2A univariate region-wise results
 ################################################################################
 
-### Load univariate region-wise p-value data
-# UCLA Schizophrenia
-SCZ_ROI_pvals <- readRDS(paste0(SCZ_rdata_path, "ROI_wise_CV_linear_SVM_model_permutation_null_catch22_inv_prob_pvals.Rds")) %>%
-  filter(Noise_Proc == noise_proc_SCZ) %>%
-  ungroup() %>%
-  mutate(bal_acc_p_adj_bonf = p.adjust(bal_acc_p, method="bonferroni")) %>%
-  dplyr::select(grouping_var, bal_acc_p, bal_acc_p_adj, bal_acc_p_adj_bonf)
-# ABIDE ASD
-ASD_ROI_pvals <- readRDS(paste0(ASD_rdata_path, "ROI_wise_CV_linear_SVM_model_permutation_null_catch22_inv_prob_pvals.Rds")) %>%
-  filter(Noise_Proc == noise_proc_ASD) %>%
-  ungroup() %>%
-  mutate(bal_acc_p_adj_bonf = p.adjust(bal_acc_p, method="bonferroni")) %>%
-  dplyr::select(grouping_var, bal_acc_p, bal_acc_p_adj, bal_acc_p_adj_bonf)
-
-### Identify significant brain regions
-# UCLA Schizophrenia
-sig_regions_SCZ_univar_ROI <- SCZ_ROI_pvals %>%
-  filter(bal_acc_p_adj < 0.05) %>%
-  pull(grouping_var)
-# ABIDE ASD
-sig_regions_ASD_univar_ROI <- ASD_ROI_pvals %>%
-  filter(bal_acc_p_adj < 0.05) %>%
-  pull(grouping_var)
-
-### Load full univariate region-wise data
-# UCLA Schizophrenia
-SCZ_ROI_main_full <- readRDS(paste0(SCZ_rdata_path, "ROI_wise_CV_linear_SVM_catch22_inv_prob_balacc.Rds")) %>%
-  filter(Noise_Proc == noise_proc_SCZ)
-# ABIDE ASD
-ASD_ROI_main_full <- readRDS(paste0(ASD_rdata_path, "ROI_wise_CV_linear_SVM_catch22_inv_prob_balacc.Rds")) %>%
-  filter(Noise_Proc == noise_proc_ASD)
-
-### Aggregate univariate region-wise data per repeat,  
-# and filter to significant regions only
-# UCLA Schizophrenia
-SCZ_ROI_main_repeats <- SCZ_ROI_main_full %>%
-  filter(grouping_var %in% sig_regions_SCZ_univar_ROI) %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., SCZ_ROI_pvals) %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-# ABIDE ASD
-ASD_ROI_main_repeats <- ASD_ROI_main_full %>%
-  filter(grouping_var %in% sig_regions_ASD_univar_ROI) %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., ASD_ROI_pvals) %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-
-### Aggregate all univariate region-wise data across repeats
-# UCLA Schizophrenia
-SCZ_ROI_main <- SCZ_ROI_main_repeats %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T),
-            mean_SD = sd(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., SCZ_ROI_pvals) %>%
-  ungroup() %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-# ABIDE ASD
-ASD_ROI_main <- ASD_ROI_main_repeats %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T),
-            mean_SD = sd(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., ASD_ROI_pvals) %>%
-  ungroup() %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-
-### Load univariate region-wise empirical null distributions
-# UCLA Schizophrenia
-SCZ_ROI_null <- readRDS(paste0(SCZ_rdata_path, "UCLA_Schizophrenia_ROI_wise_model_permutation_null_catch22_inv_prob.Rds"))
-# ABIDE ASD
-ASD_ROI_null <- readRDS(paste0(ASD_rdata_path, "ABIDE_ASD_ROI_wise_model_permutation_null_catch22_inv_prob.Rds"))
-
-# Plot boxplot with shaded null region per dataset
-
-### UCLA boxplot with shaded null region
-plot_boxplot_shaded_null(dataset_ID = "UCLA_Schizophrenia",
-                         grouping_var_name = "Brain Region",
-                         main_data_by_repeat = SCZ_ROI_main_repeats,
-                         fill_color = "#F0224B",
-                         null_mean_value = mean(SCZ_ROI_null$balanced_accuracy, na.rm=T),
-                         null_SD_value = sd(SCZ_ROI_null$balanced_accuracy, na.rm=T))
-ggsave(paste0(plot_path, "UCLA_Schizophrenia_Brain_Region_sig_boxplot.png"),
-       width = 3.7, height = 2, units="in", dpi=300)
-
-### ABIDE boxplot with shaded null region
-plot_boxplot_shaded_null(dataset_ID = "ABIDE_ASD",
-                         grouping_var_name = "Brain Region",
-                         main_data_by_repeat = ASD_ROI_main_repeats,
-                         fill_color = "#F0224B",
-                         null_mean_value = mean(ASD_ROI_null$balanced_accuracy, na.rm=T),
-                         null_SD_value = sd(ASD_ROI_null$balanced_accuracy, na.rm=T))
-ggsave(paste0(plot_path, "ABIDE_ASD_Brain_Region_sig_boxplot.png"),
-       width = 3.7, height = 2, units="in", dpi=300)
-
-### UCLA Schizophrenia cortex and subcortex data in brain
-SCZ_ROI_main$Type = "Main"
-SCZ_ROI_null$Type = "Null"
-
-SCZ_ROI_main_for_ggseg <- SCZ_ROI_main %>%
-  dplyr::select(grouping_var) %>%
-  dplyr::rename("label" = "grouping_var") %>%
-  distinct() %>%
-  mutate(fillyes = T) %>%
-  mutate(label = ifelse(str_detect(label, "ctx-"),
-                        gsub("-", "_", label),
-                        as.character(label))) %>%
-  mutate(label = gsub("ctx_", "", label))
-
-# cortical data
-plot_significant_regions_ggseg(dataset_ID = "UCLA_Schizophrenia",
-                               atlas_name = "dk",
-                               atlas_data = dk,
-                               main_data_for_ggseg = SCZ_ROI_main_for_ggseg,
-                               fill_color = "#F0224B")
-ggsave(paste0(plot_path, "UCLA_Schizophrenia_ROI_wise_cortex_balanced_accuracy.png"),
-       width = 4, height = 1.5, units = "in", dpi = 300)
-# subcortical data
-plot_significant_regions_ggseg(dataset_ID = "UCLA_Schizophrenia",
-                               atlas_name = "aseg",
-                               atlas_data = aseg,
-                               main_data_for_ggseg = SCZ_ROI_main_for_ggseg,
-                               fill_color = "#F0224B")
-ggsave(paste0(plot_path, "UCLA_ROI_wise_subcortex_balanced_accuracy.png"),
-       width = 4, height = 4, units = "in", dpi = 300)
-
-
-### ABIDE ASD cortex and subcortex data in brain
-ASD_ROI_main$Type = "Main"
-ASD_ROI_null$Type = "Null"
-
-ASD_ROI_main_for_ggseg <- ASD_ROI_main %>%
-  dplyr::select(grouping_var) %>%
-  dplyr::rename("Brain_Region" = "grouping_var") %>%
-  distinct() %>%
-  left_join(., ASD_brain_region_info) %>% 
-  dplyr::rename("region" = "ggseg") %>%
-  mutate(fillyes = T)
-
-# cortical data
-plot_significant_regions_ggseg(dataset_ID = "ABIDE_ASD",
-                               atlas_name = "hoCort",
-                               atlas_data = hoCort,
-                               main_data_for_ggseg = ASD_ROI_main_for_ggseg,
-                               fill_color = "#F0224B")
-ggsave(paste0(plot_path, "ABIDE_ASD_ROI_wise_cortex_balanced_accuracy.png"),
-       width = 4, height = 1.5, units = "in", dpi = 300)
+for (i in 1:nrow(study_group_df)) {
+  for (featset in c("catch2", "catch22", "catch24")) {
+    dataset_ID <- study_group_df$Study[i]
+    comparison_group <- study_group_df$Comparison_Group[i]
+    
+    # Define atlas by study
+    atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
+    
+    significant_brain_regions <- univariate_p_values %>%
+      filter(Study == dataset_ID,
+             Comparison_Group == comparison_group,
+             Univariate_Feature_Set == featset,
+             Analysis_Type == "Brain_Region") %>%
+      filter(p_value_BH < 0.05) %>%
+      pull(group_var)
+    
+    # Only move forward if 1+ significant brain regions was detected 
+    if (length(significant_brain_regions) > 0) {
+      # Pull out relevant null data
+      null_data_to_plot <- univariate_null_distribution %>%
+        filter(Study == dataset_ID,
+               Comparison_Group == comparison_group,
+               Univariate_Feature_Set == featset,
+               Analysis_Type == "Brain_Region") 
+      
+      # Pull out data for repeats
+      repeat_data_to_plot <- univariate_balanced_accuracy_by_repeats %>%
+        filter(Study == dataset_ID,
+               Comparison_Group == comparison_group,
+               Univariate_Feature_Set == featset,
+               group_var %in% significant_brain_regions,
+               Analysis_Type == "Brain_Region") 
+      
+      ### UCLA boxplot with shaded null region
+      plot_boxplot_shaded_null(dataset_ID = "UCLA_CNP",
+                               grouping_var_name = "Brain Region",
+                               main_data_by_repeat = repeat_data_to_plot,
+                               fill_color = "#F0224B",
+                               wrap_length=50,
+                               null_mean_value = mean(null_data_to_plot$Null_Balanced_Accuracy, na.rm=T),
+                               null_SD_value = sd(null_data_to_plot$Null_Balanced_Accuracy, na.rm=T))
+      ggsave(glue("{plot_path}/{dataset_ID}_{comparison_group}_{featset}_Brain_Region_sig_boxplot.png"),
+             width=5, height=2, units="in", dpi=300)
+      
+      # Plot in the brain
+      significant_data_for_ggseg <- data.frame(label = significant_brain_regions) %>%
+        distinct() %>%
+        mutate(fillyes = T) %>%
+        mutate(label = ifelse(str_detect(label, "ctx-"),
+                              gsub("-", "_", label),
+                              as.character(label))) %>%
+        mutate(label = gsub("ctx_", "", label))
+      plot_significant_regions_ggseg(dataset_ID = dataset_ID,
+                                     atlas_name = atlas,
+                                     atlas_data = get(atlas),
+                                     main_data_for_ggseg = significant_data_for_ggseg,
+                                     fill_color = "#F0224B")
+      ggsave(glue("{plot_path}/{dataset_ID}_{comparison_group}_cortex_significant_univariate_{featset}.png"),
+             width=4, height=2.5, units="in", dpi=300)
+      
+      # For UCLA_CNP, also plot subcortex
+      if (dataset_ID == "UCLA_CNP") {
+        plot_significant_regions_ggseg(dataset_ID = dataset_ID,
+                                       atlas_name = "aseg",
+                                       atlas_data = aseg,
+                                       main_data_for_ggseg = significant_data_for_ggseg,
+                                       fill_color = "#F0224B")
+        ggsave(glue("{plot_path}/{dataset_ID}_{comparison_group}_subcortex_significant_univariate_{featset}.png"),
+               width=2.5, height=4, units="in", dpi=300)
+      }
+    }
+  }
+}
 
 ################################################################################
-# Misc: confirm no significant univariate features per dataset
-################################################################################
-# UCLA Schizophrenia
-SCZ_feature_pvals <- readRDS(paste0(SCZ_rdata_path, "Feature_wise_CV_linear_SVM_model_permutation_null_catch22_inv_prob_pvals.Rds")) %>%
-  filter(Noise_Proc == noise_proc_SCZ) %>%
-  ungroup() %>%
-  mutate(bal_acc_p_adj_bonf = p.adjust(bal_acc_p, method="bonferroni")) %>%
-  dplyr::select(grouping_var, bal_acc_p, bal_acc_p_adj, bal_acc_p_adj_bonf)
-
-SCZ_feature_pvals %>% filter(bal_acc_p_adj < 0.05)
-
-# ABIDE ASD
-ASD_feature_pvals <- readRDS(paste0(ASD_rdata_path, "Feature_wise_CV_linear_SVM_model_permutation_null_catch22_inv_prob_pvals.Rds")) %>%
-  filter(Noise_Proc == noise_proc_ASD) %>%
-  ungroup() %>%
-  mutate(bal_acc_p_adj_bonf = p.adjust(bal_acc_p, method="bonferroni")) %>%
-  dplyr::select(grouping_var, bal_acc_p, bal_acc_p_adj, bal_acc_p_adj_bonf)
-
-ASD_feature_pvals %>% filter(bal_acc_p_adj < 0.05)
-
-################################################################################
-# Figure 2B univariate combo-wise results
+# Figure 2B feature-based
 ################################################################################
 
-### Load univariate combo-wise p-value data
-# UCLA Schizophrenia
-SCZ_combo_pvals <- readRDS(paste0(SCZ_rdata_path, "Combo_wise_CV_linear_SVM_model_permutation_null_catch22_inv_prob_pvals.Rds")) %>%
-  filter(Noise_Proc == noise_proc_SCZ) %>%
-  ungroup() %>%
-  mutate(bal_acc_p_adj_bonf = p.adjust(bal_acc_p, method="bonferroni")) %>%
-  dplyr::select(grouping_var, bal_acc_p, bal_acc_p_adj, bal_acc_p_adj_bonf)
-# ABIDE ASD
-ASD_combo_pvals <- readRDS(paste0(ASD_rdata_path, "Combo_wise_CV_linear_SVM_model_permutation_null_catch22_inv_prob_pvals.Rds")) %>%
-  filter(Noise_Proc == noise_proc_ASD) %>%
-  ungroup() %>%
-  mutate(bal_acc_p_adj_bonf = p.adjust(bal_acc_p, method="bonferroni")) %>%
-  dplyr::select(grouping_var, bal_acc_p, bal_acc_p_adj, bal_acc_p_adj_bonf)
+for (i in 1:nrow(study_group_df)) {
+  for (featset in c("catch2", "catch22", "catch24")) {
+    dataset_ID <- study_group_df$Study[i]
+    comparison_group <- study_group_df$Comparison_Group[i]
+    
+    significant_TS_features <- univariate_p_values %>%
+      filter(Study == dataset_ID,
+             Comparison_Group == comparison_group,
+             Univariate_Feature_Set == featset,
+             Analysis_Type == "TS_Feature") %>%
+      filter(p_value_BH < 0.05) %>%
+      pull(group_var)
+    
+    # Only move forward if 1+ significant brain regions was detected 
+    if (length(significant_TS_features) > 0) {
+      # Pull out relevant null data
+      null_data_to_plot <- univariate_null_distribution %>%
+        dplyr::rename("TS_Feature" = "group_var") %>%
+        filter(Study == dataset_ID,
+               Comparison_Group == comparison_group,
+               Univariate_Feature_Set == featset,
+               Analysis_Type == "TS_Feature")  %>%
+        left_join(., TS_feature_info) %>%
+        dplyr::rename("group_var" = "Nickname")
+      
+      # Pull out data for repeats
+      repeat_data_to_plot <- univariate_balanced_accuracy_by_repeats %>%
+        dplyr::rename("TS_Feature" = "group_var") %>%
+        filter(Study == dataset_ID,
+               Comparison_Group == comparison_group,
+               Univariate_Feature_Set == featset,
+               TS_Feature %in% significant_TS_features,
+               Analysis_Type == "TS_Feature") %>%
+        left_join(., TS_feature_info) %>%
+        dplyr::rename("group_var" = "Nickname")
+      
+      ### UCLA boxplot with shaded null region
+      plot_boxplot_shaded_null(dataset_ID = "UCLA_CNP",
+                               grouping_var_name = "",
+                               main_data_by_repeat = repeat_data_to_plot,
+                               fill_color = "#4A7CBB",
+                               wrap_length=50,
+                               null_mean_value = mean(null_data_to_plot$Null_Balanced_Accuracy, na.rm=T),
+                               null_SD_value = sd(null_data_to_plot$Null_Balanced_Accuracy, na.rm=T))
+      ggsave(glue("{plot_path}/{dataset_ID}_{comparison_group}_{featset}_TS_Feature_sig_boxplot.png"),
+             width=3.5+sqrt(length(significant_TS_features)), 
+             height=2.75, units="in", dpi=300)
+    }
+  }
+}
 
-### Load full univariate combo-wise data
-# UCLA Schizophrenia
-SCZ_combo_main_full <- readRDS(paste0(SCZ_rdata_path, 
-                                       "Combo_wise_CV_linear_SVM_catch22_inv_prob_balacc.Rds")) %>%
-  filter(Noise_Proc == noise_proc_SCZ) 
-# ABIDE ASD
-ASD_combo_main_full <- readRDS(paste0(ASD_rdata_path, 
-                                        "Combo_wise_CV_linear_SVM_catch22_inv_prob_balacc.Rds")) %>%
-  filter(Noise_Proc == noise_proc_ASD)
-
-### Aggregate univariate combo-wise data per repeat
-# UCLA Schizophrenia
-SCZ_combo_main_repeats <- SCZ_combo_main_full %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., SCZ_combo_pvals) %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-# ABIDE ASD
-ASD_combo_main_repeats <- ASD_combo_main_full %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc, repeat_number) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., ASD_combo_pvals) %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-
-### Aggregate all univariate combo-wise data across repeats
-# UCLA Schizophrenia
-SCZ_combo_main <- SCZ_combo_main_repeats %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T),
-            mean_SD = sd(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., SCZ_combo_pvals) %>%
-  ungroup() %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-# ABIDE ASD
-ASD_combo_main <- ASD_combo_main_repeats %>%
-  group_by(grouping_var, Sample_Type, Noise_Proc) %>%
-  summarise(mean_balanced_accuracy = mean(balanced_accuracy, na.rm=T),
-            mean_SD = sd(balanced_accuracy, na.rm=T)) %>%
-  dplyr::rename("balanced_accuracy" = "mean_balanced_accuracy") %>%
-  left_join(., ASD_combo_pvals) %>%
-  ungroup() %>%
-  mutate(grouping_var = fct_reorder(grouping_var, 
-                                    balanced_accuracy,
-                                    .fun = mean))
-
-### Load univariate combo-wise empirical null distributions
-# UCLA Schizophrenia
-SCZ_combo_null <- readRDS(paste0(SCZ_rdata_path, "UCLA_Schizophrenia_Combo_wise_model_permutation_null_catch22_inv_prob.Rds"))
-# ABIDE ASD
-ASD_combo_null <- readRDS(paste0(ASD_rdata_path, "ABIDE_ASD_Combo_wise_model_permutation_null_catch22_inv_prob.Rds"))
-
-### Violin plot comparison for univariate results
-# UCLA Schizophrenia
-plot_univar_region_vs_combo_violin(dataset_ID = "UCLA_Schizophrenia",
-                                   ROI_data_full = SCZ_ROI_main_full,
-                                   ROI_pvals = SCZ_ROI_pvals,
-                                   combo_data = SCZ_combo_main,
-                                   region_fill_color = "#F0224B",
-                                   combo_fill_color = "#9B51B4")
-ggsave(paste0(plot_path, "UCLA_Schizophrenia_Univariate_Comparison_Boxplot.png"),
-       width = 3, height = 2.75, units = "in", dpi = 300)
-# ABIDE ASD
-plot_univar_region_vs_combo_violin(dataset_ID = "ABIDE_ASD",
-                                   ROI_data_full = ASD_ROI_main_full,
-                                   ROI_pvals = ASD_ROI_pvals,
-                                   combo_data = ASD_combo_main,
-                                   region_fill_color = "#F0224B",
-                                   combo_fill_color = "#9B51B4")
-ggsave(paste0(plot_path, "ABIDE_ASD_Univariate_Comparison_Boxplot.png"),
-       width = 3, height = 2.75, units = "in", dpi = 300)
+################################################################################
+# Figure 2C combo-based
+################################################################################
+for (featset in c("catch2", "catch22", "catch24")) {
+  group_order <- univariate_balanced_accuracy_by_repeats %>%
+    filter(Univariate_Feature_Set==featset,
+           Analysis_Type=="Combo") %>%
+    ungroup() %>%
+    mutate(is_sig = p_value_BH < 0.05,
+           Comparison_Group = fct_reorder(Comparison_Group, Balanced_Accuracy_Across_Folds, .fun=mean)) %>%
+    pull(Comparison_Group) %>%
+    levels()
+  
+  null_data <- univariate_null_distribution %>%
+    filter(Univariate_Feature_Set==featset,
+           Analysis_Type == "Combo") %>%
+    group_by(Comparison_Group, Univariate_Feature_Set) %>%
+    summarise(null_balacc_mean = mean(Null_Balanced_Accuracy, na.rm=T),
+              null_balacc_SD = sd(Null_Balanced_Accuracy, na.rm=T)) %>%
+    ungroup() %>%
+    mutate(Comparison_Group = as.numeric(factor(Comparison_Group, levels = group_order)))
+  
+  main_data <- univariate_balanced_accuracy_by_repeats %>%
+    filter(Univariate_Feature_Set==featset,
+           Analysis_Type=="Combo") %>%
+    ungroup() %>%
+    mutate(is_sig = p_value_BH < 0.05,
+           Comparison_Group = as.numeric(fct_reorder(Comparison_Group, Balanced_Accuracy_Across_Folds, .fun=mean)))
+  
+  ggplot() +
+    geom_rect(data = null_data, 
+              aes(ymin = null_balacc_mean - null_balacc_SD,
+                  ymax = null_balacc_mean + null_balacc_SD,
+                  xmin = Comparison_Group - 0.5, 
+                  xmax = Comparison_Group + 0.5),
+              fill="gray80") +
+    geom_crossbar(data = null_data, aes(x = Comparison_Group,
+                                        y = null_balacc_mean,  
+                                        xmin = Comparison_Group - 0.5, 
+                                        xmax = Comparison_Group + 0.5)) +
+    geom_boxplot(data = main_data, 
+                 aes(x = Comparison_Group, 
+                     y = Balanced_Accuracy_Across_Folds, 
+                     fill = is_sig,
+                     group = Comparison_Group))  +
+    scale_fill_manual(values=c("gray85", "#9B51B4")) +
+    # Add labels for group names
+    scale_x_continuous(breaks = 1:4,
+                       labels = group_order) +
+    theme(legend.position = "none",
+          axis.title.y = element_text(angle=0, vjust=0.5)) +
+    coord_flip()  +
+    ylab("Balanced Accuracy Across Repeats") +
+    xlab("Comparison\nGroup")
+  
+  ggsave(glue("{plot_path}/All_{featset}_Combo_boxplot.png"),
+         width=6, 
+         height=2)
+}
