@@ -396,3 +396,19 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combo_univariate_pa
   
   feather::write_feather(combo_univariate_pairwise_p_values, glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combo_univariate_pairwise_empirical_p_values.feather"))
 }
+
+bivar <- pyarrow_feather$read_feather(glue("{data_path}/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_pyspi14_filtered_zscored.feather"))
+
+ABIDE_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather")
+
+data_to_analyse <- bivar %>%
+  distinct(Sample_ID) %>%
+  left_join(., ABIDE_metadata)
+
+data_to_analyse %>%
+  group_by(Diagnosis) %>%
+  summarise(N = n(),
+            Num_Female = sum(Sex=="F"),
+            Perc_Female = round(100*Num_Female/N, 1),
+            Age_Mean = round(mean(as.numeric(Age), na.rm=T), 1),
+            Age_SD = round(sd(as.numeric(Age)), 1))

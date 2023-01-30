@@ -1,22 +1,12 @@
 #!/bin/bash
-#PBS -q yossarian
 #PBS -j oe
-#PBS -l select=1:ncpus=16:mem=180GB
 #PBS -l walltime=48:00:00
 #PBS -V
 
 cd "$PBS_O_WORKDIR"
 
-# Define directories
-mkdir -p $github_dir/cluster_output/
-
-# Run univariate classification
-
-# Define feature set and file path
-feature_file=$data_path/processed_data/UCLA_CNP_AROMA_2P_GMR_${feature_set}_filtered_zscored.feather
-
 # Run classification
-python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_SVM.py \
+cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_SVM.py \
 --data_path $data_path \
 --metadata_file $sample_metadata_file \
 --comparison_group $comparison_group \
@@ -25,7 +15,13 @@ python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/univariate_SV
 --univariate_feature_file $univariate_feature_file \
 --noise_proc $noise_proc \
 --num_null_iters $num_null_iters \
---dataset_ID $dataset_ID
+--scaling_type $scaling_type \
+--num_jobs $num_jobs \
+--dataset_ID $dataset_ID"
+
+echo $cmd
+
+$cmd
 
 exit
 

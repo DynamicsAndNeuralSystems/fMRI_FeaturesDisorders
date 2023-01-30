@@ -1,7 +1,5 @@
 #!/bin/bash
-#PBS -q yossarian
 #PBS -j oe
-#PBS -l select=1:ncpus=16:mem=180GB
 #PBS -l walltime=48:00:00
 #PBS -V
 
@@ -18,6 +16,8 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise
 --SPI_directionality_file $SPI_directionality_file \
 --noise_proc $noise_proc \
 --num_null_iters $num_null_iters \
+--scaling_type $scaling_type \
+--num_jobs $num_jobs \
 --dataset_ID $dataset_ID"
 echo $cmd
 $cmd
