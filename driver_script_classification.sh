@@ -36,12 +36,9 @@ export pyspi_walltime_hrs=2
 # Run univariate and pairwise linear SVM
 pairwise_feature_file=$data_path/processed_data/${dataset_ID}_${noise_label}_${pairwise_feature_set}_filtered.feather
 
-# for scaling_type in standard robust; do 
-#     for comparison_group in Schizophrenia Bipolar ADHD; do
-#         for univariate_feature_set in catch2 catch22 catch24; do
-for scaling_type in robustsigmoid; do 
-    for comparison_group in Schizophrenia; do
-        for univariate_feature_set in catch22; do
+for scaling_type in standard robustsigmoid; do 
+    for comparison_group in Schizophrenia Bipolar ADHD; do
+        for univariate_feature_set in catch2 catch22 catch24; do
             univariate_feature_file=$data_path/processed_data/${dataset_ID}_${noise_label}_${univariate_feature_set}_filtered.feather
 
             # Run univariate SVM

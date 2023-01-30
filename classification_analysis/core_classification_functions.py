@@ -104,16 +104,20 @@ class RobustSigmoidScaler(TransformerMixin, BaseEstimator):
 
     _parameter_constraints: dict = {
          "quantile_range": [tuple],
+         "copy": ["boolean"],
+        "unit_variance": ["boolean"]
     }
 
     def __init__(
         self,
         *,
         quantile_range=(25.0, 75.0),
-        copy = True
+        copy = True,
+        unit_variance=False
     ):
         self.quantile_range = quantile_range
         self.copy = copy
+        self.unit_variance = unit_variance
 
     def fit(self, X, y=None):
         """Compute the median and quantiles to be used for scaling.
@@ -143,7 +147,7 @@ class RobustSigmoidScaler(TransformerMixin, BaseEstimator):
         q_min, q_max = self.quantile_range
         if not 0 <= q_min <= q_max <= 100:
             raise ValueError("Invalid quantile range: %s" % str(self.quantile_range))
-
+            
         self.IQR_ = np.nanpercentile(X, self.quantile_range, axis=0)
         self.IQR_diffs_ = self.IQR_[1,:] - self.IQR_[0,:]
         self.median_ = np.nanmedian(X, axis=0)
@@ -175,8 +179,15 @@ class RobustSigmoidScaler(TransformerMixin, BaseEstimator):
         X_transformed = np.zeros(X.shape)
 
         for i in range(X_transformed.shape[1]):
-            X_i = 1/(1 + math.e**-(X[:,i] - self.median_[i])/(self.IQR_diffs_[i] - 1.35))
-            X_transformed[:,i] = X_i
+            X_i = 1/(1 + math.e**(- ( (X[:,i] - self.median_[i]) / (self.IQR_diffs_[i] / 1.35) ) ))
+            
+            if self.unit_variance:
+                X_i_min = np.nanmin(X_i)
+                X_i_max = np.nanmax(X_i)
+                X_i_diff = np.ptp(X_i)
+                X_transformed[:,i] = (X_i - X_i_min) / X_i_diff
+            else: 
+                X_transformed[:,i] = X_i
 
         return(X_transformed)
 
@@ -325,7 +336,7 @@ def run_univariate_SVM(univariate_feature_file,
                        overwrite=False):
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather") or overwrite:
+    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather") or overwrite:
         noise_label = noise_proc.replace("+", "_")
 
         # Load metadata
@@ -484,11 +495,11 @@ def run_univariate_SVM(univariate_feature_file,
         null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
             
         # Save results
-        fold_assignments_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
-        SVM_coefficients_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
-        balanced_accuracy_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
-        CV_sample_predictions_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
-        null_balanced_accuracy_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
+        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
+        SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
+        balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
+        CV_sample_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
+        null_balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
    
 def run_pairwise_SVM(pairwise_feature_file,
                      SPI_directionality_file,
@@ -507,7 +518,7 @@ def run_pairwise_SVM(pairwise_feature_file,
     
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather") or overwrite:
+    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather") or overwrite:
 
         # Define noise label
         noise_label = noise_proc.replace("+", "_")
@@ -611,11 +622,11 @@ def run_pairwise_SVM(pairwise_feature_file,
         null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
             
         # Save results
-        fold_assignments_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
-        SVM_coefficients_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
-        balanced_accuracy_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
-        CV_sample_predictions_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
-        null_balanced_accuracy_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
+        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
+        SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
+        balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
+        CV_sample_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
+        null_balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
     
     
 def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
@@ -635,7 +646,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
                        overwrite=False):
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather") or overwrite:
+    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather") or overwrite:
         # Define noise label
         noise_label = noise_proc.replace("+", "_")
         
@@ -760,9 +771,9 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
         null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
             
         # Save results
-        fold_assignments_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
-        SVM_coefficients_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
-        balanced_accuracy_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
-        CV_sample_predictions_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
-        null_balanced_accuracy_res.to_feather(pydata_path + f"{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
+        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
+        SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
+        balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
+        CV_sample_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
+        null_balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
       

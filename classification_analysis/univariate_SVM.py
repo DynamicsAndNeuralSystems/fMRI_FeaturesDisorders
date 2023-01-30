@@ -42,7 +42,7 @@ dataset_ID = args.dataset_ID
 # noise_proc = "AROMA+2P+GMR"
 # num_null_iters = 1000
 # num_jobs = 16
-# scaling_type = "robust"
+# scaling_type = "robustsigmoid"
 
 run_univariate_SVM(univariate_feature_file=univariate_feature_file,
                        univariate_feature_set=univariate_feature_set, 
