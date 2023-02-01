@@ -6,7 +6,7 @@ export conda_env="pyspi"
 export pyspi_ncpus=1
 export pyspi_mem=40
 export num_jobs=16
-export cluster_queue="defaultQ"
+export cluster_queue="yossarian"
 export pyspi_config=${github_dir}/fMRI_FeaturesDisorders/prep_data_and_QC/pyspi14_config.yaml
 export sample_yaml="sample.yaml"
 export python_to_use=/headnode1/abry4213/.conda/envs/${conda_env}/bin/python3
@@ -83,17 +83,17 @@ export pyspi_walltime_hrs=3
 # Run univariate and pairwise linear SVM
 pairwise_feature_file=$data_path/processed_data/${dataset_ID}_${noise_label}_${pairwise_feature_set}_filtered.feather
 
-# for scaling_type in standard robust; do 
-#     for comparison_group in ASD; do
-#         for univariate_feature_set in catch2 catch22 catch24; do
-#             univariate_feature_file=$data_path/processed_data/ABIDE_ASD_FC1000_${univariate_feature_set}_filtered.feather
+for scaling_type in standard robustsigmoid; do 
+    for comparison_group in ASD; do
+        for univariate_feature_set in catch2 catch22 catch24; do
+            univariate_feature_file=$data_path/processed_data/ABIDE_ASD_FC1000_${univariate_feature_set}_filtered.feather
 
-#             # Run univariate SVM
-#             qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_jobs=$num_jobs \
-#             -N ${dataset_ID}_${comparison_group}_${univariate_feature_set} \
-#             -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${scaling_type}_scaler_out.txt \
-#             -m a -M $email \
-#             $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_classification.pbs
+            # Run univariate SVM
+            qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_jobs=$num_jobs \
+            -N ${dataset_ID}_${comparison_group}_${univariate_feature_set} \
+            -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${scaling_type}_scaler_out.txt \
+            -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB -q $cluster_queue \
+            $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_classification.pbs
 
 #             # Run pairwise SVM
 #             qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,pairwise_feature_file=$pairwise_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_jobs=$num_jobs \
@@ -108,6 +108,6 @@ pairwise_feature_file=$data_path/processed_data/${dataset_ID}_${noise_label}_${p
 #             -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_combo_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${pairwise_feature_set}_${scaling_type}_scaler_out.txt \
 #             -m a -M $email \
 #             $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_combined_univariate_pairwise_classification.pbs
-#         done
-#     done
-# done
+        done
+    done
+done

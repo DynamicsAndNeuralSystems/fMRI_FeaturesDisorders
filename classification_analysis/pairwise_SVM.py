@@ -1,5 +1,9 @@
 from sklearnex import patch_sklearn
 patch_sklearn()
+import sys
+
+# append the sys.path list
+sys.path.insert(0, 'helper_functions/classification/')
 
 from core_classification_functions import *
 import argparse
