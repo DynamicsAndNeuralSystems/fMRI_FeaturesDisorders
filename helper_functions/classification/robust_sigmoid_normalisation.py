@@ -4,6 +4,7 @@ from sklearn.utils.validation import (
     _check_sample_weight,
     FLOAT_DTYPES,
 )
+from sklearn.preprocessing import StandardScaler, RobustScaler
 import pandas as pd
 import math
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -164,21 +165,30 @@ class RobustSigmoidScaler(TransformerMixin, BaseEstimator):
 
         X_transformed = np.zeros(X.shape)
 
+        # Iterate over each feature column
         for i in range(X_transformed.shape[1]):
-            # catch for if the IQR difference is zero
+            # catch for if the IQR difference is zero, in which case we simply divide by 1
             if self.IQR_diffs_[i] == 0:
                 scale = 1
             # otherwise, set the scaling factor to the IQR/1.35
             else: 
-                scale = self.IQR_diffs_[i] / 1.35
+                scale = self.IQR_diffs_[i]
             # Center by removing the median, standarize by dividing by scale value
-            X_i = 1/(1 + math.e**(- ( (X[:,i] - self.median_[i]) / scale ) ))
+            X_i = 1/(1 + math.e**(- ( (X[:,i] - self.median_[i]) / scale/1.35 ) ))
             
+            # Scale to unit variance [0,1] if specified
             if self.unit_variance:
+                # Find the min value in this feature
                 X_i_min = np.nanmin(X_i)
-                X_i_max = np.nanmax(X_i)
+                # Find the range of values in this feature
                 X_i_diff = np.ptp(X_i)
-                X_transformed[:,i] = (X_i - X_i_min) / X_i_diff
+
+                # If the range is 0, return X_i_diff since the scaling above would already set all values to 0.5
+                if X_i_diff == 0:
+                    X_transformed[:,i] = X_i
+                # Otherwise, subtract the minimum and divide by the range
+                else:
+                    X_transformed[:,i] = (X_i - X_i_min) / X_i_diff
             else: 
                 X_transformed[:,i] = X_i
 

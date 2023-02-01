@@ -18,6 +18,7 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise
 --num_null_iters $num_null_iters \
 --scaling_type $scaling_type \
 --num_jobs $num_jobs \
+--num_repeats $num_repeats \
 --dataset_ID $dataset_ID"
 echo $cmd
 $cmd

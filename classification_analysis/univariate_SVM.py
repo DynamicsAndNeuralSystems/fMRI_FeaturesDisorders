@@ -4,6 +4,7 @@ import sys
 
 # append the sys.path list
 sys.path.insert(0, 'helper_functions/classification/')
+# sys.path.insert(0, 'github/fMRI_FeaturesDisorders/helper_functions/classification/')
 
 from core_classification_functions import *
 import argparse
@@ -19,6 +20,7 @@ parser.add_argument('--univariate_feature_file', default="/headnode1/abry4213/da
 parser.add_argument('--noise_proc', dest='noise_proc')
 parser.add_argument('--scaling_type', default="robust", dest='scaling_type')
 parser.add_argument('--num_null_iters', default=1000, dest='num_null_iters')
+parser.add_argument('--num_repeats', default=10, dest='num_repeats')
 parser.add_argument('--num_jobs', default=8, dest='num_jobs')
 parser.add_argument('--dataset_ID', default="UCLA_CNP", dest='dataset_ID')
 
@@ -33,6 +35,7 @@ univariate_feature_file = args.univariate_feature_file
 noise_proc = args.noise_proc
 scaling_type = args.scaling_type
 num_null_iters = args.num_null_iters
+num_repeats = args.num_repeats
 num_jobs = args.num_jobs
 dataset_ID = args.dataset_ID
 
@@ -44,7 +47,7 @@ dataset_ID = args.dataset_ID
 # pairwise_feature_set = "pyspi14"
 # univariate_feature_file ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered.feather"
 # noise_proc = "AROMA+2P+GMR"
-# num_null_iters = 1000
+# num_null_iters = 2
 # num_jobs = 16
 # scaling_type = "robustsigmoid"
 
@@ -59,4 +62,5 @@ run_univariate_SVM(univariate_feature_file=univariate_feature_file,
                        data_path=data_path,
                        scaling_type = scaling_type,
                        num_null_iters = int(num_null_iters),
+                       num_repeats = int(num_repeats),
                        num_jobs = int(num_jobs))

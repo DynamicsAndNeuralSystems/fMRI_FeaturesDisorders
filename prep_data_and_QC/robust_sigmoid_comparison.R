@@ -45,7 +45,7 @@ catch22_data_feature_columns = colnames(simData_catch22_wide)[2:23]
 simData_catch22_matrix <- as.matrix(simData_catch22_wide %>% dplyr::select(-id))
 
 # Import robust sigmoid function from python script
-source_python("~/github/fMRI_FeaturesDisorders/classification_analysis/core_classification_functions.py")
+source_python("~/github/fMRI_FeaturesDisorders/helper_functions/classification/core_classification_functions.py")
 
 # Apply robust sigmoid transform with sklearn
 transformer = RobustSigmoidScaler(unit_variance=TRUE)$fit(simData_catch22_matrix)

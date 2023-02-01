@@ -17,6 +17,7 @@ def run_k_fold_SVM_for_feature(feature_data,
                                scaling_type,
                                class_labels,
                                num_null_iters,
+                               num_repeats = 10,
                                num_jobs = 8):
         
     
@@ -47,7 +48,7 @@ def run_k_fold_SVM_for_feature(feature_data,
     CV_sample_predictions_list = []
     
     # Get 10-repeat 10-fold balanced accuracy
-    for i in range(10):
+    for i in range(num_repeats):
         # Initialise sample and class dataframe for repeat
         sample_and_class_df_for_repeat = sample_and_class_df.copy(deep=True)
         skf = StratifiedKFold(n_splits=10, shuffle=True, random_state=i)
@@ -153,6 +154,7 @@ def run_univariate_SVM(univariate_feature_file,
                        num_null_iters,
                        scaling_type="robustsigmoid",
                        num_jobs = 8,
+                       num_repeats = 10,
                        overwrite=False):
 
     # Check if file already exists or overwrite flag is set
@@ -211,7 +213,8 @@ def run_univariate_SVM(univariate_feature_file,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
                                         num_null_iters = num_null_iters,
-                                        num_jobs = num_jobs)
+                                        num_jobs = num_jobs,
+                                        num_repeats = num_repeats)
             
             # Save to list of dataframes
             fold_assignments_list.append(fold_assignments)
@@ -249,7 +252,8 @@ def run_univariate_SVM(univariate_feature_file,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
                                         num_null_iters = num_null_iters,
-                                        num_jobs = num_jobs)
+                                        num_jobs = num_jobs,
+                                        num_repeats = num_repeats)
             
             # Save to list of dataframes
             fold_assignments_list.append(fold_assignments)
@@ -290,7 +294,9 @@ def run_univariate_SVM(univariate_feature_file,
                                     sample_and_class_df = index_data,
                                     class_labels = class_labels,
                                     scaling_type = scaling_type,
-                                    num_null_iters = num_null_iters)
+                                    num_null_iters = num_null_iters,
+                                    num_jobs = num_jobs,
+                                    num_repeats = num_repeats)
         
         # Save to list of dataframes
         fold_assignments_list.append(fold_assignments)
@@ -343,6 +349,7 @@ def run_pairwise_SVM(pairwise_feature_file,
                        num_null_iters,
                        scaling_type="robust",
                        num_jobs = 8,
+                       num_repeats = 10,
                        overwrite=False):
     
 
@@ -426,7 +433,8 @@ def run_pairwise_SVM(pairwise_feature_file,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
                                         num_null_iters = num_null_iters,
-                                        num_jobs = num_jobs)
+                                        num_jobs = num_jobs,
+                                        num_repeats = num_repeats)
 
             # Save to list of dataframes
             fold_assignments_list.append(fold_assignments)
@@ -481,6 +489,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
                        num_null_iters,
                        scaling_type = "robust",
                        num_jobs = 8,
+                       num_repeats = 10,
                        overwrite=False):
 
     # Check if file already exists or overwrite flag is set
@@ -584,7 +593,9 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
-                                        num_null_iters = num_null_iters)
+                                        num_null_iters = num_null_iters,
+                                        num_jobs = num_jobs,
+                                        num_repeats = num_repeats)
             
             # Save to list of dataframes
             fold_assignments_list.append(fold_assignments)

@@ -20,6 +20,7 @@ parser.add_argument('--pairwise_feature_file', default="/headnode1/abry4213/data
 parser.add_argument('--noise_proc', dest='noise_proc')
 parser.add_argument('--scaling_type', default="robust", dest='scaling_type')
 parser.add_argument('--num_null_iters', default=1000, dest='num_null_iters')
+parser.add_argument('--num_repeats', default=10, dest='num_repeats')
 parser.add_argument('--num_jobs', default=8, dest='num_jobs')
 parser.add_argument('--dataset_ID', default="UCLA_CNP", dest='dataset_ID')
 
@@ -35,6 +36,7 @@ pairwise_feature_file = args.pairwise_feature_file
 scaling_type = args.scaling_type
 noise_proc = args.noise_proc
 num_null_iters = args.num_null_iters
+num_repeats = args.num_repeats
 num_jobs = args.num_jobs
 dataset_ID = args.dataset_ID
 
@@ -62,4 +64,5 @@ run_pairwise_SVM(pairwise_feature_file=pairwise_feature_file,
                        data_path=data_path,
                        scaling_type = scaling_type,
                        num_null_iters = int(num_null_iters),
+                       num_repeats = int(num_repeats),
                        num_jobs = int(num_jobs))
