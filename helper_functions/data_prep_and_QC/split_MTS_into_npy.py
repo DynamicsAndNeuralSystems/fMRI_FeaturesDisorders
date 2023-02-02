@@ -38,7 +38,7 @@ except:
 for TS_file in os.listdir(raw_TS_file_dir):
     try:
         sample_ID = TS_file.replace("_TS.csv", "")
-        TS_data = pd.read_csv(raw_TS_file_dir + sample_ID + "_TS.csv")
+        TS_data = pd.read_csv(raw_TS_file_dir + sample_ID + "_TS.csv", header=None)
         # Convert to numpy array
         TS_array = TS_data.to_numpy()
         data_norm = np.apply_along_axis(stats.zscore, 0, TS_array)

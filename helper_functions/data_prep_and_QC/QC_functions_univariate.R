@@ -52,23 +52,6 @@ find_univariate_feature_na <- function(TS_feature_data,
 }
 
 #-------------------------------------------------------------------------------
-# Function to read in a univariate TS feature matrix, z-score it, and save
-# the z-scored matrix
-#-------------------------------------------------------------------------------
-
-z_score_feature_matrix <- function(noise_proc,
-                                   TS_feature_data) {
-  TS_feature_data_np <- subset(TS_feature_data, Noise_Proc == noise_proc)
-  
-  TS_feature_data_z <- normalise_feature_frame(TS_feature_data_np, 
-                                               names_var = "names",
-                                               values_var = "values", 
-                                               method = "z-score")
-  
-  return(TS_feature_data_z)
-}
-
-#-------------------------------------------------------------------------------
 # Plot raw time-series data for subjects with NA values for all ROIs/features
 #-------------------------------------------------------------------------------
 
@@ -203,19 +186,4 @@ run_QC_for_univariate_dataset <- function(data_path,
                                               dataset_ID,
                                               noise_label,
                                               univariate_feature_set)), "\n")
-  
-  # Data normalisation: z-score the feature matrix as well. 
-  TS_df_z <- z_score_feature_matrix(TS_feature_data = TS_feature_data_filtered,
-                                    noise_proc = noise_proc)
-  
-  feather::write_feather(TS_df_z, paste0(proc_rdata_path, sprintf("%s_%s_%s_filtered_zscored.feather",
-                                                                dataset_ID,
-                                                                noise_label,
-                                                                univariate_feature_set)))
-  
-  cat("\nZ-scored data saved to:", paste0(proc_rdata_path, sprintf("%s_%s_%s_filtered_zscored.feather",
-                                                                   dataset_ID,
-                                                                   noise_label,
-                                                                   univariate_feature_set)),
-      "\n")
 }

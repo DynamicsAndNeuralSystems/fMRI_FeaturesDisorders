@@ -129,9 +129,9 @@ mat_data_into_CSV_files <- function(input_mat_file,
           dplyr::select(timepoint, Index, value) %>%
           pivot_wider(names_from=Index, values_from=value) %>%
           dplyr::select(-timepoint) %>%
-          write.csv(., 
+          write.table(., 
                     file = paste0(np_output_dir, sample, "_TS.csv"),
-                    col.names = F, row.names=F)
+                    col.names = F, row.names=F, sep=",")
       }
     }
     

@@ -1,7 +1,6 @@
 # Load modules
 import numpy as np
 import pandas as pd
-from scipy.stats import zscore
 import dill
 import argparse
 import os
@@ -147,29 +146,6 @@ def filter_pyspi_data(proc_data_path,
         # Save filtered pyspi results to a feather file
         feather.write_feather(filtered_pyspi_res, f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered.feather", version=1)
        
-def z_score_filtered_pyspi_data(proc_data_path,
-                      dataset_ID,
-                      noise_proc,
-                      pairwise_feature_set):
-    
-    # Set noise label for file paths
-    noise_label = noise_proc.replace("+", "_")
-    
-    if not os.path.isfile(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered_zscored.feather"):
-        filtered_pyspi_data = pd.read_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered.feather")
-        # Add a column for z-scored values
-        filtered_pyspi_data["value_zscored"] = (filtered_pyspi_data
-         .groupby(['SPI'])
-         .value
-         .transform(lambda x : zscore(x,ddof=0, nan_policy='omit')))
-        # Rename dataframe
-        filtered_pyspi_data_zscored = (filtered_pyspi_data
-                                       .drop(["value"], axis=1)
-                                       .rename(columns={"value_zscored": "value"}))
-        # Save to a feather file
-        feather.write_feather(filtered_pyspi_data_zscored, 
-                              f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered_zscored.feather",
-                              version=1)
         
 def intersection_univariate_pairwise(proc_data_path, dataset_ID, noise_proc, univariate_feature_set, pairwise_feature_set):
     # Set noise label for file paths
@@ -179,8 +155,8 @@ def intersection_univariate_pairwise(proc_data_path, dataset_ID, noise_proc, uni
     univariate_data_to_keep = pd.read_feather(f"{proc_data_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}.feather")
     
     # Load in data on samples with pairwise feature data
-    filtered_pyspi_data_zscored = pd.read_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered_zscored.feather")
-    pairwise_data_to_keep = pd.DataFrame(filtered_pyspi_data_zscored.Sample_ID.unique(), columns=["Sample_ID"])
+    filtered_pyspi_data = pd.read_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered.feather")
+    pairwise_data_to_keep = pd.DataFrame(filtered_pyspi_data.Sample_ID.unique(), columns=["Sample_ID"])
     feather.write_feather(pairwise_data_to_keep,
                           f"{proc_data_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{pairwise_feature_set}.feather",
                           version=1)
@@ -198,10 +174,6 @@ merge_calcs_into_df(proc_data_path = proc_data_path,
                     pairwise_feature_set = pairwise_feature_set,
                     noise_proc = noise_proc)
 filter_pyspi_data(proc_data_path = proc_data_path,
-                  dataset_ID = dataset_ID,
-                  noise_proc = noise_proc,
-                  pairwise_feature_set = pairwise_feature_set)
-z_score_filtered_pyspi_data(proc_data_path = proc_data_path,
                   dataset_ID = dataset_ID,
                   noise_proc = noise_proc,
                   pairwise_feature_set = pairwise_feature_set)

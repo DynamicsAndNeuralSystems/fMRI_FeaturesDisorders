@@ -35,10 +35,20 @@ TAF::mkdir(plot_path)
 UCLA_CNP_data_path <- "~/data/UCLA_CNP/processed_data/"
 ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/processed_data/"
 
+# Load univariate catch22 data
 UCLA_CNP_catch22_data <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered.feather")) %>%
   mutate(Normalization = "Raw Data")
 ABIDE_ASD_catch22_data <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered.feather")) %>%
   mutate(Normalization = "Raw Data")
+# Load pairwise pyspi14 data
+UCLA_CNP_pyspi14_data <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")) %>%
+  mutate(Normalization = "Raw Data") %>%
+  dplyr::rename("names"="SPI", "values"="value") %>%
+  mutate(Brain_Region = paste0(brain_region_from, "_", brain_region_to), .keep = "unused")
+ABIDE_ASD_pyspi14_data <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered.feather")) %>%
+  mutate(Normalization = "Raw Data") %>%
+  dplyr::rename("names"="SPI", "values"="value") %>%
+  mutate(Brain_Region = paste0(brain_region_from, "_", brain_region_to), .keep = "unused")
 
 # Apply normalization
 apply_transform_to_dataset <- function(dataset, transform_name) {
@@ -86,22 +96,97 @@ apply_transform_to_dataset <- function(dataset, transform_name) {
   return(transformed_data)
 }
 
-# z-score
-UCLA_CNP_catch22_data_zscore <- apply_transform_to_dataset(UCLA_CNP_catch22_data,
+##################### z-score #####################
+
+# UCLA CNP catch22
+if (!file.exists(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather"))) {
+  UCLA_CNP_catch22_data_zscore <- apply_transform_to_dataset(UCLA_CNP_catch22_data,
                                                            "z-score") %>%
   mutate(Normalization = "z-score")
 
-ABIDE_ASD_catch22_data_zscore <- apply_transform_to_dataset(ABIDE_ASD_catch22_data,
-                                                            "z-score") %>%
+  feather::write_feather(UCLA_CNP_catch22_data_zscore, glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather"))
+} else {
+  UCLA_CNP_catch22_data_zscore <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather"))
+}
+
+# ABIDE ASD catch22
+if (!file.exists(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_zscored.feather"))) {
+  ABIDE_ASD_catch22_data_zscore <- apply_transform_to_dataset(ABIDE_ASD_catch22_data,
+                                                           "z-score") %>%
   mutate(Normalization = "z-score")
 
-# robust sigmoid
-UCLA_CNP_catch22_data_robust_sigmoid <- apply_transform_to_dataset(UCLA_CNP_catch22_data,
-                                                                   "RobustSigmoid") %>%
+  feather::write_feather(ABIDE_ASD_catch22_data_zscore, glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_zscored.feather"))
+} else {
+  ABIDE_ASD_catch22_data_zscore <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_zscored.feather"))
+}
+
+# UCLA CNP pyspi14
+if (!file.exists(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather"))) {
+  UCLA_CNP_pyspi14_data_zscore <- apply_transform_to_dataset(UCLA_CNP_pyspi14_data,
+                                                           "z-score") %>%
+  mutate(Normalization = "z-score")
+
+  feather::write_feather(UCLA_CNP_pyspi14_data_zscore, glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather"))
+} else {
+  UCLA_CNP_pyspi14_data_zscore <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather"))
+}
+
+# ABIDE ASD pyspi14
+if (!file.exists(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored.feather"))) {
+  ABIDE_ASD_pyspi14_data_zscore <- apply_transform_to_dataset(ABIDE_ASD_pyspi14_data,
+                                                           "z-score") %>%
+  mutate(Normalization = "z-score")
+
+  feather::write_feather(ABIDE_ASD_pyspi14_data_zscore, glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored.feather"))
+} else {
+  ABIDE_ASD_pyspi14_data_zscore <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored.feather"))
+}
+
+##################### Robust Sigmoid #####################
+
+# UCLA CNP catch22
+if (!file.exists(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_RobustSigmoid.feather"))) {
+  UCLA_CNP_catch22_data_zscore <- apply_transform_to_dataset(UCLA_CNP_catch22_data,
+                                                           "RobustSigmoid") %>%
   mutate(Normalization = "Robust Sigmoid")
-ABIDE_ASD_catch22_data_robust_sigmoid <- apply_transform_to_dataset(ABIDE_ASD_catch22_data,
-                                                                    "RobustSigmoid") %>%
+
+  feather::write_feather(UCLA_CNP_catch22_data_zscore, glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_RobustSigmoid.feather"))
+} else {
+  UCLA_CNP_catch22_data_zscore <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_RobustSigmoid.feather"))
+}
+
+# ABIDE ASD catch22
+if (!file.exists(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_RobustSigmoid.feather"))) {
+  ABIDE_ASD_catch22_data_zscore <- apply_transform_to_dataset(ABIDE_ASD_catch22_data,
+                                                           "RobustSigmoid") %>%
   mutate(Normalization = "Robust Sigmoid")
+
+  feather::write_feather(ABIDE_ASD_catch22_data_zscore, glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_RobustSigmoid.feather"))
+} else {
+  ABIDE_ASD_catch22_data_zscore <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_RobustSigmoid.feather"))
+}
+
+# UCLA CNP pyspi14
+if (!file.exists(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_RobustSigmoid.feather"))) {
+  UCLA_CNP_pyspi14_data_zscore <- apply_transform_to_dataset(UCLA_CNP_pyspi14_data,
+                                                           "RobustSigmoid") %>%
+  mutate(Normalization = "Robust Sigmoid")
+
+  feather::write_feather(UCLA_CNP_pyspi14_data_zscore, glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_RobustSigmoid.feather"))
+} else {
+  UCLA_CNP_pyspi14_data_zscore <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_RobustSigmoid.feather"))
+}
+
+# ABIDE ASD pyspi14
+if (!file.exists(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_RobustSigmoid.feather"))) {
+  ABIDE_ASD_pyspi14_data_zscore <- apply_transform_to_dataset(ABIDE_ASD_pyspi14_data,
+                                                           "RobustSigmoid") %>%
+  mutate(Normalization = "Robust Sigmoid")
+
+  feather::write_feather(ABIDE_ASD_pyspi14_data_zscore, glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_RobustSigmoid.feather"))
+} else {
+  ABIDE_ASD_pyspi14_data_zscore <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_RobustSigmoid.feather"))
+}
 
 # Function to plot raw data, z-scored data, and robust sigmoid-transformed data for each catch22 featuree
 plot_values <- function(feature_data, norm_type="none", y_label="Raw\nValues") {
@@ -135,19 +220,41 @@ plot_values <- function(feature_data, norm_type="none", y_label="Raw\nValues") {
 }
 
 # Plot values for UCLA CNP
-UCLA_CNP_plot_list <- list(plot_values(UCLA_CNP_catch22_data, norm_type="none", "Raw\nValues"),
+
+# catch22
+UCLA_CNP_catch22_plot_list <- list(plot_values(UCLA_CNP_catch22_data, norm_type="none", "Raw\nValues"),
                        plot_values(UCLA_CNP_catch22_data_zscore, norm_type="z_score", "z-score"),
                        plot_values(UCLA_CNP_catch22_data_robust_sigmoid, norm_type="robust_sigmoid", "Robust\nSigmoid"))
 
-wrap_plots(UCLA_CNP_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
+wrap_plots(UCLA_CNP_catch22_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
 ggsave(glue("{plot_path}/UCLA_CNP_catch22_norms.png"), bg="white",
        width = 28, height = 5, units = "in", dpi = 300)
 
+# pyspi14
+UCLA_CNP_pyspi14_plot_list <- list(plot_values(UCLA_CNP_pyspi14_data, norm_type="none", "Raw\nValues"),
+                           plot_values(UCLA_CNP_pyspi14_data_zscore, norm_type="z_score", "z-score"),
+                           plot_values(UCLA_CNP_pyspi14_data_robust_sigmoid, norm_type="robust_sigmoid", "Robust\nSigmoid"))
+
+wrap_plots(UCLA_CNP_pyspi14_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
+ggsave(glue("{plot_path}/UCLA_CNP_pyspi14_norms.png"), bg="white",
+       width = 28, height = 5, units = "in", dpi = 300)
+
 # Plot values for ABIDE ASD
-ABIDE_ASD_plot_list <- list(plot_values(ABIDE_ASD_catch22_data, norm_type="none", "Raw\nValues"),
+
+# catch22
+ABIDE_ASD_catch22_plot_list <- list(plot_values(ABIDE_ASD_catch22_data, norm_type="none", "Raw\nValues"),
                            plot_values(ABIDE_ASD_catch22_data_zscore, norm_type="z_score", "z-score"),
                            plot_values(ABIDE_ASD_catch22_data_robust_sigmoid, norm_type="robust_sigmoid", "Robust\nSigmoid"))
 
-wrap_plots(ABIDE_ASD_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
+wrap_plots(ABIDE_ASD_catch22_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
 ggsave(glue("{plot_path}/ABIDE_ASD_catch22_norms.png"), bg="white",
+       width = 28, height = 5, units = "in", dpi = 300)
+
+# pyspi14
+ABIDE_ASD_pyspi14_plot_list <- list(plot_values(ABIDE_ASD_pyspi14_data, norm_type="none", "Raw\nValues"),
+                                    plot_values(ABIDE_ASD_pyspi14_data_zscore, norm_type="z_score", "z-score"),
+                                    plot_values(ABIDE_ASD_pyspi14_data_robust_sigmoid, norm_type="robust_sigmoid", "Robust\nSigmoid"))
+
+wrap_plots(ABIDE_ASD_pyspi14_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
+ggsave(glue("{plot_path}/ABIDE_ASD_pyspi14_norms.png"), bg="white",
        width = 28, height = 5, units = "in", dpi = 300)
