@@ -48,7 +48,8 @@ dataset_ID = args.dataset_ID
 # univariate_feature_file ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered.feather"
 # noise_proc = "AROMA+2P+GMR"
 # num_null_iters = 2
-# num_jobs = 16
+# num_repeats = 2
+# num_jobs = 1
 # scaling_type = "robustsigmoid"
 
 run_univariate_SVM(univariate_feature_file=univariate_feature_file,
