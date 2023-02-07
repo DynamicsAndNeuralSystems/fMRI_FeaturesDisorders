@@ -10,6 +10,7 @@ txt_files = dir(fullfile(ASD_subject_movement_data_path, "*movData.txt"));
 % Instantiate matrix with two columns, one for subject ID and one for mean
 % FD
 num_subjects = length(txt_files);
+FD_mat = repmat("hello", num_subjects, 4);
 FD_m_mat = repmat("hello", num_subjects, 4);
 
 for i = 1:num_subjects
@@ -23,13 +24,17 @@ for i = 1:num_subjects
     % 3dvolreg outputs (rot,trans) rather than SPM (trans,rot)
     subject_movement_data_reordered = subject_movement_data(:, [4:6, 1:3]);
 
-    % Calculate framewise displacement
+    % Calculate and store framewise displacement
     % Jenkinson formula
     subject_FD_jenk = GetFDJenk(subject_movement_data_reordered);
+    FD_mat(i,1) = subject;
+    FD_mat(i,2) = subject_FD_jenk;
     % Power formula
     subject_FD_power = GetFDPower(subject_movement_data_reordered);
+    FD_mat(i,3) = subject_FD_power;
     % VanD formula
     subject_FD_VanD = GetFDVanD(subject_movement_data_reordered);
+    FD_mat(i,4) = subject_FD_VanD;
 
     % Calculate and store mean FD
     subject_m_FD_jenk = mean(subject_FD_jenk);
@@ -42,5 +47,11 @@ for i = 1:num_subjects
 end
 
 % Write my results to a .txt file
-output_file = fullfile(ASD_subject_movement_data_path, "ABIDE_ASD_mFD.txt");
-writematrix(FD_m_mat, output_file)
+
+% full FD
+output_file = fullfile(ASD_subject_movement_data_path, "ABIDE_ASD_all_FD.txt");
+writematrix(FD_mat, output_file)
+
+% mean FD
+output_mean_file = fullfile(ASD_subject_movement_data_path, "ABIDE_ASD_mFD.txt");
+writematrix(FD_m_mat, output_mean_file)
