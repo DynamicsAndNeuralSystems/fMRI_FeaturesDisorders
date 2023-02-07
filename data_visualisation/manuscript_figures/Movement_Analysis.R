@@ -8,6 +8,8 @@ library(cowplot)
 library(ggpubr)
 library(ggsignif)
 library(patchwork)
+library(feather)
+library(glue)
 theme_set(theme_cowplot())
 
 ################################################################################
@@ -15,84 +17,75 @@ theme_set(theme_cowplot())
 ################################################################################
 
 github_dir <- "~/github/fMRI_FeaturesDisorders/"
-source(paste0(github_dir, "helper_functions/classification/Linear_SVM.R"))
 source(paste0(github_dir, "data_visualisation/manuscript_figures/Manuscript_Draft_Visualisations_Helper.R"))
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/FigureS1/")
 TAF::mkdir(plot_path)
 
-data_path <- "~/data/UCLA_CNP_ABIDE_ASD/"
-rdata_path <- paste0(data_path, "processed_data/Rdata/")
+UCLA_CNP_data_path <- "~/data/UCLA_CNP/"
+ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/"
 
 # Load subject metadata
-sample_metadata <- readRDS(paste0(data_path, "study_metadata/UCLA_CNP_ABIDE_ASD_sample_metadata.Rds"))
+UCLA_CNP_sample_metadata <- feather::read_feather(glue("{UCLA_CNP_data_path}/study_metadata/UCLA_CNP_sample_metadata.feather"))
+ABIDE_ASD_sample_metadata <- feather::read_feather(glue("{ABIDE_ASD_data_path}/study_metadata/ABIDE_ASD_sample_metadata.feather"))
 
 # Load movement data
-UCLA_ABIDE_movement_data <- readRDS(paste0(data_path, "movement_data/UCLA_CNP_ABIDE_ASD_FD.Rds"))
-UCLA_movement_data_Linden <- readRDS(paste0(data_path, "movement_data/UCLA_CNP_Linden_FD_Power.Rds"))
+UCLA_CNP_movement_data <- read.table(glue("{UCLA_CNP_data_path}/movement_data/UCLA_CNP_mFD.txt"), 
+                                       sep=",", colClasses = "character")
+ABIDE_ASD_movement_data <- read.table(glue("{ABIDE_ASD_data_path}/movement_data/ABIDE_ASD_mFD.txt"), 
+                                     sep=",", colClasses = "character")
+colnames(UCLA_CNP_movement_data) <- colnames(ABIDE_ASD_movement_data) <- c("Sample_ID", "Jenkinson", "Power", "VanDijk")
+
+# Set mFD columns as numeric
+UCLA_CNP_movement_data <- UCLA_CNP_movement_data %>%
+  mutate_at(c("Jenkinson", "Power", "VanDijk"), function(x) as.numeric(x)) %>%
+  left_join(., UCLA_CNP_sample_metadata)
+ABIDE_ASD_movement_data <- ABIDE_ASD_movement_data %>%
+  mutate_at(c("Jenkinson", "Power", "VanDijk"), function(x) as.numeric(x)) %>%
+  left_join(., ABIDE_ASD_sample_metadata)
 
 ################################################################################
-# Compare distributions of each mFD type by dataset
-################################################################################
+# Compare FD-Power distributions between each case-control comparison
+################################################################################'
 
-# NOTE: I'm plotting the 1 to the 95th percentiles for each dataset
-merged_midrange_data <- UCLA_ABIDE_movement_data %>%
-  pivot_longer(cols=c(Jenkinson:VanDijk),
-               names_to = "Method",
-               values_to = "mFD") %>%
-  group_by(Cohort, Method) %>%
-  mutate(perc025 = quantile(mFD, probs=c(0.025))) %>%
-  mutate(perc975 = quantile(mFD, probs=c(0.975))) %>%
-  ungroup() %>%
-  rowwise() %>%
-  filter(perc025 <= mFD, mFD <= perc975) %>%
-  mutate(Diagnosis = factor(Diagnosis, levels = c("Control", "ASD", "Schizophrenia")))
+# Is age related to movement in either cohort?
+UCLA_CNP_movement_data %>%
+  mutate(Cohort = "UCLA CNP", Age = as.numeric(Age)) %>%
+  ggplot(data=., mapping=aes(x=Age, y=Power, color=Diagnosis)) +
+  geom_point() +
+  geom_smooth(method="lm")
 
-merged_midrange_data %>%
-  ggplot(data=., mapping=aes(x=Diagnosis, y=mFD)) +
-  geom_violin(aes(fill=Diagnosis)) +
-  geom_boxplot(color="black", fill=NA, width=0.1) +
-  facet_wrap(Cohort ~ Method, scales="free") +
-  geom_signif(data = subset(merged_midrange_data, Cohort=="ASD Study"),
-              test = "wilcox.test",
-              comparisons = list(c("ASD", "Control")), 
-              map_signif_level=TRUE) +
-  geom_signif(data = subset(merged_midrange_data, Cohort=="SCZ Study"),
-              test = "wilcox.test",
-              comparisons = list(c("Schizophrenia", "Control")), 
-              map_signif_level=TRUE) +
-  scale_y_continuous(expand = c(0,0,0.15,0)) +
-  theme(legend.position = "bottom",
-        axis.text.x = element_blank())
-ggsave(paste0(plot_path, "UCLA_ABIDE_mFD_by_Group.png"),
-       width = 6, height=4, units="in", dpi=300, bg="white")
+ABIDE_ASD_movement_data %>%
+  mutate(Cohort = "ABIDE ASD", Age = as.numeric(Age)) %>%
+  filter(Power< 3) %>%
+  ggplot(data=., mapping=aes(x=Age, y=Power, color=Diagnosis)) +
+  geom_point() +
+  geom_smooth(method="lm")
 
-# Compare control subjects per cohort
-merged_midrange_data %>%
-  filter(Diagnosis=="Control") %>%
-  ggplot(data=., mapping=aes(x=mFD)) +
-  stat_density(aes(fill = Cohort, y=after_stat(scaled)),
-               position = "identity", alpha=0.6) +
-  ggtitle("mFD Values in Control Participants") +
-  ylab("Scaled Density\nof Control Participants") +
-  xlab("mFD By Method") +
-  facet_wrap(. ~ Method, scales="free") +
-  scale_x_continuous(breaks = scales::pretty_breaks(3)) +
-  theme(plot.title = element_text(hjust=0.5),
-        legend.position="bottom")
-ggsave(paste0(plot_path, "Control_mFD_Distribution.png"),
-       width = 7, height=3, units="in", dpi=300, bg="white")
 
 # Maybe we only focus on the FDpower estimates for the paper?
-ABIDE_power <- merged_midrange_data %>%
-  filter(Method == "Power",
-         Cohort == "ABIDE Study") 
+UCLA_CNP_movement_data %>%
+  mutate(Cohort = "UCLA CNP") %>%
+  ggplot(data=., mapping=aes(x=Diagnosis, y=Power)) +
+  geom_violin(aes(fill=Diagnosis)) +
+  geom_boxplot(color="black", fill=NA, width=0.1) +
+  facet_wrap(Cohort ~ ., scales="free_x") +
+  geom_signif(test = "wilcox.test",
+              comparisons = list(c("Schizophrenia", "Control")), 
+              map_signif_level=TRUE) +
+  scale_fill_manual(values = c("#00B06D", "#737373")) +
+  scale_y_continuous(expand = c(0,0,0.15,0)) +
+  ylab("Head Movement\n(mFD-Power)") +
+  xlab("Group") +
+  theme(legend.position = "none")
+ggsave(paste0(plot_path, "UCLA_CNP_mFD_Power_by_Group.png"),
+       width = 3, height=2.25, units="in", dpi=300, bg="white")
 
-UCLA_power <- merged_midrange_data %>%
-  filter(Method == "Power",
-         Cohort == "UCLA Study") 
-
-ABIDE_power %>%
-  ggplot(data=., mapping=aes(x=Diagnosis, y=mFD)) +
+ABIDE_ASD_movement_data %>%
+  filter(Power > 1)
+ABIDE_ASD_movement_data %>%
+  filter(Power < 1) %>%
+  mutate(Cohort = "ABIDE") %>%
+  ggplot(data=., mapping=aes(x=Diagnosis, y=Power)) +
   geom_violin(aes(fill=Diagnosis)) +
   geom_boxplot(color="black", fill=NA, width=0.1) +
   facet_wrap(Cohort ~ ., scales="free_x") +
@@ -107,37 +100,6 @@ ABIDE_power %>%
 ggsave(paste0(plot_path, "ABIDE_mFD_Power_by_Group.png"),
        width = 3, height=2.25, units="in", dpi=300, bg="white")
 
-UCLA_power  %>%
-  ggplot(data=., mapping=aes(x=Diagnosis, y=mFD)) +
-  geom_violin(aes(fill=Diagnosis)) +
-  geom_boxplot(color="black", fill=NA, width=0.1) +
-  facet_wrap(Cohort ~ ., scales="free_x") +
-  geom_signif(test = "wilcox.test",
-              comparisons = list(c("Schizophrenia", "Control")), 
-              map_signif_level=TRUE) +
-  scale_fill_manual(values = c("#00B06D", "#737373")) +
-  scale_y_continuous(expand = c(0,0,0.15,0)) +
-  ylab("Head Movement\n(mFD-Power)") +
-  xlab("Group") +
-  theme(legend.position = "none")
-ggsave(paste0(plot_path, "UCLA_mFD_Power_by_Group.png"),
-       width = 3, height=2.25, units="in", dpi=300, bg="white")
-
-################################################################################
-# Compare Linden's mFD-Jenkinson values with Annie's
-################################################################################
-
-UCLA_movement_data_Linden %>%
-  ggplot(data=., mapping=aes(x=Jenkinson_Linden, y=Power)) +
-  geom_point() +
-  geom_abline(color="red", slope=1, intercept=0, alpha=0.6, linewidth=1) +
-  coord_equal() +
-  ggtitle("Mean Framewise Displacement with\nPower et al. 2012 Method") +
-  ylab("mFD-Power, Annie") +
-  xlab("mFD-Power, Linden") +
-  theme(plot.title=element_text(hjust=0.5, size=12))
-ggsave(paste0(plot_path, "UCLA_mFD_Power_Linden_Annie.png"),
-       width = 4, height=4, units="in", dpi=300, bg="white")
 
 ################################################################################
 # Plot # subjects retained per group by motion threshold
