@@ -2,7 +2,7 @@
 #PBS -q yossarian
 #PBS -j oe
 #PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/normalisation_comparison_out.txt
-#PBS -l select=1:ncpus=8:mem=120GB
+#PBS -l select=1:ncpus=1:mem=40GB
 #PBS -l walltime=6:00:00
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -m a
@@ -17,8 +17,7 @@ source /usr/physics/python/anaconda3/etc/profile.d/conda.sh
 conda activate pyspi
 
 # Call R script
-# Rscript /headnode1/abry4213/github/fMRI_FeaturesDisorders/prep_data_and_QC/normalisation_comparison.R
-python3 /headnode1/abry4213/github/fMRI_FeaturesDisorders/prep_data_and_QC/apply_normalisations.py
+Rscript /headnode1/abry4213/github/fMRI_FeaturesDisorders/prep_data_and_QC/normalisation_comparison.R
 
 exit
 

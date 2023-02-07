@@ -87,13 +87,13 @@ if __name__ == '__main__':
     UCLA_CNP_catch22_zscore_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_catch22_data, "z-score", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather"))
     ABIDE_ASD_catch22_zscore_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_catch22_data, "z-score", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_zscored.feather"))
     UCLA_CNP_pyspi14_zscore_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_pyspi14_data, "z-score", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather"))
-    ABIDE_ASD_pyspi14_zscore_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_pyspi14_data, "z-score", f"{UCLA_CNP_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored.feather"))
+    ABIDE_ASD_pyspi14_zscore_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_pyspi14_data, "z-score", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored.feather"))
 
     # Define robust sigmoid processes
     UCLA_CNP_catch22_RobustSigmoid_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_catch22_data, "RobustSigmoid", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_RobustSigmoid.feather"))
     ABIDE_ASD_catch22_RobustSigmoid_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_catch22_data, "RobustSigmoid", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_RobustSigmoid.feather"))
     UCLA_CNP_pyspi14_RobustSigmoid_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_pyspi14_data, "RobustSigmoid", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_RobustSigmoid.feather"))
-    ABIDE_ASD_pyspi14_RobustSigmoid_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_pyspi14_data, "RobustSigmoid", f"{UCLA_CNP_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_RobustSigmoid.feather"))
+    ABIDE_ASD_pyspi14_RobustSigmoid_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_pyspi14_data, "RobustSigmoid", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_RobustSigmoid.feather"))
 
     # Start the processes
     UCLA_CNP_catch22_zscore_p.start()
@@ -114,52 +114,3 @@ if __name__ == '__main__':
     ABIDE_ASD_catch22_RobustSigmoid_p.join()
     UCLA_CNP_pyspi14_RobustSigmoid_p.join()
     ABIDE_ASD_pyspi14_RobustSigmoid_p.join()
-
-# # load UCLA CNP catch22 data
-
-# UCLA_CNP_catch22_zscored = apply_transform_by_region(input_data = UCLA_CNP_catch22_data,
-#                                                  transform_type = "z-score")
-# UCLA_catch22_zscored.to_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather")
-
-# # load ABIDE ASD catch22 data
-
-# ABIDE_ASD_catch22_zscored = apply_transform_by_region(input_data = ABIDE_ASD_catch22_data,
-#                                                  transform_type = "z-score")       
-# ABIDE_ASD_catch22_zscored.to_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_zscored.feather")
-
-# # load UCLA CNP pyspi14 data
-
-# UCLA_CNP_pyspi14_zscored = apply_transform_by_region(input_data = UCLA_CNP_pyspi14_data,
-#                                                  transform_type = "z-score")
-# UCLA_CNP_pyspi14_zscored.to_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather")
-
-
-# # load ABIDE ASD pyspi14 data
-
-# ABIDE_ASD_pyspi14_zscored = apply_transform_by_region(input_data = ABIDE_ASD_pyspi14_data,
-#                                                  transform_type = "z-score")    
-# ABIDE_ASD_pyspi14_zscored.to_feather(f"{UCLA_CNP_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored.feather")                               
-
-
-# ####################### Robust Sigmoid #######################
-
-# # load UCLA CNP catch22 data
-# UCLA_CNP_catch22_RobustSigmoid = apply_transform_by_region(input_data = UCLA_CNP_catch22_data,
-#                                                  transform_type = "RobustSigmoid")
-# UCLA_catch22_RobustSigmoid.to_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_RobustSigmoid.feather")
-
-# # load ABIDE ASD catch22 data
-# ABIDE_ASD_catch22_RobustSigmoid = apply_transform_by_region(input_data = ABIDE_ASD_catch22_data,
-#                                                  transform_type = "RobustSigmoid")       
-# ABIDE_ASD_catch22_RobustSigmoid.to_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_RobustSigmoid.feather")
-
-# # load UCLA CNP pyspi14 data
-# UCLA_CNP_pyspi14_RobustSigmoid = apply_transform_by_region(input_data = UCLA_CNP_pyspi14_data,
-#                                                  transform_type = "RobustSigmoid")
-# UCLA_CNP_pyspi14_RobustSigmoid.to_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_RobustSigmoid.feather")
-
-
-# # load ABIDE ASD pyspi14 data
-# ABIDE_ASD_pyspi14_RobustSigmoid = apply_transform_by_region(input_data = ABIDE_ASD_pyspi14_data,
-#                                                  transform_type = "RobustSigmoid")    
-# ABIDE_ASD_pyspi14_RobustSigmoid.to_feather(f"{UCLA_CNP_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_RobustSigmoid.feather")                               

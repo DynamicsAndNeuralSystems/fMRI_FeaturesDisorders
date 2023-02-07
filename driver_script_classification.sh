@@ -40,8 +40,7 @@ for scaling_type in robustsigmoid; do
 # for scaling_type in standard robustsigmoid; do 
     for comparison_group in Schizophrenia Bipolar ADHD; do
     # for comparison_group in Schizophrenia; do
-        # for univariate_feature_set in catch2 catch22 catch24; do
-        for univariate_feature_set in catch22; do
+        for univariate_feature_set in catch2 catch22 catch24; do
 
             univariate_feature_file=$data_path/processed_data/${dataset_ID}_${noise_label}_${univariate_feature_set}_filtered.feather
 
@@ -93,8 +92,7 @@ pairwise_feature_file=$data_path/processed_data/${dataset_ID}_${noise_label}_${p
 for scaling_type in robustsigmoid; do
 # for scaling_type in standard robustsigmoid; do 
     for comparison_group in ASD; do
-        for univariate_feature_set in catch22; do
-        # for univariate_feature_set in catch2 catch22 catch24; do
+        for univariate_feature_set in catch2 catch22 catch24; do
             univariate_feature_file=$data_path/processed_data/ABIDE_ASD_FC1000_${univariate_feature_set}_filtered.feather
 
             # # Run univariate SVM
@@ -115,12 +113,12 @@ for scaling_type in robustsigmoid; do
             # -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB -q $cluster_queue \
             # $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_pairwise_classification.pbs
 
-            # # Run combined univariate+pairwise SVM
-            # qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,univariate_feature_file=$univariate_feature_file,pairwise_feature_set=$pairwise_feature_set,pairwise_feature_file=$pairwise_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_jobs=$num_jobs,num_repeats=$num_repeats \
-            # -N ${dataset_ID}_${comparison_group}_${univariate_feature_set}_${pairwise_feature_set} \
-            # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_combo_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${pairwise_feature_set}_${scaling_type}_scaler_out.txt \
-            # -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB -q $cluster_queue  \
-            # $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_combined_univariate_pairwise_classification.pbs
+            # Run combined univariate+pairwise SVM
+            qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,univariate_feature_file=$univariate_feature_file,pairwise_feature_set=$pairwise_feature_set,pairwise_feature_file=$pairwise_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_jobs=$num_jobs,num_repeats=$num_repeats \
+            -N ${dataset_ID}_${comparison_group}_${univariate_feature_set}_${pairwise_feature_set} \
+            -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_combo_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${pairwise_feature_set}_${scaling_type}_scaler_out.txt \
+            -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB -q $cluster_queue  \
+            $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_combined_univariate_pairwise_classification.pbs
         done
     done
 done
