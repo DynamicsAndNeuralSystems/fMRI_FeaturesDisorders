@@ -19,7 +19,8 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/univaria
 --scaling_type $scaling_type \
 --num_jobs $num_jobs \
 --num_repeats $num_repeats \
---dataset_ID $dataset_ID"
+--dataset_ID $dataset_ID \
+--run_nulls"
 
 echo $cmd
 

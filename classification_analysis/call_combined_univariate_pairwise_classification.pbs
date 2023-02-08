@@ -21,7 +21,8 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/combined
 --scaling_type $scaling_type \
 --num_repeats $num_repeats \
 --num_jobs $num_jobs \
---dataset_ID $dataset_ID"
+--dataset_ID $dataset_ID \
+--run_nulls"
 echo $cmd
 $cmd
 

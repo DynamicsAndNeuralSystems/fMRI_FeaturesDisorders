@@ -1,7 +1,6 @@
 from sklearnex import patch_sklearn
 patch_sklearn()
 import sys
-import pyarrow
 import scipy.io
 import pandas as pd
 import os
@@ -23,6 +22,7 @@ parser.add_argument('--pairwise_feature_set', default='pyspi14', dest='pairwise_
 parser.add_argument('--univariate_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather", dest='univariate_feature_file')
 parser.add_argument('--noise_proc', dest='noise_proc')
 parser.add_argument('--scaling_type', default="robust", dest='scaling_type')
+parser.add_argument('--run_nulls', action='store_true')
 parser.add_argument('--num_folds', default=10, dest='num_folds')
 parser.add_argument('--num_null_iters', default=1000, dest='num_null_iters')
 parser.add_argument('--num_repeats', default=10, dest='num_repeats')
@@ -38,6 +38,7 @@ univariate_feature_set = args.univariate_feature_set
 pairwise_feature_set = args.pairwise_feature_set
 univariate_feature_file = args.univariate_feature_file
 noise_proc = args.noise_proc
+run_nulls = args.run_nulls
 scaling_type = args.scaling_type
 num_folds = args.num_folds
 num_null_iters = args.num_null_iters
@@ -100,11 +101,12 @@ def run_SVMs_for_movement_data(brain_region_list,
                                     sample_and_class_df = index_data,
                                     class_labels = class_labels,
                                     scaling_type = scaling_type,
+                                    analysis_type = "Brain Region",
                                     run_nulls=run_nulls,
-                                    num_null_iters = num_null_iters,
-                                    num_folds = num_folds,
-                                    num_jobs = num_jobs,
-                                    num_repeats = num_repeats)
+                                    num_null_iters = int(num_null_iters),
+                                    num_folds = int(num_folds),
+                                    num_jobs = int(num_jobs),
+                                    num_repeats = int(num_repeats))
         
         # Add name for analysis column
         balanced_accuracy["Analysis"] = threshold_type
