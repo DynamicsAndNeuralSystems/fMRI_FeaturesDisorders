@@ -54,14 +54,14 @@ for scaling_type in robustsigmoid; do
             # -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB -q $cluster_queue \
             # $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_classification.pbs
 
-            # Run movement-based univariate SVM
-            job_memory=40
-            num_jobs=1
-            qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_folds=$num_folds,num_jobs=$num_jobs,num_repeats=$num_repeats \
-            -N ${dataset_ID}_${comparison_group}_movement_${univariate_feature_set} \
-            -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_movement_region_wise_SVM_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${scaling_type}_scaler_out.txt \
-            -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB -q $cluster_queue \
-            $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/movement/call_SVMs_by_movement.pbs
+            # # Run movement-based univariate SVM
+            # job_memory=40
+            # num_jobs=1
+            # qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_folds=$num_folds,num_jobs=$num_jobs,num_repeats=$num_repeats \
+            # -N ${dataset_ID}_${comparison_group}_movement_${univariate_feature_set} \
+            # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_movement_region_wise_SVM_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${scaling_type}_scaler_out.txt \
+            # -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB -q $cluster_queue \
+            # $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/movement/call_SVMs_by_movement.pbs
 
             # # Run pairwise SVM
             # job_memory=180
@@ -113,6 +113,15 @@ for scaling_type in robustsigmoid; do
             # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${scaling_type}_scaler_out.txt \
             # -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB -q $cluster_queue \
             # $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_classification.pbs
+
+            # Run movement-based univariate SVM
+            job_memory=40
+            num_jobs=1
+            qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_folds=$num_folds,num_jobs=$num_jobs,num_repeats=$num_repeats \
+            -N ${dataset_ID}_${comparison_group}_movement_${univariate_feature_set} \
+            -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_movement_region_wise_SVM_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${scaling_type}_scaler_out.txt \
+            -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB -q $cluster_queue \
+            $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/movement/call_SVMs_by_movement.pbs
 
             # # Run pairwise SVM
             # job_memory=180

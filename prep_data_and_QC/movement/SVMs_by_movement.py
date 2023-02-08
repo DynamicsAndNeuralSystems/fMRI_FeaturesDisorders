@@ -138,7 +138,7 @@ noise_label = noise_proc.replace("+", "_")
 metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
 # Load in data containing subjects with both univariate and pairwise data available
-samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather").Sample_ID.tolist()                                                                   
 
 # Univariate feature data
 univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -147,7 +147,7 @@ univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadat
 
 # Filter univariate data by samples with both univariate and pairwise
 # Filter by samples with univariate data available as well
-univariate_feature_data = univariate_feature_data[univariate_feature_data.Sample_ID.isin(samples_to_keep.Sample_ID)] 
+univariate_feature_data = univariate_feature_data[univariate_feature_data.Sample_ID.isin(samples_to_keep)] 
 brain_region_list = univariate_feature_data.Brain_Region.unique().tolist()
 
 # Load full movement data
@@ -158,18 +158,18 @@ movement_data_long = (movement_data
                       .explode(["Sample_ID"])
                       .explode(["Jenkinson", "Power", "VanDijk"])
                       .explode(["Jenkinson", "Power", "VanDijk"])
-                      .query("Sample_ID.isin(@samples_to_keep.Sample_ID)"))
+                      .query("Sample_ID.isin(@samples_to_keep)"))
 movement_data_long['Frame_Number'] = movement_data_long.groupby(['Sample_ID']).cumcount()+1
 
 # Load mean movement data
-movement_data_mean = (pd.read_csv(f"{data_path}/movement_data/{dataset_ID}_mFD.txt", 
+movement_data_mean = pd.read_csv(f"{data_path}/movement_data/{dataset_ID}_mFD.txt", 
                             header=None, names=["Sample_ID", "Jenkinson", "Power", "VanDijk"])
-                      .query("Sample_ID.isin(@samples_to_keep.Sample_ID)"))
+                            
+# Cast sample ID as string type
+movement_data_mean = movement_data_mean.astype({'Sample_ID':'string'})
 
-
-
-
-
+# Filter by samples to keep
+movement_data_mean = movement_data_mean.query("Sample_ID.isin(@samples_to_keep)")
 
 ###########################################################################
 # Keeping all subjects -- 5-fold CV with 10 repeats
