@@ -19,6 +19,7 @@ parser.add_argument('--pairwise_feature_set', default='pyspi14', dest='pairwise_
 parser.add_argument('--pairwise_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather", dest='pairwise_feature_file')
 parser.add_argument('--noise_proc', dest='noise_proc')
 parser.add_argument('--scaling_type', default="robust", dest='scaling_type')
+parser.add_argument('--num_folds', default=10, dest='num_folds')
 parser.add_argument('--num_null_iters', default=1000, dest='num_null_iters')
 parser.add_argument('--num_repeats', default=10, dest='num_repeats')
 parser.add_argument('--num_jobs', default=8, dest='num_jobs')
@@ -34,6 +35,7 @@ univariate_feature_set = args.univariate_feature_set
 pairwise_feature_set = args.pairwise_feature_set
 pairwise_feature_file = args.pairwise_feature_file
 scaling_type = args.scaling_type
+num_folds = args.num_folds
 noise_proc = args.noise_proc
 num_null_iters = args.num_null_iters
 num_repeats = args.num_repeats

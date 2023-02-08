@@ -17,6 +17,7 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/combined
 --SPI_directionality_file $SPI_directionality_file \
 --noise_proc $noise_proc \
 --num_null_iters $num_null_iters \
+--num_folds $num_folds \
 --scaling_type $scaling_type \
 --num_repeats $num_repeats \
 --num_jobs $num_jobs \
