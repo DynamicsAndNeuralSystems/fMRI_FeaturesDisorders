@@ -12,6 +12,7 @@ from robust_sigmoid_normalisation import RobustSigmoidScaler
 def run_k_fold_SVM_for_feature(feature_data, 
                                feature_list,
                                grouping_var_name,
+                               analysis_type,
                                scoring_method,
                                sample_and_class_df,
                                scaling_type,
@@ -89,10 +90,12 @@ def run_k_fold_SVM_for_feature(feature_data,
         
         # Combine lists into dataframes
         fold_splits = pd.concat(fold_split_list)
-        # Add sample ID name based on index
-
+        fold_splits["Analysis_Type"] = analysis_type
         fold_assignments_list.append(fold_splits)
+
+        # Add sample ID name based on index
         coef_df = pd.concat(coef_list)
+        coef_df["Analysis_Type"] = analysis_type
         SVM_coefficients_list.append(coef_df)
         
         # Extract balanced accuracy by fold
@@ -100,12 +103,14 @@ def run_k_fold_SVM_for_feature(feature_data,
                                                     columns=["Balanced_Accuracy"])
         balanced_accuracy_by_fold_df["Fold"] = [*range(1, 11, 1)]
         balanced_accuracy_by_fold_df["Repeat_Number"] = i
+        balanced_accuracy_by_fold_df["Analysis_Type"] = analysis_type
         balanced_accuracy_list.append(balanced_accuracy_by_fold_df)
         
         # Generate CV predictions across folds and save
         CV_pred = cross_val_predict(pipe, feature_data, class_labels, cv=skf)
         sample_and_class_df_for_repeat["CV_Predicted_Diagnosis"] = CV_pred
         sample_and_class_df_for_repeat["Repeat_Number"] = i+1
+        sample_and_class_df_for_repeat["Analysis_Type"] = analysis_type
         CV_sample_predictions_list.append(sample_and_class_df_for_repeat)
         
     # Concatenate results and save per ROI
@@ -135,6 +140,7 @@ def run_k_fold_SVM_for_feature(feature_data,
                                                 columns = ["Null_Balanced_Accuracy"])
     null_model_balanced_accuracy["group_var"] = grouping_var_name
     null_model_balanced_accuracy["Null_Iter"] = [*range(1, num_null_iters + 1, 1)]
+    null_model_balanced_accuracy["Analysis_Type"] = analysis_type
     
     return (fold_assignments,
             SVM_coefficients,
@@ -208,6 +214,7 @@ def run_univariate_SVM(univariate_feature_file,
             (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions, null_balacc_dist) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = feature_list,
                                         grouping_var_name = ROI,
+                                        analysis_type = "Univariate_Brain_Region",
                                         scoring_method = "balanced_accuracy",
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
@@ -247,6 +254,7 @@ def run_univariate_SVM(univariate_feature_file,
             (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions, null_balacc_dist) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = region_list,
                                         grouping_var_name = TS_feature,
+                                        analysis_type = "Univariate_TS_Feature",
                                         scoring_method = "balanced_accuracy",
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
@@ -290,6 +298,7 @@ def run_univariate_SVM(univariate_feature_file,
         (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions, null_balacc_dist) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                     feature_list = combo_features,
                                     grouping_var_name = "Combo",
+                                    analysis_type = "Univariate_Combo",
                                     scoring_method = "balanced_accuracy",
                                     sample_and_class_df = index_data,
                                     class_labels = class_labels,
@@ -428,6 +437,7 @@ def run_pairwise_SVM(pairwise_feature_file,
             (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions, null_balacc_dist) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = feature_list,
                                         grouping_var_name = this_SPI,
+                                        analysis_type = "Pairwise_SPI",
                                         scoring_method = "balanced_accuracy",
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
@@ -589,6 +599,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
             (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions, null_balacc_dist) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = feature_list,
                                         grouping_var_name = this_SPI,
+                                        analysis_type = "Univariate_Pairwise_Combo",
                                         scoring_method = "balanced_accuracy",
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
