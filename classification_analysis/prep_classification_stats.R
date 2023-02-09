@@ -400,11 +400,3 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combo_univariate_pa
   
   feather::write_feather(combo_univariate_pairwise_p_values, glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combo_univariate_pairwise_{scaler}_scaler_empirical_p_values.feather"))
 }
-
-data_to_analyse %>%
-  group_by(Diagnosis) %>%
-  summarise(N = n(),
-            Num_Female = sum(Sex=="F"),
-            Perc_Female = round(100*Num_Female/N, 1),
-            Age_Mean = round(mean(as.numeric(Age), na.rm=T), 1),
-            Age_SD = round(sd(as.numeric(Age)), 1))

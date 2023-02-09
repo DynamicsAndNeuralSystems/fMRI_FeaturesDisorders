@@ -7,7 +7,7 @@ plot_path <- paste0(github_dir, "plots/Manuscript_Draft/Figure3/")
 TAF::mkdir(plot_path)
 
 python_to_use <- "~/.conda/envs/pyspi/bin/python3"
-python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
+# python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
 data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
@@ -32,8 +32,6 @@ library(tidyverse)
 library(glue)
 library(icesTAF)
 library(cowplot)
-library(ggseg)
-library(ggsegHO)
 theme_set(theme_cowplot())
 
 # Source visualisation script
