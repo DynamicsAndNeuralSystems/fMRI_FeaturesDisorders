@@ -164,6 +164,91 @@ univariate_balanced_accuracy <- univariate_balanced_accuracy_all_folds %>%
   summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
             Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T))
 
+################################################################################
+# Compile fold assignments
+################################################################################
+
+# Load fold assignment data, or construct if needed
+if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_{scaler}_scaler_fold_assignments.feather"))) {
+  univariate_fold_assignments_list <- list()
+  # First iterate over each study/comparison group
+  for (i in 1:nrow(study_group_df)) {
+    dataset_ID <- study_group_df$Study[i]
+    noise_proc <- study_group_df$Noise_Proc[i]
+    noise_label = gsub("\\+", "_", noise_proc)
+    comparison_group <- study_group_df$Comparison_Group[i]
+    
+    # Now iterate over each univariate feature set
+    for (featset in univariate_feature_sets) {
+      fold_assignments <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/processed_data/{dataset_ID}_{comparison_group}_Univariate_{featset}_{scaler}_scaler_SVM_fold_assignments.feather"))
+      fold_assignments$Study <- dataset_ID
+      fold_assignments$Univariate_Feature_Set <- featset
+      # Append to list
+      univariate_fold_assignments_list <- list.append(univariate_fold_assignments_list, fold_assignments)
+    }
+  }
+  
+  # Combine the list results into a dataframe
+  univariate_fold_assignments <- do.call(plyr::rbind.fill, 
+                                                    univariate_fold_assignments_list) %>%
+    mutate(Analysis_Type = case_when(str_detect(group_var, "_") ~ "TS_Feature",
+                                     group_var == "Combo" ~ "Combo",
+                                     T ~ "Brain_Region"))
+  
+  # Save to feather file
+  feather::write_feather(univariate_fold_assignments,
+                         glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_{scaler}_scaler_fold_assignments.feather"))
+} else {
+  univariate_fold_assignments <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_{scaler}_scaler_fold_assignments.feather"))
+}
+
+################################################################################
+# Compile SVM coefficient results
+################################################################################
+
+# Load balanced accuracy data, or construct if needed
+if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_{scaler}_scaler_SVM_coefficients.feather"))) {
+  univariate_SVM_coefs_list <- list()
+  # First iterate over each study/comparison group
+  for (i in 1:nrow(study_group_df)) {
+    dataset_ID <- study_group_df$Study[i]
+    noise_proc <- study_group_df$Noise_Proc[i]
+    noise_label = gsub("\\+", "_", noise_proc)
+    comparison_group <- study_group_df$Comparison_Group[i]
+    
+    # Now iterate over each univariate feature set
+    for (featset in univariate_feature_sets) {
+      SVM_coefs <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/processed_data/{dataset_ID}_{comparison_group}_Univariate_{featset}_{scaler}_scaler_SVM_fold_SVM_coefficients.feather")) %>%
+        group_by(`Feature Name`, Analysis_Type, group_var, Comparison_Group, Scaling_Type) %>%
+        summarise(CoefficientM = mean(Coefficient, na.rm=T),
+                  Coefficient_SD = sd(Coefficient, na.rm=T)) %>%
+        dplyr::rename("Coefficient" = "CoefficientM",
+                      "Feature_Name" = "Feature Name")
+      SVM_coefs$Study <- dataset_ID
+      SVM_coefs$Univariate_Feature_Set <- featset
+      # Append to list
+      univariate_SVM_coefs_list <- list.append(univariate_SVM_coefs_list, SVM_coefs)
+    }
+  }
+  
+  # Combine the list results into a dataframe
+  univariate_SVM_coefs <- do.call(plyr::rbind.fill, 
+                                              univariate_SVM_coefs_list) %>%
+    mutate(Analysis_Type = case_when(str_detect(group_var, "_") ~ "TS_Feature",
+                                     group_var == "Combo" ~ "Combo",
+                                     T ~ "Brain_Region"))
+  
+  # Save to feather file
+  feather::write_feather(univariate_SVM_coefs,
+                         glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_{scaler}_scaler_SVM_coefficients.feather"))
+} else {
+  univariate_SVM_coefs <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_{scaler}_scaler_SVM_coefficients.feather"))
+}
+
+################################################################################
+# Compile null results
+################################################################################
+
 # Null results
 if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_{scaler}_scaler_null_balanced_accuracy_distributions.feather"))) {
   univariate_null_balanced_accuracy_list <- list()
@@ -198,8 +283,11 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_{scaler}
   univariate_null_balanced_accuracy <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_balanced_accuracy_distributions.feather"))
 }
 
+################################################################################
+# Compile p-value results
+################################################################################
+
 # Calculate p-values based on empirical nulls
-# Sanity check the p-value correction
 if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_{scaler}_scaler_empirical_p_values.feather"))) {
   univariate_split <- univariate_balanced_accuracy %>%
     group_by(Study, Comparison_Group, Analysis_Type, Univariate_Feature_Set, group_var) %>%

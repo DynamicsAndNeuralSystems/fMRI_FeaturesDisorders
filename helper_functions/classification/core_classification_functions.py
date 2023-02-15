@@ -129,12 +129,13 @@ def run_k_fold_SVM_for_feature(feature_data,
     CV_sample_predictions["group_var"] = grouping_var_name
     
     if run_nulls:
+        # Run 10 repeats of 10-fold CV for null model permutations
         # Run 10-fold CV null model permutations with num_null_iters permutations
         null_model_balanced_accuracy_list = permutation_test_score(pipe,
                                                 feature_data,
                                                 class_labels,
                                                 cv=num_folds,
-                                                random_state=27,
+                                                random_state=127,
                                                 n_jobs = int(num_jobs),
                                                 n_permutations = num_null_iters,
                                                 scoring=scoring_method)[1]
