@@ -128,28 +128,51 @@ def run_k_fold_SVM_for_feature(feature_data,
     CV_sample_predictions = pd.concat(CV_sample_predictions_list)
     CV_sample_predictions["group_var"] = grouping_var_name
     
+    # Optional null model analysis
     if run_nulls:
-        # Run 10 repeats of 10-fold CV for null model permutations
-        # Run 10-fold CV null model permutations with num_null_iters permutations
-        null_model_balanced_accuracy_list = permutation_test_score(pipe,
-                                                feature_data,
-                                                class_labels,
-                                                cv=num_folds,
-                                                random_state=127,
-                                                n_jobs = int(num_jobs),
-                                                n_permutations = num_null_iters,
-                                                scoring=scoring_method)[1]
         
-        null_model_balanced_accuracy = pd.DataFrame(null_model_balanced_accuracy_list,
-                                                    columns = ["Null_Balanced_Accuracy"])
-        null_model_balanced_accuracy["group_var"] = grouping_var_name
-        null_model_balanced_accuracy["Null_Iter"] = [*range(1, num_null_iters + 1, 1)]
+        null_balacc_list = []
+        
+        # Run per number of null iterations
+        for j in range(num_null_iters):
+            
+            # For each iteration of nulls, run 10-repeat 10-fold CV
+            # Take the mean value across all folds (which is what the permutation_test_score outputs),
+            # Then take the mean value across the 10 repeats
+        
+            # Run 10 repeats of 10-fold CV for null model permutations
+            null_model_balanced_accuracy_list = permutation_test_score(pipe,
+                                                    feature_data,
+                                                    class_labels,
+                                                    cv=num_folds,
+                                                    random_state=j,
+                                                    n_jobs = int(num_jobs),
+                                                    n_permutations = num_repeats,
+                                                    scoring=scoring_method)[1]
+            
+            null_model_balanced_accuracy = pd.DataFrame(null_model_balanced_accuracy_list,
+                                                        columns = ["Null_Balanced_Accuracy"])
+            null_model_balanced_accuracy["Repeat_Number"] = [*range(1, num_repeats + 1, 1)]
+            null_model_balanced_accuracy["Null_Iter_Number"] = j + 1
+            
+            # Take the average balanced accuracy for this null iteration
+            averaged_balanced_accuracy = (null_model_balanced_accuracy
+                                          .groupby("Null_Iter_Number")["Null_Balanced_Accuracy"]
+                                          .mean()
+                                          .to_frame())
+            averaged_balanced_accuracy.reset_index(inplace=True)
+            
+            # Append to list
+            null_balacc_list.append(averaged_balanced_accuracy)
+            
+        # Combine null results
+        null_balanced_accuracy_results = pd.concat(null_balacc_list)
         
         return (fold_assignments,
                 SVM_coefficients,
                 balanced_accuracy,
                 CV_sample_predictions,
-                null_model_balanced_accuracy)
+                null_balanced_accuracy_results)
     else:
         return (fold_assignments,
                 SVM_coefficients,
