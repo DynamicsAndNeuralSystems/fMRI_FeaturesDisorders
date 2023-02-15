@@ -6,8 +6,8 @@ github_dir <- "~/github/fMRI_FeaturesDisorders/"
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/Figure3/")
 TAF::mkdir(plot_path)
 
-python_to_use <- "~/.conda/envs/pyspi/bin/python3"
-# python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
+# python_to_use <- "~/.conda/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
 data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
@@ -41,9 +41,9 @@ source(glue("{github_dir}/data_visualisation/manuscript_figures/Manuscript_Draft
 SPI_info <- read.csv(glue("{github_dir}/data_visualisation/manuscript_figures/SPI_info.csv"))
 
 # Load data
-pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_balanced_accuracy_all_folds.feather"))
-pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_empirical_p_values.feather"))
-pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_null_balanced_accuracy_distributions.feather"))
+pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_robustsigmoid_scaler_balanced_accuracy_all_folds.feather"))
+pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_robustsigmoid_scaler_empirical_p_values.feather"))
+pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_robustsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 
 # Aggregate balanced accuracy by repeats
 pairwise_balanced_accuracy_by_repeats <- pairwise_balanced_accuracy_all_folds %>%

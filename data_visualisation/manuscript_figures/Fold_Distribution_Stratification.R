@@ -5,6 +5,7 @@
 github_dir <- "~/github/fMRI_FeaturesDisorders/"
 UCLA_CNP_data_path <- "~/data/UCLA_CNP/"
 ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/"
+data_path <- "~/data/TS_feature_manuscript"
 plot_path <- "~/github/fMRI_FeaturesDisorders/plots/Manuscript_Draft/FigureS7/"
 TAF::mkdir(plot_path)
 
@@ -29,21 +30,12 @@ library(glue)
 library(patchwork)
 
 # Load metadata
-UCLA_CNP_sample_metdata <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/study_metadata/UCLA_CNP_sample_metadata.feather"))
-ABIDE_ASD_sample_metdata <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/study_metadata/ABIDE_ASD_sample_metadata.feather"))
+UCLA_CNP_sample_metadata <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/study_metadata/UCLA_CNP_sample_metadata.feather"))
+ABIDE_ASD_sample_metadata <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/study_metadata/ABIDE_ASD_sample_metadata.feather"))
 
 # Load fold assignments
-UCLA_CNP_schizophrenia_catch22_fold_assignments <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_robustsigmoid_scaler_SVM_fold_assignments.feather")) %>%
-  left_join(., UCLA_CNP_sample_metdata)
-
-UCLA_CNP_ADHD_catch22_fold_assignments <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/processed_data/UCLA_CNP_ADHD_Univariate_catch22_robustsigmoid_scaler_SVM_fold_assignments.feather")) %>%
-  left_join(., UCLA_CNP_sample_metdata)
-
-UCLA_CNP_bipolar_catch22_fold_assignments <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/processed_data/UCLA_CNP_Bipolar_Univariate_catch22_robustsigmoid_scaler_SVM_fold_assignments.feather")) %>%
-  left_join(., UCLA_CNP_sample_metdata)
-
-ABIDE_ASD_catch22_fold_assignments <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/processed_data/ABIDE_ASD_ASD_Univariate_catch22_robustsigmoid_scaler_SVM_fold_assignments.feather")) %>%
-  left_join(., ABIDE_ASD_sample_metdata)
+univariate_fold_assignments <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_robustsigmoid_scaler_fold_assignments.feather")) %>%
+  filter(Univariate_Feature_Set == "catch22")
 
 ################################################################################
 # Heatmap visualisations
@@ -51,56 +43,72 @@ ABIDE_ASD_catch22_fold_assignments <- pyarrow_feather$read_feather(glue("{ABIDE_
 
 plot_heatmap_for_dataset <- function(fold_assignments_df, group_var_to_use, plot_title) {
   p <- fold_assignments_df %>%
-          filter(group_var ==group_var_to_use) %>%
-          mutate(Repeat = factor(Repeat),
-                Fold = factor(Fold)) %>%
-          ggplot(data=., mapping=aes(x = Sample_ID, y = Repeat, fill = Fold )) +
-          facet_grid(. ~ Diagnosis, scales="free", space="free") +
-          geom_tile() +
-          xlab("Samples") +
-          ylab("CV-SVM Repeat") +
-          labs(fill = "k-fold") +
-          ggtitle(plot_title) +
-          scale_fill_viridis_d() +
-          theme(axis.text.x = element_blank(),
-                axis.ticks.x = element_blank(),
-                plot.title = element_text(hjust=0.5),
-                legend.position = "bottom") +
-          guides(fill = guide_legend(title.position = "top", 
-                                    nrow = 1,
-                                      title.hjust = 0.5,
-                                      label.position = "bottom")) 
-
+    filter(group_var == group_var_to_use) %>%
+    mutate(Repeat = factor(Repeat),
+           Fold = factor(Fold)) %>%
+    ggplot(data=., mapping=aes(x = Sample_ID, y = Repeat, fill = Fold )) +
+    facet_grid(. ~ Diagnosis, scales="free", space="free") +
+    geom_tile() +
+    xlab("Samples") +
+    ylab("CV-SVM Repeat") +
+    labs(fill = "k-fold") +
+    ggtitle(plot_title) +
+    scale_fill_viridis_d() +
+    theme_bw() +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          plot.title = element_text(hjust=0.5),
+          legend.position = "bottom") +
+    guides(fill = guide_legend(title.position = "top", 
+                               nrow = 1,
+                               title.hjust = 0.5,
+                               label.position = "bottom")) 
+  
+  return(p)
 }
 
 # UCLA CNP schizophrenia vs. control ctx-lh-caudalanteriorcingulate
-UCLA_scz_heatmap <- plot_heatmap_for_dataset(fold_assignments_df = UCLA_CNP_schizophrenia_catch22_fold_assignments, 
-                                             group_var_to_use = "ctx-lh-caudalanteriorcingulate", 
-                                             plot_title = "UCLA CNP -- Schizophrenia")
+UCLA_scz_heatmap <- univariate_fold_assignments %>%
+  filter(Study == "UCLA_CNP", Comparison_Group  == "Schizophrenia") %>%
+  left_join(., UCLA_CNP_sample_metadata) %>%
+  plot_heatmap_for_dataset(fold_assignments_df = .,
+                           group_var_to_use = "ctx-lh-caudalanteriorcingulate",
+                           plot_title = "UCLA CNP -- Schizophrenia")
 
 
 # UCLA CNP ADHD vs. control ctx-lh-caudalanteriorcingulate
-UCLA_ADHD_heatmap <- plot_heatmap_for_dataset(fold_assignments_df = UCLA_CNP_ADHD_catch22_fold_assignments, 
-                                             group_var_to_use = "ctx-lh-caudalanteriorcingulate", 
-                                             plot_title = "UCLA CNP -- ADHD")
+UCLA_ADHD_heatmap <- univariate_fold_assignments %>%
+  filter(Study == "UCLA_CNP", Comparison_Group  == "ADHD") %>%
+  left_join(., UCLA_CNP_sample_metadata) %>%
+  plot_heatmap_for_dataset(fold_assignments_df = .,
+                           group_var_to_use = "ctx-lh-caudalanteriorcingulate",
+                           plot_title = "UCLA CNP -- ADHD")
+
 
 # UCLA CNP ADHD vs. control ctx-lh-caudalanteriorcingulate
-UCLA_bipolar_heatmap <- plot_heatmap_for_dataset(fold_assignments_df = UCLA_CNP_bipolar_catch22_fold_assignments, 
-                                             group_var_to_use = "ctx-lh-caudalanteriorcingulate", 
-                                             plot_title = "UCLA CNP -- Bipolar")
+UCLA_ADHD_heatmap <- univariate_fold_assignments %>%
+  filter(Study == "UCLA_CNP", Comparison_Group  == "Bipolar") %>%
+  left_join(., UCLA_CNP_sample_metadata) %>%
+  plot_heatmap_for_dataset(fold_assignments_df = .,
+                           group_var_to_use = "ctx-lh-caudalanteriorcingulate",
+                           plot_title = "UCLA CNP -- Bipolar")
 
 
 # Use ABIDE ASD vs. control Superior Frontal Gyrus as example
-ABIDE_ASD_heatmap <- plot_heatmap_for_dataset(fold_assignments_df = ABIDE_ASD_catch22_fold_assignments, 
-                                             group_var_to_use = "Superior Frontal Gyrus", 
-                                             plot_title = "ABIDE -- ASD")
+ABIDE_ASD_heatmap <- univariate_fold_assignments %>%
+  filter(Study == "ABIDE_ASD", Comparison_Group  == "ASD") %>%
+  left_join(., ABIDE_ASD_sample_metadata) %>%
+  plot_heatmap_for_dataset(fold_assignments_df = .,
+                           group_var_to_use = "Superior Frontal Gyrus",
+                           plot_title = "ABIDE -- ASD")
 
 wrap_plots(list(UCLA_scz_heatmap,
                 UCLA_ADHD_heatmap,
                 UCLA_bipolar_heatmap,
                 ABIDE_ASD_heatmap),
            ncol = 2) + 
-  plot_layout(guides = "collect") & theme(legend.position = 'bottom')
+  plot_layout(guides = "collect") & theme(legend.position = 'bottom',
+                                          plot.title = element_text(size=12))
 ggsave(glue("{plot_path}/All_catch22_robustsigmoid_scaler_fold_distributions.png"),
        width = 12, height = 5, units="in", dpi=300)
 
