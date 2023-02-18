@@ -140,10 +140,7 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_{scaler}
   
   # Combine the list results into a dataframe
   univariate_balanced_accuracy_all_folds <- do.call(plyr::rbind.fill, 
-                                                    univariate_balanced_accuracy_all_folds_list) %>%
-    mutate(Analysis_Type = case_when(str_detect(group_var, "_") ~ "TS_Feature",
-                                     group_var == "Combo" ~ "Combo",
-                                     T ~ "Brain_Region"))
+                                                    univariate_balanced_accuracy_all_folds_list) 
   
   # Save to feather file
   feather::write_feather(univariate_balanced_accuracy_all_folds,

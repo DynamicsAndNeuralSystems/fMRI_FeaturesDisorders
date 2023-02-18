@@ -26,7 +26,7 @@ pyarrow_feather <- import("pyarrow.feather")
 
 github_dir <- "~/github/fMRI_FeaturesDisorders/"
 source(paste0(github_dir, "data_visualisation/manuscript_figures/Manuscript_Draft_Visualisations_Helper.R"))
-plot_path <- paste0(github_dir, "plots/Manuscript_Draft/FigureS1/")
+plot_path <- paste0(github_dir, "plots/Manuscript_Draft/FigureS3/")
 TAF::mkdir(plot_path)
 
 UCLA_CNP_data_path <- "~/data/UCLA_CNP/"

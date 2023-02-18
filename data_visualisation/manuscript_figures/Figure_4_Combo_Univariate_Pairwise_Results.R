@@ -26,6 +26,16 @@ library(reticulate)
 
 # Import pyarrow.feather as pyarrow_feather
 pyarrow_feather <- import("pyarrow.feather")
+# DIY rlist::list.append
+list.append <- function (.data, ...) 
+{
+  if (is.list(.data)) {
+    c(.data, list(...))
+  }
+  else {
+    c(.data, ..., recursive = FALSE)
+  }
+}
 
 ################################################################################
 # Load libraries
