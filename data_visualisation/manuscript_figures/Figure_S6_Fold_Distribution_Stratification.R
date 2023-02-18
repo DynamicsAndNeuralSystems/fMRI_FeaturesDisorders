@@ -6,10 +6,11 @@ github_dir <- "~/github/fMRI_FeaturesDisorders/"
 UCLA_CNP_data_path <- "~/data/UCLA_CNP/"
 ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/"
 data_path <- "~/data/TS_feature_manuscript"
-plot_path <- "~/github/fMRI_FeaturesDisorders/plots/Manuscript_Draft/FigureS7/"
+plot_path <- "~/github/fMRI_FeaturesDisorders/plots/Manuscript_Draft/FigureS6/"
 TAF::mkdir(plot_path)
 
-python_to_use <- "~/.conda/envs/pyspi/bin/python3"
+# python_to_use <- "~/.conda/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
 
 reticulate::use_python(python_to_use)
 
@@ -28,6 +29,8 @@ library(knitr)
 library(kableExtra)
 library(glue)
 library(patchwork)
+library(cowplot)
+theme_set(theme_cowplot())
 
 # Load metadata
 UCLA_CNP_sample_metadata <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/study_metadata/UCLA_CNP_sample_metadata.feather"))
@@ -86,7 +89,7 @@ UCLA_ADHD_heatmap <- univariate_fold_assignments %>%
 
 
 # UCLA CNP ADHD vs. control ctx-lh-caudalanteriorcingulate
-UCLA_ADHD_heatmap <- univariate_fold_assignments %>%
+UCLA_bipolar_heatmap <- univariate_fold_assignments %>%
   filter(Study == "UCLA_CNP", Comparison_Group  == "Bipolar") %>%
   left_join(., UCLA_CNP_sample_metadata) %>%
   plot_heatmap_for_dataset(fold_assignments_df = .,
@@ -106,11 +109,41 @@ wrap_plots(list(UCLA_scz_heatmap,
                 UCLA_ADHD_heatmap,
                 UCLA_bipolar_heatmap,
                 ABIDE_ASD_heatmap),
-           ncol = 2) + 
+           ncol = 1) + 
   plot_layout(guides = "collect") & theme(legend.position = 'bottom',
                                           plot.title = element_text(size=12))
 ggsave(glue("{plot_path}/All_catch22_robustsigmoid_scaler_fold_distributions.png"),
-       width = 12, height = 5, units="in", dpi=300)
+       width = 8, height = 9, units="in", dpi=300)
+
+################################################################################
+# Heatmap for all 82 brain regions in the UCLA schizophrenia vs control dataset 
+# to show that samples are allocated in the same way across regions within repeat 1
+################################################################################
+
+univariate_fold_assignments %>%
+  filter(Study == "UCLA_CNP", Comparison_Group == "Schizophrenia",
+         Analysis_Type == "Brain_Region", Univariate_Feature_Set == "catch22", 
+         Repeat == 1, Scaling_Type == "robustsigmoid") %>%
+  mutate(Fold = factor(Fold)) %>%
+  ggplot(data = ., mapping = aes(x=fct_reorder(Sample_ID, as.numeric(Fold)), y = group_var, fill = Fold)) +
+  geom_tile() +
+  scale_fill_viridis_d() +
+  ylab("Brain Region") +
+  labs(fill = "Fold # in Repeat 1") +
+  ggtitle("Sample Allocations to Folds for\nUCLA CNP Schizophrenia Cohort") +
+  xlab("Samples") +
+  theme(legend.position="bottom",
+        plot.title = element_text(hjust=0.5, size=12),
+        axis.text.y = element_text(size=8),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) +
+  guides(fill = guide_legend(title.position = "top", 
+                             nrow = 1,
+                             title.hjust = 0.5,
+                             label.position = "bottom")) 
+ggsave(glue("{plot_path}/UCLA_CNP_Schizophrenia_Brain_Regions_Repeat1_Allocations.png"),
+       width = 5, height = 9, units="in", dpi=300)
+
 
 ################################################################################
 # Calculate distributions across folds
