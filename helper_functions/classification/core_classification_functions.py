@@ -167,6 +167,8 @@ def run_k_fold_SVM_for_feature(feature_data,
             
         # Combine null results
         null_balanced_accuracy_results = pd.concat(null_balacc_list)
+        null_balanced_accuracy_results["Analysis_Type"] = analysis_type
+        null_balanced_accuracy_results["group_var"] = grouping_var_name
         
         return (fold_assignments,
                 SVM_coefficients,

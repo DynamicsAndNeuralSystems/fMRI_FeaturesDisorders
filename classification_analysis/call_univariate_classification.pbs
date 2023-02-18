@@ -1,6 +1,5 @@
 #!/bin/bash
 #PBS -j oe
-#PBS -l walltime=48:00:00
 #PBS -V
 
 cd "$PBS_O_WORKDIR"
