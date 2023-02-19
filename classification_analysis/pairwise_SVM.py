@@ -18,7 +18,7 @@ parser.add_argument('--univariate_feature_set', default='catch22', dest='univari
 parser.add_argument('--pairwise_feature_set', default='pyspi14', dest='pairwise_feature_set')
 parser.add_argument('--pairwise_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather", dest='pairwise_feature_file')
 parser.add_argument('--noise_proc', dest='noise_proc')
-parser.add_argument('--scaling_type', default="robust", dest='scaling_type')
+parser.add_argument('--scaling_type', default="robustsigmoid", dest='scaling_type')
 parser.add_argument('--run_nulls', action='store_true')
 parser.add_argument('--num_folds', default=10, dest='num_folds')
 parser.add_argument('--num_null_iters', default=1000, dest='num_null_iters')
@@ -45,16 +45,19 @@ num_jobs = args.num_jobs
 dataset_ID = args.dataset_ID
 
 # dataset_ID = "UCLA_CNP"
-# data_path = "/headnode1/abry4213/data/UCLA_CNP/"
+# data_path = "/Users/abry4213/data/UCLA_CNP/"
 # metadata_file = "UCLA_CNP_sample_metadata.feather"
-# SPI_directionality_file = "/headnode1/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/SPI_Direction_Info.csv"
+# SPI_directionality_file = "/Users/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/SPI_Direction_Info.csv"
 # comparison_group = "Schizophrenia"
 # univariate_feature_set = "catch22"
 # pairwise_feature_set = "pyspi14"
-# pairwise_feature_file ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather"
+# pairwise_feature_file ="/Users/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather"
 # noise_proc = "AROMA+2P+GMR"
-# num_null_iters = 2
-# scaling_type = "robust"
+# num_null_iters = 10
+# scaling_type = "robustsigmoid"
+# num_repeats = 10
+# num_jobs = 1
+# run_nulls = True
 
 run_pairwise_SVM(pairwise_feature_file=pairwise_feature_file,
                  SPI_directionality_file = SPI_directionality_file,

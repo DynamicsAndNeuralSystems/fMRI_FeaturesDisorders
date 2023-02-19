@@ -18,10 +18,8 @@ def run_k_fold_SVM_for_feature(feature_data,
                                scaling_type,
                                class_labels,
                                num_folds = 10,
-                               run_nulls = True,
-                               num_null_iters = 1000,
                                num_repeats = 10,
-                               num_jobs = 8):
+                               num_jobs = 10):
         
     
     print(f"Creating pipeline with {scaling_type} scaler.")
@@ -128,58 +126,10 @@ def run_k_fold_SVM_for_feature(feature_data,
     CV_sample_predictions = pd.concat(CV_sample_predictions_list)
     CV_sample_predictions["group_var"] = grouping_var_name
     
-    # Optional null model analysis
-    if run_nulls:
-        
-        null_balacc_list = []
-        
-        # Run per number of null iterations
-        for j in range(num_null_iters):
-            
-            # For each iteration of nulls, run 10-repeat 10-fold CV
-            # Take the mean value across all folds (which is what the permutation_test_score outputs),
-            # Then take the mean value across the 10 repeats
-        
-            # Run 10 repeats of 10-fold CV for null model permutations
-            null_model_balanced_accuracy_list = permutation_test_score(pipe,
-                                                    feature_data,
-                                                    class_labels,
-                                                    cv=num_folds,
-                                                    random_state=j,
-                                                    n_jobs = int(num_jobs),
-                                                    n_permutations = num_repeats,
-                                                    scoring=scoring_method)[1]
-            
-            null_model_balanced_accuracy = pd.DataFrame(null_model_balanced_accuracy_list,
-                                                        columns = ["Null_Balanced_Accuracy"])
-            null_model_balanced_accuracy["Repeat_Number"] = [*range(1, num_repeats + 1, 1)]
-            null_model_balanced_accuracy["Null_Iter_Number"] = j + 1
-            
-            # Take the average balanced accuracy for this null iteration
-            averaged_balanced_accuracy = (null_model_balanced_accuracy
-                                          .groupby("Null_Iter_Number")["Null_Balanced_Accuracy"]
-                                          .mean()
-                                          .to_frame())
-            averaged_balanced_accuracy.reset_index(inplace=True)
-            
-            # Append to list
-            null_balacc_list.append(averaged_balanced_accuracy)
-            
-        # Combine null results
-        null_balanced_accuracy_results = pd.concat(null_balacc_list)
-        null_balanced_accuracy_results["Analysis_Type"] = analysis_type
-        null_balanced_accuracy_results["group_var"] = grouping_var_name
-        
-        return (fold_assignments,
-                SVM_coefficients,
-                balanced_accuracy,
-                CV_sample_predictions,
-                null_balanced_accuracy_results)
-    else:
-        return (fold_assignments,
-                SVM_coefficients,
-                balanced_accuracy,
-                CV_sample_predictions)
+    return (fold_assignments,
+            SVM_coefficients,
+            balanced_accuracy,
+            CV_sample_predictions)
 
 def run_univariate_SVM(univariate_feature_file,
                        univariate_feature_set, 
@@ -190,8 +140,6 @@ def run_univariate_SVM(univariate_feature_file,
                        data_path,
                        pydata_path,
                        noise_proc,
-                       run_nulls = True,
-                       num_null_iters = 1000,
                        num_folds = 10,
                        scaling_type="robustsigmoid",
                        num_jobs = 8,
@@ -246,7 +194,7 @@ def run_univariate_SVM(univariate_feature_file,
             features_only = region_data_wide.reset_index(drop=True).to_numpy()
             
             # Run SVM
-            (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions, null_balacc_dist) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+            (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = feature_list,
                                         grouping_var_name = ROI,
                                         analysis_type = "Univariate_Brain_Region",
@@ -254,8 +202,6 @@ def run_univariate_SVM(univariate_feature_file,
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
-                                        run_nulls=run_nulls,
-                                        num_null_iters = num_null_iters,
                                         num_folds = num_folds,
                                         num_jobs = num_jobs,
                                         num_repeats = num_repeats)
@@ -265,7 +211,6 @@ def run_univariate_SVM(univariate_feature_file,
             SVM_coefficients_list.append(SVM_coefficients)
             balanced_accuracy_list.append(balanced_accuracy)
             CV_sample_predictions_list.append(CV_sample_predictions)
-            null_balanced_accuracy_list.append(null_balacc_dist)
             
         ###########################################################################
         # TS Feature-wise
@@ -288,7 +233,7 @@ def run_univariate_SVM(univariate_feature_file,
             # Extract only the feature data
             features_only = TS_feature_data_wide.reset_index(drop=True).to_numpy()
             
-            (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions, null_balacc_dist) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+            (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = region_list,
                                         grouping_var_name = TS_feature,
                                         analysis_type = "Univariate_TS_Feature",
@@ -296,8 +241,6 @@ def run_univariate_SVM(univariate_feature_file,
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
-                                        run_nulls = run_nulls,
-                                        num_null_iters = num_null_iters,
                                         num_folds = num_folds,
                                         num_jobs = num_jobs,
                                         num_repeats = num_repeats)
@@ -307,7 +250,6 @@ def run_univariate_SVM(univariate_feature_file,
             SVM_coefficients_list.append(SVM_coefficients)
             balanced_accuracy_list.append(balanced_accuracy)
             CV_sample_predictions_list.append(CV_sample_predictions)
-            null_balanced_accuracy_list.append(null_balacc_dist)
             
         ###########################################################################
         # Combo-wise
@@ -334,7 +276,7 @@ def run_univariate_SVM(univariate_feature_file,
         index_data = combo_data_wide.index.to_frame().reset_index(drop=True)
         class_labels = index_data["Diagnosis"].tolist()
         
-        (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions, null_balacc_dist) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+        (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                     feature_list = combo_features,
                                     grouping_var_name = "Combo",
                                     analysis_type = "Univariate_Combo",
@@ -342,8 +284,6 @@ def run_univariate_SVM(univariate_feature_file,
                                     sample_and_class_df = index_data,
                                     class_labels = class_labels,
                                     scaling_type = scaling_type,
-                                    run_nulls = run_nulls,
-                                    num_null_iters = num_null_iters,
                                     num_folds = num_folds,
                                     num_jobs = num_jobs,
                                     num_repeats = num_repeats)
@@ -353,7 +293,6 @@ def run_univariate_SVM(univariate_feature_file,
         SVM_coefficients_list.append(SVM_coefficients)
         balanced_accuracy_list.append(balanced_accuracy)
         CV_sample_predictions_list.append(CV_sample_predictions)
-        null_balanced_accuracy_list.append(null_balacc_dist)
         
         ###########################################################################
         # Merge + save results
@@ -361,7 +300,6 @@ def run_univariate_SVM(univariate_feature_file,
         SVM_coefficients_res = pd.concat(SVM_coefficients_list).reset_index()
         balanced_accuracy_res = pd.concat(balanced_accuracy_list).reset_index()
         CV_sample_predictions_res = pd.concat(CV_sample_predictions_list).reset_index()
-        null_balanced_accuracy_res = pd.concat(null_balanced_accuracy_list).reset_index()
         
         # Add comparison group info and normalisation method info
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
@@ -375,17 +313,13 @@ def run_univariate_SVM(univariate_feature_file,
 
         CV_sample_predictions_res["Comparison_Group"] = comparison_to_control_group
         CV_sample_predictions_res["Scaling_Type"] = scaling_type
-
-        null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
-        null_balanced_accuracy_res["Scaling_Type"] = scaling_type
             
         # Save results
         fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
         SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
         balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
         CV_sample_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
-        null_balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
-   
+        
 def run_pairwise_SVM(pairwise_feature_file,
                      SPI_directionality_file,
                        univariate_feature_set, 
@@ -396,11 +330,9 @@ def run_pairwise_SVM(pairwise_feature_file,
                        pydata_path,
                        data_path,
                        noise_proc,
-                       run_nulls = True,
-                       num_null_iters = 1000,
                        num_folds = 10,
                        scaling_type="robust",
-                       num_jobs = 8,
+                       num_jobs = 10,
                        num_repeats = 10,
                        overwrite=False):
     
@@ -434,7 +366,6 @@ def run_pairwise_SVM(pairwise_feature_file,
         SVM_coefficients_list = []
         balanced_accuracy_list = []
         CV_sample_predictions_list = []
-        null_balanced_accuracy_list = []
         
         ###########################################################################
         # SPI-wise
@@ -477,7 +408,7 @@ def run_pairwise_SVM(pairwise_feature_file,
             features_only = SPI_data_imputed.reset_index(drop=True).to_numpy()
             
             # Run main SVM
-            (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions, null_balacc_dist) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+            (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = feature_list,
                                         grouping_var_name = this_SPI,
                                         analysis_type = "Pairwise_SPI",
@@ -485,8 +416,6 @@ def run_pairwise_SVM(pairwise_feature_file,
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
-                                        run_nulls = run_nulls,
-                                        num_null_iters = num_null_iters,
                                         num_folds = num_folds,
                                         num_jobs = num_jobs,
                                         num_repeats = num_repeats)
@@ -496,15 +425,13 @@ def run_pairwise_SVM(pairwise_feature_file,
             SVM_coefficients_list.append(SVM_coefficients)
             balanced_accuracy_list.append(balanced_accuracy)
             CV_sample_predictions_list.append(CV_sample_predictions)
-            null_balanced_accuracy_list.append(null_balacc_dist)
-        
+            
         ###########################################################################
         # Merge + save results
         fold_assignments_res = pd.concat(fold_assignments_list).reset_index()
         SVM_coefficients_res = pd.concat(SVM_coefficients_list).reset_index()
         balanced_accuracy_res = pd.concat(balanced_accuracy_list).reset_index()
         CV_sample_predictions_res = pd.concat(CV_sample_predictions_list).reset_index()
-        null_balanced_accuracy_res = pd.concat(null_balanced_accuracy_list).reset_index()
         
         # Add comparison group info and normalisation method info
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
@@ -518,18 +445,13 @@ def run_pairwise_SVM(pairwise_feature_file,
 
         CV_sample_predictions_res["Comparison_Group"] = comparison_to_control_group
         CV_sample_predictions_res["Scaling_Type"] = scaling_type
-
-        null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
-        null_balanced_accuracy_res["Scaling_Type"] = scaling_type
             
         # Save results
         fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
         SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
         balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
         CV_sample_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
-        null_balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
-    
-    
+        
 def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
         pairwise_feature_file,
                      SPI_directionality_file,
@@ -541,10 +463,8 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
                        pydata_path,
                        data_path,
                        noise_proc,
-                       run_nulls=True,
-                       num_null_iters = 1000,
                        scaling_type = "robust",
-                       num_jobs = 8,
+                       num_jobs = 10,
                        num_repeats = 10,
                        num_folds=10,
                        overwrite=False):
@@ -581,7 +501,6 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
         SVM_coefficients_list = []
         balanced_accuracy_list = []
         CV_sample_predictions_list = []
-        null_balanced_accuracy_list = []
         
         ###########################################################################
         # Prepare univariate combo data
@@ -643,7 +562,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
             features_only = SPI_combo_data_imputed.reset_index(drop=True).to_numpy()
             
             # Run main SVM
-            (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions, null_balacc_dist) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+            (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = feature_list,
                                         grouping_var_name = this_SPI,
                                         analysis_type = "Univariate_Pairwise_Combo",
@@ -651,8 +570,6 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
-                                        run_nulls = run_nulls,
-                                        num_null_iters = num_null_iters,
                                         num_jobs = num_jobs,
                                         num_folds = num_folds,
                                         num_repeats = num_repeats)
@@ -662,7 +579,6 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
             SVM_coefficients_list.append(SVM_coefficients)
             balanced_accuracy_list.append(balanced_accuracy)
             CV_sample_predictions_list.append(CV_sample_predictions)
-            null_balanced_accuracy_list.append(null_balacc_dist)
         
         ###########################################################################
         # Merge + save results
@@ -670,7 +586,6 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
         SVM_coefficients_res = pd.concat(SVM_coefficients_list).reset_index()
         balanced_accuracy_res = pd.concat(balanced_accuracy_list).reset_index()
         CV_sample_predictions_res = pd.concat(CV_sample_predictions_list).reset_index()
-        null_balanced_accuracy_res = pd.concat(null_balanced_accuracy_list).reset_index()
         
         # Add comparison group info and normalisation method info
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
@@ -684,14 +599,270 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
 
         CV_sample_predictions_res["Comparison_Group"] = comparison_to_control_group
         CV_sample_predictions_res["Scaling_Type"] = scaling_type
-
-        null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
-        null_balanced_accuracy_res["Scaling_Type"] = scaling_type
             
         # Save results
         fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
         SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
         balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
         CV_sample_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
-        null_balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
-      
+        
+###################### NULLS ########################
+
+def run_nulls_for_feature(feature_data, 
+                               grouping_var_name,
+                               analysis_type,
+                               output_file_base,
+                               scoring_method,
+                               sample_and_class_df,
+                               scaling_type,
+                               class_labels,
+                               num_folds = 10,
+                               num_null_iters = 1000,
+                               num_repeats = 10,
+                               num_jobs = 10):
+        
+    
+    print(f"Creating pipeline with {scaling_type} scaler.")
+
+    # Define the pipeline
+    if scaling_type == "robust":
+        pipe = Pipeline([('scaler', RobustScaler()), 
+                         ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
+                                     class_weight="balanced"))])
+    elif scaling_type == "robustsigmoid":
+        pipe = Pipeline([('scaler', RobustSigmoidScaler(unit_variance=True)), 
+                         ('SVM', svm.SVC(kernel = "linear", C = 1, shrinking = False, 
+                         class_weight = "balanced"))])
+    else: 
+        pipe = Pipeline([('scaler', StandardScaler()), 
+                         ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
+                                     class_weight="balanced"))])
+    
+    # Create list to store all null balanced accuracy results across iterations
+    null_balacc_list = []
+    
+    # Run per number of null iterations
+    for j in range(num_null_iters):
+        
+        # Check if null iter results already exist
+        if not os.path.isfile(f"{output_file_base}_null_iter_{str(j)}.feather"):
+        
+            # Create list to store null balanced accuracy results across repeats for given iter
+            null_iter_list = []
+            
+            # For each iteration of nulls, run 10-repeat 10-fold CV
+            # Take the mean value across all folds (which is what the permutation_test_score outputs),
+            # Then take the mean value across the 10 repeats
+            
+            # USING MANUAL NULLS
+            for n in range(num_repeats):
+                # Initialise sample and class dataframe for repeat
+                sample_and_class_df_for_repeat = sample_and_class_df.copy(deep=True)
+                
+                # Shuffle class labels
+                sample_and_class_df_for_repeat["Reshuffled_Label"] = sample_and_class_df_for_repeat.Diagnosis.sample(frac=1).values
+                reshuffled_labels = sample_and_class_df_for_repeat.Reshuffled_Label.tolist()
+                
+                # Split into ten folds
+                skf = StratifiedKFold(n_splits=num_folds, shuffle=True)
+                
+                # Fit SVM with 10-fold cross-validation
+                cv_results = cross_validate(pipe, 
+                                            feature_data, 
+                                            reshuffled_labels, 
+                                            cv=skf, 
+                                            scoring=scoring_method,
+                                            n_jobs = int(num_jobs),
+                                            return_estimator=False)
+    
+                # Extract balanced accuracy by fold
+                null_balanced_accuracy_by_fold_df = pd.DataFrame(cv_results["test_score"],
+                                                            columns=["Null_Balanced_Accuracy"])
+                null_balanced_accuracy_by_fold_df["Null_Iter"] = j + 1
+                null_balanced_accuracy_by_fold_df["Fold"] = [*range(1, num_folds + 1, 1)]
+                null_balanced_accuracy_by_fold_df["Repeat_Number"] = n + 1
+                
+                # Append repeat results to list for the given iter
+                null_iter_list.append(null_balanced_accuracy_by_fold_df)
+                
+            # Combine all results across repeats for the given iter
+            null_iter_res = pd.concat(null_iter_list)
+            
+            # Save to feather
+            null_iter_res = null_iter_res.reset_index()
+            null_iter_res.to_feather(f"{output_file_base}_null_iter_{str(j)}.feather")
+            
+        else:
+            null_iter_res = pd.read_feather(f"{output_file_base}_null_iter_{str(j)}.feather")
+            
+        # Append results form this iter to the main list
+        null_balacc_list.append(null_iter_res)
+            
+        
+    # Combine null results
+    null_balanced_accuracy_results = pd.concat(null_balacc_list)
+    null_balanced_accuracy_results["Analysis_Type"] = analysis_type
+    null_balanced_accuracy_results["group_var"] = grouping_var_name
+    
+    return null_balanced_accuracy_results
+
+def run_univariate_nulls(univariate_feature_file,
+                       univariate_feature_set, 
+                       pairwise_feature_set,
+                       dataset_ID,
+                       metadata_file,
+                       comparison_to_control_group,
+                       data_path,
+                       pydata_path,
+                       noise_proc,
+                       num_null_iters = 1000,
+                       num_folds = 10,
+                       scaling_type="robustsigmoid",
+                       num_jobs = 10,
+                       num_repeats = 10,
+                       overwrite=False):
+    
+    # Try making output directory
+    if not os.path.isdir(f"{pydata_path}/null_results"):
+        os.mkdir(f"{pydata_path}/null_results")
+
+    # Check if file already exists or overwrite flag is set
+    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather") or overwrite:
+        noise_label = noise_proc.replace("+", "_")
+
+        # Load metadata
+        metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
+
+        # Load in data containing subjects with both univariate and pairwise data available
+        samples_to_keep = pd.read_feather(f"{pydata_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        
+        # Univariate feature data
+        univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
+                                                                                axis = 1)
+
+        # Filter univariate data by samples with both univariate and pairwise
+        # Filter by samples with univariate data available as well
+        univariate_feature_data = univariate_feature_data[univariate_feature_data.Sample_ID.isin(samples_to_keep.Sample_ID)]                                                                           
+
+        # Initialise lists for results
+        null_balanced_accuracy_list = []
+        
+        ###########################################################################
+        # Region-wise
+
+        for ROI in univariate_feature_data.Brain_Region.unique().tolist():
+            
+            # Subset data to ROI
+            region_data = univariate_feature_data.query("Brain_Region == @ROI & Diagnosis in ['Control', @comparison_to_control_group]").drop(["Brain_Region", "Noise_Proc",
+                                                                                    "method"], axis=1)
+            
+            # Pivot from long to wide
+            region_data_wide = region_data.pivot(index=['Sample_ID', 'Diagnosis'], columns='names', values='values')
+            
+            # Extract sample ID and diagnosis as lists
+            index_data = region_data_wide.index.to_frame().reset_index(drop=True)
+            class_labels = index_data["Diagnosis"].tolist()
+            
+            # Extract only the feature data
+            features_only = region_data_wide.reset_index(drop=True).to_numpy()
+            
+            # Run SVM
+            null_balanced_accuracies = run_nulls_for_feature(feature_data = features_only, 
+                                        grouping_var_name = ROI,
+                                        analysis_type = "Univariate_Brain_Region",
+                                        scoring_method = "balanced_accuracy",
+                                        output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{ROI}_SVM",
+                                        sample_and_class_df = index_data,
+                                        class_labels = class_labels,
+                                        scaling_type = scaling_type,
+                                        num_null_iters = num_null_iters,
+                                        num_folds = num_folds,
+                                        num_jobs = num_jobs,
+                                        num_repeats = num_repeats)
+            
+            # Save to list of dataframes
+            null_balanced_accuracy_list.append(null_balanced_accuracies)
+            
+        ###########################################################################
+        # TS Feature-wise
+        for TS_feature in univariate_feature_data.names.unique().tolist():
+            
+            # Subset data to TS feature
+            TS_feature_data = univariate_feature_data.query("names == @TS_feature & Diagnosis in ['Control', @comparison_to_control_group]").drop(["names", "Noise_Proc",
+                                                                                    "method"], axis=1)
+            
+            # Pivot from long to wide
+            TS_feature_data_wide = TS_feature_data.pivot(index=['Sample_ID', 'Diagnosis'], columns='Brain_Region', values='values')
+            
+            # Extract sample ID and diagnosis as lists
+            index_data = TS_feature_data_wide.index.to_frame().reset_index(drop=True)
+            class_labels = index_data["Diagnosis"].tolist()
+            
+            # Extract only the feature data
+            features_only = TS_feature_data_wide.reset_index(drop=True).to_numpy()
+            
+            null_balanced_accuracies = run_nulls_for_feature(feature_data = features_only, 
+                                        grouping_var_name = TS_feature,
+                                        analysis_type = "Univariate_TS_Feature",
+                                        scoring_method = "balanced_accuracy",
+                                        output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{TS_feature}_SVM",
+                                        sample_and_class_df = index_data,
+                                        class_labels = class_labels,
+                                        scaling_type = scaling_type,
+                                        num_null_iters = num_null_iters,
+                                        num_folds = num_folds,
+                                        num_jobs = num_jobs,
+                                        num_repeats = num_repeats)
+            
+            # Save to list of dataframes
+            null_balanced_accuracy_list.append(null_balanced_accuracies)
+            
+        ###########################################################################
+        # Combo-wise
+        
+        # Merge brain region + univariate feature name
+        combo_data = (univariate_feature_data
+                    .query("Diagnosis in ['Control', @comparison_to_control_group]")
+                    .drop(["method", "Noise_Proc"], axis=1))
+        combo_data["Combo_Feature"] = combo_data.Brain_Region + "_" + combo_data.names
+        combo_data = combo_data.drop(["Brain_Region", "names"], axis=1)
+        
+        # Pivot from long to wide
+        combo_data_wide = combo_data.pivot(index=["Sample_ID", "Diagnosis"],
+                                        columns = "Combo_Feature",
+                                        values = "values")
+        
+        # Extract only the combo feature data
+        features_only = combo_data_wide.reset_index(drop=True).to_numpy()
+        
+        # Extract sample ID and diagnosis as lists
+        index_data = combo_data_wide.index.to_frame().reset_index(drop=True)
+        class_labels = index_data["Diagnosis"].tolist()
+        
+        null_balanced_accuracies = run_nulls_for_feature(feature_data = features_only, 
+                                    grouping_var_name = "Combo",
+                                    analysis_type = "Univariate_Combo",
+                                    scoring_method = "balanced_accuracy",
+                                    output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_Combo_SVM",
+                                    sample_and_class_df = index_data,
+                                    class_labels = class_labels,
+                                    scaling_type = scaling_type,
+                                    num_null_iters = num_null_iters,
+                                    num_folds = num_folds,
+                                    num_jobs = num_jobs,
+                                    num_repeats = num_repeats)
+        
+        # Save to list of dataframes
+        null_balanced_accuracy_list.append(null_balanced_accuracies)
+        
+        ###########################################################################
+        # Merge + save results
+        null_balanced_accuracy_res = pd.concat(null_balanced_accuracy_list).reset_index()
+        
+        # Add comparison group info and normalisation method info
+        null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
+        null_balanced_accuracy_res["Scaling_Type"] = scaling_type
+        
+        # Save results
+        null_balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
+        
