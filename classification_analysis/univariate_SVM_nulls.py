@@ -20,6 +20,7 @@ parser.add_argument('--univariate_feature_file', default="/headnode1/abry4213/da
 parser.add_argument('--noise_proc', dest='noise_proc')
 parser.add_argument('--scaling_type', default="robust", dest='scaling_type')
 parser.add_argument('--num_folds', default=10, dest='num_folds')
+parser.add_argument('--num_null_iters', default=1000, dest='num_null_iters')
 parser.add_argument('--num_repeats', default=10, dest='num_repeats')
 parser.add_argument('--num_jobs', default=10, dest='num_jobs')
 parser.add_argument('--dataset_ID', default="UCLA_CNP", dest='dataset_ID')
@@ -35,6 +36,7 @@ univariate_feature_file = args.univariate_feature_file
 noise_proc = args.noise_proc
 scaling_type = args.scaling_type
 num_folds = args.num_folds
+num_null_iters = args.num_null_iters
 num_repeats = args.num_repeats
 num_jobs = args.num_jobs
 dataset_ID = args.dataset_ID
@@ -53,8 +55,8 @@ dataset_ID = args.dataset_ID
 # num_jobs = 1
 # scaling_type = "robustsigmoid"
 
-# Run the univariate main SVM
-run_univariate_SVM(univariate_feature_file=univariate_feature_file,
+# Run the univariate null SVMs
+run_univariate_nulls(univariate_feature_file=univariate_feature_file,
                        univariate_feature_set=univariate_feature_set, 
                        pairwise_feature_set=pairwise_feature_set,
                        dataset_ID=dataset_ID,
@@ -64,6 +66,7 @@ run_univariate_SVM(univariate_feature_file=univariate_feature_file,
                        pydata_path=data_path + "processed_data/",
                        data_path=data_path,
                        scaling_type = scaling_type,
+                       num_null_iters = int(num_null_iters),
                        num_folds = int(num_folds),
                        num_repeats = int(num_repeats),
                        num_jobs = int(num_jobs))

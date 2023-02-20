@@ -64,68 +64,6 @@ dataset_ID = args.dataset_ID
 # Function to run SVMs per brain region per dataset
 ###########################################################################
 
-def run_SVMs_for_movement_data(brain_region_list, 
-                               threshold_type,
-                               feature_data_filtered, 
-                               num_k_folds, 
-                               univariate_feature_set):
-    
-    # Initialize list for balanced accuracy
-    balanced_accuracy_list = []
-    
-    # Iterate over each ROI
-    for ROI in brain_region_list:
-        
-        # Subset data to ROI
-        region_data = feature_data_filtered.query("Brain_Region == @ROI & Diagnosis in ['Control', @comparison_group]").drop(["Brain_Region", "Noise_Proc",
-                                                                                "method"], axis=1)
-        
-        # Pivot from long to wide
-        region_data_wide = region_data.pivot(index=['Sample_ID', 'Diagnosis'], columns='names', values='values')
-        
-        # Extract name of features
-        feature_list = region_data_wide.columns.tolist()
-        
-        # Extract sample ID and diagnosis as lists
-        index_data = region_data_wide.index.to_frame().reset_index(drop=True)
-        class_labels = index_data["Diagnosis"].tolist()
-        
-        # Extract only the feature data
-        features_only = region_data_wide.reset_index(drop=True).to_numpy()
-        
-        # Run SVM
-        (fold_assignments, SVM_coefficients, balanced_accuracy, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
-                                    feature_list = feature_list,
-                                    grouping_var_name = ROI,
-                                    scoring_method = "balanced_accuracy",
-                                    sample_and_class_df = index_data,
-                                    class_labels = class_labels,
-                                    scaling_type = scaling_type,
-                                    analysis_type = "Brain Region",
-                                    run_nulls=run_nulls,
-                                    num_null_iters = int(num_null_iters),
-                                    num_folds = int(num_folds),
-                                    num_jobs = int(num_jobs),
-                                    num_repeats = int(num_repeats))
-        
-        # Add name for analysis column
-        balanced_accuracy["Analysis"] = threshold_type
-        balanced_accuracy["Feature Set"] = univariate_feature_set
-        
-        # Save to list of dataframes
-        balanced_accuracy_list.append(balanced_accuracy)
-        
-    # Combine and return list of dataframes
-    balanced_accuracy_res = pd.concat(balanced_accuracy_list)
-    return(balanced_accuracy_res)
-
-
-###########################################################################
-# Check if output feather file exists
-###########################################################################
-
-if os.path.isfile(f"{data_path}/processed_data/{dataset_ID}_{comparison_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_movement_SVM_balanced_accuracy.feather"):
-    exit()
 
 
 ###########################################################################
@@ -171,15 +109,27 @@ movement_data_mean = movement_data_mean.astype({'Sample_ID':'string'})
 # Filter by samples to keep
 movement_data_mean = movement_data_mean.query("Sample_ID.isin(@samples_to_keep)")
 
+
+###########################################################################
+# Check if output feather file exists
+###########################################################################
+
+if os.path.isfile(f"{data_path}/processed_data/{dataset_ID}_{comparison_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_movement_SVM_balanced_accuracy.feather"):
+    exit()
+
+
+
 ###########################################################################
 # Keeping all subjects -- 5-fold CV with 10 repeats
 ###########################################################################                                                                       
 
-no_threshold_balanced_accuracy = run_SVMs_for_movement_data(brain_region_list = brain_region_list,
-                                                            threshold_type = "No Movement Threshold",
-                                                            feature_data_filtered = univariate_feature_data,
-                                                            num_k_folds = num_folds,
-                                                            univariate_feature_set = univariate_feature_set)
+no_threshold_balanced_accuracy = run_univariate_SVM_with_movement(univariate_feature_data=univariate_feature_data,
+                       threshold_type="No Movement Threshold",
+                       comparison_to_control_group = comparison_group,
+                       num_folds = int(num_folds),
+                       scaling_type=scaling_type,
+                       num_jobs = int(num_jobs),
+                       num_repeats = int(num_repeats))
 
 
 ###########################################################################
@@ -189,11 +139,14 @@ no_threshold_balanced_accuracy = run_SVMs_for_movement_data(brain_region_list = 
 movement_data_lenient = movement_data_mean.query("Power < 0.55")
 univariate_feature_data_lenient = univariate_feature_data[univariate_feature_data.Sample_ID.isin(movement_data_lenient.Sample_ID)]   
 
-lenient_threshold_balanced_accuracy = run_SVMs_for_movement_data(brain_region_list = brain_region_list,
-                                                            threshold_type = "Lenient Movement Threshold",
-                                                            feature_data_filtered = univariate_feature_data_lenient,
-                                                            num_k_folds = num_folds,
-                                                            univariate_feature_set = univariate_feature_set)
+
+lenient_threshold_balanced_accuracy = run_univariate_SVM_with_movement(univariate_feature_data=univariate_feature_data_lenient,
+                       threshold_type="Lenient Movement Threshold",
+                       comparison_to_control_group = comparison_group,
+                       num_folds = int(num_folds),
+                       scaling_type=scaling_type,
+                       num_jobs = int(num_jobs),
+                       num_repeats = int(num_repeats))
 
 ###########################################################################
 # Stringent thresholding -- 5-fold CV with 10 repeats
@@ -210,12 +163,14 @@ movement_data_stringent = (movement_data_long
 
 univariate_feature_data_stringent = univariate_feature_data[univariate_feature_data.Sample_ID.isin(movement_data_stringent.Sample_ID)]   
 
+stringent_threshold_balanced_accuracy = run_univariate_SVM_with_movement(univariate_feature_data=univariate_feature_data_stringent,
+                       threshold_type="Stringent Movement Threshold",
+                       comparison_to_control_group = comparison_group,
+                       num_folds = int(num_folds),
+                       scaling_type=scaling_type,
+                       num_jobs = int(num_jobs),
+                       num_repeats = int(num_repeats))
 
-stringent_threshold_balanced_accuracy = run_SVMs_for_movement_data(brain_region_list = brain_region_list,
-                                                            threshold_type = "Stringent Movement Threshold",
-                                                            feature_data_filtered = univariate_feature_data_stringent,
-                                                            num_k_folds = num_folds,
-                                                            univariate_feature_set = univariate_feature_set)
 
 ###########################################################################
 # Combine and save results

@@ -19,9 +19,7 @@ parser.add_argument('--pairwise_feature_set', default='pyspi14', dest='pairwise_
 parser.add_argument('--pairwise_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather", dest='pairwise_feature_file')
 parser.add_argument('--noise_proc', dest='noise_proc')
 parser.add_argument('--scaling_type', default="robustsigmoid", dest='scaling_type')
-parser.add_argument('--run_nulls', action='store_true')
 parser.add_argument('--num_folds', default=10, dest='num_folds')
-parser.add_argument('--num_null_iters', default=1000, dest='num_null_iters')
 parser.add_argument('--num_repeats', default=10, dest='num_repeats')
 parser.add_argument('--num_jobs', default=8, dest='num_jobs')
 parser.add_argument('--dataset_ID', default="UCLA_CNP", dest='dataset_ID')
@@ -36,10 +34,8 @@ univariate_feature_set = args.univariate_feature_set
 pairwise_feature_set = args.pairwise_feature_set
 pairwise_feature_file = args.pairwise_feature_file
 scaling_type = args.scaling_type
-run_nulls = args.run_nulls
 num_folds = args.num_folds
 noise_proc = args.noise_proc
-num_null_iters = args.num_null_iters
 num_repeats = args.num_repeats
 num_jobs = args.num_jobs
 dataset_ID = args.dataset_ID
@@ -53,13 +49,12 @@ dataset_ID = args.dataset_ID
 # pairwise_feature_set = "pyspi14"
 # pairwise_feature_file ="/Users/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather"
 # noise_proc = "AROMA+2P+GMR"
-# num_null_iters = 10
 # scaling_type = "robustsigmoid"
 # num_repeats = 10
 # num_jobs = 1
-# run_nulls = True
 
-run_pairwise_SVM(pairwise_feature_file=pairwise_feature_file,
+# Run the pairwise main SVM
+run_pairwise_SVM_by_SPI(pairwise_feature_file=pairwise_feature_file,
                  SPI_directionality_file = SPI_directionality_file,
                  univariate_feature_set=univariate_feature_set,
                  pairwise_feature_set=pairwise_feature_set,
@@ -70,7 +65,5 @@ run_pairwise_SVM(pairwise_feature_file=pairwise_feature_file,
                        pydata_path=data_path + "processed_data/",
                        data_path=data_path,
                        scaling_type = scaling_type,
-                       run_nulls = run_nulls,
-                       num_null_iters = int(num_null_iters),
                        num_repeats = int(num_repeats),
                        num_jobs = int(num_jobs))

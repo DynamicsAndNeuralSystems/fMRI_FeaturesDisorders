@@ -13,13 +13,11 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/univaria
 --pairwise_feature_set $pairwise_feature_set \
 --univariate_feature_file $univariate_feature_file \
 --noise_proc $noise_proc \
---num_null_iters $num_null_iters \
 --num_folds $num_folds \
 --scaling_type $scaling_type \
 --num_jobs $num_jobs \
 --num_repeats $num_repeats \
---dataset_ID $dataset_ID \
---run_nulls"
+--dataset_ID $dataset_ID"
 
 echo $cmd
 

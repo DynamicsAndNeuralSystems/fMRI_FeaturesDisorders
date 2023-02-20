@@ -21,6 +21,7 @@ parser.add_argument('--pairwise_feature_file', default="/headnode1/abry4213/data
 parser.add_argument('--noise_proc', dest='noise_proc')
 parser.add_argument('--scaling_type', default="robust", dest='scaling_type')
 parser.add_argument('--num_folds', default=10, dest='num_folds')
+parser.add_argument('--num_null_iters', default=1000, dest='num_null_iters')
 parser.add_argument('--num_repeats', default=10, dest='num_repeats')
 parser.add_argument('--num_jobs', default=10, dest='num_jobs')
 parser.add_argument('--dataset_ID', default="UCLA_CNP", dest='dataset_ID')
@@ -38,6 +39,7 @@ pairwise_feature_file = args.pairwise_feature_file
 scaling_type = args.scaling_type
 num_folds = args.num_folds
 noise_proc = args.noise_proc
+num_null_iters = args.num_null_iters
 num_repeats = args.num_repeats
 num_jobs = args.num_jobs
 dataset_ID = args.dataset_ID
@@ -54,9 +56,9 @@ dataset_ID = args.dataset_ID
 # noise_proc = "AROMA+2P+GMR"
 # num_null_iters = 2
 # scaling_type = "robust"
-                 
-# Run the combined univariate+pairwise main SVM              
-run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file=univariate_feature_file,
+
+# Run the combined univariate+pairwise null SVMs           
+run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file=univariate_feature_file,
                  pairwise_feature_file=pairwise_feature_file,
                  SPI_directionality_file = SPI_directionality_file,
                  univariate_feature_set=univariate_feature_set,
@@ -68,5 +70,6 @@ run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file=univariate_feature_
                  pydata_path=data_path + "processed_data/",
                  data_path=data_path,
                  scaling_type = scaling_type,
+                 num_null_iters = int(num_null_iters),
                  num_repeats = int(num_repeats),
                  num_jobs = int(num_jobs))
