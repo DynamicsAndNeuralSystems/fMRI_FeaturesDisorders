@@ -32,7 +32,7 @@ export brain_region_lookup="UCLA_CNP_Brain_Region_Lookup.feather"
 export pyspi_walltime_hrs=2
 
 # Run feature extraction
-bash $github_dir/fMRI_FeaturesDisorders/data_prep.sh 
+bash $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/data_prep.sh 
 
 ##########################################################################################
 # ABIDE ASD
@@ -47,4 +47,4 @@ export brain_region_lookup="ABIDE_ASD_Brain_Region_Lookup.feather"
 export pyspi_walltime_hrs=3
 
 # Run feature extraction
-bash $github_dir/fMRI_FeaturesDisorders/data_prep.sh 
+bash $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/data_prep.sh 

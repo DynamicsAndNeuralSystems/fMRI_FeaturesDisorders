@@ -20,7 +20,7 @@ for i = 1:num_subjects
 
     % Read in movement data
     subject_movement_data = dlmread(fullfile(ASD_subject_movement_data_path, file));
-    % NOTE: ABDIE ASD data was processed with AFNI rather than SPM
+    % NOTE: ABIDE ASD data was processed with AFNI rather than SPM
     % 3dvolreg outputs (rot,trans) rather than SPM (trans,rot)
     subject_movement_data_reordered = subject_movement_data(:, [4:6, 1:3]);
 
