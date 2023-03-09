@@ -14,7 +14,7 @@ data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "ADHD", "Bipolar", "ASD"))
-univariate_feature_sets <- c("catch22", "catch2", "catch24")
+univariate_feature_set <- "catch22"
 
 ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv")
 
@@ -37,6 +37,7 @@ library(ggseg)
 library(ggsegHO)
 library(knitr)
 library(kableExtra)
+library(patchwork)
 theme_set(theme_cowplot())
 
 # Source visualisation script
@@ -51,7 +52,7 @@ univariate_SVM_coefficients <- pyarrow_feather$read_feather(glue("{data_path}/UC
   filter(Univariate_Feature_Set == univariate_feature_set)
 univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_robustsigmoid_scaler_empirical_p_values.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
-univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_balanced_accuracy_distributions.feather")) %>%
+univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_robustsigmoid_scaler_null_balanced_accuracy_distributions.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
 
 # Aggregate balanced accuracy by repeats
@@ -59,15 +60,71 @@ univariate_balanced_accuracy_by_repeats <- univariate_balanced_accuracy_all_fold
   group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
   summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
             Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
-  left_join(., univariate_p_values %>% dplyr::select(Study:group_var, p_value:p_value_BH))
+  left_join(., univariate_p_values %>% dplyr::select(Study:group_var, p_value:p_value_Bonferroni))
 
 ################################################################################
 # Figure 2A univariate region-wise results
 ################################################################################
 
-univariate_p_values %>%
-  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type) %>%
-  summarise(num_sig = sum(p_value_BH < 0.05))
+# Define dataset with univariate region-wise results
+significant_univariate_region_wise_results <- univariate_p_values %>%
+  filter(Univariate_Feature_Set == univariate_feature_set,
+         Analysis_Type == "Univariate_Brain_Region") %>%
+  filter(p_value_Bonferroni < 0.05) %>%
+  mutate(Balanced_Accuracy_Across_Repeats = 100*Balanced_Accuracy_Across_Repeats)
+
+# Find max fill and min fill values
+min_fill <- floor(min(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Repeats))
+max_fill <- ceiling(max(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Repeats))
+
+# Initialize list of ggseg plots
+ggseg_plot_list <- list()
+
+# First plot within brain using ggseg
+for (i in 1:nrow(study_group_df)) {
+  dataset_ID <- study_group_df$Study[i]
+  comparison_group <- study_group_df$Comparison_Group[i]
+  
+  # Define atlas by study
+  atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
+  
+  # Extract sig results to plot
+  significant_data_for_ggseg <- significant_univariate_region_wise_results %>%
+    filter(Study == dataset_ID,
+           Comparison_Group == comparison_group) %>%
+    distinct() %>%
+    mutate(label = ifelse(str_detect(group_var, "ctx-"),
+                          gsub("-", "_", group_var),
+                          as.character(group_var))) %>%
+    mutate(label = gsub("ctx_", "", label))
+  
+  # Plot balanced accuracy data in cortex
+  dataset_ggseg <- plot_significant_regions_ggseg(dataset_ID = dataset_ID,
+                                                  atlas_name = atlas,
+                                                  atlas_data = get(atlas),
+                                                  main_data_for_ggseg = significant_data_for_ggseg,
+                                                  min_fill = min_fill,
+                                                  max_fill = max_fill,
+                                                  fill_color = "#F0224B")
+  # Append to list
+  ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
+  
+  # Add subcortical data for UCLA CNP
+  if (dataset_ID == "UCLA_CNP") {
+    dataset_ggseg_subctx <- plot_significant_regions_ggseg(dataset_ID = dataset_ID,
+                                                    atlas_name = "aseg",
+                                                    atlas_data = aseg,
+                                                    main_data_for_ggseg = significant_data_for_ggseg,
+                                                    min_fill = min_fill,
+                                                    max_fill = max_fill,
+                                                    fill_color = "#F0224B")
+    # Append to list
+    ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg_subctx)
+  }
+}
+
+# Combine plots
+wrap_plots(ggseg_plot_list, nrow=2)
 
 for (i in 1:nrow(study_group_df)) {
   dataset_ID <- study_group_df$Study[i]
@@ -76,13 +133,13 @@ for (i in 1:nrow(study_group_df)) {
   # Define atlas by study
   atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
   
-  significant_brain_regions <- univariate_p_values %>%
+  significant_results <- univariate_p_values %>%
     filter(Study == dataset_ID,
            Comparison_Group == comparison_group,
            Univariate_Feature_Set == univariate_feature_set,
-           Analysis_Type == "Brain_Region") %>%
-    filter(p_value_BH < 0.05) %>%
-    pull(group_var)
+           Analysis_Type == "Univariate_Brain_Region") %>%
+    filter(p_value_Bonferroni < 0.05)
+  significant_brain_regions <- significant_results$group_var
   
   # Only move forward if 1+ significant brain regions was detected 
   if (length(significant_brain_regions) > 0) {
@@ -91,7 +148,7 @@ for (i in 1:nrow(study_group_df)) {
       filter(Study == dataset_ID,
              Comparison_Group == comparison_group,
              Univariate_Feature_Set == univariate_feature_set,
-             Analysis_Type == "Brain_Region") 
+             Analysis_Type == "Univariate_Brain_Region") 
     
     # Pull out data for repeats
     repeat_data_to_plot <- univariate_balanced_accuracy_by_repeats %>%
@@ -99,7 +156,7 @@ for (i in 1:nrow(study_group_df)) {
              Comparison_Group == comparison_group,
              Univariate_Feature_Set == univariate_feature_set,
              group_var %in% significant_brain_regions,
-             Analysis_Type == "Brain_Region") 
+             Analysis_Type == "Univariate_Brain_Region") 
     
     ### UCLA boxplot with shaded null region
     plot_boxplot_shaded_null(dataset_ID = "UCLA_CNP",
@@ -113,12 +170,11 @@ for (i in 1:nrow(study_group_df)) {
            width=4, height=2, units="in", dpi=300)
     
     # Plot in the brain
-    significant_data_for_ggseg <- data.frame(label = significant_brain_regions) %>%
+    significant_data_for_ggseg <- significant_results %>%
       distinct() %>%
-      mutate(fillyes = T) %>%
-      mutate(label = ifelse(str_detect(label, "ctx-"),
-                            gsub("-", "_", label),
-                            as.character(label))) %>%
+      mutate(label = ifelse(str_detect(group_var, "ctx-"),
+                            gsub("-", "_", group_var),
+                            as.character(group_var))) %>%
       mutate(label = gsub("ctx_", "", label))
     plot_significant_regions_ggseg(dataset_ID = dataset_ID,
                                    atlas_name = atlas,
