@@ -137,6 +137,8 @@ class RobustSigmoidScaler(TransformerMixin, BaseEstimator):
             
         self.IQR_ = np.nanpercentile(X, self.quantile_range, axis=0)
         self.IQR_diffs_ = self.IQR_[1,:] - self.IQR_[0,:]
+        self.mean_ = np.nanmean(X, axis=0)
+        self.sd_ = np.nanstd(X, axis=0)
         self.median_ = np.nanmedian(X, axis=0)
 
         return self
@@ -167,14 +169,15 @@ class RobustSigmoidScaler(TransformerMixin, BaseEstimator):
 
         # Iterate over each feature column
         for i in range(X_transformed.shape[1]):
-            # catch for if the IQR difference is zero, in which case we simply divide by 1
+            # catch for if the IQR difference is zero, in which case we apply standard logistic transformation using mean and SD
             if self.IQR_diffs_[i] == 0:
                 scale = 1
+                X_i = 1/(1 + math.e**(- ( (X[:,i] - self.mean_[i]) / self.sd_ ) ))
             # otherwise, set the scaling factor to the IQR/1.35
             else: 
-                scale = self.IQR_diffs_[i]
-            # Center by removing the median, standarize by dividing by scale value
-            X_i = 1/(1 + math.e**(- ( (X[:,i] - self.median_[i]) / scale/1.35 ) ))
+                IQR = self.IQR_diffs_[i]
+                # Center by removing the median, standarize by dividing by scale value
+                X_i = 1/(1 + math.e**(- ( (X[:,i] - self.median_[i]) / IQR/1.35 ) ))
             
             # Scale to unit variance [0,1] if specified
             if self.unit_variance:
