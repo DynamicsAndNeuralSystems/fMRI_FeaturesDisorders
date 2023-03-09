@@ -172,7 +172,7 @@ class RobustSigmoidScaler(TransformerMixin, BaseEstimator):
             # catch for if the IQR difference is zero, in which case we apply standard logistic transformation using mean and SD
             if self.IQR_diffs_[i] == 0:
                 scale = 1
-                X_i = 1/(1 + math.e**(- ( (X[:,i] - self.mean_[i]) / self.sd_ ) ))
+                X_i = 1/(1 + math.e**(- ( (X[:,i] - self.mean_[i]) / self.sd_[i] ) ))
             # otherwise, set the scaling factor to the IQR/1.35
             else: 
                 IQR = self.IQR_diffs_[i]
