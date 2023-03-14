@@ -7,7 +7,7 @@ python_to_use <- "~/.conda/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
 github_dir <- "~/github/"
 data_path <- "~/data/"
-scaler <- "robustsigmoid"
+scaler <- "standard"
 sample_metadata_file <- "UCLA_CNP_sample_metadata.feather"
 noise_proc <- "AROMA+2P+GMR"
 output_data_path <- glue::glue("{data_path}/TS_feature_manuscript/FTM_vs_catch24/")
@@ -70,7 +70,7 @@ save(all_feature_values, file=glue("{output_data_path}/all_feature_values.Rda"))
 ################################################################################
 
 # Load catch24 SVM balanced accuracy by repeat
-catch24_SVM_balanced_accuracy_by_repeat <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch24_standard_scaler_SVM_balanced_accuracy.feather")) %>%
+catch24_SVM_balanced_accuracy_by_repeat <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch24_{scaler}_scaler_SVM_balanced_accuracy.feather")) %>%
   filter(Comparison_Group == "Schizophrenia") %>%
   mutate(Univariate_Feature_Set = "catch24",
          Repeat_Number = Repeat_Number + 1) %>%
@@ -78,7 +78,7 @@ catch24_SVM_balanced_accuracy_by_repeat <- pyarrow_feather$read_feather(glue("{d
   summarise(Repeat_Balanced_Accuracy = mean(Balanced_Accuracy, na.rm=T))
 
 # Load catch22 SVM balanced accuracy by repeat
-catch22_SVM_balanced_accuracy_by_repeat <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_standard_scaler_SVM_balanced_accuracy.feather")) %>%
+catch22_SVM_balanced_accuracy_by_repeat <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_{scaler}_scaler_SVM_balanced_accuracy.feather")) %>%
   filter(Comparison_Group == "Schizophrenia") %>%
   mutate(Univariate_Feature_Set = "catch22",
          Repeat_Number = Repeat_Number + 1) %>%
@@ -86,7 +86,7 @@ catch22_SVM_balanced_accuracy_by_repeat <- pyarrow_feather$read_feather(glue("{d
   summarise(Repeat_Balanced_Accuracy = mean(Balanced_Accuracy, na.rm=T))
 
 # Load FTM SVM balanced accuracy
-FTM_SVM_balanced_accuracy_by_repeat <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_FTM_standard_scaler_SVM_balanced_accuracy.feather")) %>%
+FTM_SVM_balanced_accuracy_by_repeat <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_FTM_{scaler}_scaler_SVM_balanced_accuracy.feather")) %>%
   filter(Comparison_Group == "Schizophrenia") %>%
   mutate(Univariate_Feature_Set = "FTM",
          Repeat_Number = Repeat_Number + 1) %>%
@@ -106,15 +106,15 @@ save(balanced_accuracy_by_repeats, file=glue("{output_data_path}/balanced_accura
 ################################################################################
 
 # Load catch24 null balanced accuracy res
-catch24_null_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch24_robustsigmoid_scaler_SVM_null_balanced_accuracy_distributions.feather"))
+catch24_null_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch24_{scaler}_scaler_SVM_null_balanced_accuracy_distributions.feather"))
 catch24_null_balanced_accuracy_all_folds$Univariate_Feature_Set <- "catch24"
 
 # Load catch22 null balanced accuracy res
-catch22_null_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_robustsigmoid_scaler_SVM_null_balanced_accuracy_distributions.feather"))
+catch22_null_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_{scaler}_scaler_SVM_null_balanced_accuracy_distributions.feather"))
 catch22_null_balanced_accuracy_all_folds$Univariate_Feature_Set <- "catch22"
 
 # Load FTM null balanced accuracy res
-FTM_null_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_FTM_robustsigmoid_scaler_SVM_null_balanced_accuracy_distributions.feather"))
+FTM_null_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_FTM_{scaler}_scaler_SVM_null_balanced_accuracy_distributions.feather"))
 FTM_null_balanced_accuracy_all_folds$Univariate_Feature_Set <- "FTM"
 
 # Merge FTM + catch22 + catch24 null balanced accuracy res
