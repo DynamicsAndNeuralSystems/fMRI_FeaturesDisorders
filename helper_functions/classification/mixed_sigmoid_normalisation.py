@@ -10,7 +10,7 @@ import math
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 
-class RobustSigmoidScaler(TransformerMixin, BaseEstimator):
+class MixedSigmoidScaler(TransformerMixin, BaseEstimator):
     """Scale features using statistics that are robust to outliers.
     This Scaler removes the median and scales the data according to
     the quantile range (defaults to IQR: Interquartile Range).

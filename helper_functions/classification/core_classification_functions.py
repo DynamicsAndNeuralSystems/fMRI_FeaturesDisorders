@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler, RobustScaler
 import os.path
 from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_validate, permutation_test_score
 import numpy as np
-from robust_sigmoid_normalisation import RobustSigmoidScaler
+from mixed_sigmoid_normalisation import MixedSigmoidScaler
 
 
 def run_k_fold_SVM_for_feature(feature_data, 
@@ -29,8 +29,8 @@ def run_k_fold_SVM_for_feature(feature_data,
         pipe = Pipeline([('scaler', RobustScaler()), 
                          ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
                                      class_weight="balanced"))])
-    elif scaling_type == "robustsigmoid":
-        pipe = Pipeline([('scaler', RobustSigmoidScaler(unit_variance=True)), 
+    elif scaling_type == "mixedsigmoid":
+        pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
                          ('SVM', svm.SVC(kernel = "linear", C = 1, shrinking = False, 
                          class_weight = "balanced"))])
     else: 
@@ -141,7 +141,7 @@ def run_univariate_SVM(univariate_feature_file,
                        pydata_path,
                        noise_proc,
                        num_folds = 10,
-                       scaling_type="robustsigmoid",
+                       scaling_type="mixedsigmoid",
                        num_jobs = 8,
                        num_repeats = 10,
                        save_feather=True,
@@ -612,7 +612,7 @@ def run_univariate_SVM_with_movement(univariate_feature_data,
                        threshold_type,
                        comparison_to_control_group,
                        num_folds = 10,
-                       scaling_type="robustsigmoid",
+                       scaling_type="mixedsigmoid",
                        num_jobs = 10,
                        num_repeats = 10):
 
@@ -867,7 +867,7 @@ def run_univariate_nulls(univariate_feature_file,
                        noise_proc,
                        num_null_iters = 1000,
                        num_folds = 10,
-                       scaling_type="robustsigmoid",
+                       scaling_type="mixedsigmoid",
                        num_jobs = 10,
                        num_repeats = 10,
                        overwrite=False):

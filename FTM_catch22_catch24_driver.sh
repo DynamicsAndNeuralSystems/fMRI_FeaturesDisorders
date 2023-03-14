@@ -5,7 +5,7 @@ export conda_env="pyspi"
 export cluster_queue="yossarian"
 export python_to_use=/headnode1/abry4213/.conda/envs/${conda_env}/bin/python3
 export pairwise_feature_set="pyspi14"
-export scaling_type="robustsigmoid"
+export scaling_type="standard"
 export num_folds=10
 export num_repeats=10
 export num_null_iters=1000
@@ -43,15 +43,15 @@ for comparison_group in Schizophrenia Bipolar ADHD; do
         -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB,walltime=${num_hours}:00:00 -q $cluster_queue \
         $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_classification.pbs
 
-        # # Nulls
-        # job_memory=60
-        # num_hours=48
-        # num_jobs=10
-        # qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_folds=$num_folds,num_jobs=$num_jobs,num_repeats=$num_repeats \
-        # -N ${dataset_ID}_${comparison_group}_${univariate_feature_set} \
-        # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_nulls_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${scaling_type}_scaler_out.txt \
-        # -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB,walltime=${num_hours}:00:00 -q $cluster_queue \
-        # $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_nulls.pbs
+        # Nulls
+        job_memory=60
+        num_hours=48
+        num_jobs=10
+        qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_folds=$num_folds,num_jobs=$num_jobs,num_repeats=$num_repeats \
+        -N ${dataset_ID}_${comparison_group}_${univariate_feature_set} \
+        -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_nulls_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${scaling_type}_scaler_out.txt \
+        -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB,walltime=${num_hours}:00:00 -q $cluster_queue \
+        $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_nulls.pbs
 
     done
 done
@@ -71,7 +71,7 @@ export comparison_group="ASD"
 for univariate_feature_set in catch2 catch22 catch24; do
     univariate_feature_file=$data_path/processed_data/${dataset_ID}_${noise_label}_${univariate_feature_set}_filtered.feather
 
-    Run univariate SVM
+    # Run univariate SVM
 
     # Main SVM
     num_jobs=10
@@ -83,14 +83,14 @@ for univariate_feature_set in catch2 catch22 catch24; do
     -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB,walltime=${num_hours}:00:00 -q $cluster_queue \
     $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_classification.pbs
 
-    # # Nulls
-    # num_jobs=10
-    # job_memory=180
-    # num_hours=48
-    # qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_folds=$num_folds,num_jobs=$num_jobs,num_repeats=$num_repeats \
-    # -N ${dataset_ID}_${comparison_group}_${univariate_feature_set} \
-    # -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_nulls_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${scaling_type}_scaler_out.txt \
-    # -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB,walltime=${num_hours}:00:00 -q $cluster_queue \
-    # $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_nulls.pbs
+    # Nulls
+    num_jobs=10
+    job_memory=180
+    num_hours=48
+    qsub -v dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,pairwise_feature_set=$pairwise_feature_set,univariate_feature_file=$univariate_feature_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,scaling_type=$scaling_type,num_null_iters=$num_null_iters,num_folds=$num_folds,num_jobs=$num_jobs,num_repeats=$num_repeats \
+    -N ${dataset_ID}_${comparison_group}_${univariate_feature_set} \
+    -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_univariate_nulls_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${scaling_type}_scaler_out.txt \
+    -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB,walltime=${num_hours}:00:00 -q $cluster_queue \
+    $github_dir/fMRI_FeaturesDisorders/classification_analysis/call_univariate_nulls.pbs
 
 done
