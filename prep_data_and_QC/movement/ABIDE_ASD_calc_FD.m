@@ -4,7 +4,7 @@
 % Functions used from github.com/lindenparkes/rsfMRI/
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% ABIDE ASD %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-ASD_subject_movement_data_path = "/headnode1/abry4213/data/ABIDE_ASD/movement_data/";
+ASD_subject_movement_data_path = "/headnode1/abry4213/data/ABIDE_ASD/movement_data/fmriprep/";
 txt_files = dir(fullfile(ASD_subject_movement_data_path, "*movData.txt"));
 
 % Instantiate matrix with two columns, one for subject ID and one for mean

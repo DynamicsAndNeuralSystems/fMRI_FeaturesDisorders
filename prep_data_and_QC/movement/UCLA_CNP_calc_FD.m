@@ -3,9 +3,8 @@
 
 % Functions used from github.com/lindenparkes/rsfMRI/
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% UCLA CNP %%%%%%%%%%%%%%%%%%%%%%%%%%%
-UCLA_CNP_subject_movement_data_path = "/headnode1/abry4213/data/UCLA_CNP/movement_data/";
+UCLA_CNP_subject_movement_data_path = "/headnode1/abry4213/data/UCLA_CNP/movement_data/fmriprep/";
 txt_files = dir(fullfile(UCLA_CNP_subject_movement_data_path, "*movData.txt"));
 
 % Instantiate matrix with two columns, one for subject ID and one for mean
