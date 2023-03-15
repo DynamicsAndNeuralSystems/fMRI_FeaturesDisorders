@@ -28,10 +28,10 @@ simData_catch22_norm_in_theft <- normalise_feature_frame(simData_catch22,
   dplyr::select(-method)
 
 ################################################################################
-# Robust sigmoid in R with theft
+# Mixed sigmoid in python
 ################################################################################
 
-# Cast data from long to wide for robust sigmoid analysis in python
+# Cast data from long to wide for mixed sigmoid analysis in python
 simData_catch22_wide <- simData_catch22 %>%
   pivot_wider(id_cols = id, names_from = names, values_from = values)
 
@@ -44,11 +44,11 @@ catch22_data_feature_columns = colnames(simData_catch22_wide)[2:23]
 # Convert data to matrix
 simData_catch22_matrix <- as.matrix(simData_catch22_wide %>% dplyr::select(-id))
 
-# Import robust sigmoid function from python script
+# Import mixed sigmoid function from python script
 source_python("~/github/fMRI_FeaturesDisorders/helper_functions/classification/core_classification_functions.py")
 
-# Apply robust sigmoid transform with sklearn
-transformer = RobustSigmoidScaler(unit_variance=TRUE)$fit(simData_catch22_matrix)
+# Apply mixed sigmoid transform with sklearn
+transformer = MixedSigmoidScaler(unit_variance=TRUE)$fit(simData_catch22_matrix)
 simData_catch22_norm_in_python_wide = as.data.frame(transformer$transform(simData_catch22_matrix))
 colnames(simData_catch22_norm_in_python_wide) <- catch22_data_feature_columns 
 
@@ -56,7 +56,7 @@ simData_catch22_norm_in_python <- simData_catch22_norm_in_python_wide %>%
   mutate(id = sample_IDs) %>%
   pivot_longer(cols = c(-id), 
                names_to = "Feature", 
-               values_to = "RobustSigmoid_python")
+               values_to = "MixedSigmoid_python")
 
 ################################################################################
 # Compare results with R vs Python
@@ -67,11 +67,11 @@ merged_norm <- left_join(simData_catch22_norm_in_theft,
                          simData_catch22_norm_in_python)
 
 merged_norm %>%
-  ggplot(data=., mapping=aes(x=RobustSigmoid_theft, y=RobustSigmoid_python)) +
+  ggplot(data=., mapping=aes(x=RobustSigmoid_theft, y=MixedSigmoid_python)) +
   geom_point() +
-  ylab("Normalisation in Python") +
-  xlab("Normalisation in R") +
-  ggtitle("Robust Sigmoid Normalisation for theft::simData") +
+  ylab("Mixed Normalisation in Python") +
+  xlab("Robust Normalisation in R") +
+  ggtitle("Robust vs. Mixed Sigmoid Normalisation for theft::simData") +
   coord_equal() +
   theme(plot.title = element_text(hjust=0.5))
 
