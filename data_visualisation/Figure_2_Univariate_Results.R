@@ -41,10 +41,10 @@ library(patchwork)
 theme_set(theme_cowplot())
 
 # Source visualisation script
-source(glue("{github_dir}/data_visualisation/manuscript_figures/Manuscript_Draft_Visualisations_Helper.R"))
+source(glue("{github_dir}/data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
 
 # Load in univariate time-series feature info
-TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/manuscript_figures/catch24_info.csv"))
+TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
 # Load data
 univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_robustsigmoid_scaler_balanced_accuracy_all_folds.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)

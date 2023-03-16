@@ -25,7 +25,7 @@ pyarrow_feather <- import("pyarrow.feather")
 ################################################################################
 
 github_dir <- "~/github/fMRI_FeaturesDisorders/"
-source(paste0(github_dir, "data_visualisation/manuscript_figures/Manuscript_Draft_Visualisations_Helper.R"))
+source(paste0(github_dir, "data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/FigureS3/")
 TAF::mkdir(plot_path)
 
@@ -45,13 +45,13 @@ ABIDE_ASD_sample_metadata <- feather::read_feather(glue("{ABIDE_ASD_data_path}/s
   filter(Sample_ID %in% ABIDE_ASD_subjects_used)
 
 # Load mean framewise displacement data
-UCLA_CNP_mean_FD <- read.table(glue("{UCLA_CNP_data_path}/movement_data/UCLA_CNP_mFD.txt"), 
+UCLA_CNP_mean_FD <- read.table(glue("{UCLA_CNP_data_path}/movement_data/fmriprep/UCLA_CNP_mFD.txt"), 
                                        sep=",", colClasses = "character")
-ABIDE_ASD_mean_FD <- read.table(glue("{ABIDE_ASD_data_path}/movement_data/ABIDE_ASD_mFD.txt"), 
+ABIDE_ASD_mean_FD <- read.table(glue("{ABIDE_ASD_data_path}/movement_data/fmriprep/ABIDE_ASD_mFD.txt"), 
                                      sep=",", colClasses = "character")
 # Load full framewise displacement data
-UCLA_CNP_full_FD <- as.data.frame(readMat(glue("{UCLA_CNP_data_path}/movement_data/UCLA_CNP_all_FD.mat"))[[1]])
-ABIDE_ASD_full_FD <- as.data.frame(readMat(glue("{ABIDE_ASD_data_path}/movement_data/ABIDE_ASD_all_FD.mat"))[[1]])
+UCLA_CNP_full_FD <- as.data.frame(readMat(glue("{UCLA_CNP_data_path}/movement_data/fmriprep/UCLA_CNP_all_FD.mat"))[[1]])
+ABIDE_ASD_full_FD <- as.data.frame(readMat(glue("{ABIDE_ASD_data_path}/movement_data/fmriprep/ABIDE_ASD_all_FD.mat"))[[1]])
 colnames(UCLA_CNP_full_FD) <- colnames(ABIDE_ASD_full_FD) <- colnames(UCLA_CNP_mean_FD) <- colnames(ABIDE_ASD_mean_FD) <- c("Sample_ID", "Jenkinson", "Power", "VanDijk")
 
 # Un-list full framewise displacement data
