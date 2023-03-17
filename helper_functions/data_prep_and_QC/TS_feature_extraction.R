@@ -41,7 +41,7 @@ catch22_all_samples <- function(full_TS_data,
                                             time_var = "timepoint", 
                                             values_var = "values", 
                                             feature_set = "catch22",
-                                            catch24 = add_mean_SD) %>%
+                                            catch24 = add_mean_SD)[[1]] %>%
       tidyr::separate("id", c(output_column_names), sep="__")
     
     cat("\nNow saving resulting theft features to a .feather file: \n", 

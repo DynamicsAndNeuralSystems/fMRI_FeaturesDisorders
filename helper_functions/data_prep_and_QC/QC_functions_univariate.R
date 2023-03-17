@@ -9,6 +9,7 @@
 library(tidyverse)
 library(theft)
 library(feather)
+library(glue)
 
 #-------------------------------------------------------------------------------
 # Function to read in univariate TS feature data and return subjects with NA 
@@ -163,6 +164,12 @@ run_QC_for_univariate_dataset <- function(data_path,
   # Filter to samples in metadata
   TS_feature_data_filtered <- TS_feature_data_filtered %>%
     dplyr::filter(Sample_ID %in% sample_metadata$Sample_ID)
+
+  # Find subjects to drop based on head movement
+  lenient_FD_subjects_to_drop <- unname(unlist(read.table(glue("{data_path}/movement_data/fmriprep/{dataset_ID}_subjects_to_drop_lenient.txt"),
+                       colClasses = "character")[1]))
+  TS_feature_data_filtered <- TS_feature_data_filtered %>%
+    dplyr::filter(!(Sample_ID %in% lenient_FD_subjects_to_drop))
   
   # Save filtered data to feather
   feather::write_feather(TS_feature_data_filtered, paste0(proc_rdata_path,

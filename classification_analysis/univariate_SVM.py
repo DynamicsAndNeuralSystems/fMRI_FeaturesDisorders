@@ -18,7 +18,7 @@ parser.add_argument('--univariate_feature_set', default='catch22', dest='univari
 parser.add_argument('--pairwise_feature_set', default='pyspi14', dest='pairwise_feature_set')
 parser.add_argument('--univariate_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather", dest='univariate_feature_file')
 parser.add_argument('--noise_proc', dest='noise_proc')
-parser.add_argument('--scaling_type', default="robust", dest='scaling_type')
+parser.add_argument('--scaling_type', default="mixedsigmoid", dest='scaling_type')
 parser.add_argument('--num_folds', default=10, dest='num_folds')
 parser.add_argument('--num_repeats', default=10, dest='num_repeats')
 parser.add_argument('--num_jobs', default=10, dest='num_jobs')
@@ -54,16 +54,16 @@ dataset_ID = args.dataset_ID
 # scaling_type = "robustsigmoid"
 
 # Run the univariate main SVM
-run_univariate_SVM(univariate_feature_file=univariate_feature_file,
-                       univariate_feature_set=univariate_feature_set, 
-                       pairwise_feature_set=pairwise_feature_set,
-                       dataset_ID=dataset_ID,
-                       metadata_file=metadata_file,
-                       noise_proc=noise_proc,
-                       comparison_to_control_group=comparison_group,
-                       pydata_path=data_path + "processed_data/",
-                       data_path=data_path,
-                       scaling_type = scaling_type,
-                       num_folds = int(num_folds),
-                       num_repeats = int(num_repeats),
-                       num_jobs = int(num_jobs))
+run_univariate_SVM(dataset_ID=dataset_ID,
+                    data_path=data_path,
+                    pydata_path=data_path + "processed_data/",
+                    metadata_file=metadata_file,
+                    comparison_to_control_group=comparison_group,
+                    univariate_feature_set=univariate_feature_set, 
+                    pairwise_feature_set=pairwise_feature_set,
+                    univariate_feature_file=univariate_feature_file,
+                    noise_proc=noise_proc,
+                    scaling_type = scaling_type,
+                    num_folds = int(num_folds),
+                    num_repeats = int(num_repeats),
+                    num_jobs = int(num_jobs))
