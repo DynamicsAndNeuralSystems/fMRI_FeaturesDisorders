@@ -20,6 +20,11 @@ source /usr/physics/python/anaconda3/etc/profile.d/conda.sh
 conda activate $conda_env
 
 ##########################################################################################
+# Framewise displacement
+cd ${github_dir}/fMRI_FeaturesDisorders/prep_data_and_QC/movement/
+bash ${github_dir}/fMRI_FeaturesDisorders/prep_data_and_QC/movement/run_FD_calcs.sh
+
+##########################################################################################
 # UCLA CNP
 
 # Define data paths

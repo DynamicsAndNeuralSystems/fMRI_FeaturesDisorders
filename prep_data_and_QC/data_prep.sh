@@ -7,8 +7,13 @@ echo "Now preparing metadata"
 Rscript dataset_specific_files/parse_metadata_${dataset_ID}.R
 
 # ##########################################################################################
-# Prep univariate data
+# Pre-filter subjects based on head movement using the lenient threshold from Parkes et al. (2018)
+echo "Now finding subjects to drop based on head movement"
+Rscript filter_subjects_based_on_head_movement.R --dataset_ID $dataset_ID \
+--data_path $data_path \
+--sample_metadata_file $sample_metadata_file
 
+# ##########################################################################################
 # Prep univariate data in R
 echo "Now preparing univariate data"
 for feature_set in catch2 catch22 catch24; do
@@ -19,7 +24,7 @@ for feature_set in catch2 catch22 catch24; do
     call_prepare_univariate_data.pbs
 done
 
-# ########################################################################################
+# # ########################################################################################
 # Prep pairwise data
 # Get data into .npy files
 echo "Now preparing pairwise data"
