@@ -3,7 +3,7 @@
 ################################################################################
 
 github_dir <- "~/github/fMRI_FeaturesDisorders/"
-plot_path <- paste0(github_dir, "plots/Manuscript_Draft/Figure3/")
+plot_path <- paste0(github_dir, "plots/Manuscript_Draft/pairwise_results/")
 TAF::mkdir(plot_path)
 
 # python_to_use <- "~/.conda/envs/pyspi/bin/python3"
@@ -35,15 +35,29 @@ library(cowplot)
 theme_set(theme_cowplot())
 
 # Source visualisation script
-source(glue("{github_dir}/data_visualisation/manuscript_figures/Manuscript_Draft_Visualisations_Helper.R"))
+source(glue("{github_dir}/data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
 
 # Load in SPI info
-SPI_info <- read.csv(glue("{github_dir}/data_visualisation/manuscript_figures/SPI_info.csv"))
+SPI_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
+
+pairwise_null_distribution %>%
+  filter(group_var == "cov_EmpiricalCovariance") %>%
+  ggplot(data=., mapping=aes(x=Null_Balanced_Accuracy)) +
+  geom_histogram()
 
 # Load data
-pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_robustsigmoid_scaler_balanced_accuracy_all_folds.feather"))
-pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_robustsigmoid_scaler_empirical_p_values.feather"))
-pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_robustsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
+pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
+pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
+pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
+
+# Aggregate the main results across folds and then across repeats
+pairwise_balanced_accuracy <- pairwise_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
+  group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
+  reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
+          Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T))
 
 # Aggregate balanced accuracy by repeats
 pairwise_balanced_accuracy_by_repeats <- pairwise_balanced_accuracy_all_folds %>%
@@ -54,8 +68,40 @@ pairwise_balanced_accuracy_by_repeats <- pairwise_balanced_accuracy_all_folds %>
 
 
 ################################################################################
-# Figure 3 SPI-wise SVM results
+# SPI-wise SVM results
 ################################################################################
+
+# Actual heatmap
+pairwise_p_values %>%
+  filter(Pairwise_Feature_Set == pairwise_feature_set,
+         Analysis_Type == "Pairwise_SPI",
+         p_value_Bonferroni < 0.05) %>%
+  dplyr::rename("SPI" = "group_var") %>%
+  left_join(., SPI_info) %>%
+  mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
+                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      T ~ Comparison_Group),
+         Balanced_Accuracy_Across_Repeats = 100*Balanced_Accuracy_Across_Repeats) %>%
+  mutate(Nickname = fct_reorder(Nickname, Balanced_Accuracy_Across_Repeats, .fun=sum),
+         Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  ggplot(data=., mapping=aes(x=Comparison_Group, y=Nickname, 
+                             fill=Balanced_Accuracy_Across_Repeats)) +
+  geom_tile()+
+  scale_fill_gradientn(colors=c(alpha("#4C7FC0", 0.3), "#4C7FC0"), 
+                       na.value=NA, 
+                       limits=c(54, 68),
+                       breaks=seq(54, 68, by=4)) +
+  labs(fill = "Mean Balanced Accuracy (%)") +
+  xlab("Clinical Group") +
+  ylab("Pairwise SPI") +
+  theme(legend.position="bottom")  +
+  guides(fill = guide_colorbar(title.position = "top", 
+                               nrow = 1,
+                               barwidth = 12, 
+                               barheight = 1,
+                               title.hjust = 0.5)) 
+ggsave(glue("{plot_path}/Feature_wise_results.png"),
+       width=5.5, height=5.5, units="in", dpi=300)
 
 for (i in 1:nrow(study_group_df)) {
   dataset_ID <- study_group_df$Study[i]

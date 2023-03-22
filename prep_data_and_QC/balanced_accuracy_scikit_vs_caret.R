@@ -2,8 +2,8 @@
 # Define paths
 #-------------------------------------------------------------------------------
 
-python_to_use <- "~/.conda/envs/pyspi/bin/python3"
-# python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
+# python_to_use <- "~/.conda/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
 univariate_feature_sets <- "catch22"
 pairwise_feature_set <- "pyspi14"
 github_dir <- "~/github/"
@@ -41,6 +41,7 @@ metadata <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/study_metada
   mutate(Age = as.numeric(Age))
 
 # Identify subjects to use
+catch24_feature_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather"))
 subjects_to_use <- unique(catch24_feature_values$Sample_ID)
 
 # Filter metadata and save
@@ -51,29 +52,29 @@ metadata <- metadata %>% filter(Sample_ID %in% subjects_to_use)
 ################################################################################
 
 # Balanced accuracy by fold, scikit-learn
-catch22_SVM_balanced_accuracy_by_fold_scikit <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_standard_scaler_SVM_balanced_accuracy.feather")) %>%
+catch22_SVM_balanced_accuracy_by_fold_scikit <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_mixedsigmoid_scaler_SVM_balanced_accuracy.feather")) %>%
   filter(Comparison_Group == "Schizophrenia") %>%
   mutate(Univariate_Feature_Set = "catch22",
          Repeat_Number = Repeat_Number + 1,
          Fold_Accuracy_Method = "scikit_learn")
 
 # Balanced accuracy by fold, caret
-fold_wise_sample_predictions <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_standard_scaler_SVM_sample_predictions.feather")) %>%
+fold_wise_sample_predictions <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_mixedsigmoid_scaler_SVM_sample_predictions.feather")) %>%
   filter(Comparison_Group == "Schizophrenia") %>%
   mutate(Univariate_Feature_Set = "catch22",
          CV_Predicted_Diagnosis = factor(CV_Predicted_Diagnosis, levels = c("Control", "Schizophrenia")),
          Diagnosis = factor(Diagnosis, levels = c("Control", "Schizophrenia"))) %>%
   dplyr::select(Sample_ID, Repeat_Number, Analysis_Type, Univariate_Feature_Set, group_var, Diagnosis, CV_Predicted_Diagnosis)
 
-fold_assignments <-  pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_standard_scaler_SVM_fold_assignments.feather")) %>%
+fold_assignments <-  pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_mixedsigmoid_scaler_SVM_fold_assignments.feather")) %>%
   dplyr::select(Sample_ID, Repeat, Fold, Analysis_Type, group_var) %>%
   dplyr::rename("Repeat_Number" = "Repeat") 
 
 catch22_SVM_balanced_accuracy_by_fold_caret <- left_join(fold_wise_sample_predictions,
-                                                                fold_assignments) %>%
+                                                         fold_assignments) %>%
   group_by(Analysis_Type, Univariate_Feature_Set, group_var, Repeat_Number, Fold) %>%
   summarise(Balanced_Accuracy = caret::confusionMatrix(data = CV_Predicted_Diagnosis,
-                                                            reference = Diagnosis)$byClass[["Balanced Accuracy"]],
+                                                       reference = Diagnosis)$byClass[["Balanced Accuracy"]],
             Accuracy = sum(CV_Predicted_Diagnosis==Diagnosis)/n()) %>%
   mutate(Univariate_Feature_Set = "catch22",
          Fold_Accuracy_Method = "caret")
@@ -96,7 +97,7 @@ catch22_SVM_balanced_accuracy_by_fold_repeat_caret <- catch22_SVM_balanced_accur
   mutate(Aggregate_Type = "fold_repeat_caret")
 
 # Balanced accuracy by repeat, without averaging by repeat
-catch22_SVM_balanced_accuracy_by_repeat_caret <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_robustsigmoid_scaler_SVM_sample_predictions.feather")) %>%
+catch22_SVM_balanced_accuracy_by_repeat_caret <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch22_mixedsigmoid_scaler_SVM_sample_predictions.feather")) %>%
   filter(Comparison_Group == "Schizophrenia") %>%
   mutate(Univariate_Feature_Set = "catch22",
          CV_Predicted_Diagnosis = factor(CV_Predicted_Diagnosis, levels = c("Control", "Schizophrenia")),
@@ -143,8 +144,20 @@ plyr::rbind.fill(catch22_SVM_balanced_accuracy_by_fold_repeat_caret,
 # Yep
 
 # Compare accuracy with vs without folds
+# Let's zoom in to e.g. right amygdala for schizophrenia
+right_amyg_res <- fold_wise_sample_predictions %>%
+  filter(group_var == "Right-Amygdala") %>%
+  left_join(., fold_assignments) %>%
+  group_by(Repeat_Number, Fold) %>%
+  summarise(Num_Correct = sum(Diagnosis == CV_Predicted_Diagnosis),
+            Num_Total = n())
+
+# Pivot based on number of correct predictions
+right_amyg_res %>%
+  pivot_wider(id_cols = Fold, names_from = Repeat_Number, values_from = Num_Correct)
+
 spaghetti_plot_acc <- plyr::rbind.fill(catch22_SVM_balanced_accuracy_by_fold_repeat_caret,
-                                          catch22_SVM_balanced_accuracy_by_repeat_caret) %>%
+                                       catch22_SVM_balanced_accuracy_by_repeat_caret) %>%
   mutate(Aggregate_Type = ifelse(Aggregate_Type == "fold_repeat_caret", "Fold then repeat", "Overall repeat")) %>%
   dplyr::group_by(Analysis_Type, Univariate_Feature_Set, group_var, Aggregate_Type) %>%
   summarise(mean_acc = 100*mean(Repeat_Accuracy)) %>%

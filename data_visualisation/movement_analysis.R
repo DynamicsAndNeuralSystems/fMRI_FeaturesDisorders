@@ -2,6 +2,7 @@
 # Load libraries
 ################################################################################
 
+# python_to_use <- "~/.conda/envs/pyspi/bin/python3"
 python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
 reticulate::use_python(python_to_use)
 
@@ -26,8 +27,12 @@ pyarrow_feather <- import("pyarrow.feather")
 
 github_dir <- "~/github/fMRI_FeaturesDisorders/"
 source(paste0(github_dir, "data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
-plot_path <- paste0(github_dir, "plots/Manuscript_Draft/FigureS3/")
+plot_path <- paste0(github_dir, "plots/Manuscript_Draft/movement_analysis/")
 TAF::mkdir(plot_path)
+
+study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
+                             Comparison_Group = c("Schizophrenia", "ADHD", "Bipolar", "ASD"),
+                             Group_Title = c("SCZ", "ADHD", "BPD", "ASD"))
 
 UCLA_CNP_data_path <- "~/data/UCLA_CNP/"
 ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/"
@@ -80,105 +85,39 @@ ABIDE_ASD_mean_FD <- ABIDE_ASD_mean_FD %>%
   filter(Sample_ID %in% ABIDE_ASD_subjects_used)
 
 ################################################################################
-# Different movement constraint situations
-################################################################################
-
-# 1. No restrictions -- all subjects included
-UCLA_CNP_mean_FD %>%
-  group_by(Diagnosis) %>%
-  count()
-
-ABIDE_ASD_mean_FD %>%
-  group_by(Diagnosis) %>%
-  count()
-
-# 2. "Lenient" routine from Parkes 2018 -- mFD Power < 0.55 for all retained subjects
-UCLA_CNP_lenient <- UCLA_CNP_mean_FD %>%
-  filter(Power < 0.55) 
-UCLA_CNP_lenient%>%
-  group_by(Diagnosis) %>%
-  count()
-
-ABIDE_ASD_lenient <- ABIDE_ASD_mean_FD %>%
-  filter(Power < 0.55) 
-
-ABIDE_ASD_lenient %>%
-  group_by(Diagnosis) %>%
-  count()
-
-# 3. "Stringent" routine from Parkes 2018 -- mFD Power < 0.25mm, < 20% of individual FDs above 0.2mm, no FDs greater than 5mm
-UCLA_CNP_stringent <- UCLA_CNP_full_FD %>%
-  group_by(Sample_ID) %>%
-  # No FD > 5mm
-  filter(!(any(Power > 5))) %>%
-  # < 20% of individual FDs above 0.2mm
-  filter(sum(Power > 0.2) / n() < 0.2) %>%
-  # Find mean FD
-  summarise(mean_Power = mean(Power, na.rm=T)) %>%
-  ungroup() %>%
-  filter(mean_Power < 0.25) 
-
-UCLA_CNP_stringent %>%
-  dplyr::select(Sample_ID) %>%
-  left_join(UCLA_CNP_sample_metadata) %>%
-  group_by(Diagnosis) %>%
-  count()
-
-ABIDE_ASD_full_FD %>%
-  group_by(Sample_ID) %>%
-  # No FD > 5mm
-  filter(!(any(Power > 5))) %>%
-  # < 20% of individual FDs above 0.2mm
-  filter(sum(Power > 0.2) / n() < 0.2) %>%
-  # Find mean FD
-  summarise(mean_Power = mean(Power, na.rm=T)) %>%
-  ungroup() %>%
-  filter(mean_Power < 0.25) %>%
-  dplyr::select(Sample_ID) %>%
-  left_join(ABIDE_ASD_sample_metadata) %>%
-  group_by(Diagnosis) %>%
-  count()
-
-
-################################################################################
 # Compare FD-Power distributions between each case-control comparison
 ################################################################################
 
-# Maybe we only focus on the FDpower estimates for the paper?
-UCLA_CNP_mean_FD %>%
-  filter(Power < 0.55) %>%
-  mutate(Cohort = "UCLA CNP",
-         Diagnosis = factor(Diagnosis, levels = c("Control", "Schizophrenia"))) %>%
-  ggplot(data=., mapping=aes(x=Diagnosis, y=Power)) +
-  geom_violin(aes(fill=Diagnosis)) +
-  geom_boxplot(color="black", fill=NA, width=0.1) +
-  facet_wrap(Cohort ~ ., scales="free_x") +
-  geom_signif(test = "wilcox.test",
-              comparisons = list(c("Schizophrenia", "Control")), 
-              map_signif_level=TRUE) +
-  scale_fill_manual(values = c("#00B06D", "#737373")) +
-  scale_y_continuous(expand = c(0,0,0.15,0)) +
-  ylab("Head Movement\n(mFD-Power)") +
-  xlab("Group") +
-  theme(legend.position = "none")
-ggsave(paste0(plot_path, "UCLA_CNP_mFD_Power_by_Group.png"),
-       width = 3, height=2.25, units="in", dpi=300, bg="white")
+plot_group_vs_control <- function(FD_dataset,
+                                  study,
+                                  dx,
+                                  dx_title) {
+  p <- FD_dataset %>%
+    filter(Study==study,
+           Diagnosis %in% c("Control", dx)) %>%
+    mutate(Diagnosis = factor(Diagnosis, levels = c(dx, "Control"))) %>%
+    ggplot(data=., mapping=aes(x=Diagnosis, y=Power)) +
+    geom_violin(aes(fill=Diagnosis)) +
+    geom_boxplot(color="black", fill=NA, width=0.1) +
+    geom_signif(test = "wilcox.test",
+                comparisons = list(c(dx, "Control")), 
+                map_signif_level=TRUE) +
+    scale_fill_manual(values = c("#00B06D", "#737373")) +
+    scale_y_continuous(expand = c(0,0,0.1,0)) +
+    ggtitle(dx_title) +
+    ylab("mFD-Power") +
+    theme(legend.position = "none",
+          axis.title.x = element_blank(),
+          plot.title = element_text(hjust=0.5))
+  return(p)
+}
 
-ABIDE_ASD_mean_FD %>%
-  filter(Power < 0.55) %>%
-  mutate(Cohort = "ABIDE", 
-         Diagnosis = factor(Diagnosis, levels = c("Control", "ASD"))) %>%
-  ggplot(data=., mapping=aes(x=Diagnosis, y=Power)) +
-  geom_violin(aes(fill=Diagnosis)) +
-  geom_boxplot(color="black", fill=NA, width=0.1) +
-  facet_wrap(Cohort ~ ., scales="free_x") +
-  geom_signif(test = "wilcox.test",
-              comparisons = list(c("ASD", "Control")), 
-              map_signif_level=TRUE) +
-  scale_fill_manual(values = c("#00B06D", "#737373")) +
-  scale_y_continuous(expand = c(0,0,0.15,0)) +
-  ylab("Head Movement\n(mFD-Power)") +
-  xlab("Group") +
-  theme(legend.position = "none")
-ggsave(paste0(plot_path, "ABIDE_mFD_Power_by_Group.png"),
-       width = 3, height=2.25, units="in", dpi=300, bg="white")
+plots <- 1:4 %>%
+  purrr::map(~ plot_group_vs_control(plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD),
+                                     study = study_group_df$Study[.x],
+                                     dx = study_group_df$Comparison_Group[.x],
+                                     dx_title = study_group_df$Group_Title[.x]))
+
+wrap_plots(plots, ncol=2)
+ggsave(paste0(plot_path, "mFD_Power_by_Group.png"),
+       width = 6, height=5, units="in", dpi=300)

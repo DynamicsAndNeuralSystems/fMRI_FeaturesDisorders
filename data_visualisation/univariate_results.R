@@ -13,7 +13,7 @@ univariate_feature_set <- "catch22"
 data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
-                             Comparison_Group = c("Schizophrenia", "ADHD", "Bipolar", "ASD"))
+                             Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"))
 univariate_feature_set <- "catch22"
 
 ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv")
@@ -145,6 +145,31 @@ ggsave(glue("{plot_path}/Region_wise_results.png"),
 # Figure 2C feature-based
 ################################################################################
 
+# Annotation bar with feature type
+univariate_p_values %>%
+  filter(Univariate_Feature_Set == univariate_feature_set,
+         Analysis_Type == "Univariate_TS_Feature",
+         p_value_Bonferroni < 0.05) %>%
+  dplyr::rename("TS_Feature" = "group_var") %>%
+  left_join(., TS_feature_info) %>%
+  group_by(TS_Feature, Category) %>%
+  summarise(Balacc_Sum = sum(Balanced_Accuracy_Across_Repeats)) %>%
+  ungroup() %>%
+  mutate(TS_Feature = fct_reorder(TS_Feature, Balacc_Sum),
+         Category = fct_reorder(Category, Balacc_Sum, .fun=sum, .desc=T)) %>%
+  ggplot(data=., mapping=aes(x=0, y=TS_Feature, fill=Category)) +
+  geom_tile() +
+  theme_void() +
+  theme(legend.position = "bottom",
+        legend.text=element_text(size=14)) +
+  guides(fill = guide_legend(title.position = "top", 
+                             ncol = 2,
+                             byrow=T,
+                             title.hjust = 0.5)) 
+ggsave(glue("{plot_path}/Feature_wise_colorbar.png"),
+       width=5.5, height=6, units="in", dpi=300)
+
+# Actual heatmap
 univariate_p_values %>%
   filter(Univariate_Feature_Set == univariate_feature_set,
          Analysis_Type == "Univariate_TS_Feature",
@@ -155,25 +180,25 @@ univariate_p_values %>%
                                       Comparison_Group == "Bipolar" ~ "BPD",
                                       T ~ Comparison_Group),
          Balanced_Accuracy_Across_Repeats = 100*Balanced_Accuracy_Across_Repeats) %>%
-  mutate(Description = fct_reorder(Description, Balanced_Accuracy_Across_Repeats, .fun=sum),
-         Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ASD", "ADHD"))) %>%
-  ggplot(data=., mapping=aes(x=Comparison_Group, y=Description, 
+  mutate(Figure_Name = fct_reorder(Figure_Name, Balanced_Accuracy_Across_Repeats, .fun=sum),
+         Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  ggplot(data=., mapping=aes(x=Comparison_Group, y=Figure_Name, 
                              fill=Balanced_Accuracy_Across_Repeats)) +
   geom_tile()+
   scale_fill_gradientn(colors=c(alpha("#4C7FC0", 0.3), "#4C7FC0"), 
                        na.value=NA, limits=c(51.5, 64),
                        breaks=seq(52, 64, by=4)) +
-  labs(fill = "Balanced Accuracy across Repeats") +
+  labs(fill = "Mean Balanced Accuracy (%)") +
   xlab("Clinical Group") +
   ylab("Univariate time-series feature") +
   theme(legend.position="bottom")  +
   guides(fill = guide_colorbar(title.position = "top", 
                                nrow = 1,
-                               barwidth = 15.5, 
+                               barwidth = 12, 
                                barheight = 1,
                                title.hjust = 0.5)) 
 ggsave(glue("{plot_path}/Feature_wise_results.png"),
-       width=7, height=5.5, units="in", dpi=300)
+       width=5.5, height=5.5, units="in", dpi=300)
 
 ################################################################################
 # Figure 2D combo-based
@@ -194,9 +219,9 @@ univariate_balanced_accuracy_by_repeats %>%
   geom_boxplot() +
   scale_fill_manual(values=c("gray85", "#9B51B4")) +
   ylab("Clinical Group") +
-  xlab("Balanced Accuracy\nper Repeat") +
+  xlab("Balanced Accuracy per Repeat (%)") +
   theme(legend.position = "none",
         axis.title.y = element_text(size=17),
         axis.text.y = element_text(size=15))
 ggsave(glue("{plot_path}/Combo_wise_results.png"),
-       width=3.5, height=5.5, units="in", dpi=300)
+       width=4.5, height=5.5, units="in", dpi=300)

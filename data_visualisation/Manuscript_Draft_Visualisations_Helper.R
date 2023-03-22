@@ -67,7 +67,7 @@ plot_significant_regions_ggseg <- function(dataset_ID,
       scale_fill_gradientn(colors=c(alpha(fill_color, 0.3), fill_color), 
                            limits = c(min_fill, max_fill),
                            na.value=NA) +
-      labs(fill = "Balanced Accuracy (%)") +
+      labs(fill = "Mean Balanced Accuracy (%)") +
       theme_void() +
       guides(fill = guide_colorbar(title.position = "top", 
                                    nrow = 1,
@@ -84,7 +84,7 @@ plot_significant_regions_ggseg <- function(dataset_ID,
       scale_fill_gradientn(colors=c(alpha(fill_color, 0.3), fill_color), 
                            limits = c(min_fill, max_fill),
                            na.value=NA) +
-      labs(fill = "Balanced Accuracy (%)") +
+      labs(fill = "Mean Balanced Accuracy (%)") +
       theme_void() +
       guides(fill = guide_colorbar(title.position = "top", 
                                    nrow = 1,
