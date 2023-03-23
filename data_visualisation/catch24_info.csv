@@ -5,8 +5,8 @@ SB_BinaryStats_mean_longstretch1,Longest above mean,Consecutive stretches,Longes
 DN_HistogramMode_10,10-bin histogram mode,Histogram shape,Distribution mode with ten bins,Mode of the z-scored distribution based on ten-bin histogram
 DN_HistogramMode_5,5-bin histogram mode,Histogram shape,Distribution modeode with five bins,Mode of the z-scored distribution based on five-bin histogram
 MD_hrv_classic_pnn40,Heart rate variability,Incremental differences,Proportion of values greater than 4% of SD,Proportion of difference magnitudes that are greater than 4% of the standard deviation of the time series
-CO_f1ecac,First 1/e crossing ACF,Linear autocorrelation function,First time-lag with ACF below 1/e,"First time-lag at which the autocorrelation function drops below 1/e (~0.3679), capturing the approximate scale of the autocorrelation"
-CO_FirstMin_ac,First Min ACF,Linear autocorrelation function,First local min of ACF,First local minimum of the autocorrelation function
+CO_f1ecac,First 1/e crossing ACF,Linear autocorrelation,First time-lag with ACF below 1/e,"First time-lag at which the autocorrelation function drops below 1/e (~0.3679), capturing the approximate scale of the autocorrelation"
+CO_FirstMin_ac,First Min ACF,Linear autocorrelation,First local min of ACF,First local minimum of the autocorrelation function
 CO_HistogramAMI_even_2_5,Automutual information,Nonlinear autocorrelation,Mutual information,"Mutual information as a nonlinear correlation metric, evaluated from a histogram with five bins at time delay T=2"
 CO_trev_1_num,Time reversibility,Nonlinear autocorrelation,Time-reversibility statistic,"Time-reversibility statistic, defined as ⟨(xt+1−xt)3⟩t; a value close to zero indicates that positive changes are equal in magnitude to negative changes; a large positive value indicates that positive changes are larger in magnitude than negative changes; and a large negative value indicates that negative changes are larger in magnitude than positive changes."
 IN_AutoMutualInfoStats_40_gaussian_fmmi,First Min AMI,Nonlinear autocorrelation,"Automutual information, first local minimum",First local minimum of the automutual information function
@@ -21,3 +21,5 @@ DN_OutlierInclude_n_001_mdrmd,Negative outlier timing,Spacing of extreme events,
 DN_OutlierInclude_p_001_mdrmd,Positive outlier timing,Spacing of extreme events,Median time between above-mean outliers,"Median time interval between successive extreme events above the mean; a value closer to -1 indicates that extreme positive values are clustered toward the beginning of the time series, while a value closer to 1 indicates that extreme positive values are clustered toward the end of the time series"
 SB_MotifThree_quantile_hh,Symbolic pair entropy,Symbolic features,Shannon entropy of three-letter patterns,Shannon entropy of the frequency of two-letter patterns in a three-letter discretization of the time series
 SB_TransitionMatrix_3ac_sumdiagcov,Transition mat cov,Symbolic features,Covariance trace in three-letter patterns,Trace of covariance of transition matrix between symbols in a three-letter discretization of the time series
+DN_Mean,Mean,Distribution,Mean value of the time series,Mean value of the time series
+DN_Spread_Std,SD,Distribution,Standard deviation of the time series,Standard deviation of the time series

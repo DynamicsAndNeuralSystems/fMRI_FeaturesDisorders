@@ -9,12 +9,11 @@ TAF::mkdir(plot_path)
 # python_to_use <- "~/.conda/envs/pyspi/bin/python3"
 python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
-univariate_feature_set <- "catch22"
+univariate_feature_set <- "catch24"
 data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"))
-univariate_feature_set <- "catch22"
 
 ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv")
 
@@ -44,7 +43,7 @@ theme_set(theme_cowplot())
 source(glue("{github_dir}/data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
 
 # Load in univariate time-series feature info
-TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch22_info.csv"))
+TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
 # Load data
 univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
@@ -167,7 +166,7 @@ univariate_p_values %>%
                              byrow=T,
                              title.hjust = 0.5)) 
 ggsave(glue("{plot_path}/Feature_wise_colorbar.png"),
-       width=5.5, height=6, units="in", dpi=300)
+       width=6, height=6, units="in", dpi=300)
 
 # Actual heatmap
 univariate_p_values %>%
@@ -185,9 +184,9 @@ univariate_p_values %>%
   ggplot(data=., mapping=aes(x=Comparison_Group, y=Figure_Name, 
                              fill=Balanced_Accuracy_Across_Repeats)) +
   geom_tile()+
+  geom_text(aes(label = round(Balanced_Accuracy_Across_Repeats, 1))) +
   scale_fill_gradientn(colors=c(alpha("#4C7FC0", 0.3), "#4C7FC0"), 
-                       na.value=NA, limits=c(51.5, 64),
-                       breaks=seq(52, 64, by=4)) +
+                       na.value=NA) +
   labs(fill = "Mean Balanced Accuracy (%)") +
   xlab("Clinical Group") +
   ylab("Univariate time-series feature") +
