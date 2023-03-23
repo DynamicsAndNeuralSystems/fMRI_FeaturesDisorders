@@ -14,7 +14,7 @@ from sklearn.preprocessing import StandardScaler
 import sys
 from pyarrow import feather
 sys.path.append("/headnode1/abry4213/github/fMRI_FeaturesDisorders/helper_functions/classification/")
-from robust_sigmoid_normalisation import RobustSigmoidScaler
+from mixed_sigmoid_normalisation import MixedSigmoidScaler
 
 # Define data paths
 UCLA_CNP_data_path = "/headnode1/abry4213/data/UCLA_CNP/processed_data/"
@@ -38,7 +38,7 @@ def apply_transform_by_region(input_data, transform_type, output_file):
                 transformer = StandardScaler().fit(region_data_wide)
                 
             else:
-                transformer = RobustSigmoidScaler(unit_variance=True).fit(region_data_wide)
+                transformer = MixedSigmoidScaler(unit_variance=True).fit(region_data_wide)
                 
             region_data_transformed = pd.DataFrame(transformer.transform(region_data_wide),
                                                 columns = region_data_wide.columns)
@@ -71,9 +71,9 @@ def apply_transform_by_region(input_data, transform_type, output_file):
 if __name__ == '__main__':
 
     # Load all needed data
-    UCLA_CNP_catch22_data = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered.feather")
+    UCLA_CNP_catch24_data = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")
 
-    ABIDE_ASD_catch22_data = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered.feather")
+    ABIDE_ASD_catch24_data = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch24_filtered.feather")
 
     UCLA_CNP_pyspi14_data = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")
     UCLA_CNP_pyspi14_data.rename(columns={"SPI": "names", "value": "values"}, inplace=True)
@@ -84,33 +84,33 @@ if __name__ == '__main__':
     ABIDE_ASD_pyspi14_data["Brain_Region"] = ABIDE_ASD_pyspi14_data["brain_region_from"].astype(str) + '_' + ABIDE_ASD_pyspi14_data["brain_region_to"].astype(str)
 
     # Define z-score processes
-    UCLA_CNP_catch22_zscore_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_catch22_data, "z-score", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather"))
-    ABIDE_ASD_catch22_zscore_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_catch22_data, "z-score", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_zscored.feather"))
+    UCLA_CNP_catch24_zscore_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_catch24_data, "z-score", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch24_filtered_zscored.feather"))
+    ABIDE_ASD_catch24_zscore_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_catch24_data, "z-score", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch24_filtered_zscored.feather"))
     UCLA_CNP_pyspi14_zscore_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_pyspi14_data, "z-score", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather"))
     ABIDE_ASD_pyspi14_zscore_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_pyspi14_data, "z-score", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored.feather"))
 
-    # Define robust sigmoid processes
-    UCLA_CNP_catch22_RobustSigmoid_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_catch22_data, "RobustSigmoid", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_RobustSigmoid.feather"))
-    ABIDE_ASD_catch22_RobustSigmoid_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_catch22_data, "RobustSigmoid", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_RobustSigmoid.feather"))
-    UCLA_CNP_pyspi14_RobustSigmoid_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_pyspi14_data, "RobustSigmoid", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_RobustSigmoid.feather"))
-    ABIDE_ASD_pyspi14_RobustSigmoid_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_pyspi14_data, "RobustSigmoid", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_RobustSigmoid.feather"))
+    # Define mixed sigmoid processes
+    UCLA_CNP_catch24_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_catch24_data, "MixedSigmoid", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch24_filtered_MixedSigmoid.feather"))
+    ABIDE_ASD_catch24_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_catch24_data, "MixedSigmoid", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch24_filtered_MixedSigmoid.feather"))
+    UCLA_CNP_pyspi14_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_pyspi14_data, "MixedSigmoid", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_MixedSigmoid.feather"))
+    ABIDE_ASD_pyspi14_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_pyspi14_data, "MixedSigmoid", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_MixedSigmoid.feather"))
 
     # Start the processes
-    UCLA_CNP_catch22_zscore_p.start()
-    ABIDE_ASD_catch22_zscore_p.start()
+    UCLA_CNP_catch24_zscore_p.start()
+    ABIDE_ASD_catch24_zscore_p.start()
     UCLA_CNP_pyspi14_zscore_p.start()
     ABIDE_ASD_pyspi14_zscore_p.start()
-    UCLA_CNP_catch22_RobustSigmoid_p.start()
-    ABIDE_ASD_catch22_RobustSigmoid_p.start()
-    UCLA_CNP_pyspi14_RobustSigmoid_p.start()
-    ABIDE_ASD_pyspi14_RobustSigmoid_p.start()
+    UCLA_CNP_catch24_MixedSigmoid_p.start()
+    ABIDE_ASD_catch24_MixedSigmoid_p.start()
+    UCLA_CNP_pyspi14_MixedSigmoid_p.start()
+    ABIDE_ASD_pyspi14_MixedSigmoid_p.start()
 
     # Wait for the processes to finish
-    UCLA_CNP_catch22_zscore_p.join()
-    ABIDE_ASD_catch22_zscore_p.join()
+    UCLA_CNP_catch24_zscore_p.join()
+    ABIDE_ASD_catch24_zscore_p.join()
     UCLA_CNP_pyspi14_zscore_p.join()
     ABIDE_ASD_pyspi14_zscore_p.join()
-    UCLA_CNP_catch22_RobustSigmoid_p.join()
-    ABIDE_ASD_catch22_RobustSigmoid_p.join()
-    UCLA_CNP_pyspi14_RobustSigmoid_p.join()
-    ABIDE_ASD_pyspi14_RobustSigmoid_p.join()
+    UCLA_CNP_catch24_MixedSigmoid_p.join()
+    ABIDE_ASD_catch24_MixedSigmoid_p.join()
+    UCLA_CNP_pyspi14_MixedSigmoid_p.join()
+    ABIDE_ASD_pyspi14_MixedSigmoid_p.join()

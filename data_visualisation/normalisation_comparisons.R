@@ -15,7 +15,7 @@ theme_set(theme_cowplot())
 pyarrow_feather <- import("pyarrow.feather")
 
 # Import normalisation methods from python
-source_python("~/github/fMRI_FeaturesDisorders/helper_functions/classification/robust_sigmoid_normalisation.py")
+source_python("~/github/fMRI_FeaturesDisorders/helper_functions/classification/mixed_sigmoid_normalisation.py")
 
 # DIY rlist::list.append
 list.append <- function (.data, ...) 
@@ -49,11 +49,11 @@ UCLA_CNP_catch22_z <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UC
 ABIDE_ASD_catch22_z <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_zscored.feather")) %>%
   mutate(Normalization = "z-score")
 
-UCLA_CNP_catch22_RS <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_RobustSigmoid.feather")) %>%
-  mutate(Normalization = "Robust Sigmoid")
+UCLA_CNP_catch22_RS <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_MixedSigmoid.feather")) %>%
+  mutate(Normalization = "Mixed Sigmoid")
 
-ABIDE_ASD_catch22_RS <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_RobustSigmoid.feather")) %>%
-  mutate(Normalization = "Robust Sigmoid")
+ABIDE_ASD_catch22_RS <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch22_filtered_MixedSigmoid.feather")) %>%
+  mutate(Normalization = "Mixed Sigmoid")
 
 # Load pairwise pyspi14 data
 UCLA_CNP_pyspi14_raw_data <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")) %>%
@@ -72,15 +72,15 @@ UCLA_CNP_pyspi14_z <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UC
 ABIDE_ASD_pyspi14_z <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored.feather")) %>%
   mutate(Normalization = "z-score")
 
-UCLA_CNP_pyspi14_RS <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_RobustSigmoid.feather")) %>%
-  mutate(Normalization = "Robust Sigmoid")
+UCLA_CNP_pyspi14_RS <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_MixedSigmoid.feather")) %>%
+  mutate(Normalization = "Mixed Sigmoid")
 
-ABIDE_ASD_pyspi14_RS <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_RobustSigmoid.feather")) %>%
-  mutate(Normalization = "Robust Sigmoid")
+ABIDE_ASD_pyspi14_RS <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_MixedSigmoid.feather")) %>%
+  mutate(Normalization = "Mixed Sigmoid")
 
 
 # Plot values for UCLA CNP
-# Function to plot raw data, z-scored data, and robust sigmoid-transformed data for each catch22 featuree
+# Function to plot raw data, z-scored data, and mixed sigmoid-transformed data for each catch22 featuree
 plot_values <- function(feature_data, norm_type="none", y_label="Raw\nValues") {
   p <- feature_data %>%
     mutate(names = gsub("_", " ", names)) %>%
@@ -104,7 +104,7 @@ plot_values <- function(feature_data, norm_type="none", y_label="Raw\nValues") {
             strip.text = element_blank())
   }
   
-  if (norm_type == "robust_sigmoid") {
+  if (norm_type == "mixed_sigmoid") {
     p <- p + 
       scale_x_continuous(breaks = c(0, 0.5, 1))
   }
@@ -114,7 +114,7 @@ plot_values <- function(feature_data, norm_type="none", y_label="Raw\nValues") {
 # catch22
 UCLA_CNP_catch22_plot_list <- list(plot_values(UCLA_CNP_catch22_raw_data, norm_type="none", "Raw\nValues"),
                                    plot_values(UCLA_CNP_catch22_z, norm_type="z_score", "z-score"),
-                                   plot_values(UCLA_CNP_catch22_RS, norm_type="robust_sigmoid", "Robust\nSigmoid"))
+                                   plot_values(UCLA_CNP_catch22_RS, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
 
 wrap_plots(UCLA_CNP_catch22_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
 ggsave(glue("{plot_path}/UCLA_CNP_catch22_norms.png"), bg="white",
@@ -123,7 +123,7 @@ ggsave(glue("{plot_path}/UCLA_CNP_catch22_norms.png"), bg="white",
 # pyspi14
 UCLA_CNP_pyspi14_plot_list <- list(plot_values(UCLA_CNP_pyspi14_raw_data, norm_type="none", "Raw\nValues"),
                                    plot_values(UCLA_CNP_pyspi14_z, norm_type="z_score", "z-score"),
-                                   plot_values(UCLA_CNP_pyspi14_RS, norm_type="robust_sigmoid", "Robust\nSigmoid"))
+                                   plot_values(UCLA_CNP_pyspi14_RS, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
 
 wrap_plots(UCLA_CNP_pyspi14_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
 ggsave(glue("{plot_path}/UCLA_CNP_pyspi14_norms.png"), bg="white",
@@ -134,7 +134,7 @@ ggsave(glue("{plot_path}/UCLA_CNP_pyspi14_norms.png"), bg="white",
 # catch22
 ABIDE_ASD_catch22_plot_list <- list(plot_values(ABIDE_ASD_catch22_raw_data, norm_type="none", "Raw\nValues"),
                                     plot_values(ABIDE_ASD_catch22_z, norm_type="z_score", "z-score"),
-                                    plot_values(ABIDE_ASD_catch22_RS, norm_type="robust_sigmoid", "Robust\nSigmoid"))
+                                    plot_values(ABIDE_ASD_catch22_RS, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
 
 wrap_plots(ABIDE_ASD_catch22_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
 ggsave(glue("{plot_path}/ABIDE_ASD_catch22_norms.png"), bg="white",
@@ -143,7 +143,7 @@ ggsave(glue("{plot_path}/ABIDE_ASD_catch22_norms.png"), bg="white",
 # pyspi14
 ABIDE_ASD_pyspi14_plot_list <- list(plot_values(ABIDE_ASD_pyspi14_raw_data, norm_type="none", "Raw\nValues"),
                                     plot_values(ABIDE_ASD_pyspi14_z, norm_type="z_score", "z-score"),
-                                    plot_values(ABIDE_ASD_pyspi14_RS, norm_type="robust_sigmoid", "Robust\nSigmoid"))
+                                    plot_values(ABIDE_ASD_pyspi14_RS, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
 
 wrap_plots(ABIDE_ASD_pyspi14_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
 ggsave(glue("{plot_path}/ABIDE_ASD_pyspi14_norms.png"), bg="white",
