@@ -13,9 +13,6 @@ theme_set(theme_cowplot())
 # Import pyarrow.feather as pyarrow_feather
 pyarrow_feather <- import("pyarrow.feather")
 
-# Import normalisation methods from python
-source_python("~/github/fMRI_FeaturesDisorders/helper_functions/classification/mixed_sigmoid_normalisation.py")
-
 # DIY rlist::list.append
 list.append <- function (.data, ...) 
 {

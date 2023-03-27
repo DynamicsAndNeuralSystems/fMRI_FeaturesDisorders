@@ -20,8 +20,8 @@ library(rstatix)
 ################################################################################
 
 # Filter to just those samples used in each study
-UCLA_CNP_subjects_to_keep <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch22_pyspi14.feather")
-ABIDE_ASD_subjects_to_keep <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_filtered_sample_info_FC1000_catch22_pyspi14.feather")
+UCLA_CNP_subjects_to_keep <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch24_pyspi14.feather")
+ABIDE_ASD_subjects_to_keep <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_filtered_sample_info_FC1000_catch24_pyspi14.feather")
 
 UCLA_CNP_study_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") %>%
   semi_join(., UCLA_CNP_subjects_to_keep) %>%
