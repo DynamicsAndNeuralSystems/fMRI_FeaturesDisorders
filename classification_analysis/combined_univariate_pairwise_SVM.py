@@ -72,7 +72,7 @@ run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file=univariate_feature_
                  num_jobs = int(num_jobs))
 
 # Run the combined univariate+pairwise main SVM with all catch24 + pyspi14 in one matrix          
-run_combined_uni_pairwise_SVM_everything(univariate_feature_file=univariate_feature_file,
+run_combined_uni_pairwise_SVM_all_together(univariate_feature_file=univariate_feature_file,
                  pairwise_feature_file=pairwise_feature_file,
                  SPI_directionality_file = SPI_directionality_file,
                  univariate_feature_set=univariate_feature_set,
