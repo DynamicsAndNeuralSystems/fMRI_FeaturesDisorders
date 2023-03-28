@@ -41,15 +41,15 @@ num_jobs = args.num_jobs
 dataset_ID = args.dataset_ID
 
 # dataset_ID = "UCLA_CNP"
-# data_path = "/Users/abry4213/data/UCLA_CNP/"
+# data_path = "/headnode1/abry4213/data/UCLA_CNP/"
 # metadata_file = "UCLA_CNP_sample_metadata.feather"
-# SPI_directionality_file = "/Users/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/SPI_Direction_Info.csv"
+# SPI_directionality_file = "/headnode1/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/SPI_Direction_Info.csv"
 # comparison_group = "Schizophrenia"
-# univariate_feature_set = "catch22"
+# univariate_feature_set = "catch24"
 # pairwise_feature_set = "pyspi14"
-# pairwise_feature_file ="/Users/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather"
+# pairwise_feature_file ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather"
 # noise_proc = "AROMA+2P+GMR"
-# scaling_type = "robustsigmoid"
+# scaling_type = "mixedsigmoid"
 # num_repeats = 10
 # num_jobs = 1
 
@@ -67,3 +67,19 @@ run_pairwise_SVM_by_SPI(pairwise_feature_file=pairwise_feature_file,
                        scaling_type = scaling_type,
                        num_repeats = int(num_repeats),
                        num_jobs = int(num_jobs))
+
+# Run SVM with all SPIs
+run_pairwise_SVM_all_SPIs(pairwise_feature_file=pairwise_feature_file,
+                 SPI_directionality_file = SPI_directionality_file,
+                 univariate_feature_set=univariate_feature_set,
+                 pairwise_feature_set=pairwise_feature_set,
+                       noise_proc = noise_proc,
+                       dataset_ID=dataset_ID,
+                       metadata_file=metadata_file,
+                       comparison_to_control_group=comparison_group,
+                       pydata_path=data_path + "processed_data/",
+                       data_path=data_path,
+                       scaling_type = scaling_type,
+                       num_repeats = int(num_repeats),
+                       num_jobs = int(num_jobs))
+
