@@ -44,6 +44,7 @@ library(broom)
 library(colorspace)
 library(see)
 library(ggridges)
+library(splitstackshape)
 theme_set(theme_cowplot())
 
 # Source visualisation script
@@ -327,24 +328,24 @@ for (i in 1:nrow(study_group_df)) {
   
   # Plot T stat data in cortex
   dataset_ggseg <- plot_data_with_ggseg_diverging(dataset_ID=dataset_ID,
-                                        atlas_name=atlas,
-                                        atlas_data=get(atlas),
-                                        data_to_plot=t_stat_data,
-                                        min_fill = min(t_stat_data$statistic),
-                                        max_fill = max(t_stat_data$statistic),
-                                        fill_variable="statistic",
-                                        fill_palette="RdBu") 
+                                                  atlas_name=atlas,
+                                                  atlas_data=get(atlas),
+                                                  data_to_plot=t_stat_data,
+                                                  min_fill = min(t_stat_data$statistic),
+                                                  max_fill = max(t_stat_data$statistic),
+                                                  fill_variable="statistic",
+                                                  fill_palette="RdBu") 
   
   # Add subcortical data for UCLA CNP
   if (dataset_ID == "UCLA_CNP") {
     dataset_ggseg_subctx <- plot_data_with_ggseg_diverging(dataset_ID = dataset_ID,
-                                                 atlas_name = "aseg",
-                                                 atlas_data = aseg,
-                                                 data_to_plot=t_stat_data,
-                                                 min_fill = min(t_stat_data$statistic),
-                                                 max_fill = max(t_stat_data$statistic),
-                                                 fill_variable="statistic",
-                                                 fill_palette="RdBu") +
+                                                           atlas_name = "aseg",
+                                                           atlas_data = aseg,
+                                                           data_to_plot=t_stat_data,
+                                                           min_fill = min(t_stat_data$statistic),
+                                                           max_fill = max(t_stat_data$statistic),
+                                                           fill_variable="statistic",
+                                                           fill_palette="RdBu") +
       labs(fill = glue("{comparison_group}\nT-statistic"))
     
     # Extract just legend
@@ -383,7 +384,7 @@ wrap_plots(legend_list,
            byrow=T)
 ggsave(glue("{plot_path}/Wang_Periodicity_T_Stats_legends.png"),
        width=5, height=3, units="in", dpi=300)
-         
+
 ################################################################################
 # Plot significant results relative to their respective null distributions
 null_data_for_plot <- univariate_null_distribution %>%
@@ -461,7 +462,7 @@ univariate_balanced_accuracy_by_repeats %>%
         axis.title = element_text(size=17), 
         axis.text = element_text(size=15)) 
 ggsave(glue("{plot_path}/Combo_wise_results.png"),
-       width=5.5, height=3, units="in", dpi=300)
+       width=4.5, height=3, units="in", dpi=300)
 
 ################################################################################
 # Plot average magnitude of all features' coefficients per brain region
@@ -576,7 +577,7 @@ wrap_plots(ggseg_plot_list,
            ncol=2, 
            byrow=T)
 ggsave(glue("{plot_path}/Combo_Region_Wise_SVM_Coefs.png"),
-                          width=4, height=7, units="in", dpi=300)
+       width=4, height=7, units="in", dpi=300)
 wrap_plots(legend_list, 
            nrow=4, 
            byrow=T)
@@ -679,6 +680,59 @@ null_data_for_plot %>%
   theme(legend.position="none")
 ggsave(glue("{plot_path}/univariate_combo_main_vs_null_balanced_acc.png"),
        width=4.5, height=3.5, units="in", dpi=300)
+
+################################################################################
+# Bowtie plot comparing each brain region and feature to combo-wise performance
+num_comparisons <- univariate_p_values %>%
+  filter(Analysis_Type != "Univariate_Combo") %>%
+  group_by(Study, Comparison_Group) %>%
+  count()
+
+univariate_p_values %>%
+  filter(Analysis_Type == "Univariate_Combo") %>% 
+  left_join(., num_comparisons) %>%
+  expandRows("n") %>%
+  group_by(Study, Comparison_Group) %>%
+  mutate(group_ID = paste0(Comparison_Group, "_", row_number())) %>%
+  plyr::rbind.fill(., univariate_p_values %>%
+                     filter(Analysis_Type != "Univariate_Combo") %>%
+                     group_by(Study, Comparison_Group) %>%
+                     mutate(group_ID = paste0(Comparison_Group, "_", row_number()))) %>%
+  rowwise() %>%
+  mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
+                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      T ~ Comparison_Group),
+         Analysis_Label = case_when(Analysis_Type == "Univariate_Combo" ~ "All\nRegions \u00D7\nFeatures",
+                                    Analysis_Type == "Univariate_TS_Feature" ~ "Individual\ncatch24\nFeatures",
+                                    T ~ "Individual\nBrain\nRegions")) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")),
+         Analysis_Label = factor(Analysis_Label, levels = c("Individual\nBrain\nRegions",
+                                                            "All\nRegions \u00D7\nFeatures",
+                                                            "Individual\ncatch24\nFeatures"))) %>%
+  group_by(Study, Comparison_Group, group_ID) %>%
+  mutate(Comparison_Sig = paste0(Comparison_Group, "_", p_value_Bonferroni[Analysis_Type != "Univariate_Combo"]<0.05)) %>% 
+  ggplot(data=., mapping=aes(x=Analysis_Label, y=Balanced_Accuracy_Across_Repeats, 
+                             group=group_ID, color=Comparison_Sig)) +
+  geom_line(alpha=0.5) +
+  geom_point() +
+  ylab("Mean Balanced Accuracy Across Repeats (%)") +
+  xlab("Linear SVM Type") +
+  scale_x_discrete(expand=c(0.05,0.05,0.05,0.05)) +
+  scale_color_manual(values = c("SCZ_TRUE"="#573DC7", 
+                                "BPD_TRUE"="#D5492A", 
+                                "ADHD_TRUE"="#0F9EA9",
+                                "ASD_TRUE"="#C47B2F",
+                                "SCZ_FALSE"="gray70", 
+                                "BPD_FALSE"="gray70", 
+                                "ADHD_FALSE"="gray70",
+                                "ASD_FALSE"="gray70")) +
+  facet_wrap(Comparison_Group ~ ., scales="free_x", ncol=4) +
+  theme(legend.position = "none",
+        plot.margin = margin(1,10,1,1)) + 
+  coord_flip()
+ggsave(glue("{plot_path}/univariate_bowtie_balanced_accuracy.png"),
+       width=9, height=3, units="in", dpi=300)
+
 
 ################################################################################
 # Summary tables for paper

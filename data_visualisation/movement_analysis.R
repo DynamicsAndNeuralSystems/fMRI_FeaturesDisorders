@@ -18,6 +18,8 @@ library(glue)
 library(R.matlab)
 library(broom)
 library(see)
+library(colorspace)
+library(scales)
 theme_set(theme_cowplot())
 
 # Import pyarrow.feather as pyarrow_feather
@@ -70,6 +72,18 @@ UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data
   left_join(., UCLA_CNP_sample_metadata)
 ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch24_filtered.feather")  %>%
   left_join(., ABIDE_ASD_sample_metadata)
+catch24_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
+UCLA_CNP_pyspi14 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")  %>%
+  group_by(Sample_ID, SPI) %>%
+  summarise(mean_across_brain = mean(value, na.rm=T)) %>%
+  left_join(., UCLA_CNP_sample_metadata) %>%
+  filter(!is.na(Diagnosis))
+ABIDE_ASD_pyspi14 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_pyspi14_filtered.feather")  %>%
+  group_by(Sample_ID, SPI) %>%
+  summarise(mean_across_brain = mean(value, na.rm=T)) %>%
+  left_join(., ABIDE_ASD_sample_metadata) %>%
+  filter(!is.na(Diagnosis))
+pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 
 # Load mean framewise displacement data
 UCLA_CNP_mean_FD <- read.table(glue("{UCLA_CNP_data_path}/movement_data/fmriprep/UCLA_CNP_mFD.txt"), 
@@ -155,8 +169,9 @@ ggsave(paste0(plot_path, "mFD_Power_by_Group.png"),
 # Compare correlation of catch24 features with mFD-Power by study
 ################################################################################
 
-# Find features that correlate most strongly with head motion per study
-head_motion_feature_corrs <- UCLA_CNP_catch24 %>%
+# Find features that correlate most strongly with head motion per study, 
+# plot in a barplot
+head_motion_univariate_feature_corrs <- UCLA_CNP_catch24 %>%
   plyr::rbind.fill(., ABIDE_ASD_catch24) %>%
   group_by(Sample_ID, names) %>%
   summarise(mean_across_brain = mean(values, na.rm=T)) %>%
@@ -175,6 +190,71 @@ head_motion_feature_corrs <- UCLA_CNP_catch24 %>%
   filter(p_Bonferroni < 0.05) %>%
   arrange(desc(abs(estimate)))
 
+head_motion_pairwise_feature_corrs <- UCLA_CNP_pyspi14 %>%
+  plyr::rbind.fill(., ABIDE_ASD_pyspi14) %>%
+  left_join(., plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)) %>%
+  arrange(SPI) %>%
+  group_by(Study, SPI) %>%
+  nest() %>%
+  mutate(
+    test = map(data, ~ cor.test(.x$mean_across_brain, .x$Power, method="spearman")), # S3 list-col
+    tidied = map(test, tidy)
+  ) %>%
+  unnest(tidied) %>%
+  select(-data, -test) %>%
+  group_by(Study) %>%
+  mutate(p_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
+  filter(p_Bonferroni < 0.05) %>%
+  arrange(desc(abs(estimate))) %>%
+  dplyr::rename("names"="SPI")
+
+merged_time_series_info <- catch24_info %>%
+  dplyr::rename("names" = "TS_Feature") %>%
+  mutate(Feature_Type = "Univariate") %>%
+  plyr::rbind.fill(., pyspi14_info %>% 
+                     dplyr::rename("names" = "SPI",
+                                   "Figure_Name" = "Nickname") %>%
+                     mutate(Feature_Type = "Pairwise"))
+# Annotation bar with feature type
+plyr::rbind.fill(head_motion_univariate_feature_corrs,
+                 head_motion_pairwise_feature_corrs) %>%
+  left_join(., merged_time_series_info) %>%
+  mutate(Study = ifelse(Study == "ABIDE_ASD", "ABIDE", "UCLA CNP")) %>%
+  mutate(Figure_Name = fct_reorder(Figure_Name, estimate, .fun="mean", .desc=F),
+         Feature_Type = fct_reorder(Feature_Type, estimate, .fun="mean", .desc=F)) %>%
+  ggplot(data=., mapping=aes(x=0, y=Figure_Name, fill=Feature_Type)) +
+  geom_tile() +
+  theme_void() +
+  scale_fill_manual(values=c("#803556", "#E8A6A9")) +
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        legend.text=element_text(size=14)) +
+  guides(fill = guide_legend(title.position = "top", 
+                             ncol = 2,
+                             byrow=T,
+                             title.hjust = 0.5)) 
+ggsave(glue("{plot_path}/Feature_type_colorbar.png"),
+       width=6, height=6, units="in", dpi=300)
+
+# Heatmap
+plyr::rbind.fill(head_motion_univariate_feature_corrs,
+                 head_motion_pairwise_feature_corrs) %>%
+  left_join(., merged_time_series_info) %>%
+  mutate(Study = ifelse(Study == "ABIDE_ASD", "ABIDE", "UCLA CNP")) %>%
+  mutate(Figure_Name = fct_reorder(Figure_Name, estimate, .fun="mean")) %>%
+  ggplot(data=., mapping=aes(x=Study, y=Figure_Name, fill=estimate)) +
+  geom_tile() +
+  geom_text(aes(label = round(estimate,2)),
+            size=5) +
+  scale_fill_continuous_divergingx(palette="RdBu", rev=TRUE) +
+  ylab("Time-series feature") +
+  labs(fill="mFD \u03C1")
+ggsave(glue("{plot_path}/Movement_spearman_feature_corr.png"),
+       width=6, height=6, units="in", dpi=300)
+
+
+################################################################################
+# Plot individual features vs movement
 plot_feature_vs_movement <- function(feature_name, dataset_to_use, 
                                      title_label, y_label, rho_pos) {
   feature_data <- UCLA_CNP_catch24 %>%
@@ -359,8 +439,8 @@ do.call(plyr::rbind.fill, list(scz_mvmt_res, bpd_mvmt_res, adhd_mvmt_res, asd_mv
                               "BPD" = "#D5492A", 
                               "ADHD" = "#0F9EA9", 
                               "ASD" = "#C47B2F")) +
-  ylab("10-fold CV Linear SVM\nBalanced Accuracy by Repeat (%)") +
+  ylab("Mean Balanced Accuracy\nby Repeat (%)") +
   xlab("Clinical Group") +
   theme(legend.position = "none")
 ggsave(paste0(plot_path, "SVM_movement_balacc.png"),
-       width = 3.25, height=4.5, units="in", dpi=300)
+       width = 3, height=3, units="in", dpi=300)

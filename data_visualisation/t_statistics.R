@@ -44,13 +44,15 @@ library(broom)
 library(colorspace)
 library(see)
 library(ggridges)
+library(scales)
 theme_set(theme_cowplot())
 
 # Source visualisation script
 source(glue("{github_dir}/data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
 
 # Load in univariate time-series feature info
-TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
+catch24_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
+pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 
 # Load study metadata
 UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") 
@@ -68,11 +70,19 @@ ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_da
   left_join(., ABIDE_ASD_brain_region_info) %>%
   dplyr::rename("region" = "ggseg")
 
+pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
+UCLA_CNP_pyspi14 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")  %>%
+  left_join(., UCLA_CNP_metadata) %>%
+  filter(!is.na(Diagnosis))
+ABIDE_ASD_pyspi14 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_pyspi14_filtered.feather")  %>%
+  left_join(., ABIDE_ASD_metadata) %>%
+  filter(!is.na(Diagnosis))
+
 
 ################################################################################
 # Ridge plot for catch24 features' T-statistics across entire brain
-T_stats_for_group <- function(comparison_group, study, group_nickname){
-  res <- plyr::rbind.fill(UCLA_CNP_catch24, ABIDE_ASD_catch24) %>%
+T_stats_for_group <- function(comparison_group, input_data, study, group_nickname){
+  res <- input_data %>%
     filter(Diagnosis %in% c(comparison_group, "Control"),
            Study == study) %>%
     mutate(Diagnosis = case_when(Diagnosis == "Schizophrenia" ~ "SCZ",
@@ -98,14 +108,16 @@ T_stats_for_group <- function(comparison_group, study, group_nickname){
   return(res)
 }
 
-t_stats_whole_brain <- 1:4 %>%
-  purrr::map_df(~ T_stats_for_group(comparison_group = study_group_df$Comparison_Group[.x],
+t_stats_catch24_whole_brain <- 1:4 %>%
+  purrr::map_df(~ T_stats_for_group(input_data = plyr::rbind.fill(UCLA_CNP_catch24,
+                                                                  ABIDE_ASD_catch24),
+                                    comparison_group = study_group_df$Comparison_Group[.x],
                                     study = study_group_df$Study[.x],
                                     group_nickname = study_group_df$Group_Nickname[.x]))
 
-t_stats_whole_brain %>%
+t_stats_catch24_whole_brain %>%
   ungroup() %>%
-  left_join(., TS_feature_info) %>%
+  left_join(., catch24_info) %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))%>%
   mutate(Figure_Name = fct_reorder(Figure_Name, statistic, .fun=sd)) %>%
   ggplot(data=., mapping=aes(x=statistic, y=Figure_Name, fill=Comparison_Group, color=Comparison_Group)) +
@@ -124,6 +136,7 @@ t_stats_whole_brain %>%
                              "ASD" = "#C47B2F")) +
   guides(fill = guide_legend(nrow=2),
          color = guide_legend(nrow=2)) +
+  scale_y_discrete(labels = wrap_format(28)) +
   theme(legend.position = "bottom",
         axis.title = element_text(size=16),
         axis.text.y = element_text(size=12),
@@ -131,4 +144,71 @@ t_stats_whole_brain %>%
         legend.text = element_text(size=16),
         legend.title = element_blank())
 ggsave(glue("{plot_path}/catch24_feature_t_statistics_across_brain.png"),
-       width=6, height=9, units="in", dpi=300)
+       width=5.5, height=10, units="in", dpi=300)
+
+
+T_stats_for_group_pairwise <- function(comparison_group, input_data, study, group_nickname){
+  res <- input_data %>%
+    filter(Diagnosis %in% c(comparison_group, "Control"),
+           Study == study) %>%
+    mutate(Diagnosis = case_when(Diagnosis == "Schizophrenia" ~ "SCZ",
+                                 Diagnosis == "Bipolar" ~ "BPD",
+                                 T ~ Diagnosis)) %>%
+    rowwise() %>%
+    mutate(Region_Pair = paste0(brain_region_from, "_", brain_region_to)) %>%
+    dplyr::select(Region_Pair, SPI, Diagnosis, value) %>%
+    mutate(Diagnosis = factor(Diagnosis, levels = c(group_nickname, "Control"))) %>%
+    group_by(Region_Pair, SPI) %>%
+    nest() %>%
+    mutate(
+      fit = map(data, ~ t.test(value ~ Diagnosis, data = .x)),
+      tidied = map(fit, tidy)
+    ) %>% 
+    unnest(tidied) %>%
+    dplyr::select(-data, -fit) %>%
+    arrange(p.value) %>%
+    ungroup() %>%
+    dplyr::select(Region_Pair, SPI, statistic) %>%
+    mutate(Comparison_Group = group_nickname,
+           Study = study)
+  
+  return(res)
+}
+
+t_stats_pyspi14_whole_brain <- 1:4 %>%
+  purrr::map_df(~ T_stats_for_group_pairwise(input_data = plyr::rbind.fill(UCLA_CNP_pyspi14,
+                                                                  ABIDE_ASD_pyspi14),
+                                    comparison_group = study_group_df$Comparison_Group[.x],
+                                    study = study_group_df$Study[.x],
+                                    group_nickname = study_group_df$Group_Nickname[.x]))
+
+t_stats_pyspi14_whole_brain %>%
+  ungroup() %>%
+  left_join(., pyspi14_info) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))%>%
+  mutate(Nickname = fct_reorder(Nickname, statistic, .fun=sd)) %>%
+  ggplot(data=., mapping=aes(x=statistic, y=Nickname, fill=Comparison_Group, color=Comparison_Group)) +
+  geom_density_ridges(alpha=0.6, scale=1.1) +
+  xlab("T-statistic across\nall brain regions") +
+  ylab("pyspi14 time-series feature") +
+  scale_fill_manual(values=c("Control" = "#5BB67B", 
+                             "SCZ" = "#573DC7", 
+                             "BPD" = "#D5492A", 
+                             "ADHD" = "#0F9EA9", 
+                             "ASD" = "#C47B2F")) +
+  scale_color_manual(values=c("Control" = "#5BB67B", 
+                              "SCZ" = "#573DC7", 
+                              "BPD" = "#D5492A", 
+                              "ADHD" = "#0F9EA9", 
+                              "ASD" = "#C47B2F")) +
+  guides(fill = guide_legend(nrow=2),
+         color = guide_legend(nrow=2)) +
+  scale_y_discrete(labels = wrap_format(28)) +
+  theme(legend.position = "bottom",
+        axis.title = element_text(size=16),
+        axis.text.y = element_text(size=12),
+        axis.text.x = element_text(size=15),
+        legend.text = element_text(size=16),
+        legend.title = element_blank())
+ggsave(glue("{plot_path}/pyspi14_feature_t_statistics_across_brain.png"),
+       width=5.5, height=10, units="in", dpi=300)
