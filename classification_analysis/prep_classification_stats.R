@@ -361,6 +361,49 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_{
   pairwise_subject_predictions <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_{scaler}_scaler_subject_class_predictions.feather"))
 }
 
+#### Combined univariate+pairwise all SPIs ####            
+# Load balanced accuracy data, or construct if needed
+if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_{scaler}_scaler_balanced_accuracy_all_folds.feather"))) {
+  combined_univariate_pairwise_balanced_accuracy_all_folds_list <- list()
+  # First iterate over each study/comparison group
+  for (i in 1:nrow(study_group_df)) {
+    dataset_ID <- study_group_df$Study[i]
+    noise_proc <- study_group_df$Noise_Proc[i]
+    noise_label = gsub("\\+", "_", noise_proc)
+    comparison_group <- study_group_df$Comparison_Group[i]
+
+    # Now iterate over each univariate feature set
+    for (univariate_feature_set in univariate_feature_sets) {
+      balacc_across_folds <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/processed_data/{dataset_ID}_{comparison_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_all_features_{scaler}_scaler_SVM_balanced_accuracy.feather"))
+      balacc_across_folds$Study <- dataset_ID
+      balacc_across_folds$Univariate_Feature_Set <- univariate_feature_set
+      balacc_across_folds$Pairwise_Feature_Set <- pairwise_feature_set
+      # Append to list
+      combined_univariate_pairwise_balanced_accuracy_all_folds_list <- list.append(combined_univariate_pairwise_balanced_accuracy_all_folds_list, balacc_across_folds)
+    }
+  }
+  
+  # Combine the list results into a dataframe
+  combined_univariate_pairwise_balanced_accuracy_all_folds <- do.call(plyr::rbind.fill, 
+                                                    combined_univariate_pairwise_balanced_accuracy_all_folds_list) %>%
+    mutate(Pairwise_Feature_Set = pairwise_feature_set,
+    Univariate_Feature_Set = univariate_feature_set)
+  
+  # Save to feather file
+  feather::write_feather(combined_univariate_pairwise_balanced_accuracy_all_folds,
+                         glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_{scaler}_scaler_balanced_accuracy_all_folds.feather"))
+} else {
+  combined_univariate_pairwise_balanced_accuracy_all_folds <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_{scaler}_scaler_balanced_accuracy_all_folds.feather"))
+}
+
+# Aggregate the main results across folds and then across repeats
+combined_univariate_pairwise_all_features_balanced_accuracy <- combined_univariate_pairwise_all_features_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
+  reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
+          Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T))
 
 ################################################################################
 # Compile fold assignments
@@ -490,6 +533,38 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_{
   pairwise_all_SPIs_fold_assignments <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_{scaler}_scaler_fold_assignments.feather"))
 }
 
+# Univariate + Pairwise combined, all SPIs
+if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_{scaler}_scaler_fold_assignments.feather"))) {
+  combined_univariate_pairwise_fold_assignments_list <- list()
+  # First iterate over each study/comparison group
+  for (i in 1:nrow(study_group_df)) {
+    dataset_ID <- study_group_df$Study[i]
+    noise_proc <- study_group_df$Noise_Proc[i]
+    noise_label = gsub("\\+", "_", noise_proc)
+    comparison_group <- study_group_df$Comparison_Group[i]
+    
+    # Now iterate over each univariate feature set
+    for (univariate_feature_set in univariate_feature_sets) {
+      fold_assignments <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/processed_data/{dataset_ID}_{comparison_group}_Pairwise_{pairwise_feature_set}_{scaler}_all_features_scaler_SVM_fold_assignments.feather"))
+      fold_assignments$Study <- dataset_ID
+      fold_assignments$Pairwise_Feature_Set <- pairwise_feature_set
+      # Append to list
+      combined_univariate_pairwise_fold_assignments_list <- list.append(combined_univariate_pairwise_fold_assignments_list, fold_assignments)
+    }
+  }
+  
+  # Combine the list results into a dataframe
+  combined_univariate_pairwise_fold_assignments <- do.call(plyr::rbind.fill, 
+                                                    combined_univariate_pairwise_fold_assignments_list) %>%
+    mutate(Analysis_Type = "SPI_Univariate_Combo")
+  
+  # Save to feather file
+  feather::write_feather(combined_univariate_pairwise_fold_assignments,
+                         glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_{scaler}_scaler_fold_assignments.feather"))
+} else {
+  combined_univariate_pairwise_fold_assignments <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_{scaler}_scaler_fold_assignments.feather"))
+}
+
 ################################################################################
 # Compile SVM coefficient results
 ################################################################################
@@ -606,7 +681,7 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate
   combined_univariate_pairwise_SVM_coefs <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_{scaler}_scaler_SVM_coefficients.feather"))
 }
 
-# Pairwise
+# Pairwise all SPIs
 if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_{scaler}_scaler_SVM_coefficients.feather"))) {
   pairwise_all_SPIs_SVM_coefs_list <- list()
   # First iterate over each study/comparison group
@@ -639,6 +714,46 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_{
 } else {
   pairwise_SVM_coefs <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_{scaler}_scaler_SVM_coefficients.feather"))
 }
+
+# Combined univariate+pairwise all SPIs
+if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_{scaler}_scaler_SVM_coefficients.feather"))) {
+  combined_univariate_pairwise_SVM_coefs_list <- list()
+  # First iterate over each study/comparison group
+  for (i in 1:nrow(study_group_df)) {
+    dataset_ID <- study_group_df$Study[i]
+    noise_proc <- study_group_df$Noise_Proc[i]
+    noise_label = gsub("\\+", "_", noise_proc)
+    comparison_group <- study_group_df$Comparison_Group[i]
+
+
+    # Now iterate over each univariate feature set
+    for (univariate_feature_set in univariate_feature_sets) {
+      SVM_coefs <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/processed_data/{dataset_ID}_{comparison_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_all_features_{scaler}_scaler_SVM_fold_SVM_coefficients.feather")) %>%
+        group_by(`Feature Name`, Analysis_Type, group_var, Comparison_Group, Scaling_Type) %>%
+        summarise(CoefficientM = mean(Coefficient, na.rm=T),
+                  Coefficient_SD = sd(Coefficient, na.rm=T)) %>%
+        dplyr::rename("Coefficient" = "CoefficientM",
+                      "Feature_Name" = "Feature Name")
+      SVM_coefs$Study <- dataset_ID
+      SVM_coefs$Univariate_Feature_Set <- univariate_feature_set
+      SVM_coefs$Pairwise_Feature_Set <- pairwise_feature_set
+      # Append to list
+      combined_univariate_pairwise_SVM_coefs_list <- list.append(combined_univariate_pairwise_SVM_coefs_list, SVM_coefs)
+    }
+  }
+  
+  # Combine the list results into a dataframe
+  combined_univariate_pairwise_SVM_coefs <- do.call(plyr::rbind.fill, 
+                                              combined_univariate_pairwise_SVM_coefs_list) %>%
+    mutate(Analysis_Type = "SPI_Univariate_Combo")
+  
+  # Save to feather file
+  feather::write_feather(combined_univariate_pairwise_SVM_coefs,
+                         glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_{scaler}_scaler_SVM_coefficients.feather"))
+} else {
+  combined_univariate_pairwise_SVM_coefs <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_{scaler}_scaler_SVM_coefficients.feather"))
+}
+
 
 ################################################################################
 # Compile null results
