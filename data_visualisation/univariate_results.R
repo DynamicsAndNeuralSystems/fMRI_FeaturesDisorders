@@ -17,6 +17,7 @@ study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
 
 
+UCLA_CNP_brain_region_info <- read.csv("~/data/UCLA_CNP/study_metadata/UCLA_CNP_Brain_Region_info.csv")
 ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv")
 
 reticulate::use_python(python_to_use)
@@ -45,6 +46,7 @@ library(colorspace)
 library(see)
 library(ggridges)
 library(splitstackshape)
+library(DescTools)
 theme_set(theme_cowplot())
 
 # Source visualisation script
@@ -732,6 +734,27 @@ univariate_p_values %>%
   coord_flip()
 ggsave(glue("{plot_path}/univariate_bowtie_balanced_accuracy.png"),
        width=9, height=3, units="in", dpi=300)
+
+
+################################################################################
+# ROC Curves + AUC
+################################################################################
+
+AUC = AUC(ROC_data %>% filter(group_var=="Combo") %>% pull(fpr), 
+          ROC_data %>% filter(group_var=="Combo") %>% pull(tpr))
+ROC_data <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch24_mixedsigmoid_scaler_SVM_ROC.feather") %>%
+  filter(group_var == "Combo")
+
+ROC_data %>%
+  ggplot(data=., mapping=aes(x=fpr,y=tpr)) +
+  geom_abline(slope=1, linetype=2) +
+  geom_smooth(se=T) +
+  xlab("False positive rate (FPR)") +
+  ylab("True positive rate (TPR)") +
+  coord_equal() +
+  annotate(geom="text", label=glue("AUC: {round(AUC, 3)}"),
+           x = 0.7, y=0.25, size=8)
+
 
 
 ################################################################################

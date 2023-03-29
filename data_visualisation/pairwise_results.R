@@ -32,8 +32,17 @@ library(tidyverse)
 library(glue)
 library(icesTAF)
 library(cowplot)
-library(ggnewscale)
-library(scales)
+library(ggseg)
+library(ggsegHO)
+library(knitr)
+library(kableExtra)
+library(patchwork)
+library(ggseg)
+library(broom)
+library(colorspace)
+library(see)
+library(ggridges)
+library(splitstackshape)
 theme_set(theme_cowplot())
 
 # Source visualisation script
@@ -46,6 +55,8 @@ SPI_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
 pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
 pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
+univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather")) %>%
+  filter(Univariate_Feature_Set == univariate_feature_set)
 
 combo_univariate_pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
 # combo_univariate_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
@@ -55,7 +66,12 @@ pairwise_all_SPIs_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(gl
 # pairwise_all_SPIs_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_mixedsigmoid_scaler_empirical_p_values.feather"))
 # pairwise_all_SPIs_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_all_SPIs_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 
+combo_univariate_pairwise_all_features_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
+# combo_univariate_all_features_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_features_mixedsigmoid_scaler_empirical_p_values.feather"))
+# combo_univariate_all_features_pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_features_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
+
 # Aggregate the main results across folds and then across repeats
+# Pairwise SPI-wise
 pairwise_balanced_accuracy <- pairwise_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
   reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
@@ -63,7 +79,13 @@ pairwise_balanced_accuracy <- pairwise_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
   reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
           Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T))
+pairwise_balanced_accuracy_by_repeats <- pairwise_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
+  summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+            Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
+  left_join(., pairwise_p_values %>% dplyr::select(Study:group_var, p_value:p_value_BH))
 
+# Pairwise SPI-wise with univariate combo data
 combo_univariate_pairwise_balanced_accuracy <- combo_univariate_pairwise_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
   reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
@@ -71,15 +93,35 @@ combo_univariate_pairwise_balanced_accuracy <- combo_univariate_pairwise_balance
   group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
   reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
           Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T))
+combo_univariate_pairwise_balanced_accuracy_by_repeats <- combo_univariate_pairwise_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
+  summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+            Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
+  left_join(., pairwise_p_values %>% dplyr::select(Study:group_var, p_value:p_value_BH))
 
-# Aggregate balanced accuracy by repeats
-pairwise_balanced_accuracy_by_repeats <- pairwise_balanced_accuracy_all_folds %>%
+# Pairwise all SPIs together
+pairwise_all_SPIs_balanced_accuracy <- pairwise_all_SPIs_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
+  group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
+  reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
+          Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T))
+pairwise_all_SPIs_balanced_accuracy_by_repeats <- pairwise_all_SPIs_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
   summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
             Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
   left_join(., pairwise_p_values %>% dplyr::select(Study:group_var, p_value:p_value_BH))
 
-combo_univariate_pairwise_balanced_accuracy_by_repeats <- combo_univariate_pairwise_balanced_accuracy_all_folds %>%
+# All univariate and pairwise together
+combo_univariate_pairwise_all_features_balanced_accuracy <- combo_univariate_pairwise_all_features_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
+  reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
+          Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T))
+combo_univariate_pairwise_all_features_balanced_accuracy_by_repeats <- combo_univariate_pairwise_all_features_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
   summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
             Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
@@ -151,9 +193,6 @@ pairwise_p_values %>%
 ggsave(glue("{plot_path}/SPI_wise_results.png"),
        width=5, height=4.5, units="in", dpi=300)
 
-################################################################################
-# Region pair-wise T-tests for Pearson
-demo_data <- 
 
 ################################################################################
 # Plot significant results relative to their respective null distributions
@@ -228,3 +267,88 @@ plyr::rbind.fill(pairwise_p_values,
         legend.title = element_blank())
 ggsave(glue("{plot_path}/SPI_with_vs_without_univariate_spaghetti.png"),
        width=5, height=5.5, units="in", dpi=300)
+
+################################################################################
+# All SPIs in one model
+################################################################################
+
+null_data_for_plot <- pairwise_null_distribution %>%
+  filter(Analysis_Type == "Pairwise_SPI") %>%
+  dplyr::rename("Balanced_Accuracy_Across_Folds" = Null_Balanced_Accuracy) %>%
+  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
+         Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
+                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      T ~ Comparison_Group)) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  dplyr::select(Comparison_Group, Balanced_Accuracy_Across_Folds)
+
+pairwise_all_SPIs_balanced_accuracy_by_repeats %>%
+  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
+         Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
+                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      T ~ Comparison_Group)) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  ggplot(data=., mapping=aes(x=Comparison_Group,
+                             y=Balanced_Accuracy_Across_Folds)) +
+  scale_fill_manual(values=c("#573DC7", "#D5492A", "#0F9EA9","#C47B2F")) +
+  geom_violinhalf(aes(fill=Comparison_Group)) +
+  geom_boxplot(width=0.1, notch=FALSE, notchwidth = 0.4, outlier.shape = NA,
+               fill=NA, color=alpha("white", 0.7),
+               position = position_nudge(x=0.058), coef = 0) +
+  geom_violinhalf(data = null_data_for_plot, fill="gray80", flip=T) +
+  geom_boxplot(data = null_data_for_plot, 
+               width=0.1, notch=FALSE, 
+               notchwidth = 0.4, outlier.shape = NA,
+               fill=NA, color=alpha("black", 0.7),
+               position = position_nudge(x=-0.058), coef = 0) +
+  geom_hline(yintercept = 50, linetype=2, alpha=0.5) +
+  xlab("Clinical Group") +
+  ylab("Balanced Accuracy\nper Repeat (%)") +
+  theme(legend.position = "none",
+        axis.title = element_text(size=17), 
+        axis.text = element_text(size=15)) 
+ggsave(glue("{plot_path}/Pairwise_all_SPIs_results.png"),
+       width=4.5, height=3, units="in", dpi=300)
+
+
+################################################################################
+# All univariate and pairwise features in one model
+################################################################################
+
+null_data_for_plot <- pairwise_null_distribution %>%
+  filter(Analysis_Type == "Pairwise_SPI") %>%
+  dplyr::rename("Balanced_Accuracy_Across_Folds" = Null_Balanced_Accuracy) %>%
+  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
+         Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
+                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      T ~ Comparison_Group)) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  dplyr::select(Comparison_Group, Balanced_Accuracy_Across_Folds)
+
+combo_univariate_pairwise_all_features_balanced_accuracy_by_repeats %>%
+  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
+         Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
+                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      T ~ Comparison_Group)) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  ggplot(data=., mapping=aes(x=Comparison_Group,
+                             y=Balanced_Accuracy_Across_Folds)) +
+  scale_fill_manual(values=c("#573DC7", "#D5492A", "#0F9EA9","#C47B2F")) +
+  geom_violinhalf(aes(fill=Comparison_Group)) +
+  geom_boxplot(width=0.1, notch=FALSE, notchwidth = 0.4, outlier.shape = NA,
+               fill=NA, color=alpha("white", 0.7),
+               position = position_nudge(x=0.058), coef = 0) +
+  geom_violinhalf(data = null_data_for_plot, fill="gray80", flip=T) +
+  geom_boxplot(data = null_data_for_plot, 
+               width=0.1, notch=FALSE, 
+               notchwidth = 0.4, outlier.shape = NA,
+               fill=NA, color=alpha("black", 0.7),
+               position = position_nudge(x=-0.058), coef = 0) +
+  geom_hline(yintercept = 50, linetype=2, alpha=0.5) +
+  xlab("Clinical Group") +
+  ylab("Balanced Accuracy\nper Repeat (%)") +
+  theme(legend.position = "none",
+        axis.title = element_text(size=17), 
+        axis.text = element_text(size=15)) 
+ggsave(glue("{plot_path}/All_univariate_pairwise_feature_results.png"),
+       width=4.5, height=3, units="in", dpi=300)
