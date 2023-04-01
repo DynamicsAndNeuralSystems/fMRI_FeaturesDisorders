@@ -71,18 +71,3 @@ run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file=univariate_feature_
                  num_repeats = int(num_repeats),
                  num_jobs = int(num_jobs))
 
-# Run the combined univariate+pairwise main SVM with all catch24 + pyspi14 in one matrix          
-run_combined_uni_pairwise_SVM_all_together(univariate_feature_file=univariate_feature_file,
-                 pairwise_feature_file=pairwise_feature_file,
-                 SPI_directionality_file = SPI_directionality_file,
-                 univariate_feature_set=univariate_feature_set,
-                 pairwise_feature_set=pairwise_feature_set,
-                 noise_proc = noise_proc,
-                 dataset_ID=dataset_ID,
-                 metadata_file=metadata_file,
-                 comparison_to_control_group=comparison_group,
-                 pydata_path=data_path + "processed_data/",
-                 data_path=data_path,
-                 scaling_type = scaling_type,
-                 num_repeats = int(num_repeats),
-                 num_jobs = int(num_jobs))

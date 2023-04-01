@@ -930,6 +930,7 @@ def run_combined_uni_pairwise_SVM_all_together(univariate_feature_file,
         SVM_coefficients.reset_index(inplace=True)
         balanced_accuracy.reset_index(inplace=True)
         CV_sample_predictions.reset_index(inplace=True)
+        ROC.reset_index(inplace=True)
 
         # Save results
         fold_assignments.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_all_features_{scaling_type}_scaler_SVM_fold_assignments.feather")
