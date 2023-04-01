@@ -44,6 +44,9 @@ library(ggridges)
 library(scales)
 library(ggseg)
 library(ggsegHO)
+library(igraph)
+library(ggraph)
+library(LaCroixColoR)
 theme_set(theme_cowplot())
 
 # Source visualisation script
@@ -57,25 +60,13 @@ pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") 
 ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather") 
 
-# Load raw feature data
-UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")  %>%
-  left_join(., UCLA_CNP_metadata) %>%
-  mutate(Study = "UCLA_CNP")
-ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch24_filtered.feather")  %>%
-  left_join(., ABIDE_ASD_metadata) %>%
-  left_join(., ABIDE_ASD_brain_region_info)
+# Load brain region info
+UCLA_CNP_brain_region_info <- read.csv("~/data/UCLA_CNP/study_metadata/UCLA_CNP_Brain_Region_info.csv")
+ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv")
+region_node_to_from <- read.csv("~/data/TS_feature_manuscript/node_to_from_structure.csv")
 
-combined_univariate_data <- plyr::rbind.fill(UCLA_CNP_catch24, ABIDE_ASD_catch24)
-
+# Load SPI info
 pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
-UCLA_CNP_pyspi14 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")  %>%
-  left_join(., UCLA_CNP_metadata) %>%
-  filter(!is.na(Diagnosis)) %>%
-  mutate(Study = "UCLA_CNP")
-ABIDE_ASD_pyspi14 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_pyspi14_filtered.feather")  %>%
-  left_join(., ABIDE_ASD_metadata) %>%
-  filter(!is.na(Diagnosis)) %>%
-  mutate(Study = "ABIDE_ASD")
 
 ################################################################################
 # Ridge plot for catch24 features' T-statistics across entire brain
@@ -105,10 +96,20 @@ T_stats_for_group <- function(comparison_group, input_data, study, group_nicknam
   
   return(res)
 }
+
 if (!file.exists(glue("{data_path}/univariate_catch24_t_statistics_by_brain_region.feather"))) {
+  # Load raw feature data
+  UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")  %>%
+    left_join(., UCLA_CNP_metadata) %>%
+    mutate(Study = "UCLA_CNP")
+  ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch24_filtered.feather")  %>%
+    left_join(., ABIDE_ASD_metadata) %>%
+    left_join(., ABIDE_ASD_brain_region_info)
+  
+  combined_univariate_data <- plyr::rbind.fill(UCLA_CNP_catch24, ABIDE_ASD_catch24)
+  
   t_stats_catch24_whole_brain <- 1:4 %>%
-    purrr::map_df(~ T_stats_for_group(input_data = plyr::rbind.fill(UCLA_CNP_catch24,
-                                                                    ABIDE_ASD_catch24),
+    purrr::map_df(~ T_stats_for_group(input_data = combined_univariate_data,
                                       comparison_group = study_group_df$Comparison_Group[.x],
                                       study = study_group_df$Study[.x],
                                       group_nickname = study_group_df$Group_Nickname[.x]))
@@ -136,8 +137,8 @@ t_stats_catch24_whole_brain %>%
                              "BPD" = "#D5492A", 
                              "ADHD" = "#0F9EA9", 
                              "ASD" = "#C47B2F")) +
-  guides(fill = guide_legend(nrow=2),
-         color = guide_legend(nrow=2)) +
+  guides(fill = guide_legend(nrow=2, byrow=T),
+         color = guide_legend(nrow=2, byrow=T)) +
   scale_y_discrete(labels = wrap_format(28)) +
   theme(legend.position = "bottom",
         axis.title = element_text(size=16),
@@ -177,6 +178,15 @@ T_stats_for_group_pairwise <- function(comparison_group, input_data, study, grou
 }
 
 if (!file.exists(glue("{data_path}/pairwise_pyspi14_t_statistics_by_region_pair.feather"))) {
+  UCLA_CNP_pyspi14 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")  %>%
+    left_join(., UCLA_CNP_metadata) %>%
+    filter(!is.na(Diagnosis)) %>%
+    mutate(Study = "UCLA_CNP")
+  ABIDE_ASD_pyspi14 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_pyspi14_filtered.feather")  %>%
+    left_join(., ABIDE_ASD_metadata) %>%
+    filter(!is.na(Diagnosis)) %>%
+    mutate(Study = "ABIDE_ASD")
+  
   t_stats_pyspi14_whole_brain <- 1:4 %>%
   purrr::map_df(~ T_stats_for_group_pairwise(input_data = plyr::rbind.fill(UCLA_CNP_pyspi14,
                                                                   ABIDE_ASD_pyspi14),
@@ -188,7 +198,6 @@ if (!file.exists(glue("{data_path}/pairwise_pyspi14_t_statistics_by_region_pair.
 } else {
   t_stats_pyspi14_whole_brain <- feather::read_feather(glue("{data_path}/pairwise_pyspi14_t_statistics_by_region_pair.feather"))
 }
-
 
 t_stats_pyspi14_whole_brain %>%
   ungroup() %>%
@@ -439,3 +448,68 @@ pairwise_t_stats_by_region_from %>%
   theme(legend.position = "none")
 ggsave(glue("{plot_path}/DI_Gaussian_T_stats_to_vs_from.png"),
        width=10, height=2.5, units="in", dpi=300)
+
+
+################################################################################
+# Hyper vs hypo connectivity maps
+
+
+
+scz_example_data <- t_stats_pyspi14_whole_brain %>%
+  ungroup() %>%
+  group_by(Region_Pair, Comparison_Group) %>%
+  summarise(t_stat_sum = mean(statistic)) %>%
+  arrange(t_stat_sum) %>%
+  separate(Region_Pair, into=c("from", "to"), sep="_") %>%
+  filter(Comparison_Group=="SCZ") %>%
+  sample_n(100)
+
+# Edges are defined as cortical lobe --> specific ROI connection
+edges <- region_node_to_from %>%
+  filter(Study == "UCLA_CNP") %>% 
+  distinct() %>%
+  dplyr::select(-Study)
+
+# ROIs don't include the origin --> cortical lobe connection
+rois <- edges %>% filter(!(to %in% c("Cingulate", "Frontal", "Insula",
+                                     "Occipital", "Parietal", "Temporal", "Subcortex")))
+
+# Create a dataframe of vertices, one line per object in the ROI cortical lobe hierarchy
+vertices = data.frame(name = unique(c(as.character(edges$from), as.character(edges$to))))
+vertices$group <- edges$from[match(vertices$name, edges$to)]
+
+# Create an igraph object
+mygraph <- graph_from_data_frame(d=edges, vertices=vertices)
+
+# connect = dataframe of pairwise correlations between cortical ROIs
+connect <- scz_example_data %>%
+  rename("value" = "t_stat_sum") %>%
+  arrange(from, to)
+
+# mygraph = igraph object linking each cortical ROI
+# convert to a circular dendrogram-shaped ggraph object
+p <- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) + 
+  theme_void()
+
+from <- match(connect$from, vertices$name)
+to <- match(connect$to, vertices$name)
+
+p <- p +  geom_conn_bundle(data = get_con(from = from, to = to, 
+                                          corr=connect$value), 
+                           tension=0.5, width=3,
+                           aes(alpha=corr), color="lightsteelblue3")  +
+  labs(edge_alpha="Pearson\nCorrelation")
+
+# Add leaf nodes showing the cortical ROI, color by cortical lobe
+p <- p + geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05, colour=group),   
+                         size=3) +
+  scale_color_manual(values=c(lacroix_palette("PassionFruit"), "red")) +
+  labs(color="Cortex") +
+  # geom_node_text(aes(x = x*1.2, y=y*1.2, filter = leaf, label=name,
+  #                    color=group))+
+  theme_void() + 
+  theme(plot.title=element_text(size=14, face="bold", hjust=0.5),
+        legend.margin=margin(0,0,0,0),
+        legend.box.margin=margin(10,10,10,10))
+
+p

@@ -63,12 +63,7 @@ combo_univariate_pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_fe
 # combo_univariate_pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 
 pairwise_all_SPIs_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
-# pairwise_all_SPIs_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_mixedsigmoid_scaler_empirical_p_values.feather"))
-# pairwise_all_SPIs_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_all_SPIs_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
-
 combo_univariate_pairwise_all_features_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
-# combo_univariate_all_features_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_features_mixedsigmoid_scaler_empirical_p_values.feather"))
-# combo_univariate_all_features_pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_features_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 
 # Aggregate the main results across folds and then across repeats
 # Pairwise SPI-wise
@@ -290,17 +285,12 @@ pairwise_all_SPIs_balanced_accuracy_by_repeats %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
   ggplot(data=., mapping=aes(x=Comparison_Group,
                              y=Balanced_Accuracy_Across_Folds)) +
+  geom_violin(aes(fill=Comparison_Group), trim=TRUE) +
   scale_fill_manual(values=c("#573DC7", "#D5492A", "#0F9EA9","#C47B2F")) +
-  geom_violinhalf(aes(fill=Comparison_Group)) +
+  scale_color_manual(values=c("#573DC7", "#D5492A", "#0F9EA9","#C47B2F")) +
   geom_boxplot(width=0.1, notch=FALSE, notchwidth = 0.4, outlier.shape = NA,
-               fill=NA, color=alpha("white", 0.7),
-               position = position_nudge(x=0.058), coef = 0) +
-  geom_violinhalf(data = null_data_for_plot, fill="gray80", flip=T) +
-  geom_boxplot(data = null_data_for_plot, 
-               width=0.1, notch=FALSE, 
-               notchwidth = 0.4, outlier.shape = NA,
-               fill=NA, color=alpha("black", 0.7),
-               position = position_nudge(x=-0.058), coef = 0) +
+               fill=NA, color="black",
+               coef = 0) +
   geom_hline(yintercept = 50, linetype=2, alpha=0.5) +
   xlab("Clinical Group") +
   ylab("Balanced Accuracy\nper Repeat (%)") +
@@ -315,16 +305,6 @@ ggsave(glue("{plot_path}/Pairwise_all_SPIs_results.png"),
 # All univariate and pairwise features in one model
 ################################################################################
 
-null_data_for_plot <- pairwise_null_distribution %>%
-  filter(Analysis_Type == "Pairwise_SPI") %>%
-  dplyr::rename("Balanced_Accuracy_Across_Folds" = Null_Balanced_Accuracy) %>%
-  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
-         Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
-                                      T ~ Comparison_Group)) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
-  dplyr::select(Comparison_Group, Balanced_Accuracy_Across_Folds)
-
 combo_univariate_pairwise_all_features_balanced_accuracy_by_repeats %>%
   mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
          Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
@@ -333,17 +313,12 @@ combo_univariate_pairwise_all_features_balanced_accuracy_by_repeats %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
   ggplot(data=., mapping=aes(x=Comparison_Group,
                              y=Balanced_Accuracy_Across_Folds)) +
+  geom_violin(aes(fill=Comparison_Group), trim=TRUE) +
   scale_fill_manual(values=c("#573DC7", "#D5492A", "#0F9EA9","#C47B2F")) +
-  geom_violinhalf(aes(fill=Comparison_Group)) +
+  scale_color_manual(values=c("#573DC7", "#D5492A", "#0F9EA9","#C47B2F")) +
   geom_boxplot(width=0.1, notch=FALSE, notchwidth = 0.4, outlier.shape = NA,
-               fill=NA, color=alpha("white", 0.7),
-               position = position_nudge(x=0.058), coef = 0) +
-  geom_violinhalf(data = null_data_for_plot, fill="gray80", flip=T) +
-  geom_boxplot(data = null_data_for_plot, 
-               width=0.1, notch=FALSE, 
-               notchwidth = 0.4, outlier.shape = NA,
-               fill=NA, color=alpha("black", 0.7),
-               position = position_nudge(x=-0.058), coef = 0) +
+               fill=NA, color="black",
+               coef = 0) +
   geom_hline(yintercept = 50, linetype=2, alpha=0.5) +
   xlab("Clinical Group") +
   ylab("Balanced Accuracy\nper Repeat (%)") +
@@ -352,3 +327,5 @@ combo_univariate_pairwise_all_features_balanced_accuracy_by_repeats %>%
         axis.text = element_text(size=15)) 
 ggsave(glue("{plot_path}/All_univariate_pairwise_feature_results.png"),
        width=4.5, height=3, units="in", dpi=300)
+
+

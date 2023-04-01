@@ -44,6 +44,101 @@ plot_boxplot_shaded_null <- function(dataset_ID,
     ylab(grouping_var_name)
 }
 
+# Plot cortical + subcortical data in a continuous gradient
+plot_data_with_ggseg_gradient <- function(dataset_ID,
+                                 atlas_name,
+                                 atlas_data,
+                                 data_to_plot,
+                                 fill_variable,
+                                 min_fill=NULL,
+                                 max_fill=NULL,
+                                 line_color="darkgrey",
+                                 na_color="white",
+                                 fill_colors=c("blue", "red")) {
+  
+  ggseg_data <- data_to_plot %>%
+    left_join(., atlas_data %>% as_tibble()) %>%
+    filter(!is.na(region)) %>%
+    ungroup() %>%
+    dplyr::select(-label)
+  
+  if (atlas_name == "aseg") {
+    ggseg_plot <- ggseg_data %>%
+      filter(type!="cortical") %>%
+      ggplot() +
+      geom_brain(atlas = aseg, mapping = aes_string(fill=fill_variable), 
+                 side = "coronal", colour = line_color)  +
+      theme_void() +
+      theme(plot.title = element_blank()) 
+  } else {
+    ggseg_plot <- ggseg_data %>%
+      ggseg(atlas = atlas_name, mapping = aes_string(fill = fill_variable),
+            position = "stacked", colour = line_color) +
+      theme_void() +
+      theme(plot.title = element_blank()) 
+  }
+  
+  if (!is.null(min_fill)) {
+    ggseg_plot <- ggseg_plot +
+      scale_fill_gradientn(colours = fill_colors, na.value=na_color,
+                           limits = c(min_fill, max_fill)) 
+  } else {
+    ggseg_plot <- ggseg_plot +
+      scale_fill_gradientn(colours = fill_colors, na.value=na_color) 
+  }
+  
+  return(ggseg_plot)
+}
+
+# Plot cortical + subcortical data in a discretized gradient
+plot_data_with_ggseg_discrete <- function(dataset_ID,
+                                          atlas_name,
+                                          atlas_data,
+                                          data_to_plot,
+                                          fill_variable,
+                                          bin_seq = seq(50,75,by=5),
+                                          line_color="darkgrey",
+                                          na_color="white",
+                                          fill_colors=NULL) {
+  
+  ggseg_data <- data_to_plot %>%
+    left_join(., atlas_data %>% as_tibble()) %>%
+    filter(!is.na(region)) %>%
+    ungroup() %>%
+    dplyr::select(-label)
+  
+  if (is.null(fill_colors)) {
+    fill = viridis::viridis(n=length(bin_seq))
+  }
+  
+  if (atlas_name == "aseg") {
+    ggseg_plot <- ggseg_data %>%
+      filter(type!="cortical") %>%
+      ggplot() +
+      geom_brain(atlas = aseg, mapping = aes_string(fill = fill_variable), 
+                 side = "coronal", colour = line_color)
+  } else {
+    ggseg_plot <- ggseg_data %>%
+      ggseg(atlas = atlas_name, mapping = aes_string(fill = fill_variable),
+            position = "stacked", colour = line_color)
+     
+  }
+  
+  ggseg_plot <- ggseg_plot + 
+    theme_void() +
+    theme(plot.title = element_blank()) +
+    binned_scale(aesthetics = "fill",
+                 scale_name = "stepsn", 
+                 palette = function(x) fill_colors,
+                 breaks = bin_seq,
+                 limits = c(min(bin_seq), max(bin_seq)),
+                 show.limits = TRUE, 
+                 guide = "colorsteps"
+    )
+  
+  return(ggseg_plot)
+}
+
 # Plot cortical + subcortical data in a divering gradient
 plot_data_with_ggseg_diverging <- function(dataset_ID,
                                  atlas_name,
@@ -88,105 +183,5 @@ plot_data_with_ggseg_diverging <- function(dataset_ID,
   return(ggseg_plot)
 }
 
-# Plot cortical + subcortical data in a continuous gradient
-plot_data_with_ggseg <- function(dataset_ID,
-                                 atlas_name,
-                                 atlas_data,
-                                 data_to_plot,
-                                 fill_variable,
-                                 min_fill=NULL,
-                                 max_fill=NULL,
-                                 line_color="darkgrey",
-                                 fill_colors=c("blue", "red")) {
-  
-  ggseg_data <- data_to_plot %>%
-    left_join(., atlas_data %>% as_tibble()) %>%
-    filter(!is.na(region)) %>%
-    ungroup() %>%
-    dplyr::select(-label)
-  
-  if (atlas_name == "aseg") {
-    ggseg_plot <- ggseg_data %>%
-      filter(type!="cortical") %>%
-      ggplot() +
-      geom_brain(atlas = aseg, mapping = aes_string(fill=fill_variable), 
-                 side = "coronal", colour = line_color)  +
-      theme_void() +
-      theme(plot.title = element_blank()) 
-  } else {
-    ggseg_plot <- ggseg_data %>%
-      ggseg(atlas = atlas_name, mapping = aes_string(fill = fill_variable),
-            position = "stacked", colour = line_color) +
-      theme_void() +
-      theme(plot.title = element_blank()) 
-  }
-  
-  if (!is.null(min_fill)) {
-    ggseg_plot <- ggseg_plot +
-      scale_fill_gradientn(colours = fill_colors, na.value="gray90",
-                           limits = c(min_fill, max_fill)) 
-  } else {
-    ggseg_plot <- ggseg_plot +
-      scale_fill_gradientn(colours = fill_colors, na.value="gray90") 
-  }
-  
-  return(ggseg_plot)
-}
 
-
-# Plot significant brain regions in a brain map using ggseg
-plot_significant_regions_ggseg <- function(dataset_ID,
-                                           atlas_name,
-                                           atlas_data,
-                                           main_data_for_ggseg,
-                                           min_fill=0,
-                                           max_fill=1,
-                                           fill_color) {
-  
-  sig_region_ggseg_data <- main_data_for_ggseg %>%
-    left_join(., atlas_data %>% as_tibble()) %>%
-    filter(!is.na(region)) %>%
-    ungroup() %>%
-    dplyr::select(-label)
-  
-  if (atlas_name == "aseg") {
-    ggseg_plot <- sig_region_ggseg_data %>%
-      ggplot() +
-      geom_brain(atlas = aseg, mapping = aes(fill=Balanced_Accuracy_Across_Repeats), 
-                 side = "coronal", colour = "darkgrey")  +
-      scale_fill_gradientn(colors=c(alpha(fill_color, 0.3), fill_color), 
-                           limits = c(min_fill, max_fill),
-                           na.value=NA) +
-      labs(fill = "Mean Balanced Accuracy (%)") +
-      theme_void() +
-      guides(fill = guide_colorbar(title.position = "top", 
-                                   nrow = 1,
-                                   barwidth = 10, 
-                                   barheight = 0.75,
-                                   title.hjust = 0.5,
-                                   label.position = "bottom")) +
-      theme(plot.title = element_blank(),
-            legend.position = "bottom") 
-  } else {
-    ggseg_plot <- sig_region_ggseg_data %>%
-      ggseg(atlas = atlas_name, mapping = aes(fill = Balanced_Accuracy_Across_Repeats),
-            position = "stacked", colour = "darkgrey") +
-      scale_fill_gradientn(colors=c(alpha(fill_color, 0.3), fill_color), 
-                           limits = c(min_fill, max_fill),
-                           na.value=NA) +
-      labs(fill = "Mean Balanced Accuracy (%)") +
-      theme_void() +
-      guides(fill = guide_colorbar(title.position = "top", 
-                                   nrow = 1,
-                                   barwidth = 10, 
-                                   barheight = 0.75,
-                                   title.hjust = 0.5,
-                                   label.position = "bottom")) +
-      theme(plot.title = element_blank(),
-            legend.position = "bottom") 
-  }
-  
-  
-  return(ggseg_plot)
-}
 

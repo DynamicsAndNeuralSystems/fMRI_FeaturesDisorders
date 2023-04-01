@@ -47,6 +47,7 @@ library(see)
 library(ggridges)
 library(splitstackshape)
 library(DescTools)
+library(metR)
 theme_set(theme_cowplot())
 
 # Source visualisation script
@@ -77,8 +78,7 @@ UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data
   mutate(label = gsub("ctx_", "", label))
 ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch24_filtered.feather")  %>%
   left_join(., ABIDE_ASD_metadata) %>%
-  left_join(., ABIDE_ASD_brain_region_info) %>%
-  dplyr::rename("region" = "ggseg")
+  left_join(., ABIDE_ASD_brain_region_info) 
 
 # Aggregate balanced accuracy by repeats
 univariate_balanced_accuracy_by_repeats <- univariate_balanced_accuracy_all_folds %>%
@@ -105,7 +105,6 @@ max_fill <- ceiling(max(significant_univariate_region_wise_results$Balanced_Accu
 # Initialize list of ggseg plots
 ggseg_plot_list <- list()
 
-################################################################################
 # First plot within brain using ggseg
 for (i in 1:nrow(study_group_df)) {
   dataset_ID <- study_group_df$Study[i]
@@ -120,8 +119,7 @@ for (i in 1:nrow(study_group_df)) {
       filter(Study == dataset_ID,
              Comparison_Group == comparison_group) %>%
       dplyr::rename("Brain_Region" = "group_var") %>%
-      left_join(., ABIDE_ASD_brain_region_info) %>%
-      dplyr::rename("region" = "ggseg")
+      left_join(., ABIDE_ASD_brain_region_info)
   } else {
     # Extract sig results to plot
     significant_data_for_ggseg <- significant_univariate_region_wise_results %>%
@@ -136,25 +134,38 @@ for (i in 1:nrow(study_group_df)) {
   
   
   # Plot balanced accuracy data in cortex
-  dataset_ggseg <- plot_significant_regions_ggseg(dataset_ID = dataset_ID,
-                                                  atlas_name = atlas,
-                                                  atlas_data = get(atlas),
-                                                  main_data_for_ggseg = significant_data_for_ggseg,
-                                                  min_fill = min_fill,
-                                                  max_fill = max_fill,
-                                                  fill_color = "#F0224B")
+  dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+                                        atlas_name = atlas,
+                                        atlas_data = get(atlas),
+                                        data_to_plot = significant_data_for_ggseg,
+                                        fill_variable = "Balanced_Accuracy_Across_Repeats",
+                                        fill_colors = c("#FFCA3E", "#FF6F50", "#D03454", "#9C2162", "#772F67"),
+                                        bin_seq = seq(50,75,by=5),
+                                        line_color = "gray30",
+                                        na_color = "white") +
+    labs(fill = "Mean Balanced Accuracy (%)") +
+    theme(plot.title = element_blank(),
+          legend.position = "bottom") +
+    guides(fill = guide_colorsteps(title.position="top", ticks=TRUE, barwidth=10))
+  
   # Append to list
   ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
   
   # Add subcortical data for UCLA CNP
   if (dataset_ID == "UCLA_CNP") {
-    dataset_ggseg_subctx <- plot_significant_regions_ggseg(dataset_ID = dataset_ID,
-                                                           atlas_name = "aseg",
-                                                           atlas_data = aseg,
-                                                           main_data_for_ggseg = significant_data_for_ggseg,
-                                                           min_fill = min_fill,
-                                                           max_fill = max_fill,
-                                                           fill_color = "#F0224B")
+    dataset_ggseg_subctx <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+                                                 atlas_name = "aseg",
+                                                 atlas_data = aseg,
+                                                 data_to_plot = significant_data_for_ggseg,
+                                                 fill_variable = "Balanced_Accuracy_Across_Repeats",
+                                                 fill_colors = c("#FFCA3E", "#FF6F50", "#D03454", "#9C2162", "#772F67"),
+                                                 bin_seq = seq(50,75,by=5),
+                                                 line_color = "gray30",
+                                                 na_color = "white") +
+      labs(fill = "Mean Balanced Accuracy (%)") +
+      theme(plot.title = element_blank(),
+            legend.position = "bottom") +
+      guides(fill = guide_colorsteps(title.position="top", ticks=TRUE, barwidth=12))
     # Append to list
     ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg_subctx)
   }
@@ -163,43 +174,12 @@ for (i in 1:nrow(study_group_df)) {
 # Combine plots 
 wrap_plots(ggseg_plot_list, nrow=2, widths = c(0.25, 0.1, 0.25, 0.1)) + 
   plot_layout(guides = "collect") &
-  theme(legend.position = 'bottom')
+  theme(legend.position = 'bottom',
+        legend.text = element_text(size=14),
+        legend.title = element_text(size=14)) &
+  guides(fill = guide_colorsteps(title.position="top", ticks=TRUE, barwidth=12))
 ggsave(glue("{plot_path}/Region_wise_results.png"),
        width=8, height=6, units="in", dpi=300)
-
-################################################################################
-# Plot significant results relative to their respective null distributions
-null_data_for_plot <- univariate_null_distribution %>%
-  filter(Analysis_Type == "Univariate_Brain_Region") %>%
-  dplyr::select(Study, Comparison_Group, Null_Balanced_Accuracy) %>%
-  mutate(Type = "Null",
-         Null_Balanced_Accuracy = 100*Null_Balanced_Accuracy) %>%
-  dplyr::rename("Balanced_Accuracy_Across_Repeats" = "Null_Balanced_Accuracy") %>%
-  plyr::rbind.fill(., significant_univariate_region_wise_results %>%
-                     dplyr::select(Study, Comparison_Group, Balanced_Accuracy_Across_Repeats) %>%
-                     mutate(Type = "Main")) %>%
-  mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
-                                      T ~ Comparison_Group)) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))
-null_data_for_plot %>%
-  ggplot(data=., mapping=aes(x=Balanced_Accuracy_Across_Repeats)) +
-  geom_histogram(data = subset(null_data_for_plot, Type=="Null"),
-                 fill="gray80", bins=50) +
-  geom_vline(data = subset(null_data_for_plot, Type=="Main"),
-             aes(xintercept = Balanced_Accuracy_Across_Repeats,
-                 color = Comparison_Group),
-             linewidth=0.2) +
-  scale_color_manual(values=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F")) +
-  facet_wrap(Comparison_Group ~ ., ncol=2, scales="free") +
-  xlab("Balanced Accuracy Across Repeats (%)") +
-  theme(axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.title.y = element_blank(),
-        strip.placement = "outside") +
-  theme(legend.position="none")
-ggsave(glue("{plot_path}/univariate_region_main_vs_null_balanced_acc.png"),
-       width=6, height=3.5, units="in", dpi=300)
 
 ################################################################################
 # Figure 2C feature-based
@@ -299,13 +279,16 @@ periodicity_wang_Tdata_ABIDE <- c("ASD") %>%
                                          comparison_group = .x,
                                          study = "ABIDE_ASD",
                                          input_feature = "PD_PeriodicityWang_th0_01")) %>%
-  left_join(., ABIDE_ASD_brain_region_info) %>%
-  dplyr::rename("region" = "ggseg")
+  left_join(., ABIDE_ASD_brain_region_info) 
 periodicity_wang_Tdata_for_ggseg <- plyr::rbind.fill(periodicity_wang_Tdata_UCLA_CNP, 
-                                                     periodicity_wang_Tdata_ABIDE)
+                                                     periodicity_wang_Tdata_ABIDE) %>%
+  mutate(statistic = round(statistic, digits=1))
 
 ggseg_plot_list <- list()
 legend_list <- list()
+
+min_fill <- floor(min(periodicity_wang_Tdata_for_ggseg$statistic))
+max_fill <- ceiling(max(periodicity_wang_Tdata_for_ggseg$statistic))
 
 for (i in 1:nrow(study_group_df)) {
   dataset_ID <- study_group_df$Study[i]
@@ -329,58 +312,45 @@ for (i in 1:nrow(study_group_df)) {
   }
   
   # Plot T stat data in cortex
-  dataset_ggseg <- plot_data_with_ggseg_diverging(dataset_ID=dataset_ID,
-                                                  atlas_name=atlas,
-                                                  atlas_data=get(atlas),
-                                                  data_to_plot=t_stat_data,
-                                                  min_fill = min(t_stat_data$statistic),
-                                                  max_fill = max(t_stat_data$statistic),
-                                                  fill_variable="statistic",
-                                                  fill_palette="RdBu") 
+  dataset_ggseg <-   plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+                                                   atlas_name=atlas,
+                                                   atlas_data=get(atlas),
+                                                   data_to_plot = t_stat_data,
+                                                   fill_variable = "statistic",
+                                                   fill_colors = rev(c('#b2182b','#ef8a62','#fddbc7',
+                                                                       '#f7f7f7','#d1e5f0','#67a9cf','#2166ac')),
+                                                   bin_seq = seq(min_fill, max_fill, by=1),
+                                                   line_color = "gray30",
+                                                   na_color = "white")  +
+    labs(fill="T-statistic")
+  
+  ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
   
   # Add subcortical data for UCLA CNP
   if (dataset_ID == "UCLA_CNP") {
-    dataset_ggseg_subctx <- plot_data_with_ggseg_diverging(dataset_ID = dataset_ID,
+    dataset_ggseg_subctx <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
                                                            atlas_name = "aseg",
                                                            atlas_data = aseg,
                                                            data_to_plot=t_stat_data,
-                                                           min_fill = min(t_stat_data$statistic),
-                                                           max_fill = max(t_stat_data$statistic),
-                                                           fill_variable="statistic",
-                                                           fill_palette="RdBu") +
-      labs(fill = glue("{comparison_group}\nT-statistic"))
-    
-    # Extract just legend
-    subctx_legend <- ggpubr::as_ggplot(ggpubr::get_legend(dataset_ggseg_subctx))
-    
-    # Extract just brain
-    dataset_ggseg_subctx <- dataset_ggseg_subctx + 
-      theme(legend.position = "none")
+                                                           fill_variable = "statistic",
+                                                           fill_colors = rev(c('#b2182b','#ef8a62','#fddbc7',
+                                                                               '#f7f7f7','#d1e5f0','#67a9cf','#2166ac')),
+                                                           bin_seq = seq(min_fill, max_fill, by=1),
+                                                           line_color = "gray30",
+                                                           na_color = "white")  +
+      labs(fill="T-statistic")
     
     # Append to list
-    dataset_ggseg <- dataset_ggseg + theme(legend.position = "none")
-    ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
     ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg_subctx)
-    legend_list <- list.append(legend_list, subctx_legend)
-  } else {
-    # For ABIDE
-    # Extract just legend
-    ctx_legend <- ggpubr::as_ggplot(ggpubr::get_legend(dataset_ggseg + 
-                                                         labs(fill = glue("{comparison_group}\nT-Statistic"))))
-    
-    # Append to list
-    dataset_ggseg <- dataset_ggseg + theme(legend.position = "none")
-    ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
-    ggseg_plot_list <- list.append(ggseg_plot_list, plot_spacer())
-    legend_list <- list.append(legend_list, ctx_legend)
   }
 }
 
 wrap_plots(ggseg_plot_list, 
            ncol=2, 
-           byrow=T)
+           byrow=T) + 
+  plot_layout(guides = "collect")
 ggsave(glue("{plot_path}/Wang_Periodicity_T_Stats.png"),
-       width=4, height=7, units="in", dpi=300)
+       width=5, height=7, units="in", dpi=300)
 wrap_plots(legend_list, 
            nrow=1, 
            byrow=T)
@@ -388,40 +358,6 @@ ggsave(glue("{plot_path}/Wang_Periodicity_T_Stats_legends.png"),
        width=5, height=3, units="in", dpi=300)
 
 ################################################################################
-# Plot significant results relative to their respective null distributions
-null_data_for_plot <- univariate_null_distribution %>%
-  filter(Analysis_Type == "Univariate_TS_Feature") %>%
-  dplyr::select(Study, Comparison_Group, Null_Balanced_Accuracy) %>%
-  mutate(Type = "Null") %>%
-  dplyr::rename("Balanced_Accuracy_Across_Repeats" = "Null_Balanced_Accuracy") %>%
-  plyr::rbind.fill(., univariate_p_values %>%
-                     filter(Univariate_Feature_Set == univariate_feature_set,
-                            Analysis_Type == "Univariate_TS_Feature",
-                            p_value_Bonferroni < 0.05) %>%
-                     dplyr::select(Study, Comparison_Group, Balanced_Accuracy_Across_Repeats) %>%
-                     mutate(Type = "Main")) %>%
-  mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
-                                      T ~ Comparison_Group)) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))
-null_data_for_plot %>%
-  ggplot(data=., mapping=aes(x=100*Balanced_Accuracy_Across_Repeats)) +
-  geom_histogram(data = subset(null_data_for_plot, Type=="Null"),
-                 fill="gray80", bins=50) +
-  geom_vline(data = subset(null_data_for_plot, Type=="Main"),
-             aes(xintercept = 100*Balanced_Accuracy_Across_Repeats,
-                 color = Comparison_Group),
-             linewidth=0.3) +
-  scale_color_manual(values=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F")) +
-  facet_wrap(Comparison_Group ~ ., ncol=2, scales="free") +
-  xlab("Balanced Accuracy Across Repeats (%)") +
-  theme(axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.title.y = element_blank(),
-        strip.placement = "outside") +
-  theme(legend.position="none")
-ggsave(glue("{plot_path}/univariate_feature_main_vs_null_balanced_acc.png"),
-       width=6, height=3.5, units="in", dpi=300)
 
 ################################################################################
 # Figure 2D combo-based
@@ -650,38 +586,7 @@ ggsave(glue("{plot_path}/Combo_feature_wise_SVM_coef.png"),
 
 ################################################################################
 # Plot significant results relative to their respective null distributions
-null_data_for_plot <- univariate_null_distribution %>%
-  filter(Analysis_Type == "Univariate_Combo") %>%
-  dplyr::select(Study, Comparison_Group, Null_Balanced_Accuracy) %>%
-  mutate(Type = "Null") %>%
-  dplyr::rename("Balanced_Accuracy_Across_Repeats" = "Null_Balanced_Accuracy") %>%
-  plyr::rbind.fill(., univariate_p_values %>%
-                     filter(Univariate_Feature_Set == univariate_feature_set,
-                            Analysis_Type == "Univariate_Combo") %>%
-                     dplyr::select(Study, Comparison_Group, Balanced_Accuracy_Across_Repeats) %>%
-                     mutate(Type = "Main")) %>%
-  mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
-                                      T ~ Comparison_Group)) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))
-null_data_for_plot %>%
-  ggplot(data=., mapping=aes(x=100*Balanced_Accuracy_Across_Repeats)) +
-  geom_histogram(data = subset(null_data_for_plot, Type=="Null"),
-                 fill="gray80", bins=30) +
-  geom_vline(data = subset(null_data_for_plot, Type=="Main"),
-             aes(xintercept = 100*Balanced_Accuracy_Across_Repeats,
-                 color = Comparison_Group),
-             linewidth=1) +
-  scale_color_manual(values=c("#573DC7", "#D5492A","#C47B2F", "#0F9EA9")) +
-  facet_wrap(Comparison_Group ~ ., ncol=2, scales="free") +
-  xlab("Balanced Accuracy Across Repeats (%)") +
-  theme(axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
-        axis.title.y = element_blank(),
-        strip.placement = "outside") +
-  theme(legend.position="none")
-ggsave(glue("{plot_path}/univariate_combo_main_vs_null_balanced_acc.png"),
-       width=4.5, height=3.5, units="in", dpi=300)
+
 
 ################################################################################
 # Bowtie plot comparing each brain region and feature to combo-wise performance

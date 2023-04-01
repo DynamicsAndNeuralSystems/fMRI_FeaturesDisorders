@@ -104,3 +104,104 @@ wrap_plots(list(UCLA_univariate_null_plot, ABIDE_univariate_null_plot), widths =
 
 ggsave(glue("{plot_path}/univariate_null_distributions.png"), 
        width = 12, height = 10, units="in", dpi=300)
+
+
+################################################################################
+# Load data
+univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather")) %>%
+  filter(Univariate_Feature_Set == univariate_feature_set)
+univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather")) %>%
+  filter(Univariate_Feature_Set == univariate_feature_set)
+univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_empirical_p_values.feather"))%>%
+  filter(Univariate_Feature_Set == univariate_feature_set)
+
+pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
+pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
+pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
+
+plot_data_vs_null <- function(input_null_distribution, main_results, 
+                              analysis_type, line_width, line_colors) {
+  null_data_for_plot <- input_null_distribution %>%
+    dplyr::select(Study, Analysis_Type, Comparison_Group, Null_Balanced_Accuracy) %>%
+    mutate(Type = "Null",
+           Null_Balanced_Accuracy = 100*Null_Balanced_Accuracy) %>%
+    dplyr::rename("Balanced_Accuracy_Across_Repeats" = "Null_Balanced_Accuracy") %>%
+    plyr::rbind.fill(., main_results %>%
+                       dplyr::select(Study, Comparison_Group, Analysis_Type, Balanced_Accuracy_Across_Repeats, p_value_Bonferroni) %>%
+                       mutate(Type = "Main",
+                              Balanced_Accuracy_Across_Repeats = 100*Balanced_Accuracy_Across_Repeats)) %>%
+    filter(Analysis_Type == analysis_type) %>%
+    mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
+                                        Comparison_Group == "Bipolar" ~ "BPD",
+                                        T ~ Comparison_Group),
+           significance = p_value_Bonferroni < 0.05) %>%
+    mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))
+  
+  p <- null_data_for_plot %>%
+    ggplot(data=., mapping=aes(x=Balanced_Accuracy_Across_Repeats)) +
+    geom_vline(data = subset(null_data_for_plot, Type=="Main" & !(significance)),
+               aes(xintercept = Balanced_Accuracy_Across_Repeats),
+               color="gray90",
+               linewidth=line_width) +
+    geom_histogram(data = subset(null_data_for_plot, Type=="Null"),
+                   fill="gray70", bins=50) +
+    geom_vline(data = subset(null_data_for_plot, Type=="Main" & significance),
+               aes(xintercept = Balanced_Accuracy_Across_Repeats,
+                   color = Comparison_Group),
+               linewidth=line_width) +
+    scale_color_manual(values=line_colors) +
+    facet_wrap(Comparison_Group ~ ., ncol=2, scales="free") +
+    xlab("Balanced Accuracy Across Repeats (%)") +
+    theme(axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.title.y = element_blank(),
+          strip.placement = "outside") +
+    theme(legend.position="none")
+  
+  return(p)
+}
+
+# Univariate region-wise
+plot_data_vs_null(input_null_distribution=univariate_null_distribution, 
+                                                      main_results=univariate_p_values, 
+                                                      analysis_type= "Univariate_Brain_Region", 
+                                                      line_width=0.2, 
+                                                      line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
+ggsave(glue("{plot_path}/univariate_region_main_vs_null_balanced_acc.png"),
+       width=6, height=3.5, units="in", dpi=300)
+
+# Univariate feature-wise
+plot_data_vs_null(input_null_distribution=univariate_null_distribution, 
+                                                      main_results=univariate_p_values, 
+                                                      analysis_type= "Univariate_TS_Feature", 
+                                                      line_width=0.3, 
+                                                      line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
+ggsave(glue("{plot_path}/univariate_feature_main_vs_null_balanced_acc.png"),
+       width=6, height=3.5, units="in", dpi=300)
+
+# Univariate combo-wise
+plot_data_vs_null(input_null_distribution=univariate_null_distribution, 
+                  main_results=univariate_p_values, 
+                  analysis_type= "Univariate_Combo", 
+                  line_width=1, 
+                  line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
+ggsave(glue("{plot_path}/univariate_combo_main_vs_null_balanced_acc.png"),
+       width=4.5, height=3.5, units="in", dpi=300)
+
+# Pairwise region-wise
+plot_data_vs_null(input_null_distribution=pairwise_null_distribution, 
+                  main_results=pairwise_p_values, 
+                  analysis_type= "Pairwise_SPI", 
+                  line_width=0.5, 
+                  line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
+ggsave(glue("{plot_path}/pairwise_SPI_main_vs_null_balanced_acc.png"),
+       width=6, height=3.5, units="in", dpi=300)
+
+# Pairwise SPI + univariate combo
+plot_data_vs_null(input_null_distribution=pairwise_null_distribution, 
+                  main_results=pairwise_p_values, 
+                  analysis_type= "Pairwise_SPI", 
+                  line_width=0.5, 
+                  line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
+ggsave(glue("{plot_path}/pairwise_SPI_main_vs_null_balanced_acc.png"),
+       width=6, height=3.5, units="in", dpi=300)
