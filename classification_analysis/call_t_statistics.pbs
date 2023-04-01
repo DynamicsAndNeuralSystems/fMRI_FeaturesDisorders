@@ -16,7 +16,7 @@ source /usr/physics/python/anaconda3/etc/profile.d/conda.sh
 conda activate pyspi
 
 # Call python script to perform normalization
-Rscript /headnode1/abry4213/github/fMRI_FeaturesDisorders/data_visualisation/t_statistics.R
+Rscript /headnode1/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/t_statistics.R
 
 exit
 
