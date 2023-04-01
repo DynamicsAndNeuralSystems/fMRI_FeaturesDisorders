@@ -107,19 +107,27 @@ plot_data_with_ggseg <- function(dataset_ID,
   
   if (atlas_name == "aseg") {
     ggseg_plot <- ggseg_data %>%
+      filter(type!="cortical") %>%
       ggplot() +
       geom_brain(atlas = aseg, mapping = aes_string(fill=fill_variable), 
                  side = "coronal", colour = line_color)  +
-      scale_fill_gradientn(colours = fill_colors, na.value="gray90") +
       theme_void() +
       theme(plot.title = element_blank()) 
   } else {
     ggseg_plot <- ggseg_data %>%
       ggseg(atlas = atlas_name, mapping = aes_string(fill = fill_variable),
             position = "stacked", colour = line_color) +
-      scale_fill_gradientn(colours = fill_colors, na.value="gray90") +
       theme_void() +
       theme(plot.title = element_blank()) 
+  }
+  
+  if (!is.null(min_fill)) {
+    ggseg_plot <- ggseg_plot +
+      scale_fill_gradientn(colours = fill_colors, na.value="gray90",
+                           limits = c(min_fill, max_fill)) 
+  } else {
+    ggseg_plot <- ggseg_plot +
+      scale_fill_gradientn(colours = fill_colors, na.value="gray90") 
   }
   
   return(ggseg_plot)
