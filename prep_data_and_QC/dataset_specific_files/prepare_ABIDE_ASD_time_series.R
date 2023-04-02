@@ -1,17 +1,20 @@
 # Define paths specific to this dataset
-univariate_feature_set <- "catch22"
-participant_csv <- "ABIDE_ASD_participants.csv"
+univariate_feature_set <- "catch24"
 github_dir <- "~/github/fMRI_FeaturesDisorders/"
 data_path <- "~/data/ABIDE_ASD/"
 dataset_ID <- "ABIDE_ASD"
 noise_procs <- "FC1000"
 brain_region_lookup <- "ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv"
-raw_data_input_dir <- paste0(data_path, "raw_data/harvard_oxford_cort_prob_2mm/")
+raw_data_input_dir <- paste0(data_path, "raw_data/preprocessed_connectomes_project/harvard_oxford_ROIs/")
 
 # Load needed libraries
 library(tidyverse)
 library(purrr)
 library(feather)
+
+# Load QC-passing metadata
+ABIDE_ASD_QC <- feather::read_feather(paste0(data_path,
+                                             "study_metadata/ABIDE_ASD_QC_sample_metadata.feather"))
 
 # Save brain region info to a feather file
 ROI_info <- read.csv(paste0(data_path, "study_metadata/", brain_region_lookup))
@@ -19,31 +22,26 @@ feather::write_feather(ROI_info, paste0(data_path, sprintf("study_metadata/%s_Br
                                                           dataset_ID)))
 
 # Define output directory for time-series .txt files
-ts_output_dir <- paste0(data_path, "raw_data/time_series_files/FC1000/")
+ts_output_dir <- paste0(data_path, "raw_data/time_series_files/GSR/")
 TAF::mkdir(ts_output_dir)
 
 # Find list of subjects with rsfMRI data
-subjects <- list.dirs(raw_data_input_dir, full.names = F, recursive = F)
+subjects_with_ts_data <- list.files(raw_data_input_dir, full.names = F, recursive = F) %>%
+  gsub("_rois_ho.1D", "", .)
+
+subjects_passing_QC <- ABIDE_ASD_QC$Sample_ID
+
+subjects_to_parse <- subjects_with_ts_data[subjects_with_ts_data %in% subjects_passing_QC]
 
 # Function to read in data for each subject
 output_csv_per_subject <- function(subject_ID) {
-  subject_csv <- paste0(raw_data_input_dir, subject_ID, 
-                        "/run_1/", subject_ID, "_task-Rest_confounds.csv")
+  subject_ROI_ts_data <- read.table(glue("{raw_data_input_dir}/{subject_ID}_rois_ho.1D"),
+                                    header = F) %>%
+    dplyr::select(-V83) # github forums recommend removing this ROI
   output_csv <- paste0(ts_output_dir, subject_ID, "_TS.csv")
   
-  file.copy(subject_csv, output_csv)
+  write.table(subject_ROI_ts_data, output_csv, row.names = F, col.names = F, sep=",")
 }
 
-subjects %>%
+subjects_to_parse %>%
   purrr::map(~ output_csv_per_subject(.x))
-
-# Save metadata
-metadata <- read.csv(paste0(data_path, "study_metadata/", participant_csv),
-                     colClasses = "character") %>%
-  dplyr::rename("Sample_ID" = "subject_id",
-                "Site" = "site",
-                "Sex" = "sex",
-                "Age" = "age",
-                "ASD" = "asd")
-feather::write_feather(metadata, paste0(data_path, sprintf("study_metadata/%s_sample_metadata.feather",
-                                                         dataset_ID)))

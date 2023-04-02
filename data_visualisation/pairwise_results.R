@@ -63,7 +63,6 @@ combo_univariate_pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_fe
 # combo_univariate_pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 
 pairwise_all_SPIs_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
-combo_univariate_pairwise_all_features_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_all_features_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
 
 # Aggregate the main results across folds and then across repeats
 # Pairwise SPI-wise
@@ -108,19 +107,6 @@ pairwise_all_SPIs_balanced_accuracy_by_repeats <- pairwise_all_SPIs_balanced_acc
             Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
   left_join(., pairwise_p_values %>% dplyr::select(Study:group_var, p_value:p_value_BH))
 
-# All univariate and pairwise together
-combo_univariate_pairwise_all_features_balanced_accuracy <- combo_univariate_pairwise_all_features_balanced_accuracy_all_folds %>%
-  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
-  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
-          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
-  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
-  reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
-          Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T))
-combo_univariate_pairwise_all_features_balanced_accuracy_by_repeats <- combo_univariate_pairwise_all_features_balanced_accuracy_all_folds %>%
-  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
-  summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
-            Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
-  left_join(., pairwise_p_values %>% dplyr::select(Study:group_var, p_value:p_value_BH))
 
 ################################################################################
 # SPI-wise SVM results
@@ -264,6 +250,43 @@ ggsave(glue("{plot_path}/SPI_with_vs_without_univariate_spaghetti.png"),
        width=5, height=5.5, units="in", dpi=300)
 
 ################################################################################
+# Distribution of SPI-wise T-statistics
+################################################################################
+t_stats_pyspi14_whole_brain <- feather::read_feather(glue("{data_path}/pairwise_pyspi14_t_statistics_by_region_pair.feather"))
+
+t_stats_pyspi14_whole_brain %>%
+  ungroup() %>%
+  left_join(., pyspi14_info) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))%>%
+  mutate(Nickname = fct_reorder(Nickname, statistic, .fun=sd)) %>%
+  ggplot(data=., mapping=aes(x=statistic, y=Nickname, fill=Comparison_Group, color=Comparison_Group)) +
+  geom_density_ridges(alpha=0.6, scale=1.1) +
+  xlab("T-statistic across\nall brain regions") +
+  ylab("pyspi14 time-series feature") +
+  scale_fill_manual(values=c("Control" = "#5BB67B", 
+                             "SCZ" = "#573DC7", 
+                             "BPD" = "#D5492A", 
+                             "ADHD" = "#0F9EA9", 
+                             "ASD" = "#C47B2F")) +
+  scale_color_manual(values=c("Control" = "#5BB67B", 
+                              "SCZ" = "#573DC7", 
+                              "BPD" = "#D5492A", 
+                              "ADHD" = "#0F9EA9", 
+                              "ASD" = "#C47B2F")) +
+  guides(fill = guide_legend(nrow=2),
+         color = guide_legend(nrow=2)) +
+  scale_y_discrete(labels = wrap_format(28)) +
+  theme(legend.position = "bottom",
+        axis.title = element_text(size=16),
+        axis.text.y = element_text(size=12),
+        axis.text.x = element_text(size=15),
+        legend.text = element_text(size=16),
+        legend.title = element_blank())
+ggsave(glue("{plot_path}/pyspi14_feature_t_statistics_across_brain.png"),
+       width=5.5, height=10, units="in", dpi=300)
+
+
+################################################################################
 # All SPIs in one model
 ################################################################################
 
@@ -302,30 +325,8 @@ ggsave(glue("{plot_path}/Pairwise_all_SPIs_results.png"),
 
 
 ################################################################################
-# All univariate and pairwise features in one model
+# Condense T-statistics down to the regional level
 ################################################################################
 
-combo_univariate_pairwise_all_features_balanced_accuracy_by_repeats %>%
-  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
-         Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
-                                      T ~ Comparison_Group)) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
-  ggplot(data=., mapping=aes(x=Comparison_Group,
-                             y=Balanced_Accuracy_Across_Folds)) +
-  geom_violin(aes(fill=Comparison_Group), trim=TRUE) +
-  scale_fill_manual(values=c("#573DC7", "#D5492A", "#0F9EA9","#C47B2F")) +
-  scale_color_manual(values=c("#573DC7", "#D5492A", "#0F9EA9","#C47B2F")) +
-  geom_boxplot(width=0.1, notch=FALSE, notchwidth = 0.4, outlier.shape = NA,
-               fill=NA, color="black",
-               coef = 0) +
-  geom_hline(yintercept = 50, linetype=2, alpha=0.5) +
-  xlab("Clinical Group") +
-  ylab("Balanced Accuracy\nper Repeat (%)") +
-  theme(legend.position = "none",
-        axis.title = element_text(size=17), 
-        axis.text = element_text(size=15)) 
-ggsave(glue("{plot_path}/All_univariate_pairwise_feature_results.png"),
-       width=4.5, height=3, units="in", dpi=300)
-
+# Demo brain figure
 

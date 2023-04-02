@@ -69,16 +69,8 @@ univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/U
 UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") 
 ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather") 
 
-# Load raw feature data
-UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")  %>%
-  left_join(., UCLA_CNP_metadata) %>%
-  mutate(label = ifelse(str_detect(Brain_Region, "ctx-"),
-                        gsub("-", "_", Brain_Region),
-                        as.character(Brain_Region))) %>%
-  mutate(label = gsub("ctx_", "", label))
-ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch24_filtered.feather")  %>%
-  left_join(., ABIDE_ASD_metadata) %>%
-  left_join(., ABIDE_ASD_brain_region_info) 
+# Load t-statistics
+t_stats_catch24_whole_brain <- feather::read_feather(glue("{data_path}/univariate_catch24_t_statistics_by_brain_region.feather"))
 
 # Aggregate balanced accuracy by repeats
 univariate_balanced_accuracy_by_repeats <- univariate_balanced_accuracy_all_folds %>%
@@ -242,57 +234,22 @@ ggsave(glue("{plot_path}/Feature_wise_results.png"),
 
 ################################################################################
 # Plot T statistics for Wang Periodicity in the brain
-# Helper function to run t-test for given statistic
-run_t_test_for_feature <- function(all_feature_values, input_feature, study, comparison_group) {
-  results <- all_feature_values %>%
-    filter(names==input_feature) %>%
-    dplyr::select(Brain_Region, Diagnosis, values) %>%
-    mutate(Diagnosis = factor(Diagnosis, levels = c(comparison_group, "Control"))) %>%
-    group_by(Brain_Region) %>%
-    nest() %>%
-    mutate(
-      fit = map(data, ~ t.test(values ~ Diagnosis, data = .x)),
-      tidied = map(fit, tidy)
-    ) %>% 
-    unnest(tidied) %>%
-    dplyr::select(-data, -fit) %>%
-    arrange(p.value) %>%
-    ungroup() %>%
-    dplyr::select(Brain_Region, statistic) %>%
-    mutate(Comparison_Group = comparison_group,
-           Study = study)
-  return(results)
-}
 
-# Run t-test for PD_PeriodicityWang_th0_01
-periodicity_wang_Tdata_UCLA_CNP <- c("Schizophrenia", "Bipolar", "ADHD") %>%
-  purrr::map_df(~ run_t_test_for_feature(all_feature_values = UCLA_CNP_catch24,
-                                         comparison_group = .x,
-                                         study = "UCLA_CNP",
-                                         input_feature = "PD_PeriodicityWang_th0_01")) %>%
-  mutate(label = ifelse(str_detect(Brain_Region, "ctx-"),
-                        gsub("-", "_", Brain_Region),
-                        as.character(Brain_Region))) %>%
-  mutate(label = gsub("ctx_", "", label))
-periodicity_wang_Tdata_ABIDE <- c("ASD") %>%
-  purrr::map_df(~ run_t_test_for_feature(all_feature_values = ABIDE_ASD_catch24,
-                                         comparison_group = .x,
-                                         study = "ABIDE_ASD",
-                                         input_feature = "PD_PeriodicityWang_th0_01")) %>%
-  left_join(., ABIDE_ASD_brain_region_info) 
-periodicity_wang_Tdata_for_ggseg <- plyr::rbind.fill(periodicity_wang_Tdata_UCLA_CNP, 
-                                                     periodicity_wang_Tdata_ABIDE) %>%
-  mutate(statistic = round(statistic, digits=1))
+periodicity_wang_Tdata_for_ggseg <- t_stats_catch24_whole_brain %>%
+  filter(TS_Feature == "PD_PeriodicityWang_th0_01") %>%
+  mutate(statistic = round(statistic, digits=1)) %>%
+  dplyr::select(Study, Comparison_Group, TS_Feature, Brain_Region, TS_Feature, estimate, statistic, p.value)
 
-ggseg_plot_list <- list()
-legend_list <- list()
 
 min_fill <- floor(min(periodicity_wang_Tdata_for_ggseg$statistic))
 max_fill <- ceiling(max(periodicity_wang_Tdata_for_ggseg$statistic))
 
+ggseg_plot_list <- list()
+legend_list <- list()
+
 for (i in 1:nrow(study_group_df)) {
   dataset_ID <- study_group_df$Study[i]
-  comparison_group <- study_group_df$Comparison_Group[i]
+  comparison_group <- study_group_df$Group_Nickname[i]
   
   # Define atlas by study
   atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
@@ -301,24 +258,27 @@ for (i in 1:nrow(study_group_df)) {
     t_stat_data <- periodicity_wang_Tdata_for_ggseg %>%
       filter(Study == dataset_ID, 
              Comparison_Group == comparison_group) %>%
-      distinct() %>%
-      dplyr::select(-label)
+      left_join(., ABIDE_ASD_brain_region_info) %>%
+      distinct() 
   } else {
     t_stat_data <- periodicity_wang_Tdata_for_ggseg %>%
       filter(Study == dataset_ID, 
              Comparison_Group == comparison_group) %>%
-      distinct() %>%
-      dplyr::select(-Index, -region)
+      mutate(label = ifelse(str_detect(Brain_Region, "ctx-"),
+                            gsub("-", "_", Brain_Region),
+                            as.character(Brain_Region))) %>%
+      mutate(label = gsub("ctx_", "", label)) %>%
+      distinct()
   }
   
   # Plot T stat data in cortex
-  dataset_ggseg <-   plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+  dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
                                                    atlas_name=atlas,
                                                    atlas_data=get(atlas),
                                                    data_to_plot = t_stat_data,
                                                    fill_variable = "statistic",
-                                                   fill_colors = rev(c('#b2182b','#ef8a62','#fddbc7',
-                                                                       '#f7f7f7','#d1e5f0','#67a9cf','#2166ac')),
+                                                   fill_colors = rev(c('#D55446','#F69A7A','#FFD5C1',
+                                                                       '#C9E1ED','#83BED8','#3189B9', "#0F5C9F")),
                                                    bin_seq = seq(min_fill, max_fill, by=1),
                                                    line_color = "gray30",
                                                    na_color = "white")  +
@@ -333,8 +293,8 @@ for (i in 1:nrow(study_group_df)) {
                                                            atlas_data = aseg,
                                                            data_to_plot=t_stat_data,
                                                            fill_variable = "statistic",
-                                                           fill_colors = rev(c('#b2182b','#ef8a62','#fddbc7',
-                                                                               '#f7f7f7','#d1e5f0','#67a9cf','#2166ac')),
+                                                          fill_colors = rev(c('#D55446','#F69A7A','#FFD5C1',
+                                                                              '#C9E1ED','#83BED8','#3189B9', "#0F5C9F")),
                                                            bin_seq = seq(min_fill, max_fill, by=1),
                                                            line_color = "gray30",
                                                            na_color = "white")  +
@@ -351,13 +311,39 @@ wrap_plots(ggseg_plot_list,
   plot_layout(guides = "collect")
 ggsave(glue("{plot_path}/Wang_Periodicity_T_Stats.png"),
        width=5, height=7, units="in", dpi=300)
-wrap_plots(legend_list, 
-           nrow=1, 
-           byrow=T)
-ggsave(glue("{plot_path}/Wang_Periodicity_T_Stats_legends.png"),
-       width=5, height=3, units="in", dpi=300)
 
 ################################################################################
+# Ridge plot for catch24 features' T-statistics across entire brain
+t_stats_catch24_whole_brain %>%
+  ungroup() %>%
+  left_join(., catch24_info) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))%>%
+  mutate(Figure_Name = fct_reorder(Figure_Name, statistic, .fun=sd)) %>%
+  ggplot(data=., mapping=aes(x=statistic, y=Figure_Name, fill=Comparison_Group, color=Comparison_Group)) +
+  geom_density_ridges(alpha=0.6, scale=1.1) +
+  xlab("T-statistic across\nall brain regions") +
+  ylab("catch24 time-series feature") +
+  scale_fill_manual(values=c("Control" = "#5BB67B", 
+                             "SCZ" = "#573DC7", 
+                             "BPD" = "#D5492A", 
+                             "ADHD" = "#0F9EA9", 
+                             "ASD" = "#C47B2F")) +
+  scale_color_manual(values=c("Control" = "#5BB67B", 
+                              "SCZ" = "#573DC7", 
+                              "BPD" = "#D5492A", 
+                              "ADHD" = "#0F9EA9", 
+                              "ASD" = "#C47B2F")) +
+  guides(fill = guide_legend(nrow=2, byrow=T),
+         color = guide_legend(nrow=2, byrow=T)) +
+  scale_y_discrete(labels = wrap_format(28)) +
+  theme(legend.position = "bottom",
+        axis.title = element_text(size=16),
+        axis.text.y = element_text(size=12),
+        axis.text.x = element_text(size=15),
+        legend.text = element_text(size=16),
+        legend.title = element_blank())
+ggsave(glue("{plot_path}/catch24_feature_t_statistics_across_brain.png"),
+       width=5.5, height=10, units="in", dpi=300)
 
 ################################################################################
 # Figure 2D combo-based

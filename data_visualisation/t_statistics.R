@@ -6,8 +6,8 @@ github_dir <- "~/github/fMRI_FeaturesDisorders/"
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/t_statistics/")
 TAF::mkdir(plot_path)
 
-python_to_use <- "~/.conda/envs/pyspi/bin/python3"
-# python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
+# python_to_use <- "~/.conda/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
 univariate_feature_set <- "catch24"
 data_path <- "~/data/TS_feature_manuscript"
@@ -66,102 +66,7 @@ ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_A
 region_node_to_from <- read.csv("~/data/TS_feature_manuscript/node_to_from_structure.csv")
 
 # Load SPI info
-pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 
-################################################################################
-# Ridge plot for catch24 features' T-statistics across entire brain
-t_stats_catch24_whole_brain <- feather::read_feather(glue("{data_path}/univariate_catch24_t_statistics_by_brain_region.feather"))
-
-t_stats_catch24_whole_brain %>%
-  ungroup() %>%
-  left_join(., catch24_info) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))%>%
-  mutate(Figure_Name = fct_reorder(Figure_Name, statistic, .fun=sd)) %>%
-  ggplot(data=., mapping=aes(x=statistic, y=Figure_Name, fill=Comparison_Group, color=Comparison_Group)) +
-  geom_density_ridges(alpha=0.6, scale=1.1) +
-  xlab("T-statistic across\nall brain regions") +
-  ylab("catch24 time-series feature") +
-  scale_fill_manual(values=c("Control" = "#5BB67B", 
-                             "SCZ" = "#573DC7", 
-                             "BPD" = "#D5492A", 
-                             "ADHD" = "#0F9EA9", 
-                             "ASD" = "#C47B2F")) +
-  scale_color_manual(values=c("Control" = "#5BB67B", 
-                             "SCZ" = "#573DC7", 
-                             "BPD" = "#D5492A", 
-                             "ADHD" = "#0F9EA9", 
-                             "ASD" = "#C47B2F")) +
-  guides(fill = guide_legend(nrow=2, byrow=T),
-         color = guide_legend(nrow=2, byrow=T)) +
-  scale_y_discrete(labels = wrap_format(28)) +
-  theme(legend.position = "bottom",
-        axis.title = element_text(size=16),
-        axis.text.y = element_text(size=12),
-        axis.text.x = element_text(size=15),
-        legend.text = element_text(size=16),
-        legend.title = element_blank())
-ggsave(glue("{plot_path}/catch24_feature_t_statistics_across_brain.png"),
-       width=5.5, height=10, units="in", dpi=300)
-
-# Pairwise pyspi14 T-statistics
-T_stats_for_group_pairwise <- function(comparison_group, input_data, study, group_nickname){
-  res <- input_data %>%
-    filter(Diagnosis %in% c(comparison_group, "Control"),
-           Study == study) %>%
-    mutate(Diagnosis = case_when(Diagnosis == "Schizophrenia" ~ "SCZ",
-                                 Diagnosis == "Bipolar" ~ "BPD",
-                                 T ~ Diagnosis)) %>%
-    rowwise() %>%
-    mutate(Region_Pair = paste0(brain_region_from, "_", brain_region_to)) %>%
-    dplyr::select(Region_Pair, SPI, Diagnosis, value) %>%
-    mutate(Diagnosis = factor(Diagnosis, levels = c(group_nickname, "Control"))) %>%
-    group_by(Region_Pair, SPI) %>%
-    nest() %>%
-    mutate(
-      fit = map(data, ~ t.test(value ~ Diagnosis, data = .x)),
-      tidied = map(fit, tidy)
-    ) %>% 
-    unnest(tidied) %>%
-    dplyr::select(-data, -fit) %>%
-    ungroup() %>%
-    mutate(Comparison_Group = group_nickname,
-           Study = study)
-  
-  return(res)
-}
-
-t_stats_pyspi14_whole_brain <- feather::read_feather(glue("{data_path}/pairwise_pyspi14_t_statistics_by_region_pair.feather"))
-
-t_stats_pyspi14_whole_brain %>%
-  ungroup() %>%
-  left_join(., pyspi14_info) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))%>%
-  mutate(Nickname = fct_reorder(Nickname, statistic, .fun=sd)) %>%
-  ggplot(data=., mapping=aes(x=statistic, y=Nickname, fill=Comparison_Group, color=Comparison_Group)) +
-  geom_density_ridges(alpha=0.6, scale=1.1) +
-  xlab("T-statistic across\nall brain regions") +
-  ylab("pyspi14 time-series feature") +
-  scale_fill_manual(values=c("Control" = "#5BB67B", 
-                             "SCZ" = "#573DC7", 
-                             "BPD" = "#D5492A", 
-                             "ADHD" = "#0F9EA9", 
-                             "ASD" = "#C47B2F")) +
-  scale_color_manual(values=c("Control" = "#5BB67B", 
-                              "SCZ" = "#573DC7", 
-                              "BPD" = "#D5492A", 
-                              "ADHD" = "#0F9EA9", 
-                              "ASD" = "#C47B2F")) +
-  guides(fill = guide_legend(nrow=2),
-         color = guide_legend(nrow=2)) +
-  scale_y_discrete(labels = wrap_format(28)) +
-  theme(legend.position = "bottom",
-        axis.title = element_text(size=16),
-        axis.text.y = element_text(size=12),
-        axis.text.x = element_text(size=15),
-        legend.text = element_text(size=16),
-        legend.title = element_blank())
-ggsave(glue("{plot_path}/pyspi14_feature_t_statistics_across_brain.png"),
-       width=5.5, height=10, units="in", dpi=300)
 
 # Find regions most disrupted across all pairwise connections
 pairwise_t_stats_by_region_from <- t_stats_pyspi14_whole_brain %>%
