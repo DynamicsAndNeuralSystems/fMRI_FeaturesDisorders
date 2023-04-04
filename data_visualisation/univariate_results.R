@@ -58,8 +58,8 @@ TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.c
 # Load data
 univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
-univariate_SVM_coefficients <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_SVM_coefficients.feather")) %>%
-  filter(Univariate_Feature_Set == univariate_feature_set)
+# univariate_SVM_coefficients <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_SVM_coefficients.feather")) %>%
+#   filter(Univariate_Feature_Set == univariate_feature_set)
 univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
 univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather")) %>%
@@ -222,12 +222,7 @@ univariate_p_values %>%
   labs(fill = "Mean Balanced Accuracy (%)") +
   xlab("Clinical Group") +
   ylab("Univariate time-series feature") +
-  theme(legend.position="bottom")  +
-  guides(fill = guide_colorbar(title.position = "top", 
-                               nrow = 1,
-                               barwidth = 12, 
-                               barheight = 1,
-                               title.hjust = 0.5)) 
+  theme(legend.position="none")
 ggsave(glue("{plot_path}/Feature_wise_results.png"),
        width=5.5, height=5.5, units="in", dpi=300)
 
@@ -572,7 +567,45 @@ ggsave(glue("{plot_path}/Combo_feature_wise_SVM_coef.png"),
 
 ################################################################################
 # Plot significant results relative to their respective null distributions
+combo_null_data <- univariate_null_distribution %>%
+  filter(Analysis_Type == "Univariate_Combo") %>%
+  dplyr::rename("Balanced_Accuracy_Across_Folds" = Null_Balanced_Accuracy) %>%
+  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
+         Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
+                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      T ~ Comparison_Group)) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  dplyr::select(Comparison_Group, Balanced_Accuracy_Across_Folds)
 
+univariate_balanced_accuracy_by_repeats %>%
+  filter(Univariate_Feature_Set == univariate_feature_set,
+         Analysis_Type == "Univariate_Combo") %>%
+  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
+         Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
+                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      T ~ Comparison_Group)) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  ggplot(data=., mapping=aes(x=Comparison_Group,
+                             y=Balanced_Accuracy_Across_Folds)) +
+  scale_fill_manual(values=c("#573DC7", "#D5492A", "#0F9EA9","#C47B2F")) +
+  geom_violinhalf(aes(fill=Comparison_Group)) +
+  geom_boxplot(width=0.1, notch=FALSE, notchwidth = 0.4, outlier.shape = NA,
+               fill=NA, color=alpha("white", 0.7),
+               position = position_nudge(x=0.058), coef = 0) +
+  geom_violinhalf(data = combo_null_data, fill="gray80", flip=T) +
+  geom_boxplot(data = combo_null_data, 
+               width=0.1, notch=FALSE, 
+               notchwidth = 0.4, outlier.shape = NA,
+               fill=NA, color=alpha("black", 0.7),
+               position = position_nudge(x=-0.058), coef = 0) +
+  geom_hline(yintercept = 50, linetype=2, alpha=0.5) +
+  xlab("Clinical Group") +
+  ylab("Balanced Accuracy\nper Repeat (%)") +
+  theme(legend.position = "none",
+        axis.title = element_text(size=17), 
+        axis.text = element_text(size=15)) 
+ggsave(glue("{plot_path}/Combo_wise_results.png"),
+       width=4.5, height=3, units="in", dpi=300)
 
 ################################################################################
 # Bowtie plot comparing each brain region and feature to combo-wise performance
@@ -626,36 +659,3 @@ univariate_p_values %>%
 ggsave(glue("{plot_path}/univariate_bowtie_balanced_accuracy.png"),
        width=9, height=3, units="in", dpi=300)
 
-
-################################################################################
-# ROC Curves + AUC
-################################################################################
-
-AUC = AUC(ROC_data %>% filter(group_var=="Combo") %>% pull(fpr), 
-          ROC_data %>% filter(group_var=="Combo") %>% pull(tpr))
-ROC_data <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_Schizophrenia_Univariate_catch24_mixedsigmoid_scaler_SVM_ROC.feather") %>%
-  filter(group_var == "Combo")
-
-ROC_data %>%
-  ggplot(data=., mapping=aes(x=fpr,y=tpr)) +
-  geom_abline(slope=1, linetype=2) +
-  geom_smooth(se=T) +
-  xlab("False positive rate (FPR)") +
-  ylab("True positive rate (TPR)") +
-  coord_equal() +
-  annotate(geom="text", label=glue("AUC: {round(AUC, 3)}"),
-           x = 0.7, y=0.25, size=8)
-
-
-
-################################################################################
-# Summary tables for paper
-################################################################################
-
-top_coefs_overall <- univariate_SVM_coefficients %>%
-  filter(Analysis_Type == "Combo") %>%
-  group_by(Comparison_Group) %>%
-  slice_max(order_by = abs(Coefficient), n = 10) %>%
-  rowwise() %>%
-  mutate(Brain_Region = str_split(Feature_Name, "_", 2)[[1]][1],
-         TS_Feature = str_split(Feature_Name, "_", 2)[[1]][2])

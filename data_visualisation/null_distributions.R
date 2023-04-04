@@ -119,8 +119,13 @@ pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data
 pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
 pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 
+combined_univariate_pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
+combined_univariate_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
+combined_univariate_pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
+
 plot_data_vs_null <- function(input_null_distribution, main_results, 
-                              analysis_type, line_width, line_colors) {
+                              analysis_type, line_width, line_colors,
+                              num_bins = 50) {
   null_data_for_plot <- input_null_distribution %>%
     dplyr::select(Study, Analysis_Type, Comparison_Group, Null_Balanced_Accuracy) %>%
     mutate(Type = "Null",
@@ -144,7 +149,7 @@ plot_data_vs_null <- function(input_null_distribution, main_results,
                color="gray90",
                linewidth=line_width) +
     geom_histogram(data = subset(null_data_for_plot, Type=="Null"),
-                   fill="gray70", bins=50) +
+                   fill="gray70", bins=num_bins) +
     geom_vline(data = subset(null_data_for_plot, Type=="Main" & significance),
                aes(xintercept = Balanced_Accuracy_Across_Repeats,
                    color = Comparison_Group),
@@ -184,6 +189,7 @@ plot_data_vs_null(input_null_distribution=univariate_null_distribution,
                   main_results=univariate_p_values, 
                   analysis_type= "Univariate_Combo", 
                   line_width=1, 
+                  num_bins=30,
                   line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
 ggsave(glue("{plot_path}/univariate_combo_main_vs_null_balanced_acc.png"),
        width=4.5, height=3.5, units="in", dpi=300)
@@ -198,10 +204,10 @@ ggsave(glue("{plot_path}/pairwise_SPI_main_vs_null_balanced_acc.png"),
        width=6, height=3.5, units="in", dpi=300)
 
 # Pairwise SPI + univariate combo
-plot_data_vs_null(input_null_distribution=pairwise_null_distribution, 
-                  main_results=pairwise_p_values, 
-                  analysis_type= "Pairwise_SPI", 
+plot_data_vs_null(input_null_distribution=combined_univariate_pairwise_null_distribution, 
+                  main_results=combined_univariate_pairwise_p_values, 
+                  analysis_type= "SPI_Univariate_Combo", 
                   line_width=0.5, 
                   line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
-ggsave(glue("{plot_path}/pairwise_SPI_main_vs_null_balanced_acc.png"),
+ggsave(glue("{plot_path}/combined_univariate_pairwise_SPI_wise_main_vs_null_balanced_acc.png"),
        width=6, height=3.5, units="in", dpi=300)

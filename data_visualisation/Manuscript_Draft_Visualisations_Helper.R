@@ -96,9 +96,10 @@ plot_data_with_ggseg_discrete <- function(dataset_ID,
                                           atlas_data,
                                           data_to_plot,
                                           fill_variable,
-                                          bin_seq = seq(50,75,by=5),
+                                          num_bins=5,
                                           line_color="darkgrey",
                                           na_color="white",
+                                          bin_seq = NULL,
                                           fill_colors=NULL) {
   
   ggseg_data <- data_to_plot %>%
@@ -108,7 +109,7 @@ plot_data_with_ggseg_discrete <- function(dataset_ID,
     dplyr::select(-label)
   
   if (is.null(fill_colors)) {
-    fill = viridis::viridis(n=length(bin_seq))
+    fill_colors = viridis::viridis(n=num_bins)
   }
   
   if (atlas_name == "aseg") {
@@ -122,6 +123,12 @@ plot_data_with_ggseg_discrete <- function(dataset_ID,
       ggseg(atlas = atlas_name, mapping = aes_string(fill = fill_variable),
             position = "stacked", colour = line_color)
      
+  }
+  
+  if (is.null(bin_seq)) {
+    bin_seq <- seq(min(ggseg_data %>% pull(fill_variable)),
+                      max(ggseg_data %>% pull(fill_variable)),
+                      length.out = num_bins + 1)
   }
   
   ggseg_plot <- ggseg_plot + 
