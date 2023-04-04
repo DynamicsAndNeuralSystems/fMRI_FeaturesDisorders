@@ -13,8 +13,8 @@ library(purrr)
 library(feather)
 
 # Load QC-passing metadata
-ABIDE_ASD_QC <- feather::read_feather(paste0(data_path,
-                                             "study_metadata/ABIDE_ASD_QC_sample_metadata.feather"))
+ABIDE_ASD_metadata <- feather::read_feather(paste0(data_path,
+                                             "study_metadata/ABIDE_ASD_sample_metadata.feather"))
 
 # Save brain region info to a feather file
 ROI_info <- read.csv(paste0(data_path, "study_metadata/", brain_region_lookup))
@@ -29,7 +29,7 @@ TAF::mkdir(ts_output_dir)
 subjects_with_ts_data <- list.files(raw_data_input_dir, full.names = F, recursive = F) %>%
   gsub("_rois_ho.1D", "", .)
 
-subjects_passing_QC <- ABIDE_ASD_QC$Sample_ID
+subjects_passing_QC <- ABIDE_ASD_metadata$Sample_ID
 
 subjects_to_parse <- subjects_with_ts_data[subjects_with_ts_data %in% subjects_passing_QC]
 

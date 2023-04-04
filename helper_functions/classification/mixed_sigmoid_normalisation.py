@@ -120,7 +120,7 @@ class MixedSigmoidScaler(TransformerMixin, BaseEstimator):
         self : object
             Fitted scaler.
         """
-        self._validate_params()
+        # self._validate_params()
 
         # at fit, convert sparse matrices to csc for optimized computation of
         # the quantiles

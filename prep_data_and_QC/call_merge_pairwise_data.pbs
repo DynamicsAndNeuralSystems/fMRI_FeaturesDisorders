@@ -1,7 +1,6 @@
 #!/bin/bash
 #PBS -q yossarian
 #PBS -j oe
-#PBS -l select=1:ncpus=1:mem=40GB
 #PBS -l walltime=4:00:00
 #PBS -V
 
@@ -23,7 +22,6 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/merge_pyspi_dat
 --dataset_ID $dataset_ID \
 --pkl_file $pkl_file \
 --pairwise_feature_set $pairwise_feature_set \
---univariate_feature_set $univariate_feature_set \
 --brain_region_lookup $brain_region_lookup \
 --noise_proc $noise_proc"
 echo $cmd

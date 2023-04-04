@@ -42,16 +42,16 @@ dataset_ID = args.dataset_ID
 # dataset_ID = "UCLA_CNP"
 # data_path = "/headnode1/abry4213/data/UCLA_CNP/"
 # metadata_file = "UCLA_CNP_sample_metadata.feather"
-# comparison_group = "Schizophrenia"
+# comparison_group = "ADHD"
 # univariate_feature_set = "catch24"
 # pairwise_feature_set = "pyspi14"
-# univariate_feature_file ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered.feather"
-# noise_proc = "AROMA+2P+GMR"
+# univariate_feature_file ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather"
+# noise_proc = "AROMA_2P_GMR"
 # num_folds = 10
 # num_null_iters = 2
 # num_repeats = 2
 # num_jobs = 1
-# scaling_type = "robustsigmoid"
+# scaling_type = "mixedsigmoid"
 
 # Run the univariate main SVM
 run_univariate_SVM(dataset_ID=dataset_ID,

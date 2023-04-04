@@ -16,6 +16,7 @@ cmd="python $pyspi_script_dir/distribute_jobs.py \
 --pbs_notify a \
 --email $email \
 --conda_env $conda_env \
+--queue $queue \
 --walltime_hrs $pyspi_walltime_hrs \
 --cpu $pyspi_ncpus \
 --mem $pyspi_mem \

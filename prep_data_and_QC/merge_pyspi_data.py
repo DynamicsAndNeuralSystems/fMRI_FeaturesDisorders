@@ -12,7 +12,6 @@ parser.add_argument('--data_path', default="/headnode1/abry4213/data/UCLA_CNP_AB
 parser.add_argument('--dataset_ID', default="UCLA_CNP", dest='dataset_ID')
 parser.add_argument('--pkl_file', default="calc14_pyspi.pkl", dest='pkl_file')
 parser.add_argument('--pairwise_feature_set', default="pyspi14", dest='pairwise_feature_set')
-parser.add_argument('--univariate_feature_set', default="catch22", dest='univariate_feature_set')
 parser.add_argument('--brain_region_lookup', default="UCLA_CNP_Brain_Region_Lookup.feather", dest='brain_region_lookup')
 parser.add_argument('--noise_proc', dest='noise_proc')
 
@@ -23,7 +22,6 @@ noise_proc = args.noise_proc
 dataset_ID = args.dataset_ID
 pkl_file = args.pkl_file
 pairwise_feature_set = args.pairwise_feature_set
-univariate_feature_set = args.univariate_feature_set
 brain_region_lookup = args.brain_region_lookup
 
 # data_path = "/headnode1/abry4213/data/UCLA_CNP/"
@@ -31,7 +29,6 @@ brain_region_lookup = args.brain_region_lookup
 # pkl_file = "calc_pyspi14.pkl"
 # noise_proc="AROMA+2P+GMR"
 # pairwise_feature_set = "pyspi14"
-# univariate_feature_set = "catch22"
 # brain_region_lookup = "UCLA_CNP_Brain_Region_Lookup.feather"
 
 proc_data_path = data_path + "processed_data/"
@@ -47,7 +44,7 @@ def merge_calcs_into_df(proc_data_path,
     noise_label = noise_proc.replace("+", "_")
     
     # Check if feather data file already exists
-    if not os.path.isfile(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}.feather"):
+    if not os.path.isfile(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_cov_EmpiricalCovariance_filtered.feather"):
         # Where individual pickle data files will be read in from
         input_np_data_path = pkl_data_path + noise_label + "/"
     
@@ -58,6 +55,7 @@ def merge_calcs_into_df(proc_data_path,
         samples = os.listdir(input_np_data_path)
         
         # Initialise list for each subject's pyspi14 data
+        samples_with_pyspi_data = []
         sample_data_list = []
         for sample in samples:
             try:
@@ -72,10 +70,13 @@ def merge_calcs_into_df(proc_data_path,
                 sample_data["Sample_ID"] = sample
                 
                 # Append to list of pyspi14 data
+                samples_with_pyspi_data.append(sample)
                 sample_data_list.append(sample_data)
             except:
                 print("Error for " + sample)
-        
+
+        # Save a list of subjects who have pyspi14 data to a feather file with a column name
+        pd.DataFrame(samples_with_pyspi_data, columns=["Sample_ID"]).to_feather(f"{proc_data_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{pairwise_feature_set}.feather")
         
         # Switch brain region indices for region names to/from
         full_pyspi_res = pd.concat(sample_data_list).reset_index()
@@ -96,9 +97,17 @@ def merge_calcs_into_df(proc_data_path,
                                       .drop(["brain_region_to", "Index"], axis=1)
                                       .rename(columns={"Brain_Region": "brain_region_to"})
                                       )
+        # Get a list of unique values in the SPI column
+        SPI_list = full_pyspi_res_ROI["SPI"].unique().tolist()
+
+        # Split into individual dataframes per SPI
+        full_pyspi_res_ROI_split = [full_pyspi_res_ROI.query(f"SPI == '{i}'") for i in SPI_list]
+
+        # Save individual SPI dataframes into feather files with the SPI in the filename
+        for i in range(1, 15):
+            SPI_name = SPI_list[i-1]
+            feather.write_feather(full_pyspi_res_ROI_split[i-1], f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_{SPI_name}_filtered.feather", version=1)
         
-        # Save merged res into a feather file
-        feather.write_feather(full_pyspi_res_ROI, f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}.feather", version=1)
 
 def filter_pyspi_data(proc_data_path,
                       dataset_ID,
@@ -147,40 +156,14 @@ def filter_pyspi_data(proc_data_path,
         feather.write_feather(filtered_pyspi_res, f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered.feather", version=1)
        
         
-def intersection_univariate_pairwise(proc_data_path, dataset_ID, noise_proc, univariate_feature_set, pairwise_feature_set):
-    # Set noise label for file paths
-    noise_label = noise_proc.replace("+", "_")
-
-    # Load in data on samples with univariate feature data
-    univariate_data_to_keep = pd.read_feather(f"{proc_data_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}.feather")
-    
-    # Load in data on samples with pairwise feature data
-    filtered_pyspi_data = pd.read_feather(f"{proc_data_path}/{dataset_ID}_{noise_label}_{pairwise_feature_set}_filtered.feather")
-    pairwise_data_to_keep = pd.DataFrame(filtered_pyspi_data.Sample_ID.unique(), columns=["Sample_ID"])
-    feather.write_feather(pairwise_data_to_keep,
-                          f"{proc_data_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{pairwise_feature_set}.feather",
-                          version=1)
-    
-    # Merge the two datasets
-    merged_sample_info = pd.merge(univariate_data_to_keep, pairwise_data_to_keep, how="inner")
-    feather.write_feather(merged_sample_info,
-                          f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather",
-                          version=1)
-    
-        
 merge_calcs_into_df(proc_data_path = proc_data_path,
                     pkl_data_path = pkl_data_path,
                     brain_region_lookup = data_path + "study_metadata/" + brain_region_lookup,
                     pairwise_feature_set = pairwise_feature_set,
                     noise_proc = noise_proc)
-filter_pyspi_data(proc_data_path = proc_data_path,
-                  dataset_ID = dataset_ID,
-                  noise_proc = noise_proc,
-                  pairwise_feature_set = pairwise_feature_set)
-intersection_univariate_pairwise(proc_data_path = proc_data_path, 
-                  dataset_ID = dataset_ID, 
-                  noise_proc = noise_proc, 
-                  univariate_feature_set = univariate_feature_set, 
-                  pairwise_feature_set = pairwise_feature_set)
+# filter_pyspi_data(proc_data_path = proc_data_path,
+#                   dataset_ID = dataset_ID,
+#                   noise_proc = noise_proc,
+#                   pairwise_feature_set = pairwise_feature_set)
 
 

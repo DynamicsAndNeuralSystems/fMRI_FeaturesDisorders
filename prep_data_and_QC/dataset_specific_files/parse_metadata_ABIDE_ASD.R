@@ -15,7 +15,7 @@ noise_proc <- "GSR"
 ############################## Save to feather ########################################
 
 if (!file.exists(paste0(data_path,
-                        "study_metadata/ABIDE_ASD_QC_sample_metadata.feather"))) {
+                        "study_metadata/ABIDE_ASD_sample_metadata.feather"))) {
   # Load UCLA CNP sample metadata
   ABIDE_ASD_QC <- metadata %>%
     mutate(Diagnosis = ifelse(DX_GROUP == 1, "ASD", "Control"),
@@ -36,8 +36,8 @@ if (!file.exists(paste0(data_path,
   # Save to a joint feather file
   feather::write_feather(ABIDE_ASD_QC, 
                          paste0(data_path,
-                                "study_metadata/ABIDE_ASD_QC_sample_metadata.feather"))
+                                "study_metadata/ABIDE_ASD_sample_metadata.feather"))
 } else {
   ABIDE_ASD_QC <- feather::read_feather(paste0(data_path,
-                                               "study_metadata/ABIDE_ASD_QC_sample_metadata.feather"))
+                                               "study_metadata/ABIDE_ASD_sample_metadata.feather"))
 }

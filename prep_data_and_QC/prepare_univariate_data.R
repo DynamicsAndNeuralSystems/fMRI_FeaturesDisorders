@@ -7,7 +7,7 @@ parser <- ArgumentParser(description = "Define data paths and feature set")
 
 parser$add_argument("--github_dir", default="~/github/")
 parser$add_argument("--data_path", default="~/data/UCLA_CNP/")
-parser$add_argument("--univariate_feature_set", default="catch22")
+parser$add_argument("--univariate_feature_set", default="catch24")
 parser$add_argument("--sample_metadata_file", default="UCLA_CNP_sample_metadata.feather")
 parser$add_argument("--brain_region_lookup", default="", nargs='?')
 parser$add_argument("--noise_proc", default="")
@@ -24,8 +24,8 @@ brain_region_lookup <- args$brain_region_lookup
 noise_proc <- args$noise_proc
 dataset_ID <- args$dataset_ID
 add_catch2 <- args$add_catch2
-
-# univariate_feature_set <- "catch22"
+# 
+# univariate_feature_set <- "catch24"
 # github_dir <- "~/github/"
 # add_catch2 <- TRUE
 
@@ -40,8 +40,8 @@ add_catch2 <- args$add_catch2
 # data_path <- "~/data/ABIDE_ASD/"
 # dataset_ID <- "ABIDE_ASD"
 # sample_metadata_file <- "ABIDE_ASD_sample_metadata.feather"
-# noise_proc <- "FC1000"
-# brain_region_lookup <- "ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.feather"
+# noise_proc <- "GSR"
+# brain_region_lookup <- "ABIDE_ASD_Brain_Region_Lookup.feather"
 
 noise_label <- gsub("\\+", "_", noise_proc)
 rdata_path <- paste0(data_path, "processed_data/")
@@ -147,8 +147,7 @@ catch22_all_samples(full_TS_data = np_TS_data,
                     dataset_ID = dataset_ID,
                     unique_columns = c("Sample_ID", "Brain_Region", "Noise_Proc"),
                     output_column_names = c("Sample_ID", "Brain_Region", "Noise_Proc"),
-                    add_mean_SD = add_catch2,
-                    overwrite = FALSE)
+                    add_mean_SD = add_catch2)
 
 #-------------------------------------------------------------------------------
 # Perform QC for catch22 data
