@@ -3,6 +3,9 @@ import pandas as pd
 from sklearn import svm
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
+import multiprocessing as mp
+from multiprocessing import Pool
+from queue import Queue
 from sklearn.preprocessing import StandardScaler, RobustScaler
 import os.path
 from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_validate, permutation_test_score
@@ -155,6 +158,142 @@ def run_k_fold_SVM_for_feature(feature_data,
             balanced_accuracy,
             ROC,
             CV_sample_predictions)
+
+def run_k_fold_SVM_process(queue,
+                                feature_data, 
+                               feature_list,
+                               grouping_var_name,
+                               analysis_type,
+                               sample_and_class_df,
+                               scaling_type,
+                               class_labels,
+                               comparison_group = "Schizophrenia",
+                               num_folds = 10,
+                               num_repeats = 10,
+                               num_jobs = 10):
+        
+    
+    print(f"Creating pipeline with {scaling_type} scaler.")
+
+    # Define the pipeline -- one for binary predictions, one for probability predictions for ROC
+    if scaling_type == "robust":
+        pipe = Pipeline([('scaler', RobustScaler()), 
+                         ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
+                                     class_weight="balanced"))])
+        prob_pipe = Pipeline([('scaler', RobustScaler()), 
+                         ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
+                                     class_weight="balanced", probability=True))])
+    elif scaling_type == "mixedsigmoid":
+        pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
+                         ('SVM', svm.SVC(kernel = "linear", C = 1, shrinking = False, 
+                         class_weight = "balanced"))])
+        prob_pipe = Pipeline([('scaler',  MixedSigmoidScaler(unit_variance=True)), 
+                              ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
+                             class_weight="balanced", probability=True))])
+    else: 
+        pipe = Pipeline([('scaler', StandardScaler()), 
+                         ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
+                                     class_weight="balanced"))])
+        prob_pipe = Pipeline([('scaler',  StandardScaler()), 
+                              ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
+                                 class_weight="balanced", probability=True))])
+    
+    # Define lists for: 
+    # (1) fold assignments by repeat,
+    # (2) SVM coefficients,
+    # (3) balanced accuracy by fold/repeat,
+    # (4) ROC FPR and TPR by fold/repeat,
+    # (4) individual sample predictions per repeat
+    fold_assignments_list = []
+    balanced_accuracy_list = []
+    ROC_list = []
+    CV_sample_predictions_list = []
+    
+    # Get 10-repeat 10-fold balanced accuracy
+    for i in range(num_repeats):
+        # Initialise sample and class dataframe for repeat
+        sample_and_class_df_for_repeat = sample_and_class_df.copy(deep=True)
+        skf = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=i)
+        
+        # Find splits
+        splits = list(skf.split(feature_data, class_labels))
+        fold_split_list = []
+        
+        # Fit SVM with 10-fold cross-validation
+        cv_results = cross_validate(pipe, feature_data, class_labels, 
+                                    cv=skf, scoring=["balanced_accuracy", "roc_auc"],
+                                    n_jobs = int(num_jobs),
+                                    return_estimator=True)
+        
+        # Extract fold number and feature coefficients
+        coef_list = []
+        
+        for f in range(num_folds):
+            # Split for fold number
+            test_indices = splits[f][1]
+            test_indices_df = pd.DataFrame(test_indices, columns=["Sample_Index"])
+            test_indices_df["Sample_ID"] = [sample_and_class_df_for_repeat.Sample_ID.tolist()[index] for index in test_indices]
+            test_indices_df["Fold"] = f+1
+            test_indices_df["Repeat"] = i+1        
+            fold_split_list.append(test_indices_df)
+        
+        # Combine lists into dataframes
+        fold_splits = pd.concat(fold_split_list)
+        fold_splits["Analysis_Type"] = analysis_type
+        fold_assignments_list.append(fold_splits)
+
+        # Add sample ID name based on index
+        coef_df = pd.concat(coef_list)
+        coef_df["Analysis_Type"] = analysis_type
+        
+        # Extract balanced accuracy by fold
+        balanced_accuracy_by_fold_df = pd.DataFrame(cv_results["test_balanced_accuracy"],
+                                                    columns=["Balanced_Accuracy"])
+        balanced_accuracy_by_fold_df["Fold"] = [*range(1, num_folds + 1, 1)]
+        balanced_accuracy_by_fold_df["Repeat_Number"] = i
+        balanced_accuracy_by_fold_df["Analysis_Type"] = analysis_type
+        balanced_accuracy_list.append(balanced_accuracy_by_fold_df)
+        
+        # Generate CV predictions across folds and save
+        CV_pred = cross_val_predict(pipe, feature_data, class_labels, cv=skf)
+        sample_and_class_df_for_repeat["CV_Predicted_Diagnosis"] = CV_pred
+        sample_and_class_df_for_repeat["Repeat_Number"] = i+1
+        sample_and_class_df_for_repeat["Analysis_Type"] = analysis_type
+        CV_sample_predictions_list.append(sample_and_class_df_for_repeat)
+        
+        # ROC data
+        CV_prob = cross_val_predict(prob_pipe, feature_data, class_labels, cv=skf, method="predict_proba")
+        y_test = np.asarray([int(u==comparison_group) for u in class_labels])
+        y_pred = np.asarray(CV_prob[:,1])
+        fpr, tpr, _ = metrics.roc_curve(y_test, y_pred, drop_intermediate=False)
+        ROC_data = pd.DataFrame(np.column_stack((fpr,tpr)), columns=["fpr", "tpr"])
+        ROC_data["Repeat_Number"] = i+1
+        ROC_data["Analysis_Type"] = analysis_type
+        ROC_list.append(ROC_data)
+        
+    # Concatenate results and save per ROI
+    fold_assignments = pd.concat(fold_assignments_list)
+    fold_assignments["group_var"] = grouping_var_name
+    fold_assignments["Comparison_Group"] = comparison_group
+    
+    balanced_accuracy = pd.concat(balanced_accuracy_list)
+    balanced_accuracy["group_var"] = grouping_var_name
+    balanced_accuracy["Comparison_Group"] = comparison_group
+
+    ROC = pd.concat(ROC_list)
+    ROC["group_var"] = grouping_var_name
+    ROC["Comparison_Group"] = comparison_group
+    
+    CV_sample_predictions = pd.concat(CV_sample_predictions_list)
+    CV_sample_predictions["group_var"] = grouping_var_name
+    CV_sample_predictions["Comparison_Group"] = comparison_group
+    
+    # Put each dataframe in its corresponding queue to return from the processes
+    queue.put(('fold_assignments', fold_assignments))
+    queue.put(('balanced_accuracy', balanced_accuracy))
+    queue.put(('ROC', ROC))
+    queue.put(('CV_sample_predictions', CV_sample_predictions))
+
 
 def run_univariate_SVM(univariate_feature_file,
                        univariate_feature_set, 
@@ -354,6 +493,61 @@ def run_univariate_SVM(univariate_feature_file,
         CV_sample_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
         return (fold_assignments_res, SVM_coefficients_res, balanced_accuracy_res, ROC_res, CV_sample_predictions_res)
 
+def worker(spi_value, pairwise_feature_file_base, pairwise_feature_set, metadata, comparison_to_control_group, SPI_directionality, scaling_type, num_folds, num_jobs, num_repeats):
+    # Load in feature data
+    SPI_feature_file = f"{pairwise_feature_file_base}{pairwise_feature_set}_{spi_value}_filtered.feather"
+    SPI_feature_data = (pd.read_feather(SPI_feature_file)
+                        .merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
+                                                                            axis = 1)
+                        .query("Diagnosis in ['Control', @comparison_to_control_group]")
+                        .drop(["SPI"], axis=1))
+        
+    # Merge brain regions according to directionality
+    if SPI_directionality == "Directed":
+        SPI_feature_data["region_pair"] = SPI_feature_data.brain_region_from + "_" + SPI_feature_data.brain_region_to
+        SPI_feature_data = SPI_feature_data.drop(["brain_region_from", "brain_region_to"], axis=1)
+    else:
+        SPI_data_sorted = [sorted(pair) for pair in SPI_feature_data[["brain_region_from", "brain_region_to"]].values.tolist()]
+        SPI_feature_data['region_pair'] = ['_'.join(string) for string in SPI_data_sorted]
+        SPI_feature_data = (SPI_feature_data
+                            .drop(["brain_region_from", "brain_region_to"], axis=1)
+                            .drop_duplicates(ignore_index=True,
+                                                                    subset=['Sample_ID', 'region_pair'])
+                            )
+    
+    # Pivot from long to wide
+    SPI_data_wide = SPI_feature_data.pivot(index=['Sample_ID', 'Diagnosis'], columns='region_pair', values='value')
+    
+    # Extract name of features
+    feature_list = SPI_data_wide.columns.tolist()
+    
+    # Extract sample ID and diagnosis as lists
+    index_data = SPI_data_wide.index.to_frame().reset_index(drop=True)
+    class_labels = index_data["Diagnosis"].tolist()
+    
+    # Impute any NaN with column mean
+    SPI_data_imputed = SPI_data_wide.fillna(SPI_data_wide.mean())
+    
+    # Extract only the feature data
+    features_only = SPI_data_imputed.reset_index(drop=True).to_numpy()
+
+    # Call SVM function 
+    (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+                                    feature_list = feature_list,
+                                    grouping_var_name = spi_value,
+                                    analysis_type = "Pairwise_SPI",
+                                    comparison_group = comparison_to_control_group,
+                                    sample_and_class_df = index_data,
+                                    class_labels = class_labels,
+                                    scaling_type = scaling_type,
+                                    num_folds = num_folds,
+                                    num_jobs = num_jobs,
+                                    num_repeats = num_repeats)
+    # Save balanced_accuracy to a feather file after resetting the index
+    balanced_accuracy = balanced_accuracy.reset_index()
+    balanced_accuracy.to_feather(f"{pairwise_feature_file_base}{pairwise_feature_set}_{spi_value}_balanced_accuracy.feather")
+    return fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions
+
 def run_pairwise_SVM_by_SPI(pairwise_feature_file_base,
                      SPI_directionality_file,
                        univariate_feature_set, 
@@ -370,112 +564,190 @@ def run_pairwise_SVM_by_SPI(pairwise_feature_file_base,
                        num_repeats = 10,
                        overwrite=False):
     
+    # Read in directionality data
+    SPI_directionality_data = pd.read_csv(SPI_directionality_file)
+    SPI_directionality_dict = dict(SPI_directionality_data.values)
+
+    # Load metadata
+    metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
     # Check if file already exists or overwrite flag is set
     if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather") or overwrite:
 
-        # Define noise label
-        noise_label = noise_proc.replace("+", "_")
-        
-        # Read in directionality data
-        SPI_directionality_data = pd.read_csv(SPI_directionality_file)
-        SPI_directionality_dict = dict(SPI_directionality_data.values)
+        results = []
+        num_processes = 3  # set number of processes equal to number of SPI values
 
-        # Load metadata
-        metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
+        # Create a multiprocessing pool with the specified number of processes
+        pool = Pool(num_processes)
 
-        # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{pydata_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
-        
-        # Pairwise feature data
-        pairwise_feature_data = pd.read_feather(pairwise_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
-                                                                                axis = 1)
+        # Create a multiprocessing queue to store the SPI values
+        spi_queue = Queue()
+        for spi_value in SPI_directionality_data.SPI:
+            spi_queue.put(spi_value)
 
-        # Filter univariate data by samples with both univariate and pairwise
-        # Filter by samples with univariate data available as well
-        pairwise_feature_data = pairwise_feature_data[pairwise_feature_data.Sample_ID.isin(samples_to_keep.Sample_ID)]                                                                           
+        # Create a list to store the async result objects
+        async_results = []
 
-        # Initialise lists for results
-        fold_assignments_list = []
-        SVM_coefficients_list = []
-        balanced_accuracy_list = []
-        ROC_list = []
-        CV_sample_predictions_list = []
-        
-        ###########################################################################
-        # SPI-wise
-
-        for this_SPI in pairwise_feature_data.SPI.unique().tolist():
-            
-            # Subset data to SPI
-            SPI_data = pairwise_feature_data.query("SPI == @this_SPI & Diagnosis in ['Control', @comparison_to_control_group]").drop(["SPI"], axis=1)
-            
+        # Start the worker processes
+        while not spi_queue.empty():
+            spi_value = spi_queue.get()
             # Find directionality of SPI
-            SPI_directionality = SPI_directionality_dict[this_SPI]
-            
-            # Merge brain regions according to directionality
-            if SPI_directionality == "Directed":
-                SPI_data["region_pair"] = SPI_data.brain_region_from + "_" + SPI_data.brain_region_to
-                SPI_data = SPI_data.drop(["brain_region_from", "brain_region_to"], axis=1)
-            else:
-                SPI_data_sorted = [sorted(pair) for pair in SPI_data[["brain_region_from", "brain_region_to"]].values.tolist()]
-                SPI_data['region_pair'] = ['_'.join(string) for string in SPI_data_sorted]
-                SPI_data = (SPI_data
-                            .drop(["brain_region_from", "brain_region_to"], axis=1)
-                            .drop_duplicates(ignore_index=True,
-                                                                    subset=['Sample_ID', 'region_pair'])
-                            )
-            
-            # Pivot from long to wide
-            SPI_data_wide = SPI_data.pivot(index=['Sample_ID', 'Diagnosis'], columns='region_pair', values='value')
-            
-            # Extract name of features
-            feature_list = SPI_data_wide.columns.tolist()
-            
-            # Extract sample ID and diagnosis as lists
-            index_data = SPI_data_wide.index.to_frame().reset_index(drop=True)
-            class_labels = index_data["Diagnosis"].tolist()
-            
-            # Impute any NaN with column mean
-            SPI_data_imputed = SPI_data_wide.fillna(SPI_data_wide.mean())
-            
-            # Extract only the feature data
-            features_only = SPI_data_imputed.reset_index(drop=True).to_numpy()
-            
-            # Run main SVM
-            (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
-                                        feature_list = feature_list,
-                                        grouping_var_name = this_SPI,
-                                        analysis_type = "Pairwise_SPI",
-                                        comparison_group = comparison_to_control_group,
-                                        sample_and_class_df = index_data,
-                                        class_labels = class_labels,
-                                        scaling_type = scaling_type,
-                                        num_folds = num_folds,
-                                        num_jobs = num_jobs,
-                                        num_repeats = num_repeats)
+            SPI_directionality = SPI_directionality_dict[spi_value]
+            async_result = pool.apply_async(worker, args=(spi_value, ), kwds={"pairwise_feature_file_base": pairwise_feature_file_base,
+                                                                            "pairwise_feature_set": pairwise_feature_set,
+                                                                            "SPI_directionality": SPI_directionality,
+                                                                            "metadata": metadata,
+                                                                            "comparison_to_control_group": comparison_to_control_group,
+                                                                            "scaling_type": scaling_type,
+                                                                            "num_folds": num_folds,
+                                                                            "num_jobs": num_jobs,
+                                                                            "num_repeats": num_repeats})
+            async_results.append(async_result)
 
-            # Save to list of dataframes
-            fold_assignments_list.append(fold_assignments)
-            SVM_coefficients_list.append(SVM_coefficients)
-            balanced_accuracy_list.append(balanced_accuracy)
-            ROC_list.append(ROC)
-            CV_sample_predictions_list.append(CV_sample_predictions)
+        # Wait for all async results to complete and collect the results
+        for async_result in async_results:
+            fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions = async_result.get()
+            results.append((fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions))
+
+        # Close the pool to release resources
+        pool.close()
+
+        # Concatenate the results for each df into a single dataframe
+        fold_assignments_res = pd.concat([r[0] for r in results])
+        SVM_coefficient_res = pd.concat([r[1] for r in results])
+        balanced_accuracy_res = pd.concat([r[2] for r in results])
+        ROC_res = pd.concat([r[3] for r in results])
+        CV_sample_predictions_res = pd.concat([r[4] for r in results])
+        
+        # # Create a list to hold the processes and a queue to hold the output dataframes
+        # processes = []
+        # queue = mp.Queue()
+
+        # # Define noise label
+        # noise_label = noise_proc.replace("+", "_")
+        
+        # # Read in directionality data
+        # SPI_directionality_data = pd.read_csv(SPI_directionality_file)
+        # SPI_directionality_dict = dict(SPI_directionality_data.values)
+
+        # # Load metadata
+        # metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
+
+        # # Load in data containing subjects with both univariate and pairwise data available
+        # samples_to_keep = pd.read_feather(f"{pydata_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        
+        # # Initialise lists for results
+        # fold_assignments_list = []
+        # balanced_accuracy_list = []
+        # ROC_list = []
+        # CV_sample_predictions_list = []
+
+        # # Create a multiprocessing pool with the specified number of processes
+        # pool = Pool(num_processes)
+
+        # # Create a multiprocessing queue to store the SPI values
+        # spi_queue = Queue()
+        # for spi_value in SPI_directionality_data.SPI:
+        #     spi_queue.put(spi_value)
+
+        # # Iterate over each SPI
+        # for this_SPI in SPI_directionality_data.SPI:
+        #     SPI_feature_file = f"{pairwise_feature_file_base}{pairwise_feature_set}_{this_SPI}_filtered.feather"
+        #     # Load in feature data
+        #     SPI_feature_data = (pd.read_feather(SPI_feature_file)
+        #                         .merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
+        #                                                                             axis = 1)
+        #                         .query("Diagnosis in ['Control', @comparison_to_control_group]")
+        #                         .drop(["SPI"], axis=1))
             
-        ###########################################################################
-        # Merge + save results
-        fold_assignments_res = pd.concat(fold_assignments_list).reset_index()
-        SVM_coefficients_res = pd.concat(SVM_coefficients_list).reset_index()
-        balanced_accuracy_res = pd.concat(balanced_accuracy_list).reset_index()
-        ROC_res = pd.concat(ROC_list).reset_index()
-        CV_sample_predictions_res = pd.concat(CV_sample_predictions_list).reset_index()
+        #     # Filter univariate data by samples with both univariate and pairwise
+        #     # Filter by samples with univariate data available as well
+        #     SPI_feature_data = SPI_feature_data[SPI_feature_data.Sample_ID.isin(samples_to_keep.Sample_ID)]                                                                           
+
+        #     # Find directionality of SPI
+        #     SPI_directionality = SPI_directionality_dict[this_SPI]
+            
+        #     # Merge brain regions according to directionality
+        #     if SPI_directionality == "Directed":
+        #         SPI_feature_data["region_pair"] = SPI_feature_data.brain_region_from + "_" + SPI_feature_data.brain_region_to
+        #         SPI_feature_data = SPI_feature_data.drop(["brain_region_from", "brain_region_to"], axis=1)
+        #     else:
+        #         SPI_data_sorted = [sorted(pair) for pair in SPI_feature_data[["brain_region_from", "brain_region_to"]].values.tolist()]
+        #         SPI_feature_data['region_pair'] = ['_'.join(string) for string in SPI_data_sorted]
+        #         SPI_feature_data = (SPI_feature_data
+        #                             .drop(["brain_region_from", "brain_region_to"], axis=1)
+        #                             .drop_duplicates(ignore_index=True,
+        #                                                                     subset=['Sample_ID', 'region_pair'])
+        #                             )
+            
+        #     # Pivot from long to wide
+        #     SPI_data_wide = SPI_feature_data.pivot(index=['Sample_ID', 'Diagnosis'], columns='region_pair', values='value')
+            
+        #     # Extract name of features
+        #     feature_list = SPI_data_wide.columns.tolist()
+            
+        #     # Extract sample ID and diagnosis as lists
+        #     index_data = SPI_data_wide.index.to_frame().reset_index(drop=True)
+        #     class_labels = index_data["Diagnosis"].tolist()
+            
+        #     # Impute any NaN with column mean
+        #     SPI_data_imputed = SPI_data_wide.fillna(SPI_data_wide.mean())
+            
+        #     # Extract only the feature data
+        #     features_only = SPI_data_imputed.reset_index(drop=True).to_numpy()
+
+        #     # Run main SVM process
+        #     p = mp.Process(target=run_k_fold_SVM_process, args=(features_only, feature_list, 
+        #                                                         this_SPI, "Pairwise_SPI", 
+        #                                                         comparison_to_control_group, index_data, 
+        #                                                         class_labels, scaling_type, num_folds, 
+        #                                                         num_jobs, num_repeats, queue))
+        #     p.start()
+        #     processes.append(p)
+            
+        #     # # Run main SVM
+        #     # (fold_assignments, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_process(queue = queue,
+        #     #                             feature_data = features_only, 
+        #     #                             feature_list = feature_list,
+        #     #                             grouping_var_name = this_SPI,
+        #     #                             analysis_type = "Pairwise_SPI",
+        #     #                             comparison_group = comparison_to_control_group,
+        #     #                             sample_and_class_df = index_data,
+        #     #                             class_labels = class_labels,
+        #     #                             scaling_type = scaling_type,
+        #     #                             num_folds = num_folds,
+        #     #                             num_jobs = num_jobs,
+        #     #                             num_repeats = num_repeats)
+
+        #     # # Save to list of dataframes
+        #     # fold_assignments_list.append(fold_assignments)
+        #     # balanced_accuracy_list.append(balanced_accuracy)
+        #     # ROC_list.append(ROC)
+        #     # CV_sample_predictions_list.append(CV_sample_predictions)
+
+        # ###########################################################################
+        # # Wait for all processes to finish
+        # for p in processes:
+        #     p.join()
+
+        # # Collect the dataframes from the queue
+        # for i in range(len(processes)):
+        #     (fold_assignments, balanced_accuracy, ROC, CV_sample_predictions) = queue.get()
+        #     fold_assignments_list.append(fold_assignments)
+        #     balanced_accuracy_list.append(balanced_accuracy)
+        #     ROC_list.append(ROC)
+        #     CV_sample_predictions_list.append(CV_sample_predictions)
+            
+        # ###########################################################################
+        # # Merge + save results
+        # fold_assignments_res = pd.concat(fold_assignments_list).reset_index()
+        # balanced_accuracy_res = pd.concat(balanced_accuracy_list).reset_index()
+        # ROC_res = pd.concat(ROC_list).reset_index()
+        # CV_sample_predictions_res = pd.concat(CV_sample_predictions_list).reset_index()
         
         # Add comparison group info and normalisation method info
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
         fold_assignments_res["Scaling_Type"] = scaling_type
-
-        SVM_coefficients_res["Comparison_Group"] = comparison_to_control_group
-        SVM_coefficients_res["Scaling_Type"] = scaling_type
 
         balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
         balanced_accuracy_res["Scaling_Type"] = scaling_type
@@ -483,13 +755,16 @@ def run_pairwise_SVM_by_SPI(pairwise_feature_file_base,
         ROC_res["Comparison_Group"] = comparison_to_control_group
         ROC_res["Scaling_Type"] = scaling_type
 
+        SVM_coefficient_res["Comparison_Group"] = comparison_to_control_group
+        SVM_coefficient_res["Scaling_Type"] = scaling_type
+
         CV_sample_predictions_res["Comparison_Group"] = comparison_to_control_group
         CV_sample_predictions_res["Scaling_Type"] = scaling_type
             
         # Save results
         fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
-        SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
         balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
+        SVM_coefficient_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_coefficients.feather")
         ROC_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_ROC.feather")
         CV_sample_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
         

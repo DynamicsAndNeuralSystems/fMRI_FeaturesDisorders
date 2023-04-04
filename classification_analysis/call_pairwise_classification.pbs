@@ -11,7 +11,7 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise
 --comparison_group $comparison_group \
 --univariate_feature_set $univariate_feature_set \
 --pairwise_feature_set $pairwise_feature_set \
---pairwise_feature_file $pairwise_feature_file \
+--pairwise_feature_file_base $pairwise_feature_file_base \
 --SPI_directionality_file $SPI_directionality_file \
 --noise_proc $noise_proc \
 --num_folds $num_folds \
