@@ -16,9 +16,6 @@ study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
                              Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
 
-
-ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv")
-
 reticulate::use_python(python_to_use)
 
 library(reticulate)
@@ -48,7 +45,7 @@ ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metad
 
 # Load brain region info
 UCLA_CNP_brain_region_info <- read.csv("~/data/UCLA_CNP/study_metadata/UCLA_CNP_Brain_Region_info.csv")
-ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv")
+ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.txt", sep="\t", header=TRUE)
 
 # Load SPI info
 pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
@@ -72,7 +69,6 @@ T_stats_for_group <- function(comparison_group, input_data, study, group_nicknam
     ) %>% 
     unnest(tidied) %>%
     dplyr::select(-data, -fit) %>%
-    arrange(p.value) %>%
     ungroup() %>%
     dplyr::rename("TS_Feature" = "names") %>% 
     mutate(Comparison_Group = group_nickname,
@@ -88,7 +84,7 @@ if (!file.exists(glue("{data_path}/univariate_catch24_t_statistics_by_brain_regi
     mutate(Study = "UCLA_CNP")
   ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch24_filtered.feather")  %>%
     left_join(., ABIDE_ASD_metadata) %>%
-    left_join(., ABIDE_ASD_brain_region_info)
+    mutate(Study = "ABIDE_ASD")
   
   combined_univariate_data <- plyr::rbind.fill(UCLA_CNP_catch24, ABIDE_ASD_catch24)
   

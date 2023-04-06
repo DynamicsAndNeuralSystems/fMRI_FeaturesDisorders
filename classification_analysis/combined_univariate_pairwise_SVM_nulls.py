@@ -45,7 +45,7 @@ num_jobs = args.num_jobs
 dataset_ID = args.dataset_ID
 
 # dataset_ID = "UCLA_CNP"
-# data_path = "/headnode1/abry4213/data/UCLA_CNP/"
+# data_path = "/headnode1/abry4213/data/ABIDE_ASD/"
 # metadata_file = "UCLA_CNP_sample_metadata.feather"
 # SPI_directionality_file = "/headnode1/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/SPI_Direction_Info.csv"
 # comparison_group = "Schizophrenia"

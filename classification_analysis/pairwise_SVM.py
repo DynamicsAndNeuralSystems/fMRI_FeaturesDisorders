@@ -16,7 +16,7 @@ parser.add_argument('--SPI_directionality_file', default="/headnode1/abry4213/gi
 parser.add_argument('--comparison_group', default="Schizophrenia", dest='comparison_group')
 parser.add_argument('--univariate_feature_set', default='catch22', dest='univariate_feature_set')
 parser.add_argument('--pairwise_feature_set', default='pyspi14', dest='pairwise_feature_set')
-parser.add_argument('--pairwise_feature_file_base', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_pyspi14_", dest='pairwise_feature_file_base')
+parser.add_argument('--pairwise_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather", dest='pairwise_feature_file')
 parser.add_argument('--noise_proc', dest='noise_proc')
 parser.add_argument('--scaling_type', default="robustsigmoid", dest='scaling_type')
 parser.add_argument('--num_folds', default=10, dest='num_folds')
@@ -32,7 +32,7 @@ SPI_directionality_file = args.SPI_directionality_file
 comparison_group = args.comparison_group
 univariate_feature_set = args.univariate_feature_set
 pairwise_feature_set = args.pairwise_feature_set
-pairwise_feature_file_base = args.pairwise_feature_file_base
+pairwise_feature_file = args.pairwise_feature_file
 scaling_type = args.scaling_type
 num_folds = args.num_folds
 noise_proc = args.noise_proc
@@ -40,21 +40,21 @@ num_repeats = args.num_repeats
 num_jobs = args.num_jobs
 dataset_ID = args.dataset_ID
 
-# dataset_ID = "ABIDE_ASD"
-# data_path = "/headnode1/abry4213/data/ABIDE_ASD/"
-# metadata_file = "ABIDE_ASD_sample_metadata.feather"
+# dataset_ID = "UCLA_CNP"
+# data_path = "/headnode1/abry4213/data/UCLA_CNP/"
+# metadata_file = "UCLA_CNP_sample_metadata.feather"
 # SPI_directionality_file = "/headnode1/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/SPI_Direction_Info.csv"
-# comparison_group = "ASD"
+# comparison_group = "Schizophrenia"
 # univariate_feature_set = "catch24"
 # pairwise_feature_set = "pyspi14"
-# pairwise_feature_file_base ="/headnode1/abry4213/data/ABIDE_ASD/processed_data/ABIDE_ASD_GSR_"
-# noise_proc = "GSR"
+# pairwise_feature_file ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather"
+# noise_proc = "AROMA+2P+GMR"
 # scaling_type = "mixedsigmoid"
 # num_repeats = 10
 # num_jobs = 1
 
 # Run the pairwise main SVM
-run_pairwise_SVM_by_SPI(pairwise_feature_file_base=pairwise_feature_file_base,
+run_pairwise_SVM_by_SPI(pairwise_feature_file=pairwise_feature_file,
                  SPI_directionality_file = SPI_directionality_file,
                  univariate_feature_set=univariate_feature_set,
                  pairwise_feature_set=pairwise_feature_set,
@@ -68,18 +68,17 @@ run_pairwise_SVM_by_SPI(pairwise_feature_file_base=pairwise_feature_file_base,
                        num_repeats = int(num_repeats),
                        num_jobs = int(num_jobs))
 
-# # Run SVM with all SPIs
-# run_pairwise_SVM_all_SPIs(pairwise_feature_file_base=pairwise_feature_file_base,
-#                  SPI_directionality_file = SPI_directionality_file,
-#                  univariate_feature_set=univariate_feature_set,
-#                  pairwise_feature_set=pairwise_feature_set,
-#                        noise_proc = noise_proc,
-#                        dataset_ID=dataset_ID,
-#                        metadata_file=metadata_file,
-#                        comparison_to_control_group=comparison_group,
-#                        pydata_path=data_path + "processed_data/",
-#                        data_path=data_path,
-#                        scaling_type = scaling_type,
-#                        num_repeats = int(num_repeats),
-#                        num_jobs = int(num_jobs))
-
+# Run SVM with all SPIs
+run_pairwise_SVM_all_SPIs(pairwise_feature_file=pairwise_feature_file,
+                 SPI_directionality_file = SPI_directionality_file,
+                 univariate_feature_set=univariate_feature_set,
+                 pairwise_feature_set=pairwise_feature_set,
+                       noise_proc = noise_proc,
+                       dataset_ID=dataset_ID,
+                       metadata_file=metadata_file,
+                       comparison_to_control_group=comparison_group,
+                       pydata_path=data_path + "processed_data/",
+                       data_path=data_path,
+                       scaling_type = scaling_type,
+                       num_repeats = int(num_repeats),
+                       num_jobs = int(num_jobs))

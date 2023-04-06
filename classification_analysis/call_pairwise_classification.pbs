@@ -16,11 +16,12 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise
 --noise_proc $noise_proc \
 --num_folds $num_folds \
 --scaling_type $scaling_type \
+--num_processes $num_processes \
 --num_jobs $num_jobs \
 --num_repeats $num_repeats \
 --dataset_ID $dataset_ID"
 echo $cmd
-$cmd
+/usr/physics/openmpi-gnu/openmpi-3.1.3/bin/mpirun -np $num_jobs $cmd
 
 exit
 
