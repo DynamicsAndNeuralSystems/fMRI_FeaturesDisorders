@@ -69,9 +69,6 @@ region_node_to_from <- read.csv("~/data/TS_feature_manuscript/node_to_from_struc
 
 ################################################################################
 # Hyper vs hypo connectivity maps
-
-
-
 scz_example_data <- t_stats_pyspi14_whole_brain %>%
   ungroup() %>%
   group_by(Region_Pair, Comparison_Group) %>%

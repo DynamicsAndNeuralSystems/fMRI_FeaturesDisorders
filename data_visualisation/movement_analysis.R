@@ -47,12 +47,8 @@ plot_path <- paste0(github_dir, "plots/Manuscript_Draft/movement_analysis/")
 TAF::mkdir(plot_path)
 univariate_feature_set <- "catch24"
 
-# study_group_df <- data.frame(Study = rep("UCLA_CNP", 3),
-#                              Noise_Proc = rep("AROMA+2P+GMR", 3),
-#                              Comparison_Group = c("Schizophrenia", "ADHD", "Bipolar"),
-#                              Group_Nickname = c("SCZ", "BPD", "ADHD"))
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE"),
-                             Noise_Proc = c(rep("AROMA+2P+GMR",3), "GSR"),
+                             Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
                              Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
 
@@ -63,31 +59,31 @@ ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/"
 # Load data on subjects we actually used
 UCLA_CNP_subjects_used <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch24_pyspi14.feather")) %>%
   pull(Sample_ID)
-# ABIDE_ASD_subjects_used <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/processed_data/ABIDE_ASD_filtered_sample_info_GSR_catch24_pyspi14.feather")) %>%
-#   pull(Sample_ID)
+ABIDE_ASD_subjects_used <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/processed_data/ABIDE_ASD_filtered_sample_info_FC1000_catch24_pyspi14.feather")) %>%
+  pull(Sample_ID)
 
 # Load subject metadata
 UCLA_CNP_sample_metadata <- feather::read_feather(glue("{UCLA_CNP_data_path}/study_metadata/UCLA_CNP_sample_metadata.feather")) %>%
   filter(Sample_ID %in% UCLA_CNP_subjects_used)
-# ABIDE_ASD_sample_metadata <- feather::read_feather(glue("{ABIDE_ASD_data_path}/study_metadata/ABIDE_ASD_sample_metadata.feather")) %>%
-#   filter(Sample_ID %in% ABIDE_ASD_subjects_used)
+ABIDE_ASD_sample_metadata <- feather::read_feather(glue("{ABIDE_ASD_data_path}/study_metadata/ABIDE_ASD_sample_metadata.feather")) %>%
+  filter(Sample_ID %in% ABIDE_ASD_subjects_used)
 
 # Load raw feature data
 UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")  %>%
   left_join(., UCLA_CNP_sample_metadata)
-# ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_GSR_catch24_filtered.feather")  %>%
-#   left_join(., ABIDE_ASD_sample_metadata)
+ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch24_filtered.feather")  %>%
+  left_join(., ABIDE_ASD_sample_metadata)
 catch24_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
 UCLA_CNP_pyspi14 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")  %>%
   group_by(Sample_ID, SPI) %>%
   summarise(mean_across_brain = mean(value, na.rm=T)) %>%
   left_join(., UCLA_CNP_sample_metadata) %>%
   filter(!is.na(Diagnosis))
-# ABIDE_ASD_pyspi14 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_GSR_pyspi14_filtered.feather")  %>%
-#   group_by(Sample_ID, SPI) %>%
-#   summarise(mean_across_brain = mean(value, na.rm=T)) %>%
-#   left_join(., ABIDE_ASD_sample_metadata) %>%
-#   filter(!is.na(Diagnosis))
+ABIDE_ASD_pyspi14 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_pyspi14_filtered.feather")  %>%
+  group_by(Sample_ID, SPI) %>%
+  summarise(mean_across_brain = mean(value, na.rm=T)) %>%
+  left_join(., ABIDE_ASD_sample_metadata) %>%
+  filter(!is.na(Diagnosis))
 pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 
 # Load mean framewise displacement data
@@ -98,8 +94,8 @@ ABIDE_ASD_mean_FD <- ABIDE_ASD_sample_metadata %>%
   dplyr::select(Sample_ID:Site, func_mean_fd) %>%
   dplyr::rename("Power" = "func_mean_fd") %>%
   mutate(Study = "ABIDE")
-# ABIDE_ASD_mean_FD <- read.table(glue("{ABIDE_ASD_data_path}/movement_data/fmriprep/ABIDE_ASD_mFD.txt"), 
-#                                      sep=",", colClasses = "character")
+ABIDE_ASD_mean_FD <- read.table(glue("{ABIDE_ASD_data_path}/movement_data/fmriprep/ABIDE_ASD_mFD.txt"),
+                                     sep=",", colClasses = "character")
 
 # Set mFD columns as numeric
 UCLA_CNP_mean_FD <- UCLA_CNP_mean_FD %>%

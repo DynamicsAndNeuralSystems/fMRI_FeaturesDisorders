@@ -103,7 +103,7 @@ plot_data_with_ggseg_discrete <- function(dataset_ID,
                                           fill_colors=NULL) {
   
   ggseg_data <- data_to_plot %>%
-    left_join(., atlas_data %>% as_tibble()) %>%
+    left_join(., atlas_data) %>%
     filter(!is.na(region)) %>%
     ungroup() %>%
     dplyr::select(-label)
@@ -141,7 +141,8 @@ plot_data_with_ggseg_discrete <- function(dataset_ID,
                  limits = c(min(bin_seq), max(bin_seq)),
                  show.limits = TRUE, 
                  guide = "colorsteps"
-    )
+    ) +
+    guides(col = guide_legend(override.aes = list(color="black")))
   
   return(ggseg_plot)
 }

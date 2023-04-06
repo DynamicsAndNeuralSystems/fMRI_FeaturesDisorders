@@ -16,9 +16,9 @@ study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
                              Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
 
-
 UCLA_CNP_brain_region_info <- read.csv("~/data/UCLA_CNP/study_metadata/UCLA_CNP_Brain_Region_info.csv")
-ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv")
+ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.txt", sep=";", header = T) %>%
+  mutate(Brain_Region = ifelse(Index==45, "Heschl's Gyrus (includes H1 and H2)", Brain_Region))
 
 reticulate::use_python(python_to_use)
 
@@ -40,7 +40,6 @@ library(ggsegHO)
 library(knitr)
 library(kableExtra)
 library(patchwork)
-library(ggseg)
 library(broom)
 library(colorspace)
 library(see)
@@ -58,8 +57,6 @@ TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.c
 # Load data
 univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
-# univariate_SVM_coefficients <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_SVM_coefficients.feather")) %>%
-#   filter(Univariate_Feature_Set == univariate_feature_set)
 univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
 univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather")) %>%
@@ -112,6 +109,7 @@ for (i in 1:nrow(study_group_df)) {
              Comparison_Group == comparison_group) %>%
       dplyr::rename("Brain_Region" = "group_var") %>%
       left_join(., ABIDE_ASD_brain_region_info)
+    
   } else {
     # Extract sig results to plot
     significant_data_for_ggseg <- significant_univariate_region_wise_results %>%
@@ -128,7 +126,7 @@ for (i in 1:nrow(study_group_df)) {
   # Plot balanced accuracy data in cortex
   dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
                                         atlas_name = atlas,
-                                        atlas_data = get(atlas),
+                                        atlas_data = get(atlas) %>% as_tibble(),
                                         data_to_plot = significant_data_for_ggseg,
                                         fill_variable = "Balanced_Accuracy_Across_Repeats",
                                         fill_colors = c("#FFCA3E", "#FF6F50", "#D03454", "#9C2162", "#772F67"),
@@ -147,7 +145,7 @@ for (i in 1:nrow(study_group_df)) {
   if (dataset_ID == "UCLA_CNP") {
     dataset_ggseg_subctx <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
                                                  atlas_name = "aseg",
-                                                 atlas_data = aseg,
+                                                 atlas_data = aseg %>% as_tibble(),
                                                  data_to_plot = significant_data_for_ggseg,
                                                  fill_variable = "Balanced_Accuracy_Across_Repeats",
                                                  fill_colors = c("#FFCA3E", "#FF6F50", "#D03454", "#9C2162", "#772F67"),
@@ -269,11 +267,11 @@ for (i in 1:nrow(study_group_df)) {
   # Plot T stat data in cortex
   dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
                                                    atlas_name=atlas,
-                                                   atlas_data=get(atlas),
+                                                   atlas_data=get(atlas) %>% as_tibble(),
                                                    data_to_plot = t_stat_data,
                                                    fill_variable = "statistic",
-                                                   fill_colors = rev(c('#D55446','#F69A7A','#FFD5C1',
-                                                                       '#C9E1ED','#83BED8','#3189B9', "#0F5C9F")),
+                                                   fill_colors = rev(c('#D55446','#F69A7A','white',
+                                                                       'white','#83BED8','#3189B9', "#0F5C9F")),
                                                    bin_seq = seq(min_fill, max_fill, by=1),
                                                    line_color = "gray30",
                                                    na_color = "white")  +
@@ -285,11 +283,11 @@ for (i in 1:nrow(study_group_df)) {
   if (dataset_ID == "UCLA_CNP") {
     dataset_ggseg_subctx <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
                                                            atlas_name = "aseg",
-                                                           atlas_data = aseg,
+                                                           atlas_data = aseg %>% as_tibble(),
                                                            data_to_plot=t_stat_data,
                                                            fill_variable = "statistic",
-                                                          fill_colors = rev(c('#D55446','#F69A7A','#FFD5C1',
-                                                                              '#C9E1ED','#83BED8','#3189B9', "#0F5C9F")),
+                                                          fill_colors = rev(c('#D55446','#F69A7A','white',
+                                                                              'white','#83BED8','#3189B9', "#0F5C9F")),
                                                            bin_seq = seq(min_fill, max_fill, by=1),
                                                            line_color = "gray30",
                                                            na_color = "white")  +
@@ -306,6 +304,93 @@ wrap_plots(ggseg_plot_list,
   plot_layout(guides = "collect")
 ggsave(glue("{plot_path}/Wang_Periodicity_T_Stats.png"),
        width=5, height=7, units="in", dpi=300)
+
+################################################################################
+# Plot T statistics for SD in the brain
+
+SD_Tdata_for_ggseg <- t_stats_catch24_whole_brain %>%
+  filter(TS_Feature == "DN_Spread_Std") %>%
+  mutate(statistic = round(statistic, digits=1)) %>%
+  dplyr::select(Study, Comparison_Group, TS_Feature, Brain_Region, TS_Feature, estimate, statistic, p.value)
+
+min_fill <- floor(min(SD_Tdata_for_ggseg$statistic))
+max_fill <- ceiling(max(SD_Tdata_for_ggseg$statistic))
+
+ggseg_plot_list <- list()
+legend_list <- list()
+fill_colors = rev(c("#B2182B", "#EF8A62", 
+                    'white',
+                    "#67A9CF", "#2166AC"))
+
+for (i in 1:nrow(study_group_df)) {
+  dataset_ID <- study_group_df$Study[i]
+  comparison_group <- study_group_df$Group_Nickname[i]
+  
+  # Define atlas by study
+  atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
+  
+  if (dataset_ID == "ABIDE_ASD") {
+    t_stat_data <- SD_Tdata_for_ggseg %>%
+      filter(Study == dataset_ID, 
+             Comparison_Group == comparison_group) %>%
+      left_join(., ABIDE_ASD_brain_region_info) %>%
+      distinct() 
+  } else {
+    t_stat_data <- SD_Tdata_for_ggseg %>%
+      filter(Study == dataset_ID, 
+             Comparison_Group == comparison_group) %>%
+      mutate(label = ifelse(str_detect(Brain_Region, "ctx-"),
+                            gsub("-", "_", Brain_Region),
+                            as.character(Brain_Region))) %>%
+      mutate(label = gsub("ctx_", "", label)) %>%
+      distinct()
+  }
+  
+  # Plot T stat data in cortex
+  dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+                                                 atlas_name=atlas,
+                                                 atlas_data=get(atlas) %>% as_tibble(),
+                                                 data_to_plot = t_stat_data,
+                                                 fill_variable = "statistic",
+                                                 fill_colors = fill_colors,
+                                                 bin_seq = seq(min_fill, max_fill, by=2),
+                                                 line_color = "gray30",
+                                                 na_color = "white")  +
+    labs(fill="T-statistic")
+  
+  ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
+  
+  # Add subcortical data for UCLA CNP
+  if (dataset_ID == "UCLA_CNP") {
+    dataset_ggseg_subctx <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+                                                          atlas_name = "aseg",
+                                                          atlas_data = aseg %>% as_tibble(),
+                                                          data_to_plot=t_stat_data,
+                                                          fill_variable = "statistic",
+                                                          fill_colors = fill_colors,
+                                                          bin_seq = seq(min_fill, max_fill, by=2),
+                                                          line_color = "gray30",
+                                                          na_color = "white")  +
+      labs(fill="T-statistic")
+    
+    # Append to list
+    ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg_subctx)
+  }
+}
+
+wrap_plots(ggseg_plot_list, 
+           ncol=2, 
+           byrow=T) + 
+  plot_layout(guides = "collect")
+ggsave(glue("{plot_path}/SD_T_Stats.png"),
+       width=5, height=7, units="in", dpi=300)
+
+UCLA_CNP_catch24 %>%
+  filter(Diagnosis %in% c("Control", "Schizophrenia"),
+         names == "DN_Spread_Std", 
+         Brain_Region == "ctx-lh-pericalcarine") %>%
+  ggplot(data = ., mapping = aes(x=values, fill=Diagnosis)) +
+  geom_histogram(alpha=0.5, position="identity")
 
 ################################################################################
 # Ridge plot for catch24 features' T-statistics across entire brain
