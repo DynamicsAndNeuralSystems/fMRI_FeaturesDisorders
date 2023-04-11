@@ -13,6 +13,7 @@ from mixed_sigmoid_normalisation import MixedSigmoidScaler
 def run_k_fold_SVM_for_feature(feature_data, 
                                feature_list,
                                grouping_var_name,
+                               comparison_group,
                                analysis_type,
                                sample_and_class_df,
                                scaling_type,
@@ -125,7 +126,7 @@ def run_k_fold_SVM_for_feature(feature_data,
         
         # ROC data
         CV_prob = cross_val_predict(prob_pipe, feature_data, class_labels, cv=skf, method="predict_proba")
-        y_test = np.asarray([int(u=="Schizophrenia") for u in class_labels])
+        y_test = np.asarray([int(u==1) for u in class_labels])
         y_pred = np.asarray(CV_prob[:,1])
         fpr, tpr, _ = metrics.roc_curve(y_test, y_pred, drop_intermediate=False)
         ROC_data = pd.DataFrame(np.column_stack((fpr,tpr)), columns=["fpr", "tpr"])
@@ -212,8 +213,7 @@ def run_univariate_SVM(univariate_feature_file,
             
             # Extract sample ID and diagnosis as lists
             index_data = region_data_wide.index.to_frame().reset_index(drop=True)
-            class_labels = index_data["Diagnosis"].tolist()
-            
+            class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
             # Extract only the feature data
             features_only = region_data_wide.reset_index(drop=True).to_numpy()
             
@@ -221,6 +221,7 @@ def run_univariate_SVM(univariate_feature_file,
             (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = feature_list,
                                         grouping_var_name = ROI,
+                                        comparison_group = comparison_to_control_group,
                                         analysis_type = "Univariate_Brain_Region",
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
@@ -252,7 +253,7 @@ def run_univariate_SVM(univariate_feature_file,
             
             # Extract sample ID and diagnosis as lists
             index_data = TS_feature_data_wide.index.to_frame().reset_index(drop=True)
-            class_labels = index_data["Diagnosis"].tolist()
+            class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
             
             # Extract only the feature data
             features_only = TS_feature_data_wide.reset_index(drop=True).to_numpy()
@@ -261,6 +262,7 @@ def run_univariate_SVM(univariate_feature_file,
                                         feature_list = region_list,
                                         grouping_var_name = TS_feature,
                                         analysis_type = "Univariate_TS_Feature",
+                                        comparison_group = comparison_to_control_group,
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
@@ -298,12 +300,13 @@ def run_univariate_SVM(univariate_feature_file,
         
         # Extract sample ID and diagnosis as lists
         index_data = combo_data_wide.index.to_frame().reset_index(drop=True)
-        class_labels = index_data["Diagnosis"].tolist()
+        class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
         
         (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                     feature_list = combo_features,
                                     grouping_var_name = "Combo",
                                     analysis_type = "Univariate_Combo",
+                                    comparison_group = comparison_to_control_group,
                                     sample_and_class_df = index_data,
                                     class_labels = class_labels,
                                     scaling_type = scaling_type,
@@ -430,7 +433,7 @@ def run_pairwise_SVM_by_SPI(pairwise_feature_file,
             
             # Extract sample ID and diagnosis as lists
             index_data = SPI_data_wide.index.to_frame().reset_index(drop=True)
-            class_labels = index_data["Diagnosis"].tolist()
+            class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
             
             # Impute any NaN with column mean
             SPI_data_imputed = SPI_data_wide.fillna(SPI_data_wide.mean())
@@ -442,6 +445,7 @@ def run_pairwise_SVM_by_SPI(pairwise_feature_file,
             (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = feature_list,
                                         grouping_var_name = this_SPI,
+                                        comparison_group = comparison_to_control_group,
                                         analysis_type = "Pairwise_SPI",
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
@@ -589,7 +593,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
             
             # Extract sample ID and diagnosis as lists
             index_data = SPI_combo_data_wide.index.to_frame().reset_index(drop=True)
-            class_labels = index_data["Diagnosis"].tolist()
+            class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
             
             # Impute any NaN with column mean
             SPI_combo_data_imputed = SPI_combo_data_wide.fillna(SPI_combo_data_wide.mean())
@@ -601,6 +605,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
             (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = feature_list,
                                         grouping_var_name = this_SPI,
+                                        comparison_group = comparison_to_control_group,
                                         analysis_type = "Univariate_Pairwise_Combo",
                                         sample_and_class_df = index_data,
                                         class_labels = class_labels,
@@ -737,7 +742,7 @@ def run_pairwise_SVM_all_SPIs(pairwise_feature_file,
         
         # Extract sample ID and diagnosis as lists
         index_data = combo_data_imputed.index.to_frame().reset_index(drop=True)
-        class_labels = index_data["Diagnosis"].tolist()
+        class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
         
         # Run SVM
         (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
@@ -745,6 +750,7 @@ def run_pairwise_SVM_all_SPIs(pairwise_feature_file,
                                     grouping_var_name = "Combo",
                                     analysis_type = "Pairwise_All_SPIs",
                                     sample_and_class_df = index_data,
+                                    comparison_group = comparison_to_control_group,
                                     class_labels = class_labels,
                                     scaling_type = scaling_type,
                                     num_folds = num_folds,
@@ -895,12 +901,13 @@ def run_combined_uni_pairwise_SVM_all_together(univariate_feature_file,
         
         # Extract sample ID and diagnosis as lists
         index_data = univariate_pairwise_combo_data_imputed.index.to_frame().reset_index(drop=True)
-        class_labels = index_data["Diagnosis"].tolist()
+        class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
         
         # Run SVM
         (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                     feature_list = univariate_pairwise_combo_features,
                                     grouping_var_name = "Combo",
+                                    comparison_group = comparison_to_control_group,
                                     analysis_type = "Univariate_Pairwise_All_Features",
                                     sample_and_class_df = index_data,
                                     class_labels = class_labels,
@@ -990,7 +997,7 @@ def run_nulls_for_feature(feature_data,
                 
                 # Shuffle class labels
                 sample_and_class_df_for_repeat["Reshuffled_Label"] = sample_and_class_df_for_repeat.Diagnosis.sample(frac=1).values
-                reshuffled_labels = sample_and_class_df_for_repeat.Reshuffled_Label.tolist()
+                reshuffled_labels = [int(i != "Control") for i in sample_and_class_df_for_repeat.Reshuffled_Label.tolist()]
                 
                 # Split into ten folds
                 skf = StratifiedKFold(n_splits=num_folds, shuffle=True)

@@ -15,9 +15,9 @@ parser.add_argument('--metadata_file', default="UCLA_CNP_sample_metadata.feather
 parser.add_argument('--SPI_directionality_file', default="/headnode1/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/SPI_Direction_Info.csv", dest='SPI_directionality_file')
 parser.add_argument('--comparison_group', default="Schizophrenia", dest='comparison_group')
 parser.add_argument('--univariate_feature_set', default='catch22', dest='univariate_feature_set')
-parser.add_argument('--univariate_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather", dest='univariate_feature_file')
+parser.add_argument('--univariate_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather", dest='univariate_feature_file')
 parser.add_argument('--pairwise_feature_set', default='pyspi14', dest='pairwise_feature_set')
-parser.add_argument('--pairwise_feature_file_base', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather", dest='pairwise_feature_file_base')
+parser.add_argument('--pairwise_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather", dest='pairwise_feature_file')
 parser.add_argument('--noise_proc', dest='noise_proc')
 parser.add_argument('--scaling_type', default="robust", dest='scaling_type')
 parser.add_argument('--num_folds', default=10, dest='num_folds')
@@ -34,7 +34,7 @@ comparison_group = args.comparison_group
 univariate_feature_set = args.univariate_feature_set
 univariate_feature_file = args.univariate_feature_file
 pairwise_feature_set = args.pairwise_feature_set
-pairwise_feature_file_base = args.pairwise_feature_file_base
+pairwise_feature_file = args.pairwise_feature_file
 scaling_type = args.scaling_type
 num_folds = args.num_folds
 noise_proc = args.noise_proc
@@ -57,7 +57,7 @@ dataset_ID = args.dataset_ID
                  
 # Run the combined univariate+pairwise main SVM by SPI         
 run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file=univariate_feature_file,
-                 pairwise_feature_file_base=pairwise_feature_file_base,
+                 pairwise_feature_file=pairwise_feature_file,
                  SPI_directionality_file = SPI_directionality_file,
                  univariate_feature_set=univariate_feature_set,
                  pairwise_feature_set=pairwise_feature_set,

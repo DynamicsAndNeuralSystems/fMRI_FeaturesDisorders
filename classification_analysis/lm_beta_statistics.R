@@ -51,8 +51,8 @@ ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE
 pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 
 ################################################################################
-# Ridge plot for catch24 features' T-statistics across entire brain
-T_stats_for_group <- function(comparison_group, input_data, study, group_nickname){
+# Ridge plot for catch24 features' Mann-Whitney U-statistics across entire brain
+lm_beta_stats_for_group <- function(comparison_group, input_data, study, group_nickname){
   res <- input_data %>%
     filter(Diagnosis %in% c(comparison_group, "Control"),
            Study == study) %>%
@@ -60,24 +60,25 @@ T_stats_for_group <- function(comparison_group, input_data, study, group_nicknam
                                  Diagnosis == "Bipolar" ~ "BPD",
                                  T ~ Diagnosis)) %>%
     dplyr::select(Brain_Region, names, Diagnosis, values) %>%
-    mutate(Diagnosis = factor(Diagnosis, levels = c(group_nickname, "Control"))) %>%
+    mutate(Diagnosis = factor(Diagnosis, levels = c("Control", group_nickname))) %>%
     group_by(Brain_Region, names) %>%
     nest() %>%
     mutate(
-      fit = map(data, ~ t.test(values ~ Diagnosis, data = .x)),
+      fit = map(data, ~ lm(values ~ Diagnosis, data = .x)),
       tidied = map(fit, tidy)
     ) %>% 
     unnest(tidied) %>%
     dplyr::select(-data, -fit) %>%
     ungroup() %>%
     dplyr::rename("TS_Feature" = "names") %>% 
+    filter(term != "(Intercept)") %>%
     mutate(Comparison_Group = group_nickname,
            Study = study)
   
   return(res)
 }
 
-if (!file.exists(glue("{data_path}/univariate_catch24_t_statistics_by_brain_region.feather"))) {
+if (!file.exists(glue("{data_path}/univariate_catch24_lm_beta_statistics_by_brain_region.feather"))) {
   # Load raw feature data
   UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")  %>%
     left_join(., UCLA_CNP_metadata) %>%
@@ -88,18 +89,18 @@ if (!file.exists(glue("{data_path}/univariate_catch24_t_statistics_by_brain_regi
   
   combined_univariate_data <- plyr::rbind.fill(UCLA_CNP_catch24, ABIDE_ASD_catch24)
   
-  t_stats_catch24_whole_brain <- 1:4 %>%
-    purrr::map_df(~ T_stats_for_group(input_data = combined_univariate_data,
+  beta_stats_catch24_whole_brain <- 1:4 %>%
+    purrr::map_df(~ lm_beta_stats_for_group(input_data = combined_univariate_data,
                                       comparison_group = study_group_df$Comparison_Group[.x],
                                       study = study_group_df$Study[.x],
                                       group_nickname = study_group_df$Group_Nickname[.x]))
-  feather::write_feather(t_stats_catch24_whole_brain, glue("{data_path}/univariate_catch24_t_statistics_by_brain_region.feather"))
+  feather::write_feather(beta_stats_catch24_whole_brain, glue("{data_path}/univariate_catch24_lm_beta_statistics_by_brain_region.feather"))
 } else {
-  t_stats_catch24_whole_brain <- feather::read_feather(glue("{data_path}/univariate_catch24_t_statistics_by_brain_region.feather"))
+  beta_stats_catch24_whole_brain <- feather::read_feather(glue("{data_path}/univariate_catch24_lm_beta_statistics_by_brain_region.feather"))
 }
 
-# Pairwise pyspi14 T-statistics
-T_stats_for_group_pairwise <- function(comparison_group, input_data, study, group_nickname){
+# Pairwise pyspi14 lm fitting
+lm_beta_stats_for_group_pairwise <- function(comparison_group, input_data, study, group_nickname){
   res <- input_data %>%
     filter(Diagnosis %in% c(comparison_group, "Control"),
            Study == study) %>%
@@ -109,23 +110,24 @@ T_stats_for_group_pairwise <- function(comparison_group, input_data, study, grou
     rowwise() %>%
     mutate(Region_Pair = paste0(brain_region_from, "_", brain_region_to)) %>%
     dplyr::select(Region_Pair, SPI, Diagnosis, value) %>%
-    mutate(Diagnosis = factor(Diagnosis, levels = c(group_nickname, "Control"))) %>%
+    mutate(Diagnosis = factor(Diagnosis, levels = c("Control", group_nickname))) %>%
     group_by(Region_Pair, SPI) %>%
     nest() %>%
     mutate(
-      fit = map(data, ~ t.test(value ~ Diagnosis, data = .x)),
+      fit = map(data, ~ lm(value ~ Diagnosis, data = .x)),
       tidied = map(fit, tidy)
     ) %>% 
     unnest(tidied) %>%
     dplyr::select(-data, -fit) %>%
     ungroup() %>%
+    filter(term != "(Intercept)") %>%
     mutate(Comparison_Group = group_nickname,
            Study = study)
   
   return(res)
 }
 
-if (!file.exists(glue("{data_path}/pairwise_pyspi14_t_statistics_by_region_pair.feather"))) {
+if (!file.exists(glue("{data_path}/pairwise_pyspi14_U_statistics_by_region_pair.feather"))) {
   UCLA_CNP_pyspi14 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")  %>%
     left_join(., UCLA_CNP_metadata) %>%
     filter(!is.na(Diagnosis)) %>%
@@ -135,14 +137,14 @@ if (!file.exists(glue("{data_path}/pairwise_pyspi14_t_statistics_by_region_pair.
     filter(!is.na(Diagnosis)) %>%
     mutate(Study = "ABIDE_ASD")
   
-  t_stats_pyspi14_whole_brain <- 1:4 %>%
-  purrr::map_df(~ T_stats_for_group_pairwise(input_data = plyr::rbind.fill(UCLA_CNP_pyspi14,
-                                                                  ABIDE_ASD_pyspi14),
-                                    comparison_group = study_group_df$Comparison_Group[.x],
-                                    study = study_group_df$Study[.x],
-                                    group_nickname = study_group_df$Group_Nickname[.x]))
+  beta_stats_pyspi14_whole_brain <- 1:4 %>%
+    purrr::map_df(~ lm_beta_stats_for_group_pairwise(input_data = plyr::rbind.fill(UCLA_CNP_pyspi14,
+                                                                    ABIDE_ASD_pyspi14),
+                                      comparison_group = study_group_df$Comparison_Group[.x],
+                                      study = study_group_df$Study[.x],
+                                      group_nickname = study_group_df$Group_Nickname[.x]))
 
-    feather::write_feather(t_stats_pyspi14_whole_brain, glue("{data_path}/pairwise_pyspi14_t_statistics_by_region_pair.feather"))
+    feather::write_feather(beta_stats_pyspi14_whole_brain, glue("{data_path}/pairwise_pyspi14_lm_beta_statistics_by_region_pair.feather"))
 } else {
-  t_stats_pyspi14_whole_brain <- feather::read_feather(glue("{data_path}/pairwise_pyspi14_t_statistics_by_region_pair.feather"))
+  beta_stats_pyspi14_whole_brain <- feather::read_feather(glue("{data_path}/pairwise_pyspi14_lm_beta_statistics_by_region_pair.feather"))
 }

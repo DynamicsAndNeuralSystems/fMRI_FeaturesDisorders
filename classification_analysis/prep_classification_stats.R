@@ -4,7 +4,8 @@
 
 python_to_use <- "~/.conda/envs/pyspi/bin/python3"
 # python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
-univariate_feature_sets <- c("catch2", "catch24")
+# univariate_feature_sets <- c("catch2", "catch24")
+univariate_feature_sets <- c("catch24")
 pairwise_feature_set <- "pyspi14"
 github_dir <- "~/github/"
 data_path <- "~/data/"
@@ -12,11 +13,11 @@ scaler <- "mixedsigmoid"
 UCLA_CNP_sample_metadata_file <- "UCLA_CNP_sample_metadata.feather"
 UCLA_CNP_noise_proc <- "AROMA+2P+GMR"
 ABIDE_ASD_sample_metadata_file <- "ABIDE_ASD_sample_metadata.feather"
-ABIDE_ASD_noise_proc <- "GSR"
+ABIDE_ASD_noise_proc <- "FC1000"
 output_data_path <- glue::glue("{data_path}/TS_feature_manuscript/")
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
-                             Noise_Proc = c(rep("AROMA+2P+GMR",3), "GSR"),
-                             Comparison_Group = c("Schizophrenia", "ADHD", "Bipolar", "ASD"))
+                             Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
+                             Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"))
 
 # DIY rlist::list.append
 list.append <- function (.data, ...) 
@@ -837,39 +838,39 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_{scaler}_s
   pairwise_null_balanced_accuracy <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_{scaler}_scaler_null_balanced_accuracy_distributions.feather"))
 }
 
-# # Univariate + pairwise combo
-# if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_{scaler}_scaler_null_balanced_accuracy_distributions.feather"))) {
-#   combined_univariate_pairwise_null_balanced_accuracy_list <- list()
-#   # First iterate over each study/comparison group
-#   for (i in 1:nrow(study_group_df)) {
-#     dataset_ID <- study_group_df$Study[i]
-#     noise_proc <- study_group_df$Noise_Proc[i]
-#     noise_label = gsub("\\+", "_", noise_proc)
-#     comparison_group <- study_group_df$Comparison_Group[i]
+# Univariate + pairwise combo
+if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_{scaler}_scaler_null_balanced_accuracy_distributions.feather"))) {
+  combined_univariate_pairwise_null_balanced_accuracy_list <- list()
+  # First iterate over each study/comparison group
+  for (i in 1:nrow(study_group_df)) {
+    dataset_ID <- study_group_df$Study[i]
+    noise_proc <- study_group_df$Noise_Proc[i]
+    noise_label = gsub("\\+", "_", noise_proc)
+    comparison_group <- study_group_df$Comparison_Group[i]
     
-#     # Now iterate over each univariate feature set
-#     for (univariate_feature_set in c("catch24")) {
-#     # Now iterate over each univariate feature set
-#       null_dist <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/processed_data/{dataset_ID}_{comparison_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaler}_scaler_SVM_null_balanced_accuracy_distributions.feather"))
-#       null_dist$Study <- dataset_ID
-#       null_dist$Univariate_Feature_Set <- univariate_feature_set
-#       null_dist$Pairwise_Feature_Set <- pairwise_feature_set
-#       # Append to list
-#       combined_univariate_pairwise_null_balanced_accuracy_list <- list.append(combined_univariate_pairwise_null_balanced_accuracy_list, null_dist)
-#     }
-#   }
+    # Now iterate over each univariate feature set
+    for (univariate_feature_set in c("catch24")) {
+    # Now iterate over each univariate feature set
+      null_dist <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/processed_data/{dataset_ID}_{comparison_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaler}_scaler_SVM_null_balanced_accuracy_distributions.feather"))
+      null_dist$Study <- dataset_ID
+      null_dist$Univariate_Feature_Set <- univariate_feature_set
+      null_dist$Pairwise_Feature_Set <- pairwise_feature_set
+      # Append to list
+      combined_univariate_pairwise_null_balanced_accuracy_list <- list.append(combined_univariate_pairwise_null_balanced_accuracy_list, null_dist)
+    }
+  }
   
-#   # Combine the list results into a dataframe
-#   combined_univariate_pairwise_null_balanced_accuracy <- do.call(plyr::rbind.fill, 
-#                                                combined_univariate_pairwise_null_balanced_accuracy_list) %>%
-#     mutate(Analysis_Type = "SPI_Univariate_Combo")
+  # Combine the list results into a dataframe
+  combined_univariate_pairwise_null_balanced_accuracy <- do.call(plyr::rbind.fill, 
+                                               combined_univariate_pairwise_null_balanced_accuracy_list) %>%
+    mutate(Analysis_Type = "SPI_Univariate_Combo")
   
-#   # Save to feather file
-#   feather::write_feather(combined_univariate_pairwise_null_balanced_accuracy,
-#                          glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_{scaler}_scaler_null_balanced_accuracy_distributions.feather"))
-# } else {
-#   combined_univariate_pairwise_null_balanced_accuracy <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_{scaler}_scaler_null_balanced_accuracy_distributions.feather"))
-# }
+  # Save to feather file
+  feather::write_feather(combined_univariate_pairwise_null_balanced_accuracy,
+                         glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_{scaler}_scaler_null_balanced_accuracy_distributions.feather"))
+} else {
+  combined_univariate_pairwise_null_balanced_accuracy <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_{scaler}_scaler_null_balanced_accuracy_distributions.feather"))
+}
 
 # # Pairwise all SPIs
 # if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_{scaler}_scaler_null_balanced_accuracy_distributions.feather"))) {
