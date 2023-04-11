@@ -47,7 +47,7 @@ plot_path <- paste0(github_dir, "plots/Manuscript_Draft/movement_analysis/")
 TAF::mkdir(plot_path)
 univariate_feature_set <- "catch24"
 
-study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE"),
+study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
                              Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
@@ -89,13 +89,9 @@ pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 # Load mean framewise displacement data
 UCLA_CNP_mean_FD <- read.table(glue("{UCLA_CNP_data_path}/movement_data/fmriprep/UCLA_CNP_mFD.txt"), 
                                        sep=",", colClasses = "character")
-colnames(UCLA_CNP_mean_FD) <- c("Sample_ID", "Jenkinson", "Power", "VanDijk")
-ABIDE_ASD_mean_FD <- ABIDE_ASD_sample_metadata %>%
-  dplyr::select(Sample_ID:Site, func_mean_fd) %>%
-  dplyr::rename("Power" = "func_mean_fd") %>%
-  mutate(Study = "ABIDE")
 ABIDE_ASD_mean_FD <- read.table(glue("{ABIDE_ASD_data_path}/movement_data/fmriprep/ABIDE_ASD_mFD.txt"),
                                      sep=",", colClasses = "character")
+colnames(UCLA_CNP_mean_FD) <- colnames(ABIDE_ASD_mean_FD) <- c("Sample_ID", "Jenkinson", "Power", "VanDijk")
 
 # Set mFD columns as numeric
 UCLA_CNP_mean_FD <- UCLA_CNP_mean_FD %>%
@@ -103,6 +99,12 @@ UCLA_CNP_mean_FD <- UCLA_CNP_mean_FD %>%
   left_join(., UCLA_CNP_sample_metadata) %>%
   filter(Sample_ID %in% UCLA_CNP_subjects_used) %>%
   mutate(Study = "UCLA_CNP")
+
+ABIDE_ASD_mean_FD <- ABIDE_ASD_mean_FD %>%
+  mutate_at(c("Jenkinson", "Power", "VanDijk"), function(x) as.numeric(x)) %>%
+  left_join(., ABIDE_ASD_sample_metadata) %>%
+  filter(Sample_ID %in% ABIDE_ASD_subjects_used) %>%
+  mutate(Study = "ABIDE_ASD")
 
 ################################################################################
 # Compare FD-Power distributions between each case-control comparison
@@ -120,7 +122,7 @@ plot_group_vs_control <- function(FD_dataset,
     filter(Study==study,
            Diagnosis %in% c("Control", dx)) %>%
     mutate(Diagnosis = factor(Diagnosis, levels = c(dx, "Control"))) %>%
-    ggplot(data=., mapping=aes(x=Diagnosis, y=Power)) +
+    ggplot(data=., mapping=aes(x=Diagnosis, y=as.numeric(Power))) +
     geom_violin(aes(fill=Diagnosis)) +
     geom_boxplot(color="black", fill=NA, width=0.1) +
     geom_signif(test = "wilcox.test",

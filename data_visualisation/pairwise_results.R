@@ -11,19 +11,11 @@ python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
 univariate_feature_set <- "catch24"
 data_path <- "~/data/TS_feature_manuscript"
-study_group_df <- data.frame(Study = rep("UCLA_CNP", 3),
-                             Noise_Proc = rep("AROMA+2P+GMR", 3),
-                             Comparison_Group = c("Schizophrenia", "ADHD", "Bipolar"),
-                             Group_Nickname = c("SCZ", "BPD", "ADHD"))
-# study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
-#                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
-#                              Comparison_Group = c("Schizophrenia", "ADHD", "Bipolar", "ASD"),
-# Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
 
-# Load brain region info
-UCLA_CNP_brain_region_info <- read.csv("~/data/UCLA_CNP/study_metadata/UCLA_CNP_Brain_Region_info.csv")
-ABIDE_ASD_brain_region_info <- read.csv("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.csv")
-region_node_to_from <- read.csv("~/data/TS_feature_manuscript/node_to_from_structure.csv")
+study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
+                             Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
+                             Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
+                             Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
 
 reticulate::use_python(python_to_use)
 
@@ -58,8 +50,6 @@ library(correctR)
 library(ggpubr)
 library(ggsignif)
 library(poolr)
-library(ggraph)
-library(igraph)
 theme_set(theme_cowplot())
 
 # Source visualisation script
@@ -67,6 +57,13 @@ source(glue("{github_dir}/data_visualisation/Manuscript_Draft_Visualisations_Hel
 
 # Load in SPI info
 SPI_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
+
+# Load brain region info
+UCLA_CNP_brain_region_info <- read.csv("~/data/UCLA_CNP/study_metadata/UCLA_CNP_Brain_Region_info.csv")
+ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.txt", sep=";", header = T) %>%
+  mutate(Brain_Region = ifelse(Index==45, "Heschl's Gyrus (includes H1 and H2)", Brain_Region))
+region_node_to_from <- read.csv("~/data/TS_feature_manuscript/node_to_from_structure.csv") %>%
+  mutate(Study = ifelse(Study == "ABIDE", "ABIDE_ASD", "ABIDE"))
 
 # Load participants included
 UCLA_CNP_subjects_to_keep <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch24_pyspi14.feather")
@@ -76,7 +73,7 @@ UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadat
   mutate(Study = "UCLA_CNP") %>%
   filter(Sample_ID %in% UCLA_CNP_subjects_to_keep$Sample_ID)
 ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather") %>%
-  mutate(Study = "ABIDE")
+  mutate(Study = "ABIDE_ASD")
 
 # Load stats data
 univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather")) %>%
@@ -249,7 +246,6 @@ run_correctR_group <- function(comparison_group, study, metadata, results_df) {
   
 }
 
-metadata <- UCLA_CNP_metadata
 # metadata <- plyr::rbind.fill(UCLA_CNP_metadata, ABIDE_ASD_metadata)
 results_df = plyr::rbind.fill(pairwise_balanced_accuracy_by_repeats, 
                               combo_univariate_pairwise_balanced_accuracy_by_repeats)
@@ -257,7 +253,7 @@ results_df = plyr::rbind.fill(pairwise_balanced_accuracy_by_repeats,
 corrected_SPI_T_res <- 1:nrow(study_group_df) %>%
   purrr::map_df(~ run_correctR_group(comparison_group = study_group_df$Comparison_Group[.x],
                                      study = study_group_df$Study[.x],
-                                     metadata = metadata,
+                                     metadata = plyr::rbind.fill(UCLA_CNP_metadata, ABIDE_ASD_metadata),
                                      results_df = results_df)) %>%
   filter(p_value_Bonferroni < 0.05)
 
@@ -286,27 +282,30 @@ plyr::rbind.fill(pairwise_p_values,
   # scale_x_discrete(labels = wrap_format(7)) +
   xlab("Analysis Type") +
   ylab("Mean Balanced Accuracy (%)") +
-  facet_wrap(Comparison_Group ~ ., ncol=2, scales="fixed") +
+  facet_wrap(Comparison_Group ~ ., ncol=1, scales="fixed", strip.position = "right") +
   scale_x_discrete(expand=c(0,0.2,0,0.2)) +
   theme(legend.position = "bottom",
+        strip.placement = "outside",
+        strip.text.y.right = element_text(angle=0),
         plot.margin = margin(1,30,1,1, unit="pt"),
         legend.title = element_blank())
 ggsave(glue("{plot_path}/SPI_with_vs_without_univariate_spaghetti.png"),
-       width=4, height=4.5, units="in", dpi=300)
+       width=3.5, height=5, units="in", dpi=300)
 
 ################################################################################
-# Distribution of SPI-wise T-statistics
+# Distribution of SPI-wise lm beta statistics
 ################################################################################
-t_stats_pyspi14_whole_brain <- feather::read_feather(glue("{data_path}/pairwise_pyspi14_t_statistics_by_region_pair.feather"))
+lm_beta_stats_pyspi14_whole_brain <- feather::read_feather(glue("{data_path}/pairwise_pyspi14_lm_beta_statistics_by_region_pair.feather"))
 
-t_stats_pyspi14_whole_brain %>%
+lm_beta_stats_pyspi14_whole_brain %>%
   ungroup() %>%
   left_join(., SPI_info) %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))%>%
-  mutate(Nickname = fct_reorder(Nickname, statistic, .fun=sd)) %>%
-  ggplot(data=., mapping=aes(x=statistic, y=Nickname, fill=Comparison_Group, color=Comparison_Group)) +
-  geom_density_ridges(alpha=0.6, scale=1.1) +
-  xlab("T-statistic across\nall brain regions") +
+  mutate(Nickname = fct_reorder(Nickname, estimate, .fun=sd)) %>%
+  ggplot(data=., mapping=aes(x=estimate, y=Nickname, fill=Comparison_Group, color=Comparison_Group)) +
+  geom_density_ridges(alpha=0.6, scale=1.1, rel_min_height = 0.01) +
+  scale_x_continuous(limits=c(-0.5,0.5)) +
+  xlab("Beta coefficient across\nall brain regions") +
   ylab("pyspi14 time-series feature") +
   scale_fill_manual(values=c("Control" = "#5BB67B", 
                              "SCZ" = "#573DC7", 
@@ -318,21 +317,21 @@ t_stats_pyspi14_whole_brain %>%
                               "BPD" = "#D5492A", 
                               "ADHD" = "#0F9EA9", 
                               "ASD" = "#C47B2F")) +
-  guides(fill = guide_legend(nrow=2),
-         color = guide_legend(nrow=2)) +
-  scale_y_discrete(labels = wrap_format(22)) +
+  guides(fill = guide_legend(nrow=2, byrow=T),
+         color = guide_legend(nrow=2, byrow=T)) +
+  scale_y_discrete(labels = wrap_format(20)) +
   theme(legend.position = "bottom",
         axis.title = element_text(size=16),
         axis.text.y = element_text(size=16),
         axis.text.x = element_text(size=16),
         legend.text = element_text(size=16),
         legend.title = element_blank())
-ggsave(glue("{plot_path}/pyspi14_feature_t_statistics_across_brain.png"),
-       width=5.5, height=10, units="in", dpi=300)
+ggsave(glue("{plot_path}/pyspi14_feature_lm_beta_statistics_across_brain.png"),
+       width=5, height=10, units="in", dpi=300)
 
 
 ################################################################################
-# Condense T-statistics down to the regional level
+# Condense lm beta statistics down to the regional level
 ################################################################################
 
 # Demo brain figure
@@ -355,19 +354,19 @@ dk %>%
 ggsave(glue("{plot_path}/demo_brain_for_FC.png"), width = 3, height=2, units="in", dpi=300)
 
 # Find regions most disrupted across all pairwise connections
-pairwise_t_stats_by_region_from <- t_stats_pyspi14_whole_brain %>%
+pairwise_lm_beta_stats_by_region_from <- lm_beta_stats_pyspi14_whole_brain %>%
   separate(Region_Pair, c("region_from", "region_to"),
            sep="_") %>%
   group_by(region_from, SPI, Study, Comparison_Group) %>%
-  summarise(mean_T_magnitude = mean(abs(statistic))) %>%
+  summarise(mean_lm_beta_magnitude = mean(abs(estimate))) %>%
   dplyr::rename("Brain_Region" = "region_from") %>%
   mutate(Direction = "from")
 
-pairwise_t_stats_by_region_to <- t_stats_pyspi14_whole_brain %>%
+pairwise_lm_beta_stats_by_region_to <- lm_beta_stats_pyspi14_whole_brain %>%
   separate(Region_Pair, c("region_from", "region_to"),
            sep="_") %>%
   group_by(region_to, SPI, Study, Comparison_Group) %>%
-  summarise(mean_T_magnitude = mean(abs(statistic)))%>%
+  summarise(mean_lm_beta_magnitude = mean(abs(estimate)))%>%
   dplyr::rename("Brain_Region" = "region_to") %>%
   mutate(Direction = "to")
 
@@ -379,8 +378,8 @@ plot_data_per_group <- function(SPI_nickname,
                                 bin_interval) { 
   ggseg_plot_list <- list()
   
-  color_range = c(plyr::round_any(min(input_data$mean_T_magnitude), bin_interval, f=floor), 
-                  plyr::round_any(max(input_data$mean_T_magnitude), bin_interval, f=ceiling))
+  color_range = c(plyr::round_any(min(input_data$mean_lm_beta_magnitude), bin_interval, f=floor), 
+                  plyr::round_any(max(input_data$mean_lm_beta_magnitude), bin_interval, f=ceiling))
   color_seq = seq(color_range[1], color_range[2], by=bin_interval)
   
   for (i in 1:nrow(study_group_df)) {
@@ -391,21 +390,21 @@ plot_data_per_group <- function(SPI_nickname,
     # Define atlas by study
     atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
     
-    T_data_to_plot <- input_data %>%
+    lm_beta_data_to_plot <- input_data %>%
       filter(Study == dataset_ID,
              Comparison_Group == comparison_group) %>%
       select(where(function(x) any(!is.na(x)))) %>%
-      arrange(desc(mean_T_magnitude)) %>%
+      arrange(desc(mean_lm_beta_magnitude)) %>%
       ungroup() 
     
     # Plot T stat data in cortex
     dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID=dataset_ID,
                                                    atlas_name=atlas,
-                                                   atlas_data=get(atlas),
-                                                   data_to_plot=T_data_to_plot,
+                                                   atlas_data = get(atlas) %>% as_tibble(),
+                                                   data_to_plot=lm_beta_data_to_plot,
                                                    num_bins = length(color_seq) - 1,
                                                    line_color = "gray30",
-                                                   fill_variable="mean_T_magnitude",
+                                                   fill_variable="mean_lm_beta_magnitude",
                                                    bin_seq = color_seq,
                                                    fill_colors = colorRampPalette(c("white", group_color))(length(color_seq) - 1)) 
     
@@ -416,11 +415,11 @@ plot_data_per_group <- function(SPI_nickname,
     if (dataset_ID == "UCLA_CNP") {
       dataset_ggseg_subctx <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
                                                             atlas_name = "aseg",
-                                                            atlas_data = aseg,
-                                                            data_to_plot=T_data_to_plot,
+                                                            atlas_data = aseg %>% as_tibble(),
+                                                            data_to_plot=lm_beta_data_to_plot,
                                                             num_bins = length(color_seq) - 1,
                                                             line_color = "gray30",
-                                                            fill_variable="mean_T_magnitude",
+                                                            fill_variable="mean_lm_beta_magnitude",
                                                             bin_seq = color_seq,
                                                             fill_colors = colorRampPalette(c("white", group_color))(length(color_seq) - 1))
       # Append to list
@@ -430,18 +429,17 @@ plot_data_per_group <- function(SPI_nickname,
   return(ggseg_plot_list)
 }
 
-group_colors <- c("#573DC7", "#D5492A", "#0F9EA9")
-pearson_regional_data <- pairwise_t_stats_by_region_from %>%
+group_colors <- c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F")
+pearson_regional_data <- pairwise_lm_beta_stats_by_region_from %>%
   filter(SPI == "cov_EmpiricalCovariance") %>%
   left_join(., UCLA_CNP_brain_region_info)  %>%
   dplyr::select(-Index) %>%
-  left_join(., ABIDE_ASD_brain_region_info) %>%
-  filter(Comparison_Group != "ASD")
+  left_join(., ABIDE_ASD_brain_region_info) 
 
 correlation_plots <- plot_data_per_group(SPI_nickname = "Pearson R",
                                          input_data = pearson_regional_data,
                                          group_colors = group_colors,
-                                         bin_interval = 0.3)
+                                         bin_interval = 0.01)
 
 wrap_plots(correlation_plots, 
            ncol=2, 
@@ -454,7 +452,7 @@ wrap_plots(correlation_plots,
         legend.title = element_blank()) &
   guides(fill = guide_colorsteps(title.position="top", ticks=TRUE, barwidth=12,
                                  nrow=3))
-ggsave(glue("{plot_path}/Region_wise_avg_t_stat_pearson_corrs.png"),
+ggsave(glue("{plot_path}/Region_wise_avg_lm_beta_stat_pearson_corrs.png"),
        width=5, height=8, units="in", dpi=300)
 
 # Then visualize Gaussian DI from each region
@@ -662,16 +660,6 @@ ggsave(glue("{plot_path}/Undirected_SPI_T_Stats_To_vs_From.png"),
 # All SPIs in one model
 ################################################################################
 
-null_data_for_plot <- pairwise_null_distribution %>%
-  filter(Analysis_Type == "Pairwise_SPI") %>%
-  dplyr::rename("Balanced_Accuracy_Across_Folds" = Null_Balanced_Accuracy) %>%
-  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
-         Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
-                                      T ~ Comparison_Group)) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
-  dplyr::select(Comparison_Group, Balanced_Accuracy_Across_Folds)
-
 pairwise_all_SPIs_balanced_accuracy_by_repeats %>%
   mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
          Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
@@ -693,58 +681,195 @@ pairwise_all_SPIs_balanced_accuracy_by_repeats %>%
         axis.title = element_text(size=17), 
         axis.text = element_text(size=15)) 
 ggsave(glue("{plot_path}/Pairwise_all_SPIs_results.png"),
-       width=4.5, height=3, units="in", dpi=300)
+       width=3.75, height=3, units="in", dpi=300)
 
 ################################################################################
 # Hypo vs hyper connectivity
 ################################################################################
 
-plot_hyper_hypo_FC_group <- function(comparison_group,
+# Prep data for charticulate
+# https://charticulator.com/gallery/les_miserables_circular.html
+
+# attributes: UCLA CNP
+UCLA_CNP_attributes <- region_node_to_from %>%
+  filter(Study=="UCLA_CNP") %>%
+  filter(from != "Origin") %>%
+  dplyr::select("to", "from") %>%
+  dplyr::rename("id" = "to",
+                "cortex" = "from") %>%
+  arrange(cortex)
+write.table(UCLA_CNP_attributes, glue("{data_path}/UCLA_CNP_region_attributes.csv"), row.names = F, sep=",")
+
+# ggseg vis for lobes
+UCLA_CNP_attributes %>%
+  mutate(label = ifelse(str_detect(id, "ctx-"),
+                        gsub("-", "_", id),
+                        as.character(id))) %>%
+  mutate(label = gsub("ctx_", "", label)) %>%
+  left_join(., dk %>% as_tibble()) %>%
+  dplyr::select(-label) %>%
+  ggseg(atlas = dk, mapping = aes(fill = cortex),
+        position = "stacked", colour = NA, hemisphere="left") +
+  scale_fill_manual(values=c("Cingulate" = "#AECDE1",
+                             "Frontal" = "#3C76AF",
+                             "Insula" = "#BBDE93",
+                             "Occipital" = "#549E3F",
+                             "Parietal" = "#ED9F9C",
+                             "Temporal" = "#F4C17B",
+                             "Subcortex" = "#D0352B"),
+                    na.value = "white") +
+  theme_void() +
+  theme(legend.position = "none")
+ggsave(glue("{plot_path}/cortical_lobes.png"),
+       width=4, height=2, units="in", dpi=300)
+
+
+# attributes: ABIDE ASD
+ABIDE_ASD_attributes <- region_node_to_from %>%
+  filter(Study=="ABIDE_ASD") %>%
+  filter(from != "Origin") %>%
+  dplyr::select("to", "from") %>%
+  dplyr::rename("id" = "to",
+                "cortex" = "from") %>%
+  arrange(cortex)
+write.table(ABIDE_ASD_attributes, glue("{data_path}/ABIDE_ASD_region_attributes.csv"), row.names = F, sep=",")
+
+write_hyper_hypo_connected_pairs <- function(study, 
+                                             lm_beta_stats,
+                                             attributes,
+                                             comparison_group,
+                                             min_hyper_thresh,
+                                             min_hypo_thresh) {
+  # Hyperconnected
+  hyper_pairs <- lm_beta_stats %>%
+    filter(Study==study, Comparison_Group==comparison_group) %>%
+    group_by(Region_Pair) %>%
+    summarise(mean_beta = mean(estimate)) %>%
+    separate(Region_Pair, into=c("from", "to"), sep="_") %>%
+    mutate(mean_beta_thresh = ifelse(mean_beta < min_hyper_thresh, 0, mean_beta)) %>%
+    mutate(from = factor(from, levels = attributes$id),
+           to = factor(to, levels = attributes$id)) %>%
+    filter(mean_beta_thresh != 0) %>%
+    dplyr::rename("source_id" = "from",
+                  "target_id" = "to",
+                  "value" = "mean_beta_thresh") %>%
+    dplyr::select(-mean_beta) %>%
+    arrange(value)
+  
+  write.table(hyper_pairs, glue("{data_path}/{study}_{comparison_group}_hyper_FC_pairs.csv"), 
+              row.names=F, col.names = T, sep=",")
+  
+  # Hypoconnected
+  hypo_pairs <- lm_beta_stats %>%
+    filter(Study==study, Comparison_Group==comparison_group) %>%
+    group_by(Region_Pair) %>%
+    summarise(mean_beta = mean(estimate)) %>%
+    separate(Region_Pair, into=c("from", "to"), sep="_") %>%
+    mutate(mean_beta_thresh = ifelse(mean_beta > min_hypo_thresh, 0, mean_beta)) %>%
+    mutate(from = factor(from, levels = attributes$id),
+           to = factor(to, levels = attributes$id)) %>%
+    filter(mean_beta_thresh != 0) %>%
+    dplyr::rename("source_id" = "from",
+                  "target_id" = "to",
+                  "value" = "mean_beta_thresh") %>%
+    dplyr::select(-mean_beta) %>%
+    arrange(desc(value))
+  
+  write.table(hypo_pairs, glue("{data_path}/{study}_{comparison_group}_hypo_FC_pairs.csv"), 
+              row.names=F, col.names = T, sep=",")
+}
+
+# SCZ
+write_hyper_hypo_connected_pairs(study = "UCLA_CNP",
+                                 lm_beta_stats = lm_beta_stats_pyspi14_whole_brain,
+                                 attributes = UCLA_CNP_attributes,
+                                 comparison_group = "SCZ",
+                                 min_hyper_thresh = 0.6,
+                                 min_hypo_thresh = -0.6)
+
+# BPD
+write_hyper_hypo_connected_pairs(study = "UCLA_CNP",
+                                 lm_beta_stats = lm_beta_stats_pyspi14_whole_brain,
+                                 attributes = UCLA_CNP_attributes,
+                                 comparison_group = "BPD",
+                                 min_hyper_thresh = 0.65,
+                                 min_hypo_thresh = -0.65)
+
+# ADHD
+write_hyper_hypo_connected_pairs(study = "UCLA_CNP",
+                                 lm_beta_stats = lm_beta_stats_pyspi14_whole_brain,
+                                 attributes = UCLA_CNP_attributes,
+                                 comparison_group = "ADHD",
+                                 min_hyper_thresh = 0.65,
+                                 min_hypo_thresh = -0.65)
+
+# ASD
+write_hyper_hypo_connected_pairs(study = "ABIDE_ASD",
+                                 lm_beta_stats = lm_beta_stats_pyspi14_whole_brain,
+                                 attributes = ABIDE_ASD_attributes,
+                                 comparison_group = "ASD",
+                                 min_hyper_thresh = 0.4,
+                                 min_hypo_thresh = -0.4)
+##################
+
+plot_hyper_FC_group <- function(comparison_group,
                                      study,
-                                     t_stat_df,
-                                     t_mag_threshold) {
-  # Edges are defined as cortical lobe --> specific ROI connection
-  edges <- region_node_to_from %>%
-    filter(Study == study) %>% 
-    distinct() %>%
-    dplyr::select(-Study)
+                                     lm_beta_stat_df,
+                                     beta_mag_threshold,
+                                     min_fill = 0.7,
+                                     max_fill = 1.1,
+                                     legend_breaks = NULL) {
   
-  # ROIs don't include the origin --> cortical lobe connection
-  rois <- edges %>% filter(!(to %in% c("Cingulate", "Frontal", "Insula",
-                                       "Occipital", "Parietal", "Temporal", "Subcortex")))
-  
-  # Create a dataframe of vertices, one line per object in the ROI cortical lobe hierarchy
-  vertices = data.frame(name = unique(c(as.character(edges$from), as.character(edges$to))))
-  vertices$group <- edges$from[match(vertices$name, edges$to)]
-  
-  # Create an igraph object
-  mygraph <- graph_from_data_frame(d=edges, vertices=vertices)
+  if (is.null(legend_breaks)) {
+    legend_breaks = seq(min_fill, max_fill, by=0.1)
+  }
   
   # connect = dataframe of pairwise correlations between cortical ROIs
-  hyper_data <- t_stats_pyspi14_whole_brain %>%
+  hyper_data <- lm_beta_stat_df %>%
     filter(Comparison_Group == comparison_group) %>%
     group_by(Comparison_Group, Region_Pair) %>%
-    summarise(mean_T = mean(estimate)) %>%
+    summarise(mean_beta = mean(estimate)) %>%
     separate(Region_Pair, into=c("from", "to"), sep="_") %>%
-    filter(mean_T > t_mag_threshold)
+    filter(mean_beta > min_fill)
   
+  # Edges are defined as cortical lobe --> specific ROI connection
+  hierarchy <- region_node_to_from %>%
+    filter(Study == study) %>% 
+    distinct() %>%
+    dplyr::select(-Study) %>%
+    arrange(from)
+  
+  # Create a dataframe of vertices, one line per object in the ROI cortical lobe hierarchy
+  vertices = data.frame(name = unique(c(as.character(hierarchy$from), as.character(hierarchy$to))))
+  vertices$group <- hierarchy$from[match(vertices$name, hierarchy$to)]
+  
+  # Create an igraph object
+  mygraph <- graph_from_data_frame(d=hierarchy, vertices=vertices)
+
   hyper_connect <- hyper_data %>%
-    rename("value" = "mean_T") %>%
-    arrange(from, to)
+    rename("value" = "mean_beta") %>%
+    arrange(to, from)
   
   # mygraph = igraph object linking each cortical ROI
   # convert to a circular dendrogram-shaped ggraph object
   p_hyper <- ggraph(mygraph, layout = 'dendrogram', circular = TRUE)
   
-  from <- match(hyper_connect$from, vertices$name)
-  to <- match(hyper_connect$to, vertices$name)
+  data_for_con = data.frame(from_region = match(hyper_connect$from, vertices$name),
+                            to_region = match(hyper_connect$to, vertices$name),
+                            edge_value = hyper_connect$value)
   
-  p_hyper <- p_hyper + geom_conn_bundle(data = get_con(from = from, to = to, 
-                                                       value=hyper_connect$value), 
+  p_hyper <- p_hyper + geom_conn_bundle(data = get_con(from = data_for_con$from_region, 
+                                                       to = data_for_con$to_region, 
+                                                       value = data_for_con$edge_value), 
                                         tension=0.7, width=1.5,
                                         aes(color=value))  +
-    scale_edge_color_gradientn(colors=c(alpha("red", 0.1), "red")) +
-    labs(edge_color="Multi-metric\nT Statistic") + 
+    scale_edge_color_gradient2(high=alpha("red", 0.05), 
+                               mid = alpha("red", 0.5),
+                               midpoint = mean(c(min_fill, max_fill)), 
+                               low=alpha("red", 0.9),
+                               limits = c(min_fill, max_fill),
+                               breaks = legend_breaks,
+                               labels = rev(legend_breaks)) +
     geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05, colour=group),   
                                        size=2) +
     scale_color_manual(values=c("Cingulate" = "#F8756D",
@@ -754,40 +879,80 @@ plot_hyper_hypo_FC_group <- function(comparison_group,
                                 "Insula" = "#00B6EB",
                                 "Subcortex" = "#A58AFF",
                                 "Temporal" = "#FB61D7"
-                                ), guide="none") +
-    labs(color="Cortex") +
+                                ), guide="none") + 
+    guides(edge_color = guide_edge_colorbar(reverse=T)) +
+    labs(edge_color="Multi-metric\nlm beta coefficient",
+         color="Cortex") +
     theme_void() + 
     theme(plot.title=element_text(size=14, face="bold", hjust=0.5),
           legend.margin=margin(0,0,0,0),
           legend.box.margin=margin(10,10,10,10))
   
+  return(p_hyper)
+  
+}
+plot_hypo_FC_group <- function(comparison_group,
+                                study,
+                                lm_beta_stat_df,
+                                beta_mag_threshold,
+                                min_fill = 0.7,
+                                max_fill = 1.1,
+                                legend_breaks = NULL) {
+  
+  if (is.null(legend_breaks)) {
+    legend_breaks = seq(min_fill, max_fill, by=0.1)
+  }
+  
+  # Edges are defined as cortical lobe --> specific ROI connection
+  hierarchy <- region_node_to_from %>%
+    filter(Study == study) %>% 
+    distinct() %>%
+    dplyr::select(-Study) %>%
+    arrange(from)
+  
+  # Create a dataframe of vertices, one line per object in the ROI cortical lobe hierarchy
+  vertices = data.frame(name = unique(c(as.character(hierarchy$from), as.character(hierarchy$to))))
+  vertices$group <- hierarchy$from[match(vertices$name, hierarchy$to)]
+  
+  # Create an igraph object
+  mygraph <- graph_from_data_frame(d=hierarchy, vertices=vertices)
+  
   # hypo
-  hypo_data <- t_stats_pyspi14_whole_brain %>%
+  hypo_data <- lm_beta_stat_df %>%
     filter(Comparison_Group == comparison_group) %>%
     group_by(Comparison_Group, Region_Pair) %>%
-    summarise(mean_T = mean(estimate)) %>%
+    summarise(mean_beta = mean(estimate)) %>%
     separate(Region_Pair, into=c("from", "to"), sep="_") %>%
-    filter(mean_T < -1*t_mag_threshold)
+    filter(mean_beta < -1*beta_mag_threshold)
   
   hypo_connect <- hypo_data %>%
-    rename("value" = "mean_T") %>%
-    arrange(from, to)
+    rename("value" = "mean_beta") %>%
+    arrange(to, from)
   
   p_hypo <- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) + 
-    theme_void()
+    theme_void()  
+  data_for_con = data.frame(from_region = match(hypo_connect$from, vertices$name),
+                            to_region = match(hypo_connect$to, vertices$name),
+                            edge_value = hypo_connect$value)
   
-  from <- match(hypo_connect$from, vertices$name)
-  to <- match(hypo_connect$to, vertices$name)
+  legend_breaks_neg = -1*legend_breaks
+  min_fill_neg = -1*max_fill
+  max_fill_neg = -1*min_fill
   
-  p_hypo <- p_hypo + 
-    geom_conn_bundle(data = get_con(from = from, to = to, 
-                                    value=hypo_connect$value), 
-                     tension=0.7, width=1.5, aes(color=value))  +
-    scale_edge_color_gradientn(colors=c("blue", alpha("blue", 0.2)), 
-                               guide = guide_colourbar(available_aes = "edge_colour",
-                                                       reverse = TRUE)) +
-    labs(edge_color="Multi-metric\nT Statistic") + 
-    geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05, colour=group),
+  p_hypo <- p_hypo + geom_conn_bundle(data = get_con(from = data_for_con$from_region, 
+                                                     to = data_for_con$to_region, 
+                                                     value = data_for_con$edge_value), 
+                                      tension=0.7, width=1.5,
+                                      aes(color=value))  +
+    scale_edge_color_gradient2(low=alpha("blue", 0.05), 
+                               mid = alpha("blue", 0.3),
+                               midpoint = -0.9, 
+                               high=alpha("blue", 1),
+                               limits = c(min_fill_neg, max_fill_neg),
+                               # breaks = legend_breaks_neg,
+                               # labels = rev(legend_breaks_neg)
+                               ) +
+    geom_node_point(aes(filter = leaf, x = x*1.05, y=y*1.05, colour=group),   
                     size=2) +
     scale_color_manual(values=c("Cingulate" = "#F8756D",
                                 "Frontal" = "#C39A00",
@@ -796,52 +961,54 @@ plot_hyper_hypo_FC_group <- function(comparison_group,
                                 "Insula" = "#00B6EB",
                                 "Subcortex" = "#A58AFF",
                                 "Temporal" = "#FB61D7"
-    ), guide="none") +
-    labs(color="Cortex") +
+    ), guide="none") + 
+    labs(edge_color="Multi-metric\nlm beta coefficient",
+         color="Cortex") +
     theme_void() + 
     theme(plot.title=element_text(size=14, face="bold", hjust=0.5),
           legend.margin=margin(0,0,0,0),
           legend.box.margin=margin(10,10,10,10))
   
   # Combine
-  final_plot <- p_hyper / p_hypo
-  
-  return(final_plot)
+  return(p_hypo)
   
 }
 
-
+plot_hyper_FC_group(comparison_group = "SCZ",
+                    study = "UCLA_CNP",
+                    lm_beta_stat_df = lm_beta_stats_pyspi14_whole_brain,
+                    beta_mag_threshold = 0.7,
+                    min_fill = 0.7,
+                    max_fill = 1.1)
+plot_hypo_FC_group(comparison_group = "SCZ",
+                    study = "UCLA_CNP",
+                    lm_beta_stat_df = lm_beta_stats_pyspi14_whole_brain,
+                    beta_mag_threshold = 0.7,
+                    min_fill = 0.7,
+                    max_fill = 1.1)
 # Schizophrenia
-plot_hyper_hypo_FC_group(comparison_group = "SCZ",
-  study = "UCLA_CNP",
-  t_stat_df = t_stats_pyspi14_whole_brain,
-  t_mag_threshold = 0.6)
+plot_list <- plot_hyper_hypo_FC_group(comparison_group = "SCZ",
+                         study = "UCLA_CNP",
+                         lm_beta_stat_df = lm_beta_stats_pyspi14_whole_brain,
+                         beta_mag_threshold = 0.7,
+                         min_fill = 0.7,
+                         max_fill = 1.1)
 ggsave(glue("{plot_path}/SCZ_network_plots.png"),
        width=4.25, height=6, units="in", dpi=300)
 
 # BPD
 plot_hyper_hypo_FC_group(comparison_group = "BPD",
                          study = "UCLA_CNP",
-                         t_stat_df = t_stats_pyspi14_whole_brain,
-                         t_mag_threshold = 0.6)
+                         lm_beta_stat_df = lm_beta_stats_pyspi14_whole_brain,
+                         beta_mag_threshold = 0.6)
 ggsave(glue("{plot_path}/BPD_network_plots.png"),
        width=4.25, height=6, units="in", dpi=300)
 
 # ADHD
 plot_hyper_hypo_FC_group(comparison_group = "ADHD",
                          study = "UCLA_CNP",
-                         t_stat_df = t_stats_pyspi14_whole_brain,
-                         t_mag_threshold = 0.6)
+                         lm_beta_stat_df = lm_beta_stats_pyspi14_whole_brain,
+                         beta_mag_threshold = 0.6)
 ggsave(glue("{plot_path}/ADHD_network_plots.png"),
        width=4.25, height=6, units="in", dpi=300)
 
-t_stat_to_plot <- t_stat_df %>% 
-  group_by(Comparison_Group, Region_Pair) %>%
-  summarise(mean_T = mean(estimate)) %>%
-  separate(Region_Pair, into=c("from", "to"), sep="_") %>%
-  filter(abs(mean_T) > 0.6) %>%
-  left_join(., vertices, by=c("from"="name")) %>%
-  dplyr::rename("from_cortex" = "group") %>%
-  left_join(., vertices, by=c("to"="name")) %>%
-  dplyr::rename("to_cortex" = "group") %>%
-  dplyr::select(from_cortex, to_cortex, mean_T, Comparison_Group, from, to)
