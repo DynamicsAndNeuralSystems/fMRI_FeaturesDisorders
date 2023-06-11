@@ -13,11 +13,10 @@ from mixed_sigmoid_normalisation import MixedSigmoidScaler
 def run_k_fold_SVM_for_feature(feature_data, 
                                feature_list,
                                grouping_var_name,
-                               comparison_group,
                                analysis_type,
-                               sample_and_class_df,
-                               scaling_type,
+                               sample_IDs,
                                class_labels,
+                               scaling_type,
                                num_folds = 10,
                                num_repeats = 10,
                                num_jobs = 10):
@@ -26,55 +25,49 @@ def run_k_fold_SVM_for_feature(feature_data,
     print(f"Creating pipeline with {scaling_type} scaler.")
 
     # Define the pipeline -- one for binary predictions, one for probability predictions for ROC
-    if scaling_type == "robust":
-        pipe = Pipeline([('scaler', RobustScaler()), 
-                         ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
-                                     class_weight="balanced"))])
-        prob_pipe = Pipeline([('scaler', RobustScaler()), 
-                         ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
-                                     class_weight="balanced", probability=True))])
-    elif scaling_type == "mixedsigmoid":
+    if scaling_type == "mixedsigmoid":
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                         ('SVM', svm.SVC(kernel = "linear", C = 1, shrinking = False, 
+                         ('SVM', svm.SVC(kernel = "linear", C = 1, 
                          class_weight = "balanced"))])
         prob_pipe = Pipeline([('scaler',  MixedSigmoidScaler(unit_variance=True)), 
-                              ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
+                              ('SVM', svm.SVC(kernel="linear", C=1, 
                              class_weight="balanced", probability=True))])
     else: 
         pipe = Pipeline([('scaler', StandardScaler()), 
-                         ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
+                         ('SVM', svm.SVC(kernel="linear", C=1, 
                                      class_weight="balanced"))])
         prob_pipe = Pipeline([('scaler',  StandardScaler()), 
-                              ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
+                              ('SVM', svm.SVC(kernel="linear", C=1, 
                                  class_weight="balanced", probability=True))])
     
     # Define lists for: 
-    # (1) fold assignments by repeat,
-    # (2) SVM coefficients,
-    # (3) balanced accuracy by fold/repeat,
-    # (4) ROC FPR and TPR by fold/repeat,
-    # (4) individual sample predictions per repeat
+    # (1) balanced accuracy and AUC by fold/repeat,
+    # (2) fold assignments by repeat,
+    # (3) SVM coefficients by fold/repeat
+    # (4) TPR/FPR by fold/repeat
+    test_metrics_by_fold_list = []
     fold_assignments_list = []
     SVM_coefficients_list = []
-    balanced_accuracy_list = []
-    ROC_list = []
-    CV_sample_predictions_list = []
+    TPR_FPR_list = []
     
-    # Get 10-repeat 10-fold balanced accuracy
+    
     for i in range(num_repeats):
         # Initialise sample and class dataframe for repeat
-        sample_and_class_df_for_repeat = sample_and_class_df.copy(deep=True)
         skf = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=i)
         
         # Find splits
         splits = list(skf.split(feature_data, class_labels))
         fold_split_list = []
         
-        # Fit SVM with 10-fold cross-validation
-        cv_results = cross_validate(pipe, feature_data, class_labels, 
-                                    cv=skf, scoring=["balanced_accuracy", "roc_auc"],
+        # Fit SVM with 10-fold cross-validation for balanced accuracy
+        cv_results_balacc = cross_validate(pipe, feature_data, class_labels, 
+                                    cv=skf, scoring=["balanced_accuracy"],
                                     n_jobs = int(num_jobs),
                                     return_estimator=True)
+        
+        # Define a probabilistic SVM for ROC AUC
+        CV_prob = cross_val_predict(prob_pipe, feature_data, class_labels, cv=skf, method="predict_proba")
+        ROC_AUC_by_fold = []
         
         # Extract fold number and feature coefficients
         coef_list = []
@@ -82,14 +75,15 @@ def run_k_fold_SVM_for_feature(feature_data,
         for f in range(num_folds):
             # Split for fold number
             test_indices = splits[f][1]
+            test_sample_IDs = [sample_IDs[index] for index in test_indices]
             test_indices_df = pd.DataFrame(test_indices, columns=["Sample_Index"])
-            test_indices_df["Sample_ID"] = [sample_and_class_df_for_repeat.Sample_ID.tolist()[index] for index in test_indices]
+            test_indices_df["Sample_ID"] = test_sample_IDs
             test_indices_df["Fold"] = f+1
             test_indices_df["Repeat"] = i+1        
             fold_split_list.append(test_indices_df)
             
             # Coefficients
-            SVM_for_fold = cv_results["estimator"][f]["SVM"]
+            SVM_for_fold = cv_results_balacc["estimator"][f]["SVM"]
             SVM_coefs = pd.DataFrame(SVM_for_fold.coef_.T)
             SVM_coefs.reset_index(inplace=True)
             SVM_coefs = SVM_coefs.rename(columns = {'index':'Feature_Number',
@@ -98,6 +92,12 @@ def run_k_fold_SVM_for_feature(feature_data,
             SVM_coefs["Fold"] = f+1
             SVM_coefs["Repeat Number"] = i+1
             coef_list.append(SVM_coefs)
+
+            # TPR and FPR to plot ROC
+            y_true_fold = [class_labels[index] for index in test_indices]
+            y_pred_fold = np.asarray(CV_prob[test_indices,1])
+            roc_auc_for_fold = metrics.roc_auc_score(y_true_fold, y_pred_fold)
+            ROC_AUC_by_fold.append(roc_auc_for_fold)
         
         # Combine lists into dataframes
         fold_splits = pd.concat(fold_split_list)
@@ -108,53 +108,43 @@ def run_k_fold_SVM_for_feature(feature_data,
         coef_df = pd.concat(coef_list)
         coef_df["Analysis_Type"] = analysis_type
         SVM_coefficients_list.append(coef_df)
-        
-        # Extract balanced accuracy by fold
-        balanced_accuracy_by_fold_df = pd.DataFrame(cv_results["test_balanced_accuracy"],
-                                                    columns=["Balanced_Accuracy"])
-        balanced_accuracy_by_fold_df["Fold"] = [*range(1, num_folds + 1, 1)]
-        balanced_accuracy_by_fold_df["Repeat_Number"] = i
-        balanced_accuracy_by_fold_df["Analysis_Type"] = analysis_type
-        balanced_accuracy_list.append(balanced_accuracy_by_fold_df)
-        
-        # Generate CV predictions across folds and save
-        CV_pred = cross_val_predict(pipe, feature_data, class_labels, cv=skf)
-        sample_and_class_df_for_repeat["CV_Predicted_Diagnosis"] = CV_pred
-        sample_and_class_df_for_repeat["Repeat_Number"] = i+1
-        sample_and_class_df_for_repeat["Analysis_Type"] = analysis_type
-        CV_sample_predictions_list.append(sample_and_class_df_for_repeat)
-        
-        # ROC data
-        CV_prob = cross_val_predict(prob_pipe, feature_data, class_labels, cv=skf, method="predict_proba")
-        y_test = np.asarray([int(u==1) for u in class_labels])
+
+        # FPR/TPR for ROC
+        y_true = np.asarray([int(u==1) for u in class_labels])
         y_pred = np.asarray(CV_prob[:,1])
-        fpr, tpr, _ = metrics.roc_curve(y_test, y_pred, drop_intermediate=False)
-        ROC_data = pd.DataFrame(np.column_stack((fpr,tpr)), columns=["fpr", "tpr"])
-        ROC_data["Repeat_Number"] = i+1
-        ROC_data["Analysis_Type"] = analysis_type
-        ROC_list.append(ROC_data)
+        fpr, tpr, _ = metrics.roc_curve(y_true, y_pred, drop_intermediate=False)
+        TPR_FPR_data = pd.DataFrame({"fpr": fpr,
+                                 "tpr": tpr,
+                                 "Repeat_Number": i+1})
         
-    # Concatenate results and save per ROI
+        # Append repeat results
+        TPR_FPR_list.append(TPR_FPR_data)
+
+        # Extract balanced accuracy and ROC AUC by fold
+        test_metrics_by_fold_df = pd.DataFrame({"group_var": grouping_var_name,
+                                                "Analysis_Type": analysis_type,
+                                        "Fold": [*range(1, num_folds + 1, 1)],
+                                        "Repeat_Number": i,
+                                        "Balanced_Accuracy": cv_results_balacc["test_balanced_accuracy"],
+                                        "ROC_AUC": ROC_AUC_by_fold})
+        test_metrics_by_fold_list.append(test_metrics_by_fold_df)
+    
+    test_metrics_by_fold = pd.concat(test_metrics_by_fold_list)
+    test_metrics_by_fold["group_var"] = grouping_var_name
+
     fold_assignments = pd.concat(fold_assignments_list)
     fold_assignments["group_var"] = grouping_var_name
     
     SVM_coefficients = pd.concat(SVM_coefficients_list)
     SVM_coefficients["group_var"] = grouping_var_name
-    
-    balanced_accuracy = pd.concat(balanced_accuracy_list)
-    balanced_accuracy["group_var"] = grouping_var_name
 
-    ROC = pd.concat(ROC_list)
-    ROC["group_var"] = grouping_var_name
+    TPR_FPR = pd.concat(TPR_FPR_list)
+    TPR_FPR["group_var"] = grouping_var_name
     
-    CV_sample_predictions = pd.concat(CV_sample_predictions_list)
-    CV_sample_predictions["group_var"] = grouping_var_name
-    
-    return (fold_assignments,
-            SVM_coefficients,
-            balanced_accuracy,
-            ROC,
-            CV_sample_predictions)
+    return (test_metrics_by_fold,
+            TPR_FPR,
+            fold_assignments,
+            SVM_coefficients)
 
 def run_univariate_SVM(univariate_feature_file,
                        univariate_feature_set, 
@@ -192,9 +182,8 @@ def run_univariate_SVM(univariate_feature_file,
         # Initialise lists for results
         fold_assignments_list = []
         SVM_coefficients_list = []
-        balanced_accuracy_list = []
-        ROC_list = []
-        CV_sample_predictions_list = []
+        test_metrics_list = []
+        TPR_FPR_list = []
         
         ###########################################################################
         # Region-wise
@@ -214,16 +203,17 @@ def run_univariate_SVM(univariate_feature_file,
             # Extract sample ID and diagnosis as lists
             index_data = region_data_wide.index.to_frame().reset_index(drop=True)
             class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
+            sample_IDs = index_data["Sample_ID"].tolist()
+
             # Extract only the feature data
             features_only = region_data_wide.reset_index(drop=True).to_numpy()
             
             # Run SVM
-            (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+            (test_metrics_by_fold, TPR_FPR, fold_assignments, SVM_coefficients) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = feature_list,
                                         grouping_var_name = ROI,
-                                        comparison_group = comparison_to_control_group,
                                         analysis_type = "Univariate_Brain_Region",
-                                        sample_and_class_df = index_data,
+                                        sample_IDs = sample_IDs,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
                                         num_folds = num_folds,
@@ -231,11 +221,10 @@ def run_univariate_SVM(univariate_feature_file,
                                         num_repeats = num_repeats)
             
             # Save to list of dataframes
+            test_metrics_list.append(test_metrics_by_fold)
+            TPR_FPR_list.append(TPR_FPR)
             fold_assignments_list.append(fold_assignments)
             SVM_coefficients_list.append(SVM_coefficients)
-            balanced_accuracy_list.append(balanced_accuracy)
-            ROC_list.append(ROC)
-            CV_sample_predictions_list.append(CV_sample_predictions)
             
         ###########################################################################
         # TS Feature-wise
@@ -254,16 +243,17 @@ def run_univariate_SVM(univariate_feature_file,
             # Extract sample ID and diagnosis as lists
             index_data = TS_feature_data_wide.index.to_frame().reset_index(drop=True)
             class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
+            sample_IDs = index_data["Sample_ID"].tolist()
             
             # Extract only the feature data
             features_only = TS_feature_data_wide.reset_index(drop=True).to_numpy()
             
-            (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+            (test_metrics_by_fold, TPR_FPR, fold_assignments, SVM_coefficients) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = region_list,
                                         grouping_var_name = TS_feature,
                                         analysis_type = "Univariate_TS_Feature",
                                         comparison_group = comparison_to_control_group,
-                                        sample_and_class_df = index_data,
+                                        sample_IDs = sample_IDs,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
                                         num_folds = num_folds,
@@ -271,11 +261,10 @@ def run_univariate_SVM(univariate_feature_file,
                                         num_repeats = num_repeats)
             
             # Save to list of dataframes
+            test_metrics_list.append(test_metrics_by_fold)
+            TPR_FPR_list.append(TPR_FPR)
             fold_assignments_list.append(fold_assignments)
             SVM_coefficients_list.append(SVM_coefficients)
-            balanced_accuracy_list.append(balanced_accuracy)
-            ROC_list.append(ROC)
-            CV_sample_predictions_list.append(CV_sample_predictions)
             
         ###########################################################################
         # Combo-wise
@@ -301,13 +290,14 @@ def run_univariate_SVM(univariate_feature_file,
         # Extract sample ID and diagnosis as lists
         index_data = combo_data_wide.index.to_frame().reset_index(drop=True)
         class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
+        sample_IDs = index_data["Sample_ID"].tolist()
         
-        (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+        (test_metrics_by_fold, TPR_FPR, fold_assignments, SVM_coefficients) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                     feature_list = combo_features,
                                     grouping_var_name = "Combo",
                                     analysis_type = "Univariate_Combo",
                                     comparison_group = comparison_to_control_group,
-                                    sample_and_class_df = index_data,
+                                    sample_IDs = sample_IDs,
                                     class_labels = class_labels,
                                     scaling_type = scaling_type,
                                     num_folds = num_folds,
@@ -315,43 +305,36 @@ def run_univariate_SVM(univariate_feature_file,
                                     num_repeats = num_repeats)
         
         # Save to list of dataframes
+        test_metrics_list.append(test_metrics_by_fold)
+        TPR_FPR_list.append(TPR_FPR)
         fold_assignments_list.append(fold_assignments)
         SVM_coefficients_list.append(SVM_coefficients)
-        balanced_accuracy_list.append(balanced_accuracy)
-        ROC_list.append(ROC)
-        CV_sample_predictions_list.append(CV_sample_predictions)
         
         ###########################################################################
         # Merge + save results
+        test_metrics_res = pd.concat(test_metrics_list).reset_index()
+        TPR_FPR_res = pd.concat(TPR_FPR_list).reset_index()
         fold_assignments_res = pd.concat(fold_assignments_list).reset_index()
         SVM_coefficients_res = pd.concat(SVM_coefficients_list).reset_index()
-        balanced_accuracy_res = pd.concat(balanced_accuracy_list).reset_index()
-        ROC_res = pd.concat(ROC_list).reset_index()
-        CV_sample_predictions_res = pd.concat(CV_sample_predictions_list).reset_index()
         
         # Add comparison group info and normalisation method info
+        test_metrics_res["Comparison_Group"] = comparison_to_control_group
+        test_metrics_res["Scaling_Type"] = scaling_type
+
+        TPR_FPR_res["Comparison_Group"] = comparison_to_control_group
+        TPR_FPR_res["Scaling_Type"] = scaling_type
+
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
         fold_assignments_res["Scaling_Type"] = scaling_type
 
         SVM_coefficients_res["Comparison_Group"] = comparison_to_control_group
         SVM_coefficients_res["Scaling_Type"] = scaling_type
-
-        balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
-        balanced_accuracy_res["Scaling_Type"] = scaling_type
-
-        ROC_res["Comparison_Group"] = comparison_to_control_group
-        ROC_res["Scaling_Type"] = scaling_type
-
-        CV_sample_predictions_res["Comparison_Group"] = comparison_to_control_group
-        CV_sample_predictions_res["Scaling_Type"] = scaling_type
             
         # Save results
+        test_metrics_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy_AUC.feather")
+        TPR_FPR_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_ROC_TPR_FPR.feather")
         fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
-        SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
-        balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
-        ROC_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_ROC.feather")
-        CV_sample_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
-        return (fold_assignments_res, SVM_coefficients_res, balanced_accuracy_res, ROC_res, CV_sample_predictions_res)
+        SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_coefficients.feather")
 
 def run_pairwise_SVM_by_SPI(pairwise_feature_file,
                      SPI_directionality_file,
@@ -510,7 +493,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
                        overwrite=False):
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather") or overwrite:
+    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy_AUC.feather") or overwrite:
         # Define noise label
         noise_label = noise_proc.replace("+", "_")
         
@@ -539,9 +522,8 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
         # Initialise lists for results
         fold_assignments_list = []
         SVM_coefficients_list = []
-        balanced_accuracy_list = []
-        ROC_list = []
-        CV_sample_predictions_list = []
+        test_metrics_list = []
+        TPR_FPR_list = []
         
         ###########################################################################
         # Prepare univariate combo data
@@ -594,6 +576,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
             # Extract sample ID and diagnosis as lists
             index_data = SPI_combo_data_wide.index.to_frame().reset_index(drop=True)
             class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
+            sample_IDs = index_data["Sample_ID"].tolist()
             
             # Impute any NaN with column mean
             SPI_combo_data_imputed = SPI_combo_data_wide.fillna(SPI_combo_data_wide.mean())
@@ -602,12 +585,12 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
             features_only = SPI_combo_data_imputed.reset_index(drop=True).to_numpy()
             
             # Run main SVM
-            (fold_assignments, SVM_coefficients, balanced_accuracy, ROC, CV_sample_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+            (test_metrics_by_fold, TPR_FPR, fold_assignments, SVM_coefficients) = run_k_fold_SVM_for_feature(feature_data = features_only, 
                                         feature_list = feature_list,
                                         grouping_var_name = this_SPI,
                                         comparison_group = comparison_to_control_group,
                                         analysis_type = "Univariate_Pairwise_Combo",
-                                        sample_and_class_df = index_data,
+                                        sample_IDs = sample_IDs,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
                                         num_jobs = num_jobs,
@@ -615,42 +598,38 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
                                         num_repeats = num_repeats)
             
             # Save to list of dataframes
+            test_metrics_list.append(test_metrics_by_fold)
+            TPR_FPR_list.append(TPR_FPR)
             fold_assignments_list.append(fold_assignments)
             SVM_coefficients_list.append(SVM_coefficients)
-            balanced_accuracy_list.append(balanced_accuracy)
-            ROC_list.append(ROC)
-            CV_sample_predictions_list.append(CV_sample_predictions)
+
         
         ###########################################################################
         # Merge + save results
+        test_metrics_res = pd.concat(test_metrics_list).reset_index()
+        TPR_FPR_res = pd.concat(TPR_FPR_list).reset_index()
         fold_assignments_res = pd.concat(fold_assignments_list).reset_index()
         SVM_coefficients_res = pd.concat(SVM_coefficients_list).reset_index()
-        balanced_accuracy_res = pd.concat(balanced_accuracy_list).reset_index()
-        ROC_res = pd.concat(ROC_list).reset_index()
-        CV_sample_predictions_res = pd.concat(CV_sample_predictions_list).reset_index()
         
         # Add comparison group info and normalisation method info
+        test_metrics_res["Comparison_Group"] = comparison_to_control_group
+        test_metrics_res["Scaling_Type"] = scaling_type
+
+        TPR_FPR_res["Comparison_Group"] = comparison_to_control_group
+        TPR_FPR_res["Scaling_Type"] = scaling_type
+
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
         fold_assignments_res["Scaling_Type"] = scaling_type
 
         SVM_coefficients_res["Comparison_Group"] = comparison_to_control_group
         SVM_coefficients_res["Scaling_Type"] = scaling_type
-
-        balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
-        balanced_accuracy_res["Scaling_Type"] = scaling_type
-
-        ROC_res["Comparison_Group"] = comparison_to_control_group
-        ROC_res["Scaling_Type"] = scaling_type
-
-        CV_sample_predictions_res["Comparison_Group"] = comparison_to_control_group
-        CV_sample_predictions_res["Scaling_Type"] = scaling_type
             
         # Save results
+        test_metrics_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy_AUC.feather")
+        TPR_FPR_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_ROC_TPR_FPR.feather")
         fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
         SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
-        balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy.feather")
-        ROC_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_ROC.feather")
-        CV_sample_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_sample_predictions.feather")
+        
 
 def run_pairwise_SVM_all_SPIs(pairwise_feature_file,
                      SPI_directionality_file,
