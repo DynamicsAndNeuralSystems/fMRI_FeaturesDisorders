@@ -6,6 +6,7 @@ library(tidyverse)
 library(icesTAF)
 library(cowplot)
 library(theft)
+library(glue)
 theme_set(theme_cowplot())
 
 ################################################################################
@@ -13,8 +14,8 @@ theme_set(theme_cowplot())
 ################################################################################
 
 github_dir <- "~/github/fMRI_FeaturesDisorders/"
-source("Manuscript_Draft_Visualisations_Helper.R")
-plot_path <- paste0(github_dir, "plots/Manuscript_Draft/FigureS2/")
+source(glue("{github_dir}/data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
+plot_path <- paste0(github_dir, "plots/Manuscript_Draft/normalisation_analysis/")
 icesTAF::mkdir(plot_path)
 
 ASD_data_path <- "~/data/ABIDE_ASD/"
