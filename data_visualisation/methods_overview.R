@@ -40,7 +40,7 @@ dk %>%
   theme_void() +
   theme(plot.title = element_blank(),
         legend.position = "none")
-ggsave(glue("{plot_path}/example_brain.png"),
+ggsave(glue("{plot_path}/example_brain.svg"),
        width=3,height=2,units="in", dpi=300)
 
 # Example brain, univariate
@@ -57,7 +57,7 @@ dk %>%
   theme_void() +
   theme(plot.title = element_blank(),
         legend.position = "none")
-ggsave(glue("{plot_path}/example_brain_univariate.png"),
+ggsave(glue("{plot_path}/example_brain_univariate.svg"),
        width=3,height=2,units="in", dpi=300)
 
 # Example brain, pairwise
@@ -75,7 +75,7 @@ dk %>%
   theme_void() +
   theme(plot.title = element_blank(),
         legend.position = "none")
-ggsave(glue("{plot_path}/example_brain_pairwise.png"),
+ggsave(glue("{plot_path}/example_brain_pairwise.svg"),
        width=3,height=2,units="in", dpi=300)
 
 # Sample feature vector
@@ -86,7 +86,7 @@ data.frame(x=sample(1:24),
   scale_fill_viridis_d() +
   theme_void() +
   theme(legend.position = "none")
-ggsave(glue("{plot_path}/example_feature_vector.png"),
+ggsave(glue("{plot_path}/example_feature_vector.svg"),
        width=3,height=0.2,units="in", dpi=300)
 
 # Brains with 24 example features
@@ -127,7 +127,7 @@ plots <- sample(1:24) %>%
   purrr::map(~ plot_feature_in_brain(fill_color_gradient=brain_colors[.x], 
                                      region_label="all"))
 wrap_plots(plots, nrow=4)
-ggsave(glue("{plot_path}/Univariate_feature_brains.png"),
+ggsave(glue("{plot_path}/Univariate_feature_brains.svg"),
        width=9, height=4.5, units="in", dpi=300, bg="white")
 
 
@@ -145,7 +145,7 @@ data.frame(x=sample(1:14),
   scale_fill_manual(values=pyspi_colors) +
   theme_void() +
   theme(legend.position = "none")
-ggsave(glue("{plot_path}/example_pyspi_feature_vector.png"),
+ggsave(glue("{plot_path}/example_pyspi_feature_vector.svg"),
        width=3,height=0.2,units="in", dpi=300)
 
 # Example network graph
@@ -201,5 +201,5 @@ plot_network_data <- function(edge_color) {
 plots <- sample(1:14) %>%
   purrr::map(~ plot_network_data(pyspi_colors[.x]))
 wrap_plots(plots, nrow=3)
-ggsave(glue("{plot_path}/Pairwise_feature_brains.png"),
+ggsave(glue("{plot_path}/Pairwise_feature_brains.svg"),
        width=9, height=5, units="in", dpi=300, bg="white")
