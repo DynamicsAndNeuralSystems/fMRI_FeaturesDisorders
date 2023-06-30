@@ -3,7 +3,7 @@
 ################################################################################
 
 # python_to_use <- "~/.conda/envs/pyspi/bin/python3"
-python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
 reticulate::use_python(python_to_use)
 
 library(tidyverse)
@@ -147,7 +147,7 @@ plots <- 1:4 %>%
                                      group_color = group_colors[.x]))
 
 wrap_plots(plots, nrow=1)
-ggsave(paste0(plot_path, "mFD_Power_by_Group.png"),
+ggsave(paste0(plot_path, "mFD_Power_by_Group.svg"),
        width = 10, height=2.5, units="in", dpi=300)
 
 
@@ -219,7 +219,7 @@ plyr::rbind.fill(head_motion_univariate_feature_corrs,
                              ncol = 2,
                              byrow=T,
                              title.hjust = 0.5)) 
-ggsave(glue("{plot_path}/Feature_type_colorbar.png"),
+ggsave(glue("{plot_path}/Feature_type_colorbar.svg"),
        width=6, height=6, units="in", dpi=300)
 
 # Heatmap
@@ -235,7 +235,7 @@ plyr::rbind.fill(head_motion_univariate_feature_corrs,
   scale_fill_continuous_divergingx(palette="RdBu", rev=TRUE) +
   ylab("Time-series feature") +
   labs(fill="mFD \u03C1")
-ggsave(glue("{plot_path}/Movement_spearman_feature_corr.png"),
+ggsave(glue("{plot_path}/Movement_spearman_feature_corr.svg"),
        width=6, height=6, units="in", dpi=300)
 
 
@@ -296,7 +296,7 @@ plot_feature_vs_movement(feature_name = "DN_Spread_Std",
                          title_label = "Standard deviation",
                          y_label = "Mean SD across brain",
                          rho_pos = 0)
-ggsave(paste0(plot_path, "mFD_vs_SD.png"),
+ggsave(paste0(plot_path, "mFD_vs_SD.svg"),
        width = 3.75, height=5.75, units="in", dpi=300)
 
 # CO_Embed2_Dist_tau_d_expfit_meandiff
@@ -305,7 +305,7 @@ plot_feature_vs_movement(feature_name = "CO_Embed2_Dist_tau_d_expfit_meandiff",
                          title_label = "Embedding distance",
                          y_label = "Mean embedding distance across brain",
                          rho_pos = 0.35)
-ggsave(paste0(plot_path, "mFD_vs_embedding_distance.png"),
+ggsave(paste0(plot_path, "mFD_vs_embedding_distance.svg"),
        width = 3.75, height=5.75, units="in", dpi=300)
 
 
@@ -399,7 +399,7 @@ asd_mvmt_res <- run_movement_SVM(movement_dataset = ABIDE_ASD_mean_FD,
                                  pipe_obj = pipe)
 
 # Combine results
-do.call(plyr::rbind.fill, list(scz_mvmt_res, bpd_mvmt_res, adhd_mvmt_res, asd_mvmt_res)) %>%
+combined_movement_SVM_res <- do.call(plyr::rbind.fill, list(scz_mvmt_res, bpd_mvmt_res, adhd_mvmt_res, asd_mvmt_res)) %>%
   group_by(Comparison_Group, Repeat) %>%
   summarise(Repeat_Balanced_Accuracy = mean(Balanced_Accuracy, na.rm=T)) %>%
   group_by(Comparison_Group) %>%
@@ -407,7 +407,9 @@ do.call(plyr::rbind.fill, list(scz_mvmt_res, bpd_mvmt_res, adhd_mvmt_res, asd_mv
          Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
                                       Comparison_Group == "Bipolar" ~ "BPD",
                                       T ~ Comparison_Group)) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))%>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))
+
+combined_movement_SVM_res %>%
   ggplot(data=., mapping=aes(x=Comparison_Group, y=100*Repeat_Balanced_Accuracy)) +
   geom_violinhalf(aes(fill=Comparison_Group), scale="width")  +
   geom_boxplot(width=0.1, notch=FALSE, notchwidth = 0.4, outlier.shape = NA,
@@ -428,5 +430,5 @@ do.call(plyr::rbind.fill, list(scz_mvmt_res, bpd_mvmt_res, adhd_mvmt_res, asd_mv
   ylab("Mean Balanced Accuracy\nby Repeat (%)") +
   xlab("Clinical Group") +
   theme(legend.position = "none")
-ggsave(paste0(plot_path, "SVM_movement_balacc.png"),
+ggsave(paste0(plot_path, "SVM_movement_balacc.svg"),
        width = 3, height=3, units="in", dpi=300)
