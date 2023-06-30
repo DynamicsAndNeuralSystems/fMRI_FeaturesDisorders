@@ -43,13 +43,11 @@ source(glue("{github_dir}/data_visualisation/Manuscript_Draft_Visualisations_Hel
 TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
 
 # Load data
-univariate_ROC <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_ROC.feather")) %>%
+univariate_ROC <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_ROC_TPR_FPR.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
-pairwise_ROC <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_ROC.feather")) 
-combined_univariate_pairwise_ROC <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_ROC.feather")) %>%
+pairwise_ROC <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_ROC_TPR_FPR.feather")) 
+combined_univariate_pairwise_ROC <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_ROC_TPR_FPR.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
-pairwise_all_SPIs_ROC <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_all_SPIs_mixedsigmoid_scaler_ROC.feather")) 
-
 
 UCLA_CNP_brain_region_info <- read.csv("~/data/UCLA_CNP/study_metadata/UCLA_CNP_Brain_Region_info.csv")
 ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.txt", sep=";", header = T) %>%

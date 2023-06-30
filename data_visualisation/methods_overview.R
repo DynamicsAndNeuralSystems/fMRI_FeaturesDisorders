@@ -203,3 +203,82 @@ plots <- sample(1:14) %>%
 wrap_plots(plots, nrow=3)
 ggsave(glue("{plot_path}/Pairwise_feature_brains.svg"),
        width=9, height=5, units="in", dpi=300, bg="white")
+
+
+################################################################################
+# Pearson correlation infographic
+# Original time series
+sr <- 100 # sampling rate
+ts <- 1.0/sr # sampling interval
+t <- seq(0, 1, ts)
+freq <- 1
+x <- 2*sin(2*pi*freq*t)
+freq <- 4
+x <- x + sin(2*pi*freq*t)
+freq <- 7
+x <- x + 0.75*sin(2*pi*freq*t)
+
+# Two time series with high magnitude correlation
+set.seed(127)
+x_corr1 <-  x + 0.9*rnorm(101)
+x_corr2 <- x + 0.9*rnorm(101)
+
+# Line plot for the two time series
+data.frame(TS1 = x_corr1,
+           TS2 = x_corr2,
+           timepoint = 1:101) %>%
+  pivot_longer(cols=c(TS1,TS2)) %>%
+  ggplot(data=., mapping=aes(x=timepoint, y=value, group=name, color=name)) +
+  geom_line() +
+  xlab("Time (s)") +
+  ylab("Value") +
+  theme(legend.position="none") +
+  scale_color_manual(values=c("#f88c4d", "#4db9f8"))
+ggsave(glue("{plot_path}/TS_Pair_HighCorr.svg"), width=3, height=1.25, units="in", dpi=300)
+
+data.frame(TS1 = x_corr1,
+           TS2 = x_corr2,
+           timepoint = 1:101) %>%
+  ggplot(data=., mapping=aes(x=TS1, y=TS2)) +
+  geom_point(color="black", size=0.1) +
+  theme(axis.text=element_blank(),
+        axis.title=element_blank(),
+        axis.ticks = element_blank()) +
+  coord_equal()
+ggsave(glue("{plot_path}/TS_Pair_HighCorr_Points.svg"), width=1, height=1, units="in", dpi=300)
+
+cor(x_corr1,x_corr2, method="pearson")
+
+
+# Two time series with low magnitude correlation
+set.seed(127)
+x_corr1 <-  x + 0.9*rnorm(101)
+x_corr2 <- rnorm(101, mean=0, sd=2)
+
+# Line plot for the two time series
+data.frame(TS1 = x_corr1,
+           TS2 = x_corr2,
+           timepoint = 1:101) %>%
+  pivot_longer(cols=c(TS1,TS2)) %>%
+  ggplot(data=., mapping=aes(x=timepoint, y=value, group=name, color=name)) +
+  geom_line() +
+  xlab("Time (s)") +
+  ylab("Value") +
+  theme(legend.position="none") +
+  scale_color_manual(values=c("#f88c4d", "#4db9f8"))
+ggsave(glue("{plot_path}/TS_Pair_LowCorr.svg"), width=3, height=1.25, units="in", dpi=300)
+
+data.frame(TS1 = x_corr1,
+           TS2 = x_corr2,
+           timepoint = 1:101) %>%
+  ggplot(data=., mapping=aes(x=TS1, y=TS2)) +
+  geom_point(color="black", size=0.1) +
+  theme(axis.text=element_blank(),
+        axis.title=element_blank(),
+        axis.ticks = element_blank()) +
+  scale_x_continuous(limits=c(min(x_corr1), max(x_corr1))) +
+  scale_y_continuous(limits=c(min(x_corr1), max(x_corr1))) +
+  coord_equal()
+ggsave(glue("{plot_path}/TS_Pair_LowCorr_Points.svg"), width=1, height=1, units="in", dpi=300)
+
+cor(x_corr1,x_corr2, method="pearson")
