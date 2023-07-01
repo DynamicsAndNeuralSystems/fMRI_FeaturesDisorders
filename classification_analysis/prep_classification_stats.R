@@ -150,8 +150,8 @@ pairwise_balanced_accuracy_AUC <- pairwise_balanced_accuracy_AUC_all_folds %>%
   group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
   reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
           Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T),
-          ROC_AUC_Across_Folds = mean(ROC_AUC_Across_Folds, na.rm=T),
-          ROC_AUC_Across_Folds_SD = sd(ROC_AUC_Across_Folds, na.rm=T))
+          ROC_AUC_Across_Repeats = mean(ROC_AUC_Across_Folds, na.rm=T),
+          ROC_AUC_Across_Repeats_SD = sd(ROC_AUC_Across_Folds, na.rm=T))
 
 #### Combined univariate+pairwise ####            
 # Load balanced accuracy data, or construct if needed
@@ -196,8 +196,8 @@ combined_univariate_pairwise_balanced_accuracy_AUC <- combined_univariate_pairwi
   group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
   reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
           Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T),
-          ROC_AUC_Across_Folds = mean(ROC_AUC_Across_Folds, na.rm=T),
-          ROC_AUC_Across_Folds_SD = sd(ROC_AUC_Across_Folds, na.rm=T))
+          ROC_AUC_Across_Repeats = mean(ROC_AUC_Across_Folds, na.rm=T),
+          ROC_AUC_Across_Repeats_SD = sd(ROC_AUC_Across_Folds, na.rm=T))
 
 # #### Pairwise all SPIs combo ####            
 # # Load balanced accuracy data, or construct if needed
@@ -238,8 +238,8 @@ combined_univariate_pairwise_balanced_accuracy_AUC <- combined_univariate_pairwi
 #   group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
 #   reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
 #           Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T),
-#           ROC_AUC_Across_Folds = mean(ROC_AUC_Across_Folds, na.rm=T),
-#           ROC_AUC_Across_Folds_SD = sd(ROC_AUC_Across_Folds, na.rm=T))
+#           ROC_AUC_Across_Repeats = mean(ROC_AUC_Across_Folds, na.rm=T),
+#           ROC_AUC_Across_Repeats_SD = sd(ROC_AUC_Across_Folds, na.rm=T))
 
 ################################################################################
 # Compile fold assignments
