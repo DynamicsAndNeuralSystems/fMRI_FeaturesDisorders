@@ -63,8 +63,7 @@ SPI_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 UCLA_CNP_brain_region_info <- read.csv("~/data/UCLA_CNP/study_metadata/UCLA_CNP_Brain_Region_info.csv")
 ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.txt", sep=";", header = T) %>%
   mutate(Brain_Region = ifelse(Index==45, "Heschl's Gyrus (includes H1 and H2)", Brain_Region))
-region_node_to_from <- read.csv("~/data/TS_feature_manuscript/node_to_from_structure.csv") %>%
-  mutate(Study = ifelse(Study == "ABIDE", "ABIDE_ASD", "ABIDE"))
+region_node_to_from <- read.csv("~/data/TS_feature_manuscript/node_to_from_structure.csv")
 
 # Map to the coordinates in MNI152 space
 aparc_aseg_coords <- read.csv("/Users/abry4213/data/TS_feature_manuscript/aparc_aseg_MNI_coords.csv", header=F) %>%
@@ -373,7 +372,6 @@ UCLA_CNP_attributes <- region_node_to_from %>%
   dplyr::rename("id" = "to",
                 "cortex" = "from") %>%
   arrange(cortex)
-write.table(UCLA_CNP_attributes, glue("{data_path}/UCLA_CNP_region_attributes.csv"), row.names = F, sep=",")
 
 # ggseg vis for lobes
 UCLA_CNP_attributes %>%
@@ -384,7 +382,7 @@ UCLA_CNP_attributes %>%
   left_join(., dk %>% as_tibble()) %>%
   dplyr::select(-label) %>%
   ggseg(atlas = dk, mapping = aes(fill = cortex),
-        position = "stacked", colour = NA, hemisphere="left") +
+        position = "stacked", colour = "gray20", hemisphere="left") +
   scale_fill_manual(values=c("Cingulate" = "#AECDE1",
                              "Frontal" = "#3C76AF",
                              "Insula" = "#BBDE93",
@@ -397,7 +395,30 @@ UCLA_CNP_attributes %>%
   theme(legend.position = "none")
 ggsave(glue("{plot_path}/cortical_lobes.svg"),
        width=4, height=2, units="in", dpi=300)
-
+# Subcortical lobes
+UCLA_CNP_attributes %>%
+  mutate(label = ifelse(str_detect(id, "ctx-"),
+                        gsub("-", "_", id),
+                        as.character(id))) %>%
+  mutate(label = gsub("ctx_", "", label)) %>%
+  left_join(., aseg %>% as_tibble()) %>%
+  dplyr::select(-label) %>%
+  filter(!is.na(atlas)) %>%
+  ggplot() +
+  geom_brain(atlas = aseg, mapping = aes(fill=cortex), 
+             side = "coronal", colour = "gray20")  +
+  scale_fill_manual(values=c("Cingulate" = "#AECDE1",
+                             "Frontal" = "#3C76AF",
+                             "Insula" = "#BBDE93",
+                             "Occipital" = "#549E3F",
+                             "Parietal" = "#ED9F9C",
+                             "Temporal" = "#F4C17B",
+                             "Subcortex" = "#D0352B"),
+                    na.value = "white") +
+  theme_void() +
+  theme(legend.position = "none")
+ggsave(glue("{plot_path}/subcortical_lobes.svg"),
+       width=2, height=1.5, units="in", dpi=300)
 
 # Write all pairs to a pandas dataframe
 write_all_connected_pairs <- function(study, 

@@ -84,8 +84,56 @@ univariate_balanced_accuracy_AUC_by_repeats <- univariate_balanced_accuracy_AUC_
   left_join(., univariate_p_values %>% dplyr::select(Study:group_var, p_value:p_value_Bonferroni))
 
 ################################################################################
-# Figure 2B univariate region-wise results
+# Univariate region-wise analysis
 ################################################################################
+
+# Cortex-wise violin plots
+lobe_performance <- univariate_p_values %>%
+  filter(Analysis_Type == "Univariate_Brain_Region") %>%
+  mutate(sig = p_value_Bonferroni<0.05) %>%
+  rename("Brain_Region" = "group_var") %>%
+  left_join(., plyr::rbind.fill(UCLA_CNP_brain_region_info, ABIDE_ASD_brain_region_info)) %>%
+  mutate(Group_Nickname =  case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
+                                     Comparison_Group == "Bipolar" ~ "BPD",
+                                     T ~ Comparison_Group)) %>%
+  mutate(Group_Nickname = factor(Group_Nickname, levels=c("SCZ", "BPD", "ADHD", "ASD"))) 
+
+lobe_performance%>%
+  filter(sig) %>%
+  ggplot(data=., mapping=aes(x=Group_Nickname, y=100*Balanced_Accuracy_Across_Repeats,
+                             fill=Cortex, color=Cortex)) +
+  ylab("Balanced Accuracy (%)") +
+  geom_violin(scale="width", position = position_dodge(width = 1), alpha=0.6) +
+  geom_jitter(position = position_dodge(width = 1)) +
+  theme(legend.position="none", 
+        strip.background = element_blank(),
+        strip.text = element_blank(),
+        axis.text = element_text(size=16),
+        axis.title.x = element_text(size=16),
+        axis.title.y = element_blank())  +
+  labs(fill="Cortical Lobe") +
+  facet_grid(Group_Nickname ~ ., scales="free") +
+  scale_fill_manual(values=c("Cingulate" = "#AECDE1",
+                             "Frontal" = "#3C76AF",
+                             "Insula" = "#BBDE93",
+                             "Occipital" = "#549E3F",
+                             "Parietal" = "#ED9F9C",
+                             "Temporal" = "#F4C17B",
+                             "Subcortex" = "#D0352B"),
+                    na.value = "white") +
+  scale_color_manual(values=c("Cingulate" = "#AECDE1",
+                             "Frontal" = "#3C76AF",
+                             "Insula" = "#BBDE93",
+                             "Occipital" = "#549E3F",
+                             "Parietal" = "#ED9F9C",
+                             "Temporal" = "#F4C17B",
+                             "Subcortex" = "#D0352B"),
+                    na.value = "white") +
+  coord_flip()
+ggsave(glue("{plot_path}/Region_wise_violin_plot.svg"),
+       width=3.5, height=6, units="in", dpi=300)
+         
+# Plot balanced accuracy in the brain
 
 # Define dataset with univariate region-wise results
 significant_univariate_region_wise_results <- univariate_p_values %>%
@@ -141,9 +189,7 @@ for (i in 1:nrow(study_group_df)) {
                                         line_color = "gray30",
                                         na_color = "white") +
     labs(fill = "Mean Balanced Accuracy (%)") +
-    theme(plot.title = element_blank(),
-          legend.position = "bottom") +
-    guides(fill = guide_colorsteps(title.position="top", ticks=TRUE, barwidth=10))
+    theme(plot.title = element_blank())
   
   # Append to list
   ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
@@ -160,23 +206,18 @@ for (i in 1:nrow(study_group_df)) {
                                                  line_color = "gray30",
                                                  na_color = "white") +
       labs(fill = "Mean Balanced Accuracy (%)") +
-      theme(plot.title = element_blank(),
-            legend.position = "bottom") +
-      guides(fill = guide_colorsteps(title.position="top", ticks=TRUE, barwidth=12))
+      theme(plot.title = element_blank()) 
     # Append to list
     ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg_subctx)
   }
 }
+wrap_plots(ggseg_plot_list, 
+           ncol=2, 
+           byrow=T) + 
+  plot_layout(guides = "collect")
 
-# Combine plots 
-wrap_plots(ggseg_plot_list, nrow=1, widths=c(0.25, 0.12, 0.25, 0.12, 0.25, 0.12, 0.25)) + 
-  plot_layout(guides = "collect") &
-  theme(legend.position = 'bottom',
-        legend.text = element_text(size=14),
-        legend.title = element_text(size=14)) &
-  guides(fill = guide_colorsteps(title.position="top", ticks=TRUE, barwidth=12))
-ggsave(glue("{plot_path}/Region_wise_results.svg"),
-       width=9, height=3.5, units="in", dpi=300)
+ggsave(glue("{plot_path}/Region_wise_balacc_ggseg.svg"),
+       width=5, height=7, units="in", dpi=300)
 
 # Think about hemisphere differences in performance
 # Plot asymmetry index in classification performance by diagnosis group as a supplement
