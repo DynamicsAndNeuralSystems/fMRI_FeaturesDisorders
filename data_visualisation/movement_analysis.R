@@ -52,7 +52,7 @@ study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
                              Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
 
-data_path <- "~/data/TS_Feature_Manuscript/"
+data_path <- "~/data/TS_feature_manuscript/"
 UCLA_CNP_data_path <- "~/data/UCLA_CNP/"
 ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/"
 
@@ -84,7 +84,8 @@ ABIDE_ASD_pyspi14 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_da
   summarise(mean_across_brain = mean(value, na.rm=T)) %>%
   left_join(., ABIDE_ASD_sample_metadata) %>%
   filter(!is.na(Diagnosis))
-pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
+pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv")) %>%
+  dplyr::rename("Figure_name" = "Nickname")
 
 # Load mean framewise displacement data
 UCLA_CNP_mean_FD <- read.table(glue("{UCLA_CNP_data_path}/movement_data/fmriprep/UCLA_CNP_mFD.txt"), 
@@ -173,7 +174,6 @@ head_motion_univariate_feature_corrs <- UCLA_CNP_catch24 %>%
   select(-data, -test) %>%
   group_by(Study) %>%
   mutate(p_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
-  filter(p_Bonferroni < 0.05) %>%
   arrange(desc(abs(estimate)))
 
 head_motion_pairwise_feature_corrs <- UCLA_CNP_pyspi14 %>%
@@ -190,7 +190,6 @@ head_motion_pairwise_feature_corrs <- UCLA_CNP_pyspi14 %>%
   select(-data, -test) %>%
   group_by(Study) %>%
   mutate(p_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
-  filter(p_Bonferroni < 0.05) %>%
   arrange(desc(abs(estimate))) %>%
   dplyr::rename("names"="SPI")
 
@@ -198,17 +197,22 @@ merged_time_series_info <- catch24_info %>%
   dplyr::rename("names" = "TS_Feature") %>%
   mutate(Feature_Type = "Univariate") %>%
   plyr::rbind.fill(., pyspi14_info %>% 
-                     dplyr::rename("names" = "SPI",
-                                   "Figure_Name" = "Nickname") %>%
+                     dplyr::rename("names" = "SPI") %>%
                      mutate(Feature_Type = "Pairwise"))
-# Annotation bar with feature type
-plyr::rbind.fill(head_motion_univariate_feature_corrs,
+
+
+# Heatmap
+motion_corr_data_for_heatmap <- plyr::rbind.fill(head_motion_univariate_feature_corrs,
                  head_motion_pairwise_feature_corrs) %>%
   left_join(., merged_time_series_info) %>%
   mutate(Study = ifelse(Study == "ABIDE_ASD", "ABIDE", "UCLA CNP")) %>%
-  mutate(Figure_Name = fct_reorder(Figure_Name, estimate, .fun="mean", .desc=F),
-         Feature_Type = fct_reorder(Feature_Type, estimate, .fun="mean", .desc=F)) %>%
-  ggplot(data=., mapping=aes(x=0, y=Figure_Name, fill=Feature_Type)) +
+  mutate(Figure_name = fct_reorder(Figure_name, estimate, .fun="mean")) 
+
+# Annotation bar with feature type
+motion_corr_data_for_heatmap %>%
+  filter(p_Bonferroni < 0.05) %>%
+  mutate(Feature_Type = fct_reorder(Feature_Type, estimate, .fun="mean", .desc=F)) %>%
+  ggplot(data=., mapping=aes(x=0, y=Figure_name, fill=Feature_Type)) +
   geom_tile() +
   theme_void() +
   scale_fill_manual(values=c("#803556", "#E8A6A9")) +
@@ -222,13 +226,10 @@ plyr::rbind.fill(head_motion_univariate_feature_corrs,
 ggsave(glue("{plot_path}/Feature_type_colorbar.svg"),
        width=6, height=6, units="in", dpi=300)
 
-# Heatmap
-plyr::rbind.fill(head_motion_univariate_feature_corrs,
-                 head_motion_pairwise_feature_corrs) %>%
-  left_join(., merged_time_series_info) %>%
-  mutate(Study = ifelse(Study == "ABIDE_ASD", "ABIDE", "UCLA CNP")) %>%
-  mutate(Figure_Name = fct_reorder(Figure_Name, estimate, .fun="mean")) %>%
-  ggplot(data=., mapping=aes(x=Study, y=Figure_Name, fill=estimate)) +
+# Actual heatmap
+motion_corr_data_for_heatmap %>%
+  filter(p_Bonferroni < 0.05) %>%
+  ggplot(data=., mapping=aes(x=Study, y=Figure_name, fill=estimate)) +
   geom_tile() +
   geom_text(aes(label = round(estimate,2)),
             size=5) +
@@ -241,8 +242,7 @@ ggsave(glue("{plot_path}/Movement_spearman_feature_corr.svg"),
 
 ################################################################################
 # Plot individual features vs movement
-plot_feature_vs_movement <- function(feature_name, dataset_to_use, 
-                                     title_label, y_label, rho_pos) {
+plot_feature_vs_movement <- function(feature_name, title_label, y_label, rho_pos) {
   feature_data <- UCLA_CNP_catch24 %>%
     plyr::rbind.fill(., ABIDE_ASD_catch24) %>%
     filter(names == feature_name) %>%
@@ -268,16 +268,8 @@ plot_feature_vs_movement <- function(feature_name, dataset_to_use,
                                 "ADHD" = "#0F9EA9", 
                                 "ASD" = "#C47B2F")) +
     stat_smooth(method="lm", 
-                data=subset(feature_data, Study == dataset_to_use),
                 color="black",
                 se=F) +
-    stat_cor(method="spearman", 
-             aes(label = after_stat(r.label)),
-             data=subset(feature_data, Study == dataset_to_use),
-             size = 6,
-             label.x = rho_pos,
-             cor.coef.name = "rho", 
-             p.accuracy = 0) +
     guides(color = guide_legend(title.position = "top", 
                                 nrow = 3,
                                 byrow=T,
@@ -287,24 +279,29 @@ plot_feature_vs_movement <- function(feature_name, dataset_to_use,
           plot.title = element_text(hjust=0.5),
           strip.placement = "outside")
   
+  # Print correlation
+  cat("Correlations for", feature_name)
+  df <- feature_data %>%
+    group_by(Study) %>%
+    rstatix::cor_test(meanval, Power, method="spearman") %>%
+    select(Study, cor, p)
+  print(df)
+  
   return(p)
 }
 
 # SD
 plot_feature_vs_movement(feature_name = "DN_Spread_Std",
-                         dataset_to_use = "ABIDE",
                          title_label = "Standard deviation",
-                         y_label = "Mean SD across brain",
-                         rho_pos = 0)
+                         y_label = "Mean SD across brain")
+# Calculate corr
 ggsave(paste0(plot_path, "mFD_vs_SD.svg"),
        width = 3.75, height=5.75, units="in", dpi=300)
 
 # CO_Embed2_Dist_tau_d_expfit_meandiff
 plot_feature_vs_movement(feature_name = "CO_Embed2_Dist_tau_d_expfit_meandiff",
-                         dataset_to_use = "UCLA CNP",
                          title_label = "Embedding distance",
-                         y_label = "Mean embedding distance across brain",
-                         rho_pos = 0.35)
+                         y_label = "Mean embedding distance across brain")
 ggsave(paste0(plot_path, "mFD_vs_embedding_distance.svg"),
        width = 3.75, height=5.75, units="in", dpi=300)
 
