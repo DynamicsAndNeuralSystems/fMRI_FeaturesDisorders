@@ -52,6 +52,7 @@ plot_data_with_ggseg_gradient <- function(dataset_ID,
                                  fill_variable,
                                  min_fill=NULL,
                                  max_fill=NULL,
+                                 hemisphere = NULL,
                                  line_color="darkgrey",
                                  na_color="white",
                                  fill_colors=c("blue", "red")) {
@@ -67,13 +68,13 @@ plot_data_with_ggseg_gradient <- function(dataset_ID,
       filter(type!="cortical") %>%
       ggplot() +
       geom_brain(atlas = aseg, mapping = aes_string(fill=fill_variable), 
-                 side = "coronal", colour = line_color)  +
+                 side = "coronal", colour = line_color, hemi=hemisphere)  +
       theme_void() +
       theme(plot.title = element_blank()) 
   } else {
     ggseg_plot <- ggseg_data %>%
       ggseg(atlas = atlas_name, mapping = aes_string(fill = fill_variable),
-            position = "stacked", colour = line_color) +
+            position = "stacked", colour = line_color, hemisphere=hemisphere) +
       theme_void() +
       theme(plot.title = element_blank()) 
   }

@@ -9,6 +9,9 @@
    id="svg1947529"
    inkscape:version="1.2 (dc2aeda, 2022-05-15)"
    sodipodi:docname="movement_analysis.svg"
+   inkscape:export-filename="../final_figures/movement_analysis.pdf"
+   inkscape:export-xdpi="300"
+   inkscape:export-ydpi="300"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -23588,12 +23591,12 @@
              xml:space="preserve"><tspan
                x="0"
                y="10.160562"
-               id="tspan213035">Mean Balanced<tspan
+               id="tspan227550">Mean Balanced<tspan
    y="10.160562"
-   id="tspan213037"> </tspan></tspan><tspan
+   id="tspan227552"> </tspan></tspan><tspan
                x="0"
                y="22.760561"
-               id="tspan213039">Accuracy by</tspan></text>
+               id="tspan227554">Accuracy by</tspan></text>
           <text
              transform="matrix(0,-0.72021325,1,0,32.3,88.883782)"
              text-anchor="middle"

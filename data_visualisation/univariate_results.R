@@ -44,6 +44,7 @@ library(splitstackshape)
 library(DescTools)
 library(metR)
 library(scales)
+library(correctR)
 theme_set(theme_cowplot())
 
 # Source visualisation script
@@ -219,79 +220,8 @@ wrap_plots(ggseg_plot_list,
 ggsave(glue("{plot_path}/Region_wise_balacc_ggseg.svg"),
        width=5, height=7, units="in", dpi=300)
 
-# Think about hemisphere differences in performance
-# Plot asymmetry index in classification performance by diagnosis group as a supplement
-hemisphere_balacc_AI <- univariate_p_values %>%
-  filter(Study == "UCLA_CNP", Analysis_Type == "Univariate_Brain_Region") %>%
-  mutate(Hemisphere = case_when(str_detect(group_var, "Left|lh-") ~ "Left",
-                                str_detect(group_var, "Right|rh-") ~ "Right")) %>%
-  mutate(Brain_Region = gsub("Left-|ctx-lh-|Right-|ctx-rh-", "", group_var)) %>%
-  group_by(Comparison_Group, Brain_Region) %>%
-  filter(any(p_value_Bonferroni < 0.05)) %>%
-  ungroup() %>% 
-  pivot_wider(id_cols = c(Comparison_Group, Brain_Region),
-              names_from = Hemisphere, values_from = Balanced_Accuracy_Across_Repeats) %>%
-  rowwise() %>%
-  mutate(Hemisphere_AI = (Left - Right) / (Left + Right)) 
 
-# Plot regions across conditions
-hemisphere_balacc_AI %>%
-  left_join(., study_group_df) %>%
-  mutate(Brain_Region = fct_reorder(Brain_Region, Hemisphere_AI, 
-                                    .fun="sum", .desc=TRUE),
-         Group_Nickname = factor(Group_Nickname, levels=c("SCZ", "BPD", "ADHD"))) %>%
-  ggplot(data=., mapping=aes(x = Group_Nickname, 
-                             y = Brain_Region, 
-                             fill = Hemisphere_AI)) +
-  geom_tile() +
-  ylab("Brain region") +
-  xlab("Comparison group") +
-  labs(fill = "Asymmetry Index") +
-  scale_fill_continuous_divergingx(palette = "PiYG", mid=0, limits=c(-0.17, 0.17)) +
-  theme(legend.position = "bottom") +
-  scale_y_discrete(limits=rev) +
-  guides(fill = guide_colorbar(title.position = "top", title.hjust=0.5, barwidth=10))
-ggsave(glue("{plot_path}/Hemisphere_Asymmetry_Index_Balacc.svg"),
-       width=4.5, height=7, units="in", dpi=300)
-
-AI_plot_list <- list()
-for (comparison_group in c("Schizophrenia", "Bipolar", "ADHD")) {
-  cortex_plot <- hemisphere_balacc_AI %>% filter(Comparison_Group == comparison_group) %>%
-    mutate(label = paste0("rh_", Brain_Region)) %>%
-    left_join(., dk %>% as_tibble()) %>%
-    filter(!is.na(region)) %>%
-    dplyr::select(-region) %>%
-    ggseg(atlas = "dk", mapping=aes(fill = Hemisphere_AI),
-          hemisphere = "right", color="gray30") +
-    scale_fill_continuous_divergingx(palette = "PiYG", mid=0, limits=c(-0.17, 0.17),
-                                     na.value="white") +
-    theme_void() +
-    theme(legend.position = "bottom") +
-    labs(fill = "Asymmetry Index") +
-    guides(fill = guide_colorbar(title.position = "top", title.hjust=0.5, barwidth=10))
-  
-  subcortex_plot <- hemisphere_balacc_AI %>% filter(Comparison_Group == comparison_group) %>%
-    mutate(label = paste0("Right-", Brain_Region)) %>%
-    left_join(., aseg %>% as_tibble()) %>%
-    filter(!is.na(region)) %>%
-    dplyr::select(-region) %>%
-    ggplot() +
-    geom_brain(atlas = aseg, mapping=aes(fill = Hemisphere_AI),
-          color="gray30", side = "coronal", hemi = "right") +
-    scale_fill_continuous_divergingx(palette = "PiYG", mid=0, limits=c(-0.17, 0.17),
-                                     na.value="white") +
-    theme_void() +
-    theme(legend.position = "bottom") +
-    labs(fill = "Asymmetry Index") +
-    guides(fill = guide_colorbar(title.position = "top", title.hjust=0.5, barwidth=10))
-  AI_plot_list <- list.append(AI_plot_list, cortex_plot, subcortex_plot)
-}
-wrap_plots(AI_plot_list, ncol=2, widths = c(0.6, 0.4)) + 
-  plot_layout(guides = "collect") & 
-  theme(legend.position = 'bottom')
-ggsave(glue("{plot_path}/Hemisphere_Asymmetry_Index_Balacc_in_brain.svg"),
-       width=5, height=5, units="in", dpi=300)
-
+################################################################################
 # Plot ROC of top-performing regions
 top_regions_to_find_AUC <- univariate_p_values %>%
   filter(Analysis_Type == "Univariate_Brain_Region") %>%
