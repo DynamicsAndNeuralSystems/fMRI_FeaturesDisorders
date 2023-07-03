@@ -197,7 +197,7 @@ plyr::rbind.fill(pairwise_p_values,
                                       Comparison_Group == "Bipolar" ~ "BPD",
                                       T ~ Comparison_Group)) %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
-  ggplot(data=., mapping=aes(x=Analysis_Type, y=Balanced_Accuracy_Across_Repeats,
+  ggplot(data=., mapping=aes(x=Analysis_Type, y=100*Balanced_Accuracy_Across_Repeats,
                              group = SPI)) +
   geom_line(aes(color = Comparison_Group, 
                 alpha = significant_diff_with_univariate), show.legend = FALSE) +
@@ -214,7 +214,7 @@ plyr::rbind.fill(pairwise_p_values,
   # scale_x_discrete(labels = wrap_format(7)) +
   xlab("Analysis Type") +
   ylab("Mean Balanced Accuracy (%)") +
-  scale_y_continuous(breaks=c(0.45, 0.55, 0.65)) +
+  scale_y_continuous(breaks=c(45, 55, 65)) +
   scale_x_discrete(expand=c(0,0.2,0,0.2)) +
   theme(legend.position = "bottom",
         strip.placement = "outside",

@@ -10,6 +10,7 @@ TAF::mkdir(plot_path)
 python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
 univariate_feature_set <- "catch24"
+SVM_kernel <- "linear"
 data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
@@ -58,7 +59,16 @@ ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE
 TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
 # Load data
 univariate_balanced_accuracy_AUC_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather")) %>%
-  filter(Univariate_Feature_Set == univariate_feature_set)
+  filter(Univariate_Feature_Set == univariate_feature_set, kernel==SVM_kernel)
+univariate_balanced_accuracy <- univariate_balanced_accuracy_AUC_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, Repeat_Number, kernel) %>%
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T)) %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, kernel) %>%
+  reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
+          Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T),
+          ROC_AUC_Across_Repeats = mean(ROC_AUC_Across_Folds, na.rm=T),
+          ROC_AUC_Across_Repeats_SD = sd(ROC_AUC_Across_Folds, na.rm=T))
 univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
 univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather")) %>%
@@ -99,8 +109,9 @@ lobe_performance <- univariate_p_values %>%
                                      T ~ Comparison_Group)) %>%
   mutate(Group_Nickname = factor(Group_Nickname, levels=c("SCZ", "BPD", "ADHD", "ASD"))) 
 
-lobe_performance%>%
+lobe_performance %>%
   filter(sig) %>%
+  mutate(Cortex = as.factor(Cortex)) %>%
   ggplot(data=., mapping=aes(x=Group_Nickname, y=100*Balanced_Accuracy_Across_Repeats,
                              fill=Cortex, color=Cortex)) +
   ylab("Balanced Accuracy (%)") +
@@ -384,11 +395,10 @@ periodicity_wang_lm_beta_for_ggseg <- lm_beta_stats_catch24_whole_brain %>%
   mutate(estimate = estimate) %>%
   dplyr::select(Study, Comparison_Group, TS_Feature, Brain_Region, TS_Feature, estimate, p.value)
 
-min_fill <- floor(min(periodicity_wang_lm_beta_for_ggseg$estimate))
-max_fill <- ceiling(max(periodicity_wang_lm_beta_for_ggseg$estimate))
-bin_seq <- seq(min_fill, max_fill, by=1)
-fill_colors = rev(c('#B2182B',"#F4A582", "white", "white", 
-                    '#92C5DE', "#4393C3", "#2166AC", "#053061"))
+min_fill <- round(min(periodicity_wang_lm_beta_for_ggseg$estimate),2)
+max_fill <- round(max(periodicity_wang_lm_beta_for_ggseg$estimate),2)
+bin_seq <- round(seq(min_fill, max_fill, by=0.2),1)
+fill_colors <- c("#053061", "#4393C3","white", "white", '#F2686D')
 
 wang_periodicity_lm_in_brain <- plot_feature_in_brain(study_group_df = study_group_df,
                                                       lm_beta_df = periodicity_wang_lm_beta_for_ggseg,
@@ -413,6 +423,10 @@ SD_lm_beta_for_ggseg <- lm_beta_stats_catch24_whole_brain %>%
   filter(TS_Feature == "DN_Spread_Std") %>%
   mutate(estimate = estimate) %>%
   dplyr::select(Study, Comparison_Group, TS_Feature, Brain_Region, TS_Feature, estimate, p.value)
+min_fill <- round(min(SD_lm_beta_for_ggseg$estimate),2)
+max_fill <- round(max(SD_lm_beta_for_ggseg$estimate),2)
+bin_seq <- round(seq(min_fill, max_fill, by=0.2),1)
+fill_colors <- c("#053061", "#2072A6", "#85B9CE", "white", '#FF9373', "#BF0020")
 
 SD_lm_in_brain <- plot_feature_in_brain(study_group_df = study_group_df,
                                                       lm_beta_df = SD_lm_beta_for_ggseg,
@@ -434,6 +448,10 @@ mean_lm_beta_for_ggseg <- lm_beta_stats_catch24_whole_brain %>%
   filter(TS_Feature == "DN_Mean") %>%
   mutate(estimate = estimate) %>%
   dplyr::select(Study, Comparison_Group, TS_Feature, Brain_Region, TS_Feature, estimate, p.value)
+min_fill <- round(min(mean_lm_beta_for_ggseg$estimate),2)
+max_fill <- round(max(mean_lm_beta_for_ggseg$estimate),2)
+bin_seq <- round(seq(min_fill, max_fill, by=0.2),1)
+fill_colors <- c("#053061", "#005D9F", "#2E8AB9", "#82BED8", "white", '#FF9373', "#BF0020")
 
 mean_lm_in_brain <- plot_feature_in_brain(study_group_df = study_group_df,
                                         lm_beta_df = mean_lm_beta_for_ggseg,

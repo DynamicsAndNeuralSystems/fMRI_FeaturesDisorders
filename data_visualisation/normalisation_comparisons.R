@@ -117,7 +117,7 @@ UCLA_CNP_catch24_plot_list <- list(plot_values(UCLA_CNP_catch24_raw_data, norm_t
                                    plot_values(UCLA_CNP_catch24_RS, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
 
 wrap_plots(UCLA_CNP_catch24_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
-ggsave(glue("{plot_path}/UCLA_CNP_catch24_norms.png"), bg="white",
+ggsave(glue("{plot_path}/UCLA_CNP_catch24_norms.svg"), bg="white",
        width = 28, height = 5, units = "in", dpi = 300)
 
 # pyspi14
@@ -126,7 +126,7 @@ UCLA_CNP_pyspi14_plot_list <- list(plot_values(UCLA_CNP_pyspi14_raw_data, norm_t
                                    plot_values(UCLA_CNP_pyspi14_RS, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
 
 wrap_plots(UCLA_CNP_pyspi14_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
-ggsave(glue("{plot_path}/UCLA_CNP_pyspi14_norms.png"), bg="white",
+ggsave(glue("{plot_path}/UCLA_CNP_pyspi14_norms.svg"), bg="white",
        width = 28, height = 5, units = "in", dpi = 300)
 
 # Plot values for ABIDE ASD
@@ -137,7 +137,7 @@ ABIDE_ASD_catch24_plot_list <- list(plot_values(ABIDE_ASD_catch24_raw_data, norm
                                     plot_values(ABIDE_ASD_catch24_RS, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
 
 wrap_plots(ABIDE_ASD_catch24_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
-ggsave(glue("{plot_path}/ABIDE_ASD_catch24_norms.png"), bg="white",
+ggsave(glue("{plot_path}/ABIDE_ASD_catch24_norms.svg"), bg="white",
        width = 28, height = 5, units = "in", dpi = 300)
 
 # pyspi14
@@ -146,5 +146,5 @@ ABIDE_ASD_pyspi14_plot_list <- list(plot_values(ABIDE_ASD_pyspi14_raw_data, norm
                                     plot_values(ABIDE_ASD_pyspi14_RS, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
 
 wrap_plots(ABIDE_ASD_pyspi14_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
-ggsave(glue("{plot_path}/ABIDE_ASD_pyspi14_norms.png"), bg="white",
+ggsave(glue("{plot_path}/ABIDE_ASD_pyspi14_norms.svg"), bg="white",
        width = 28, height = 5, units = "in", dpi = 300)

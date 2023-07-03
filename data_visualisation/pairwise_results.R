@@ -309,10 +309,10 @@ pearson_fc_lm_beta_for_ggseg <- pairwise_lm_beta_stats_by_region_from %>%
   filter(SPI == "cov_EmpiricalCovariance") %>%
   dplyr::select(Study, Comparison_Group, SPI, Brain_Region, mean_lm_beta_magnitude)
 
-min_fill <- floor(min(pearson_fc_lm_beta_for_ggseg$mean_lm_beta_magnitude))
-max_fill <- round(max(pearson_fc_lm_beta_for_ggseg$mean_lm_beta_magnitude), 2)
-bin_seq <- seq(min_fill, max_fill, length.out=5)
-fill_colors <- c("white", "#e6d6eb", "#b688c5", "#884c9c")
+min_fill <- 0
+max_fill <- round(max(pearson_fc_lm_beta_for_ggseg$mean_lm_beta_magnitude), 1)
+bin_seq <- seq(min_fill, max_fill, length.out=7)
+fill_colors <- c("white", "white", colorRampPalette(c("white", "#BB8EC8", "#884c9c"))(4))
 
 pearson_fc_lm_in_brain <- plot_feature_in_brain(study_group_df = study_group_df,
                                                       lm_beta_df = pearson_fc_lm_beta_for_ggseg,
@@ -353,7 +353,10 @@ pearson_balacc_data %>%
   ylab("Univariate Mean\nBalanced Accuracy") +
   xlab("Mean Pearson FC |Beta| from OLS Model") +
   labs(color = "Univariate Classification") +
-  guides(color = guide_legend(nrow=1))
+  guides(color = guide_legend(nrow=1)) + 
+  scale_x_continuous(breaks = seq(min(floor(pearson_balacc_data$mean_lm_beta_magnitude / 0.05) * 0.05), 
+                                  max(ceiling(pearson_balacc_data$mean_lm_beta_magnitude / 0.05) * 0.05), 
+                                  by = 0.05))
 ggsave(glue("{plot_path}/Region_wise_avg_Pearson_vs_BalAcc.svg"),
        width=8, height=2.75, units="in", dpi=300)
 

@@ -2,7 +2,7 @@
 # Load libraries
 ################################################################################
 
-python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
 reticulate::use_python(python_to_use)
 
 library(reticulate)
@@ -29,6 +29,7 @@ TAF::mkdir(plot_path)
 
 UCLA_CNP_data_path <- "~/data/UCLA_CNP/processed_data/"
 ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/processed_data/"
+univariate_feature_set <- "catch24"
 
 # UNIVARIATE 
 # Load catch24 mixed sigmoid-transformed null balanced accuracy for each dataset
@@ -36,14 +37,14 @@ UCLA_CNP_Schizophrenia_univariate_null <- pyarrow_feather$read_feather(glue("{UC
   mutate(Analysis_Type = case_when(str_detect(group_var, "Left|Right|ctx") ~ "Brain_Region",
                                    str_detect(group_var, "Combo") ~ "Combo",
                                    T ~ "TS_Feature"),
-         Study_Group = "UCLA Schizophrenia") %>%
+         Study_Group = "UCLA SCZ") %>%
   filter(Analysis_Type == "Brain_Region")
 
 UCLA_CNP_Bipolar_univariate_null <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_Bipolar_Univariate_catch24_mixedsigmoid_scaler_SVM_null_balanced_accuracy_distributions.feather")) %>%
   mutate(Analysis_Type = case_when(str_detect(group_var, "Left|Right|ctx") ~ "Brain_Region",
                                    str_detect(group_var, "Combo") ~ "Combo",
                                    T ~ "TS_Feature"),
-         Study_Group = "UCLA Bipolar") %>%
+         Study_Group = "UCLA BPD") %>%
   filter(Analysis_Type == "Brain_Region")
 
 UCLA_CNP_ADHD_univariate_null <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_ADHD_Univariate_catch24_mixedsigmoid_scaler_SVM_null_balanced_accuracy_distributions.feather")) %>%
@@ -61,17 +62,17 @@ ABIDE_ASD_univariate_null <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_
   filter(Analysis_Type == "Brain_Region")
 
 # Combine into one null dataset
-UCLA_CNP_all_univariate_null <- do.call(plyr::rbind.fill, list(UCLA_CNP_ADHD_univariate_null, 
-                                            UCLA_CNP_univariate_Bipolar_null,
-                                            UCLA_CNP_univariate_Schizophrenia_null))
-
+UCLA_CNP_univariate_null <- do.call(plyr::rbind.fill, list(UCLA_CNP_ADHD_univariate_null, 
+                                                      UCLA_CNP_Bipolar_univariate_null,
+                                                      UCLA_CNP_Schizophrenia_univariate_null))
 
 # Plot in one ridgeline plot
-UCLA_univariate_null_plot <- UCLA_CNP_all_univariate_null %>%
+UCLA_CNP_null_plot <- UCLA_CNP_univariate_null %>%
   mutate(group_var = str_replace_all(group_var, "-", " ")) %>%
   mutate(group_var = str_replace_all(group_var, "ctx rh ", "Right ")) %>%
   mutate(group_var = str_replace_all(group_var, "ctx lh ", "Left ")) %>%
-  ggplot(data=., mapping=aes(x=Null_Balanced_Accuracy, 
+  mutate(Study_Group = factor(Study_Group, levels = c("UCLA SCZ", "UCLA BPD", "UCLA ADHD"))) %>%
+  ggplot(data=., mapping=aes(x=100*Null_Balanced_Accuracy, 
                              y=group_var, 
                              height = after_stat(density),
                              fill = group_var)) +
@@ -86,7 +87,7 @@ UCLA_univariate_null_plot <- UCLA_CNP_all_univariate_null %>%
         axis.text.y = element_text(size=9))
 
 ABIDE_univariate_null_plot <- ABIDE_ASD_univariate_null %>%
-  ggplot(data=., mapping=aes(x=Null_Balanced_Accuracy, 
+  ggplot(data=., mapping=aes(x=100*Null_Balanced_Accuracy, 
                              y=group_var, 
                              height = after_stat(density),
                              fill = group_var)) +
@@ -100,26 +101,26 @@ ABIDE_univariate_null_plot <- ABIDE_ASD_univariate_null %>%
         axis.text.y = element_text(size=8)) +
   scale_y_discrete(labels = wrap_format(45))
 
-wrap_plots(list(UCLA_univariate_null_plot, ABIDE_univariate_null_plot), widths = c(0.75, 0.25))
+wrap_plots(list(UCLA_CNP_null_plot, ABIDE_univariate_null_plot), widths = c(0.75, 0.25))
 
-ggsave(glue("{plot_path}/univariate_null_distributions.png"), 
+ggsave(glue("{plot_path}/univariate_null_distributions.svg"), 
        width = 12, height = 10, units="in", dpi=300)
 
 
 ################################################################################
 # Load data
-univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather")) %>%
+univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
 univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
 univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_empirical_p_values.feather"))%>%
   filter(Univariate_Feature_Set == univariate_feature_set)
 
-pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
+pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather"))
 pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
 pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 
-combined_univariate_pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_balanced_accuracy_all_folds.feather"))
+combined_univariate_pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather"))
 combined_univariate_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
 combined_univariate_pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 
@@ -172,7 +173,7 @@ plot_data_vs_null(input_null_distribution=univariate_null_distribution,
                                                       analysis_type= "Univariate_Brain_Region", 
                                                       line_width=0.2, 
                                                       line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
-ggsave(glue("{plot_path}/univariate_region_main_vs_null_balanced_acc.png"),
+ggsave(glue("{plot_path}/univariate_region_main_vs_null_balanced_acc.svg"),
        width=6, height=3.5, units="in", dpi=300)
 
 # Univariate feature-wise
@@ -181,7 +182,7 @@ plot_data_vs_null(input_null_distribution=univariate_null_distribution,
                                                       analysis_type= "Univariate_TS_Feature", 
                                                       line_width=0.3, 
                                                       line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
-ggsave(glue("{plot_path}/univariate_feature_main_vs_null_balanced_acc.png"),
+ggsave(glue("{plot_path}/univariate_feature_main_vs_null_balanced_acc.svg"),
        width=6, height=3.5, units="in", dpi=300)
 
 # Univariate combo-wise
@@ -191,7 +192,7 @@ plot_data_vs_null(input_null_distribution=univariate_null_distribution,
                   line_width=1, 
                   num_bins=30,
                   line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
-ggsave(glue("{plot_path}/univariate_combo_main_vs_null_balanced_acc.png"),
+ggsave(glue("{plot_path}/univariate_combo_main_vs_null_balanced_acc.svg"),
        width=4.5, height=3.5, units="in", dpi=300)
 
 # Pairwise region-wise
@@ -200,7 +201,7 @@ plot_data_vs_null(input_null_distribution=pairwise_null_distribution,
                   analysis_type= "Pairwise_SPI", 
                   line_width=0.5, 
                   line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
-ggsave(glue("{plot_path}/pairwise_SPI_main_vs_null_balanced_acc.png"),
+ggsave(glue("{plot_path}/pairwise_SPI_main_vs_null_balanced_acc.svg"),
        width=6, height=3.5, units="in", dpi=300)
 
 # Pairwise SPI + univariate combo
@@ -209,5 +210,5 @@ plot_data_vs_null(input_null_distribution=combined_univariate_pairwise_null_dist
                   analysis_type= "SPI_Univariate_Combo", 
                   line_width=0.5, 
                   line_colors=c("#573DC7", "#D5492A", "#0F9EA9", "#C47B2F"))
-ggsave(glue("{plot_path}/combined_univariate_pairwise_SPI_wise_main_vs_null_balanced_acc.png"),
+ggsave(glue("{plot_path}/combined_univariate_pairwise_SPI_wise_main_vs_null_balanced_acc.svg"),
        width=6, height=3.5, units="in", dpi=300)

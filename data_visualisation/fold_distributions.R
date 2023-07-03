@@ -6,11 +6,11 @@ github_dir <- "~/github/fMRI_FeaturesDisorders/"
 UCLA_CNP_data_path <- "~/data/UCLA_CNP/"
 ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/"
 data_path <- "~/data/TS_feature_manuscript"
-plot_path <- "~/github/fMRI_FeaturesDisorders/plots/Manuscript_Draft/FigureS6/"
+plot_path <- "~/github/fMRI_FeaturesDisorders/plots/Manuscript_Draft/fold_assignment/"
 TAF::mkdir(plot_path)
 
 # python_to_use <- "~/.conda/envs/pyspi/bin/python3"
-python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
 
 reticulate::use_python(python_to_use)
 
@@ -37,8 +37,8 @@ UCLA_CNP_sample_metadata <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_pa
 ABIDE_ASD_sample_metadata <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/study_metadata/ABIDE_ASD_sample_metadata.feather"))
 
 # Load fold assignments
-univariate_fold_assignments <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_robustsigmoid_scaler_fold_assignments.feather")) %>%
-  filter(Univariate_Feature_Set == "catch22")
+univariate_fold_assignments <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_fold_assignments.feather")) %>%
+  filter(Univariate_Feature_Set == "catch24")
 
 ################################################################################
 # Heatmap visualisations
@@ -106,13 +106,13 @@ ABIDE_ASD_heatmap <- univariate_fold_assignments %>%
                            plot_title = "ABIDE -- ASD")
 
 wrap_plots(list(UCLA_scz_heatmap,
-                UCLA_ADHD_heatmap,
                 UCLA_bipolar_heatmap,
+                UCLA_ADHD_heatmap,
                 ABIDE_ASD_heatmap),
            ncol = 1) + 
   plot_layout(guides = "collect") & theme(legend.position = 'bottom',
                                           plot.title = element_text(size=12))
-ggsave(glue("{plot_path}/All_catch22_robustsigmoid_scaler_fold_distributions.png"),
+ggsave(glue("{plot_path}/All_catch24_robustsigmoid_scaler_fold_distributions.svg"),
        width = 8, height = 9, units="in", dpi=300)
 
 ################################################################################
@@ -122,11 +122,11 @@ ggsave(glue("{plot_path}/All_catch22_robustsigmoid_scaler_fold_distributions.png
 
 univariate_fold_assignments %>%
   filter(Study == "UCLA_CNP", Comparison_Group == "Schizophrenia",
-         Analysis_Type == "Brain_Region", Univariate_Feature_Set == "catch22", 
-         Repeat == 1, Scaling_Type == "robustsigmoid") %>%
+         Analysis_Type == "Brain_Region", Univariate_Feature_Set == "catch24", 
+         Repeat == 1, Scaling_Type == "mixedsigmoid") %>%
   mutate(Fold = factor(Fold)) %>%
   ggplot(data = ., mapping = aes(x=fct_reorder(Sample_ID, as.numeric(Fold)), y = group_var, fill = Fold)) +
-  geom_tile() +
+  geom_raster() +
   scale_fill_viridis_d() +
   ylab("Brain Region") +
   labs(fill = "Fold # in Repeat 1") +
@@ -141,7 +141,7 @@ univariate_fold_assignments %>%
                              nrow = 1,
                              title.hjust = 0.5,
                              label.position = "bottom")) 
-ggsave(glue("{plot_path}/UCLA_CNP_Schizophrenia_Brain_Regions_Repeat1_Allocations.png"),
+ggsave(glue("{plot_path}/UCLA_CNP_Schizophrenia_Brain_Regions_Repeat1_Allocations.svg"),
        width = 5, height = 9, units="in", dpi=300)
 
 
@@ -150,7 +150,7 @@ ggsave(glue("{plot_path}/UCLA_CNP_Schizophrenia_Brain_Regions_Repeat1_Allocation
 ################################################################################
 
 # UCLA Schizophrenia vs. control
-UCLA_CNP_schizophrenia_catch22_fold_assignments %>%
+UCLA_CNP_schizophrenia_catch24_fold_assignments %>%
   mutate(num_samples = length(unique(Sample_ID))) %>%
   group_by(group_var, Repeat) %>%
   mutate(Control_Prop = sum(Diagnosis == "Control")/num_samples) %>%
@@ -166,7 +166,7 @@ UCLA_CNP_schizophrenia_catch22_fold_assignments %>%
 
 
 # UCLA ADHD vs. control
-UCLA_CNP_ADHD_catch22_fold_assignments %>%
+UCLA_CNP_ADHD_catch24_fold_assignments %>%
   mutate(num_samples = length(unique(Sample_ID))) %>%
   group_by(group_var, Repeat) %>%
   mutate(Control_Prop = sum(Diagnosis == "Control")/num_samples) %>%
@@ -183,7 +183,7 @@ UCLA_CNP_ADHD_catch22_fold_assignments %>%
 
 
 # UCLA bipolar vs. control
-UCLA_CNP_bipolar_catch22_fold_assignments %>%
+UCLA_CNP_bipolar_catch24_fold_assignments %>%
   mutate(num_samples = length(unique(Sample_ID))) %>%
   group_by(group_var, Repeat) %>%
   mutate(Control_Prop = sum(Diagnosis == "Control")/num_samples) %>%
@@ -200,7 +200,7 @@ UCLA_CNP_bipolar_catch22_fold_assignments %>%
 
 
 # ABIDE ASD vs. control
-ABIDE_ASD_catch22_fold_assignments %>%
+ABIDE_ASD_catch24_fold_assignments %>%
   mutate(num_samples = length(unique(Sample_ID))) %>%
   group_by(group_var, Repeat) %>%
   mutate(Control_Prop = sum(Diagnosis == "Control")/num_samples) %>%
