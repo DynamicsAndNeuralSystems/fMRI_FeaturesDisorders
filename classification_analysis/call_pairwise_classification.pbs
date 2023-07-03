@@ -16,6 +16,7 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise
 --noise_proc $noise_proc \
 --num_folds $num_folds \
 --scaling_type $scaling_type \
+--kernel $kernel \
 --num_jobs $num_jobs \
 --num_repeats $num_repeats \
 --dataset_ID $dataset_ID"

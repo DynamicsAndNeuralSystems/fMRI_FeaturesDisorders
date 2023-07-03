@@ -17,6 +17,7 @@ def run_k_fold_SVM_for_feature(feature_data,
                                sample_IDs,
                                class_labels,
                                scaling_type,
+                               kernel = "linear",
                                num_folds = 10,
                                num_repeats = 10,
                                num_jobs = 10):
@@ -27,17 +28,17 @@ def run_k_fold_SVM_for_feature(feature_data,
     # Define the pipeline -- one for binary predictions, one for probability predictions for ROC
     if scaling_type == "mixedsigmoid":
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                         ('SVM', svm.SVC(kernel = "linear", C = 1, 
+                         ('SVM', svm.SVC(kernel = kernel, C = 1, 
                          class_weight = "balanced"))])
         prob_pipe = Pipeline([('scaler',  MixedSigmoidScaler(unit_variance=True)), 
-                              ('SVM', svm.SVC(kernel="linear", C=1, 
+                              ('SVM', svm.SVC(kernel=kernel, C=1, 
                              class_weight="balanced", probability=True))])
     else: 
         pipe = Pipeline([('scaler', StandardScaler()), 
-                         ('SVM', svm.SVC(kernel="linear", C=1, 
+                         ('SVM', svm.SVC(kernel=kernel, C=1, 
                                      class_weight="balanced"))])
         prob_pipe = Pipeline([('scaler',  StandardScaler()), 
-                              ('SVM', svm.SVC(kernel="linear", C=1, 
+                              ('SVM', svm.SVC(kernel=kernel, C=1, 
                                  class_weight="balanced", probability=True))])
     
     # Define lists for: 
@@ -69,6 +70,7 @@ def run_k_fold_SVM_for_feature(feature_data,
         CV_prob = cross_val_predict(prob_pipe, feature_data, class_labels, cv=skf, method="predict_proba")
         ROC_AUC_by_fold = []
         
+
         # Extract fold number and feature coefficients
         coef_list = []
         
@@ -82,16 +84,17 @@ def run_k_fold_SVM_for_feature(feature_data,
             test_indices_df["Repeat"] = i+1        
             fold_split_list.append(test_indices_df)
             
-            # Coefficients
-            SVM_for_fold = cv_results_balacc["estimator"][f]["SVM"]
-            SVM_coefs = pd.DataFrame(SVM_for_fold.coef_.T)
-            SVM_coefs.reset_index(inplace=True)
-            SVM_coefs = SVM_coefs.rename(columns = {'index':'Feature_Number',
-                                                          0: "Coefficient"})
-            SVM_coefs["Feature Name"] = feature_list
-            SVM_coefs["Fold"] = f+1
-            SVM_coefs["Repeat Number"] = i+1
-            coef_list.append(SVM_coefs)
+            if kernel == "linear":
+                # Coefficients
+                SVM_for_fold = cv_results_balacc["estimator"][f]["SVM"]
+                SVM_coefs = pd.DataFrame(SVM_for_fold.coef_.T)
+                SVM_coefs.reset_index(inplace=True)
+                SVM_coefs = SVM_coefs.rename(columns = {'index':'Feature_Number',
+                                                            0: "Coefficient"})
+                SVM_coefs["Feature Name"] = feature_list
+                SVM_coefs["Fold"] = f+1
+                SVM_coefs["Repeat Number"] = i+1
+                coef_list.append(SVM_coefs)
 
             # TPR and FPR to plot ROC
             y_true_fold = [class_labels[index] for index in test_indices]
@@ -104,10 +107,11 @@ def run_k_fold_SVM_for_feature(feature_data,
         fold_splits["Analysis_Type"] = analysis_type
         fold_assignments_list.append(fold_splits)
 
-        # Add sample ID name based on index
-        coef_df = pd.concat(coef_list)
-        coef_df["Analysis_Type"] = analysis_type
-        SVM_coefficients_list.append(coef_df)
+        if kernel == "linear":
+            # Add sample ID name based on index
+            coef_df = pd.concat(coef_list)
+            coef_df["Analysis_Type"] = analysis_type
+            SVM_coefficients_list.append(coef_df)
 
         # FPR/TPR for ROC
         y_true = np.asarray([int(u==1) for u in class_labels])
@@ -134,17 +138,22 @@ def run_k_fold_SVM_for_feature(feature_data,
 
     fold_assignments = pd.concat(fold_assignments_list)
     fold_assignments["group_var"] = grouping_var_name
-    
-    SVM_coefficients = pd.concat(SVM_coefficients_list)
-    SVM_coefficients["group_var"] = grouping_var_name
 
     TPR_FPR = pd.concat(TPR_FPR_list)
     TPR_FPR["group_var"] = grouping_var_name
     
-    return (test_metrics_by_fold,
-            TPR_FPR,
-            fold_assignments,
-            SVM_coefficients)
+    if kernel == "linear":
+        SVM_coefficients = pd.concat(SVM_coefficients_list)
+        SVM_coefficients["group_var"] = grouping_var_name
+    
+        return (test_metrics_by_fold,
+                TPR_FPR,
+                fold_assignments,
+                SVM_coefficients)
+    else:
+        return (test_metrics_by_fold,
+                TPR_FPR,
+                fold_assignments)
 
 def run_univariate_SVM(univariate_feature_file,
                        univariate_feature_set, 
@@ -155,6 +164,7 @@ def run_univariate_SVM(univariate_feature_file,
                        data_path,
                        pydata_path,
                        noise_proc,
+                       kernel="linear",
                        num_folds = 10,
                        scaling_type="mixedsigmoid",
                        num_jobs = 8,
@@ -162,7 +172,7 @@ def run_univariate_SVM(univariate_feature_file,
                        overwrite=False):
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy_AUC.feather") or overwrite:
+    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{kernel}_SVM_balanced_accuracy_AUC.feather") or overwrite:
         noise_label = noise_proc.replace("+", "_")
 
         # Load metadata
@@ -209,22 +219,37 @@ def run_univariate_SVM(univariate_feature_file,
             features_only = region_data_wide.reset_index(drop=True).to_numpy()
             
             # Run SVM
-            (test_metrics_by_fold, TPR_FPR, fold_assignments, SVM_coefficients) = run_k_fold_SVM_for_feature(feature_data = features_only, 
-                                        feature_list = feature_list,
-                                        grouping_var_name = ROI,
-                                        analysis_type = "Univariate_Brain_Region",
-                                        sample_IDs = sample_IDs,
-                                        class_labels = class_labels,
-                                        scaling_type = scaling_type,
-                                        num_folds = num_folds,
-                                        num_jobs = num_jobs,
-                                        num_repeats = num_repeats)
+            if kernel == "linear":
+                (test_metrics_by_fold, TPR_FPR, fold_assignments, SVM_coefficients) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+                                            feature_list = feature_list,
+                                            grouping_var_name = ROI,
+                                            analysis_type = "Univariate_Brain_Region",
+                                            sample_IDs = sample_IDs,
+                                            class_labels = class_labels,
+                                            scaling_type = scaling_type,
+                                            kernel = kernel,
+                                            num_folds = num_folds,
+                                            num_jobs = num_jobs,
+                                            num_repeats = num_repeats)
+
+                SVM_coefficients_list.append(SVM_coefficients)
+            else: 
+                (test_metrics_by_fold, TPR_FPR, fold_assignments) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+                            feature_list = feature_list,
+                            grouping_var_name = ROI,
+                            analysis_type = "Univariate_Brain_Region",
+                            sample_IDs = sample_IDs,
+                            class_labels = class_labels,
+                            scaling_type = scaling_type,
+                            kernel = kernel,
+                            num_folds = num_folds,
+                            num_jobs = num_jobs,
+                            num_repeats = num_repeats)
             
             # Save to list of dataframes
             test_metrics_list.append(test_metrics_by_fold)
             TPR_FPR_list.append(TPR_FPR)
             fold_assignments_list.append(fold_assignments)
-            SVM_coefficients_list.append(SVM_coefficients)
             
         ###########################################################################
         # TS Feature-wise
@@ -248,22 +273,38 @@ def run_univariate_SVM(univariate_feature_file,
             # Extract only the feature data
             features_only = TS_feature_data_wide.reset_index(drop=True).to_numpy()
             
-            (test_metrics_by_fold, TPR_FPR, fold_assignments, SVM_coefficients) = run_k_fold_SVM_for_feature(feature_data = features_only, 
-                                        feature_list = region_list,
-                                        grouping_var_name = TS_feature,
-                                        analysis_type = "Univariate_TS_Feature",
-                                        sample_IDs = sample_IDs,
-                                        class_labels = class_labels,
-                                        scaling_type = scaling_type,
-                                        num_folds = num_folds,
-                                        num_jobs = num_jobs,
-                                        num_repeats = num_repeats)
+            # Run SVM
+            if kernel == "linear":
+                (test_metrics_by_fold, TPR_FPR, fold_assignments, SVM_coefficients) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+                                            feature_list = region_list,
+                                            grouping_var_name = TS_feature,
+                                            analysis_type = "Univariate_TS_Feature",
+                                            sample_IDs = sample_IDs,
+                                            class_labels = class_labels,
+                                            scaling_type = scaling_type,
+                                            kernel = kernel,
+                                            num_folds = num_folds,
+                                            num_jobs = num_jobs,
+                                            num_repeats = num_repeats)
+
+                SVM_coefficients_list.append(SVM_coefficients)
+            else: 
+                (test_metrics_by_fold, TPR_FPR, fold_assignments) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+                            feature_list = region_list,
+                            grouping_var_name = TS_feature,
+                            analysis_type = "Univariate_TS_Feature",
+                            sample_IDs = sample_IDs,
+                            class_labels = class_labels,
+                            scaling_type = scaling_type,
+                            kernel = kernel,
+                            num_folds = num_folds,
+                            num_jobs = num_jobs,
+                            num_repeats = num_repeats)
             
             # Save to list of dataframes
             test_metrics_list.append(test_metrics_by_fold)
             TPR_FPR_list.append(TPR_FPR)
             fold_assignments_list.append(fold_assignments)
-            SVM_coefficients_list.append(SVM_coefficients)
             
         ###########################################################################
         # Combo-wise
@@ -291,48 +332,69 @@ def run_univariate_SVM(univariate_feature_file,
         class_labels = [int(i==comparison_to_control_group) for i in index_data["Diagnosis"].tolist()]
         sample_IDs = index_data["Sample_ID"].tolist()
         
-        (test_metrics_by_fold, TPR_FPR, fold_assignments, SVM_coefficients) = run_k_fold_SVM_for_feature(feature_data = features_only, 
-                                    feature_list = combo_features,
+        # Run SVM
+        if kernel == "linear":
+            (test_metrics_by_fold, TPR_FPR, fold_assignments, SVM_coefficients) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+                                        feature_list = combo_features,
+                                        grouping_var_name = "Combo",
+                                        analysis_type = "Univariate_Combo",
+                                        sample_IDs = sample_IDs,
+                                        class_labels = class_labels,
+                                        scaling_type = scaling_type,
+                                        kernel = kernel,
+                                        num_folds = num_folds,
+                                        num_jobs = num_jobs,
+                                        num_repeats = num_repeats)
+
+            SVM_coefficients_list.append(SVM_coefficients)
+        else: 
+            (test_metrics_by_fold, TPR_FPR, fold_assignments) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+                        feature_list = combo_features,
                                     grouping_var_name = "Combo",
                                     analysis_type = "Univariate_Combo",
-                                    sample_IDs = sample_IDs,
-                                    class_labels = class_labels,
-                                    scaling_type = scaling_type,
-                                    num_folds = num_folds,
-                                    num_jobs = num_jobs,
-                                    num_repeats = num_repeats)
+                        sample_IDs = sample_IDs,
+                        class_labels = class_labels,
+                        scaling_type = scaling_type,
+                        kernel = kernel,
+                        num_folds = num_folds,
+                        num_jobs = num_jobs,
+                        num_repeats = num_repeats)
         
         # Save to list of dataframes
         test_metrics_list.append(test_metrics_by_fold)
         TPR_FPR_list.append(TPR_FPR)
         fold_assignments_list.append(fold_assignments)
-        SVM_coefficients_list.append(SVM_coefficients)
         
         ###########################################################################
         # Merge + save results
         test_metrics_res = pd.concat(test_metrics_list).reset_index()
         TPR_FPR_res = pd.concat(TPR_FPR_list).reset_index()
         fold_assignments_res = pd.concat(fold_assignments_list).reset_index()
-        SVM_coefficients_res = pd.concat(SVM_coefficients_list).reset_index()
         
         # Add comparison group info and normalisation method info
         test_metrics_res["Comparison_Group"] = comparison_to_control_group
         test_metrics_res["Scaling_Type"] = scaling_type
+        test_metrics_res["Kernel"] = kernel
 
         TPR_FPR_res["Comparison_Group"] = comparison_to_control_group
         TPR_FPR_res["Scaling_Type"] = scaling_type
+        TPR_FPR_res["Kernel"] = kernel
 
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
         fold_assignments_res["Scaling_Type"] = scaling_type
+        fold_assignments_res["Kernel"] = kernel
 
-        SVM_coefficients_res["Comparison_Group"] = comparison_to_control_group
-        SVM_coefficients_res["Scaling_Type"] = scaling_type
-            
-        # Save results
-        test_metrics_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy_AUC.feather")
-        TPR_FPR_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_ROC_TPR_FPR.feather")
-        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
-        SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_coefficients.feather")
+        test_metrics_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{kernel}_SVM_balanced_accuracy_AUC.feather")
+        TPR_FPR_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{kernel}_SVM_ROC_TPR_FPR.feather")
+        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{kernel}_SVM_fold_assignments.feather")
+        
+        # Save SVM coefficients if linear kernel
+        if kernel == "linear":
+            SVM_coefficients_res = pd.concat(SVM_coefficients_list).reset_index()
+            SVM_coefficients_res["Comparison_Group"] = comparison_to_control_group
+            SVM_coefficients_res["Scaling_Type"] = scaling_type
+            SVM_coefficients_res["Kernel"] = kernel
+            SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{kernel}_SVM_coefficients.feather")
 
 def run_pairwise_SVM_by_SPI(pairwise_feature_file,
                      SPI_directionality_file,
@@ -344,6 +406,7 @@ def run_pairwise_SVM_by_SPI(pairwise_feature_file,
                        pydata_path,
                        data_path,
                        noise_proc,
+                       kernel = "linear",
                        num_folds = 10,
                        scaling_type="mixedsigmoid",
                        num_jobs = 10,
@@ -352,7 +415,7 @@ def run_pairwise_SVM_by_SPI(pairwise_feature_file,
     
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy_AUC.feather") or overwrite:
+    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_balanced_accuracy_AUC.feather") or overwrite:
 
         # Define noise label
         noise_label = noise_proc.replace("+", "_")
@@ -428,6 +491,7 @@ def run_pairwise_SVM_by_SPI(pairwise_feature_file,
                                         grouping_var_name = this_SPI,
                                         analysis_type = "Pairwise_SPI",
                                         sample_IDs = sample_IDs,
+                                        kernel=kernel,
                                         class_labels = class_labels,
                                         scaling_type = scaling_type,
                                         num_folds = num_folds,
@@ -450,21 +514,25 @@ def run_pairwise_SVM_by_SPI(pairwise_feature_file,
         # Add comparison group info and normalisation method info
         test_metrics_res["Comparison_Group"] = comparison_to_control_group
         test_metrics_res["Scaling_Type"] = scaling_type
+        test_metrics_res["Kernel"] = kernel
 
         TPR_FPR_res["Comparison_Group"] = comparison_to_control_group
         TPR_FPR_res["Scaling_Type"] = scaling_type
+        TPR_FPR_res["Kernel"] = kernel
 
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
         fold_assignments_res["Scaling_Type"] = scaling_type
+        fold_assignments_res["Kernel"] = kernel
 
         SVM_coefficients_res["Comparison_Group"] = comparison_to_control_group
         SVM_coefficients_res["Scaling_Type"] = scaling_type
+        SVM_coefficients_res["Kernel"] = kernel
             
         # Save results
-        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
-        SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
-        test_metrics_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy_AUC.feather")
-        TPR_FPR_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_ROC_TPR_FPR.feather")
+        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_fold_assignments.feather")
+        SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_fold_SVM_coefficients.feather")
+        test_metrics_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_balanced_accuracy_AUC.feather")
+        TPR_FPR_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_ROC_TPR_FPR.feather")
 
 def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
         pairwise_feature_file,
@@ -477,6 +545,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
                        pydata_path,
                        data_path,
                        noise_proc,
+                        kernel = "linear",
                        scaling_type = "mixedsigmoid",
                        num_jobs = 10,
                        num_repeats = 10,
@@ -484,7 +553,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
                        overwrite=False):
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy_AUC.feather") or overwrite:
+    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_balanced_accuracy_AUC.feather") or overwrite:
         # Define noise label
         noise_label = noise_proc.replace("+", "_")
         
@@ -582,6 +651,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
                                         analysis_type = "Univariate_Pairwise_Combo",
                                         sample_IDs = sample_IDs,
                                         class_labels = class_labels,
+                                        kernel=kernel,
                                         scaling_type = scaling_type,
                                         num_jobs = num_jobs,
                                         num_folds = num_folds,
@@ -604,21 +674,25 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
         # Add comparison group info and normalisation method info
         test_metrics_res["Comparison_Group"] = comparison_to_control_group
         test_metrics_res["Scaling_Type"] = scaling_type
+        test_metrics_res["Kernel"] = kernel
 
         TPR_FPR_res["Comparison_Group"] = comparison_to_control_group
         TPR_FPR_res["Scaling_Type"] = scaling_type
+        TPR_FPR_res["Kernel"] = kernel
 
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
         fold_assignments_res["Scaling_Type"] = scaling_type
+        fold_assignments_res["Kernel"] = kernel
 
         SVM_coefficients_res["Comparison_Group"] = comparison_to_control_group
         SVM_coefficients_res["Scaling_Type"] = scaling_type
+        SVM_coefficients_res["Kernel"] = kernel
             
         # Save results
-        test_metrics_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_balanced_accuracy_AUC.feather")
-        TPR_FPR_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_ROC_TPR_FPR.feather")
-        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_assignments.feather")
-        SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_fold_SVM_coefficients.feather")
+        test_metrics_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_balanced_accuracy_AUC.feather")
+        TPR_FPR_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_ROC_TPR_FPR.feather")
+        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_fold_assignments.feather")
+        SVM_coefficients_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_fold_SVM_coefficients.feather")
         
 
 def run_pairwise_SVM_all_SPIs(pairwise_feature_file,

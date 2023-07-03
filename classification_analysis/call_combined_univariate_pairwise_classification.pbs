@@ -17,6 +17,7 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/combined
 --noise_proc $noise_proc \
 --num_folds $num_folds \
 --scaling_type $scaling_type \
+--kernel $kernel \
 --num_repeats $num_repeats \
 --num_jobs $num_jobs \
 --dataset_ID $dataset_ID"

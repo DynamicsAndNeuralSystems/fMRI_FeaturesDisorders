@@ -19,6 +19,7 @@ parser.add_argument('--univariate_feature_file', default="/headnode1/abry4213/da
 parser.add_argument('--pairwise_feature_set', default='pyspi14', dest='pairwise_feature_set')
 parser.add_argument('--pairwise_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather", dest='pairwise_feature_file')
 parser.add_argument('--noise_proc', dest='noise_proc')
+parser.add_argument('--kernel', default="linear", dest='SVM_kernel')
 parser.add_argument('--scaling_type', default="robust", dest='scaling_type')
 parser.add_argument('--num_folds', default=10, dest='num_folds')
 parser.add_argument('--num_repeats', default=10, dest='num_repeats')
@@ -38,6 +39,7 @@ pairwise_feature_file = args.pairwise_feature_file
 scaling_type = args.scaling_type
 num_folds = args.num_folds
 noise_proc = args.noise_proc
+SVM_kernel = args.SVM_kernel
 num_repeats = args.num_repeats
 num_jobs = args.num_jobs
 dataset_ID = args.dataset_ID
@@ -52,6 +54,7 @@ dataset_ID = args.dataset_ID
 # pairwise_feature_set = "pyspi14"
 # pairwise_feature_file_base ="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather"
 # noise_proc = "AROMA+2P+GMR"
+# SVM_kernel = "linear"
 # num_null_iters = 2
 # scaling_type = "robust"
                  
@@ -62,6 +65,7 @@ run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file=univariate_feature_
                  univariate_feature_set=univariate_feature_set,
                  pairwise_feature_set=pairwise_feature_set,
                  noise_proc = noise_proc,
+                 kernel = SVM_kernel,
                  dataset_ID=dataset_ID,
                  metadata_file=metadata_file,
                  comparison_to_control_group=comparison_group,

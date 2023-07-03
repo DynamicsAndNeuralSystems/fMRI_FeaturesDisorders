@@ -1,8 +1,9 @@
 #!/bin/bash
 #PBS -j oe
-#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/calculate_U_statistics_out.txt
-#PBS -l select=1:ncpus=4:mem=80GB:mpiprocs=4
-#PBS -l walltime=6:00:00
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/calculate_lm_beta_statistics_out.txt
+#PBS -l select=1:ncpus=32:mem=180GB:mpiprocs=32
+#PBS -l walltime=12:00:00
+#PBS -q yossarian
 #PBS -M abry4213@uni.sydney.edu.au
 #PBS -m a
 #PBS -V
@@ -15,7 +16,7 @@ source /usr/physics/python/anaconda3/etc/profile.d/conda.sh
 
 conda activate pyspi
 
-# Call R script to run Mann-Whitney U statistics
+# Call R script to run OLS models
 Rscript /headnode1/abry4213/github/fMRI_FeaturesDisorders/classification_analysis/lm_beta_statistics.R
 
 exit
