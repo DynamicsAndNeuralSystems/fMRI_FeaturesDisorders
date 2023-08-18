@@ -1,25 +1,25 @@
-TS_Feature	Figure_name	Category	Description
-CO_Embed2_Dist_tau_d_expfit_meandiff	embedding_dist	Other	Goodness of exponential fit to embedding distance distribution
-CO_f1ecac	ACF_timescale	Linear autocorrelation	First 1/e crossing of the ACF
-CO_FirstMin_ac	ACF_first_min	Linear autocorrelation	First minimum of the ACF
-CO_HistogramAMI_even_2_5	AMI2	Nonlinear autocorrelation	Histogram-based automutual information (lag 2; 5 bins)
-CO_trev_1_num	trev	Nonlinear autocorrelation	Time reversibility
-DN_HistogramMode_10	mode_10	Distribution shape	10-bin histogram mode
-DN_HistogramMode_5	mode_5	Distribution shape	5-bin histogram mode
-DN_Mean	mean	Distributional moment	Mean
-DN_OutlierInclude_n_001_mdrmd	outlier_timing_neg	Extreme event timing	Negative outlier timing
-DN_OutlierInclude_p_001_mdrmd	outlier_timing_pos	Extreme event timing	Positive outlier timing
-DN_Spread_Std	SD	Distributional moment	Standard deviation
-FC_LocalSimple_mean1_tauresrat	whiten_timescale	Incremental differences	Change in autocorrelation timescale after incremental differencing
-FC_LocalSimple_mean3_stderr	forecast_error	Simple forecasting	Error of 3-point rolling mean forecast
-IN_AutoMutualInfoStats_40_gaussian_fmmi	AMI_timescale	Nonlinear autocorrelation	First minimum of the AMI function
-MD_hrv_classic_pnn40	high_fluctuation	Incremental differences	Proportion of high incremental changes in the series
-PD_PeriodicityWang_th0_01	periodicity	Linear autocorrelation structure	Wang's periodicity metric
-SB_BinaryStats_diff_longstretch0	stretch_decreasing	Symbolic	Longest stretch of decreasing values
-SB_BinaryStats_mean_longstretch1	stretch_high	Symbolic	Longest stretch of above-mean values
-SB_MotifThree_quantile_hh	entropy_pairs	Symbolic	Entropy of successive pairs in symbolized series
-SB_TransitionMatrix_3ac_sumdiagcov	transition_variance	Symbolic	Transition matrix column variance
-SC_FluctAnal_2_dfa_50_1_2_logi_prop_r1	DFA	Self-affine scaling	Detrended fluctuation analysis (low-scale scaling)
-SC_FluctAnal_2_rsrangefit_50_1_logi_prop_r1	rs_range	Self-affine scaling	Rescaled range fluctuation analysis (low-scale scaling)
-SP_Summaries_welch_rect_area_5_1	low_freq_power	Linear autocorrelation	Power in lowest 20% frequencies
-SP_Summaries_welch_rect_centroid	centroid_freq	Linear autocorrelation	Centroid frequency
+Figure_name,catch24_name,Category,Description
+embedding_dist,CO_Embed2_Dist_tau_d_expfit_meandiff,Other,Goodness of exponential fit to embedding distance distribution
+ACF_timescale,CO_f1ecac,Linear autocorrelation,First 1/e crossing of the ACF
+ACF_first_min,CO_FirstMin_ac,Linear autocorrelation,First minimum of the ACF
+AMI2,CO_HistogramAMI_even_2_5,Nonlinear autocorrelation,Histogram-based automutual information (lag 2; 5 bins)
+trev,CO_trev_1_num,Nonlinear autocorrelation,Time reversibility
+mode_10,DN_HistogramMode_10,Distribution shape,10-bin histogram mode
+mode_5,DN_HistogramMode_5,Distribution shape,5-bin histogram mode
+mean,DN_Mean,Distributional moment,Mean
+outlier_timing_neg,DN_OutlierInclude_n_001_mdrmd,Extreme event timing,Negative outlier timing
+outlier_timing_pos,DN_OutlierInclude_p_001_mdrmd,Extreme event timing,Positive outlier timing
+SD,DN_Spread_Std,Distributional moment,Standard deviation
+whiten_timescale,FC_LocalSimple_mean1_tauresrat,Incremental differences,Change in autocorrelation timescale after incremental differencing
+forecast_error,FC_LocalSimple_mean3_stderr,Simple forecasting,Error of 3-point rolling mean forecast
+AMI_timescale,IN_AutoMutualInfoStats_40_gaussian_fmmi,Nonlinear autocorrelation,First minimum of the AMI function
+high_fluctuation,MD_hrv_classic_pnn40,Incremental differences,Proportion of high incremental changes in the series
+periodicity,PD_PeriodicityWang_th0_01,Linear autocorrelation structure,Wang's periodicity metric
+stretch_decreasing,SB_BinaryStats_diff_longstretch0,Symbolic,Longest stretch of decreasing values
+stretch_high,SB_BinaryStats_mean_longstretch1,Symbolic,Longest stretch of above-mean values
+entropy_pairs,SB_MotifThree_quantile_hh,Symbolic,Entropy of successive pairs in symbolized series
+transition_variance,SB_TransitionMatrix_3ac_sumdiagcov,Symbolic,Transition matrix column variance
+DFA,SC_FluctAnal_2_dfa_50_1_2_logi_prop_r1,Self-affine scaling,Detrended fluctuation analysis (low-scale scaling)
+rs_range,SC_FluctAnal_2_rsrangefit_50_1_logi_prop_r1,Self-affine scaling,Rescaled range fluctuation analysis (low-scale scaling)
+low_freq_power,SP_Summaries_welch_rect_area_5_1,Linear autocorrelation,Power in lowest 20% frequencies
+centroid_freq,SP_Summaries_welch_rect_centroid,Linear autocorrelation,Centroid frequency

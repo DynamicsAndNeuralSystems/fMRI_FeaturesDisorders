@@ -2,7 +2,7 @@
 # Define study/data paths
 ################################################################################
 
-github_dir <- "~/github/fMRI_FeaturesDisorders/"
+github_dir <- "~/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/github/fMRI_FeaturesDisorders/"
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/methods_overview/")
 TAF::mkdir(plot_path)
 
@@ -20,6 +20,59 @@ library(igraph)
 library(dendextend)
 theme_set(theme_cowplot())
 
+################################################################################
+# fMRI --> MTS overview
+################################################################################
+
+ggplot() +
+  geom_brain(atlas = dk, hemi="left", side="lateral", color="gray30") +
+  theme_void() + 
+  theme(legend.position="none")
+ggsave(glue("{plot_path}/ggseg_full_color.svg"),
+       width=3,height=2,units="in", dpi=300)
+
+# Plot a few example time-series
+example_MTS <- as.data.frame(matrix(data=rnorm(500), nrow=50, ncol=10)) %>%
+  mutate(Timepoint = 1:50) %>%
+  pivot_longer(cols=c(-Timepoint), names_to = "Brain_Region", values_to="BOLD") %>%
+  mutate(Brain_Region = as.factor(as.numeric(gsub("V", "", Brain_Region))))
+
+# Lines
+example_MTS %>%
+  ggplot(mapping=aes(x=Timepoint, y=BOLD, color=Brain_Region)) +
+  geom_line() + 
+  facet_grid(Brain_Region ~ .) +
+  theme_void() +
+  theme(legend.position = "none",
+        strip.text = element_blank(),
+        panel.spacing = unit(-1, "lines"))
+ggsave(glue("{plot_path}/ggseg_example_TS_lines.svg"),
+       width=3,height=2,units="in", dpi=300)
+
+# MTS heatmap
+gg_color_hue <- function(n) {
+  hues = seq(15, 375, length = n + 1)
+  hcl(h = hues, l = 65, c = 100)[1:n]
+}
+
+MTS_heatmap_list <- list()
+MTS_colors <- gg_color_hue(10)
+for (i in 1:length(unique(example_MTS$Brain_Region))) {
+  roi = unique(example_MTS$Brain_Region)[i]
+  roi_color = MTS_colors[i]
+  roi_p <- example_MTS %>%
+    filter(Brain_Region == roi) %>%
+    ggplot(mapping=aes(x=Timepoint, fill=BOLD, y=0)) +
+    geom_tile() + 
+    theme_void() +
+    scale_fill_gradient(low=alpha(roi_color, 0.2), high=roi_color) +
+    theme(legend.position = "none")
+  MTS_heatmap_list[[roi]] <- roi_p
+}
+wrap_plots(MTS_heatmap_list, ncol=1)
+ggsave(glue("{plot_path}/ggseg_example_TS_heatmap.svg"),
+       width=3,height=2,units="in", dpi=300)
+  
 ################################################################################
 # Univariate methods
 ################################################################################

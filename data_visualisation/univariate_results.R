@@ -2,7 +2,7 @@
 # Define study/data paths
 ################################################################################
 
-github_dir <- "~/github/fMRI_FeaturesDisorders/"
+github_dir <- "~/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/github/fMRI_FeaturesDisorders/"
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/univariate_results/")
 TAF::mkdir(plot_path)
 
