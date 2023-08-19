@@ -57,20 +57,24 @@ ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE
 
 # Load in univariate time-series feature info
 TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
-# Load data
+
+# Load univariate classification results across all folds
 univariate_balanced_accuracy_AUC_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set, kernel==SVM_kernel)
+# Compute mean + SD performance across all folds
 univariate_balanced_accuracy <- univariate_balanced_accuracy_AUC_all_folds %>%
-  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, Repeat_Number, kernel) %>%
-  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
-          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T)) %>%
   group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, kernel) %>%
-  reframe(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy_Across_Folds, na.rm=T),
-          Balanced_Accuracy_Across_Repeats_SD = sd(Balanced_Accuracy_Across_Folds, na.rm=T),
-          ROC_AUC_Across_Repeats = mean(ROC_AUC_Across_Folds, na.rm=T),
-          ROC_AUC_Across_Repeats_SD = sd(ROC_AUC_Across_Folds, na.rm=T))
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T),
+          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T),
+          ROC_AUC_Across_Folds_SD = sd(ROC_AUC, na.rm=T))
+# Load p-values
 univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
-  filter(Univariate_Feature_Set == univariate_feature_set)
+  filter(Univariate_Feature_Set == univariate_feature_set) %>%
+  dplyr::select(-Balanced_Accuracy_Across_Repeats, -Balanced_Accuracy_Across_Repeats_SD, 
+                -ROC_AUC_Across_Repeats, -ROC_AUC_Across_Repeats_SD) %>%
+  left_join(., univariate_balanced_accuracy)
+# Load null distribution
 univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
 
@@ -85,14 +89,6 @@ ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metad
 # Load t-statistics
 lm_beta_stats_catch24_whole_brain <- feather::read_feather(glue("{data_path}/univariate_catch24_lm_beta_statistics_by_brain_region.feather"))
 
-# Aggregate balanced accuracy by repeats
-univariate_balanced_accuracy_AUC_by_repeats <- univariate_balanced_accuracy_AUC_all_folds %>%
-  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, Repeat_Number) %>%
-  summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
-            Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T),
-            ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T),
-            ROC_AUC_Across_Folds_SD = sd(ROC_AUC, na.rm=T)) %>%
-  left_join(., univariate_p_values %>% dplyr::select(Study:group_var, p_value:p_value_Bonferroni))
 
 ################################################################################
 # Univariate region-wise analysis
@@ -112,7 +108,7 @@ lobe_performance <- univariate_p_values %>%
 lobe_performance %>%
   filter(sig) %>%
   mutate(Cortex = as.factor(Cortex)) %>%
-  ggplot(data=., mapping=aes(x=Group_Nickname, y=100*Balanced_Accuracy_Across_Repeats,
+  ggplot(data=., mapping=aes(x=Group_Nickname, y=100*Balanced_Accuracy_Across_Folds,
                              fill=Cortex, color=Cortex)) +
   ylab("Balanced Accuracy (%)") +
   geom_violin(scale="width", position = position_dodge(width = 1), alpha=0.6) +
@@ -152,11 +148,11 @@ significant_univariate_region_wise_results <- univariate_p_values %>%
   filter(Univariate_Feature_Set == univariate_feature_set,
          Analysis_Type == "Univariate_Brain_Region") %>%
   filter(p_value_Bonferroni < 0.05) %>%
-  mutate(Balanced_Accuracy_Across_Repeats = 100*Balanced_Accuracy_Across_Repeats)
+  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds)
 
 # Find max fill and min fill values
-min_fill <- floor(min(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Repeats))
-max_fill <- ceiling(max(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Repeats))
+min_fill <- floor(min(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Folds))
+max_fill <- ceiling(max(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Folds))
 
 # Initialize list of ggseg plots
 ggseg_plot_list <- list()
@@ -237,11 +233,11 @@ ggsave(glue("{plot_path}/Region_wise_balacc_ggseg.svg"),
 top_regions_to_find_AUC <- univariate_p_values %>%
   filter(Analysis_Type == "Univariate_Brain_Region") %>%
   group_by(Comparison_Group, Study) %>%
-  slice_max(n=1, order_by=Balanced_Accuracy_Across_Repeats) %>%
+  slice_max(n=1, order_by=Balanced_Accuracy_Across_Folds) %>%
   mutate(Group_Nickname =  case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
                                      Comparison_Group == "Bipolar" ~ "BPD",
                                      T ~ Comparison_Group)) %>%
-  dplyr::select(Study, Comparison_Group, Group_Nickname, group_var, ROC_AUC_Across_Repeats)
+  dplyr::select(Study, Comparison_Group, Group_Nickname, group_var, ROC_AUC_Across_Folds)
 
 univariate_TPR_FPR  %>%
   mutate(Group_Nickname =  case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
@@ -279,7 +275,7 @@ univariate_p_values %>%
   dplyr::rename("TS_Feature" = "group_var") %>%
   left_join(., TS_feature_info) %>%
   group_by(TS_Feature, Category) %>%
-  summarise(Balacc_Sum = sum(Balanced_Accuracy_Across_Repeats)) %>%
+  summarise(Balacc_Sum = sum(Balanced_Accuracy_Across_Folds)) %>%
   ungroup() %>%
   mutate(TS_Feature = fct_reorder(TS_Feature, Balacc_Sum),
          Category = fct_reorder(Category, Balacc_Sum, .fun=sum, .desc=T)) %>%
@@ -305,13 +301,13 @@ univariate_p_values %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
                                       Comparison_Group == "Bipolar" ~ "BPD",
                                       T ~ Comparison_Group),
-         Balanced_Accuracy_Across_Repeats = 100*Balanced_Accuracy_Across_Repeats) %>%
-  mutate(Figure_name = fct_reorder(Figure_name, Balanced_Accuracy_Across_Repeats, .fun=sum),
+         Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds) %>%
+  mutate(Figure_name = fct_reorder(Figure_name, Balanced_Accuracy_Across_Folds, .fun=sum),
          Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
   ggplot(data=., mapping=aes(x=Comparison_Group, y=Figure_name, 
-                             fill=Balanced_Accuracy_Across_Repeats)) +
+                             fill=Balanced_Accuracy_Across_Folds)) +
   geom_tile()+
-  geom_text(aes(label = round(Balanced_Accuracy_Across_Repeats, 1))) +
+  geom_text(aes(label = round(Balanced_Accuracy_Across_Folds, 1))) +
   scale_fill_gradientn(colors=c(alpha("#4C7FC0", 0.3), "#4C7FC0"), 
                        na.value=NA) +
   labs(fill = "Mean Balanced Accuracy (%)") +
@@ -541,6 +537,8 @@ ggsave(glue("{plot_path}/univariate_top_feature_ROC.svg"),
 # Figure 2D combo-based
 ################################################################################
 combo_null_data <- univariate_null_distribution %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, Repeat, group_var, kernel) %>%
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T)) %>%
   filter(Analysis_Type == "Univariate_Combo") %>%
   dplyr::rename("Balanced_Accuracy_Across_Folds" = Null_Balanced_Accuracy) %>%
   mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
@@ -550,7 +548,7 @@ combo_null_data <- univariate_null_distribution %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
   dplyr::select(Comparison_Group, Balanced_Accuracy_Across_Folds)
 
-univariate_balanced_accuracy_by_repeats %>%
+univariate_balanced_accuracy_AUC_all_folds %>%
   filter(Univariate_Feature_Set == univariate_feature_set,
          Analysis_Type == "Univariate_Combo") %>%
   mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,

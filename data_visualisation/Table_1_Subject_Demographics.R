@@ -2,7 +2,7 @@
 # Load libraries
 ################################################################################
 
-python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
 reticulate::use_python(python_to_use)
 library(reticulate)
 
@@ -25,10 +25,12 @@ ABIDE_ASD_subjects_to_keep <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/pro
 
 UCLA_CNP_study_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") %>%
   semi_join(., UCLA_CNP_subjects_to_keep) %>%
-  mutate(Age = as.numeric(Age))
+  mutate(Age = as.numeric(Age),
+         Study = "UCLA_CNP")
 ABIDE_ASD_study_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather") %>%
   semi_join(., ABIDE_ASD_subjects_to_keep) %>%
-  mutate(Age = as.numeric(Age))
+  mutate(Age = as.numeric(Age),
+         Study = "ABIDE")
 
 # Generate Table 1
 plyr::rbind.fill(UCLA_CNP_study_metadata, ABIDE_ASD_study_metadata) %>%
