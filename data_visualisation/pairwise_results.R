@@ -2,7 +2,7 @@
 # Define study/data paths
 ################################################################################
 
-github_dir <- "~/github/fMRI_FeaturesDisorders/"
+github_dir <- "~/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/github/fMRI_FeaturesDisorders/"
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/pairwise_results/")
 TAF::mkdir(plot_path)
 
@@ -86,14 +86,36 @@ univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_A
   filter(Univariate_Feature_Set == univariate_feature_set)
 
 pairwise_balanced_accuracy_AUC_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather"))
-pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
+# Compute mean + SD performance across all folds
+pairwise_balanced_accuracy <-pairwise_balanced_accuracy_AUC_all_folds %>%
+  group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T),
+          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T),
+          ROC_AUC_Across_Folds_SD = sd(ROC_AUC, na.rm=T))
+
+pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
+  dplyr::select(-Balanced_Accuracy_Across_Repeats, -Balanced_Accuracy_Across_Repeats_SD, 
+                -ROC_AUC_Across_Repeats, -ROC_AUC_Across_Repeats_SD) %>%
+  left_join(., pairwise_balanced_accuracy)
 pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
 
 combo_univariate_pairwise_balanced_accuracy_AUC_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather")) %>%
   mutate(Analysis_Type = "SPI_Univariate_Combo")
-combo_univariate_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
+# Compute mean + SD performance across all folds
+combo_univariate_pairwise_balanced_accuracy <- combo_univariate_pairwise_balanced_accuracy_AUC_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T),
+          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T),
+          ROC_AUC_Across_Folds_SD = sd(ROC_AUC, na.rm=T))
+
+combo_univariate_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))  %>%
+  dplyr::select(-Balanced_Accuracy_Across_Repeats, -Balanced_Accuracy_Across_Repeats_SD, 
+                -ROC_AUC_Across_Repeats, -ROC_AUC_Across_Repeats_SD) %>%
+  left_join(., combo_univariate_pairwise_balanced_accuracy)
 combo_univariate_pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 
 # Load TPR/FPR data
