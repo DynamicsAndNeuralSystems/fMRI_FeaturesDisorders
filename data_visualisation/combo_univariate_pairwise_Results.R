@@ -2,7 +2,7 @@
 # Define study/data paths
 ################################################################################
 
-github_dir <- "~/github/fMRI_FeaturesDisorders/"
+github_dir <- "~/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/github/fMRI_FeaturesDisorders/"
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/combo_univariate_pairwise_results/")
 TAF::mkdir(plot_path)
 
@@ -72,14 +72,35 @@ UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadat
 ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather") %>%
   mutate(Study = "ABIDE_ASD")
 
-# Load stats data
+# Load pairwise stats data
 pairwise_balanced_accuracy_AUC_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather"))
-pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
+# Compute mean + SD performance across all folds
+pairwise_balanced_accuracy <- pairwise_balanced_accuracy_AUC_all_folds %>%
+  group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T),
+          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T),
+          ROC_AUC_Across_Folds_SD = sd(ROC_AUC, na.rm=T))
+pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
+  dplyr::select(-Balanced_Accuracy_Across_Repeats, -Balanced_Accuracy_Across_Repeats_SD, 
+                -ROC_AUC_Across_Repeats, -ROC_AUC_Across_Repeats_SD) %>%
+  left_join(., pairwise_balanced_accuracy)
 pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 
+# Load combined pairwise + univariate data
 combo_univariate_pairwise_balanced_accuracy_AUC_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather")) %>%
   mutate(Analysis_Type = "SPI_Univariate_Combo")
-combo_univariate_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_empirical_p_values.feather"))
+# Compute mean + SD performance across all folds
+combo_univariate_pairwise_balanced_accuracy <- combo_univariate_pairwise_balanced_accuracy_AUC_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T),
+          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T),
+          ROC_AUC_Across_Folds_SD = sd(ROC_AUC, na.rm=T))
+combo_univariate_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
+  dplyr::select(-Balanced_Accuracy_Across_Repeats, -Balanced_Accuracy_Across_Repeats_SD, 
+                -ROC_AUC_Across_Repeats, -ROC_AUC_Across_Repeats_SD) %>%
+  left_join(., combo_univariate_pairwise_balanced_accuracy)
 combo_univariate_pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
 
 
@@ -107,18 +128,18 @@ combo_univariate_pairwise_p_values %>%
   filter(Pairwise_Feature_Set == pairwise_feature_set,
          Analysis_Type == "SPI_Univariate_Combo",
          p_value_Bonferroni < 0.05) %>%
-  dplyr::rename("SPI" = "group_var") %>%
+  dplyr::rename("pyspi_name" = "group_var") %>%
   left_join(., SPI_info) %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
                                       Comparison_Group == "Bipolar" ~ "BPD",
                                       T ~ Comparison_Group),
-         Balanced_Accuracy_Across_Repeats = 100*Balanced_Accuracy_Across_Repeats) %>%
-  mutate(Nickname = fct_reorder(Nickname, Balanced_Accuracy_Across_Repeats, .fun=mean),
+         Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds) %>%
+  mutate(Figure_name = fct_reorder(Figure_name, Balanced_Accuracy_Across_Folds, .fun=mean),
          Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
-  ggplot(data=., mapping=aes(x=Comparison_Group, y=Nickname, 
-                             fill=Balanced_Accuracy_Across_Repeats)) +
+  ggplot(data=., mapping=aes(x=Comparison_Group, y=Figure_name, 
+                             fill=Balanced_Accuracy_Across_Folds)) +
   geom_tile()+
-  geom_text(aes(label = round(Balanced_Accuracy_Across_Repeats, 1))) +
+  geom_text(aes(label = round(Balanced_Accuracy_Across_Folds, 1))) +
   scale_fill_gradientn(colors=c(alpha("darkgoldenrod2", 0.3), "darkgoldenrod2"), 
                        na.value=NA)  + 
   scale_y_discrete(labels = wrap_format(28)) +
@@ -134,35 +155,98 @@ ggsave(glue("{plot_path}/Combo_univariate_pairwise_SPI_wise_heatmap.svg"),
 # Compare SPIs with vs without univariate info
 ################################################################################
 
+repkfold_ttest <- function(data, n1, n2, k, r){
+  
+  # Arg checks
+  
+  '%ni%' <- Negate('%in%')
+  
+  if("model" %ni% colnames(data) || "values" %ni% colnames(data) || "k" %ni% colnames(data) || "r" %ni% colnames(data)){
+    stop("data should contain at least four columns called 'model', 'values', 'k', and 'r'.")
+  }
+  
+  if(!is.numeric(data$values) || !is.numeric(data$k) || !is.numeric(data$r)){
+    stop("data should be a data.frame with only numerical values in columns 'values', 'k', and 'r'.")
+  }
+  
+  if(!is.numeric(n1) || !is.numeric(n2) || !is.numeric(k) || !is.numeric(r) ||
+     length(n1) != 1 || length(n2) != 1 || length(k) != 1 || length(r) != 1){
+    stop("n1, n2, k, and r should all be integer scalars.")
+  }
+  
+  if(length(unique(data$model)) != 2){
+    stop("Column 'model' in data should only have two unique labels (one for each model to compare).")
+  }
+  
+  # Calculations
+  
+  d <- c()
+  
+  for(i in 1:k){
+    for(j in 1:r){
+      x <- data[data$k == i, ]
+      x <- x[x$r == j, ]
+      d <- c(d, x[x$model == unique(x$model)[1], c("values")] - x[x$model == unique(x$model)[2], c("values")]) # Differences
+    }
+  }
+  
+  # Catch for when there is zero difference(s) between the models
+  
+  if (sum(unlist(d)) == 0) {
+    tmp <- data.frame(statistic = 0, p.value = 1)
+  } else{
+    
+    statistic <- mean(unlist(d), na.rm = TRUE) / sqrt(stats::var(unlist(d), na.rm = TRUE) * ((1/(k * r)) + (n2/n1))) # Calculate t-statistic
+    
+    if(statistic < 0){
+      p.value <- stats::pt(statistic, (k * r) - 1) # p-value for left tail
+    } else{
+      p.value <- stats::pt(statistic, (k * r) - 1, lower.tail = FALSE) # p-value for right tail
+    }
+    
+    tmp <- data.frame(statistic = statistic, p.value = p.value)
+  }
+  
+  return(tmp)
+}
+
 # Use correctR to test for difference across resamples for FTM vs catch22+FTM
 run_correctR_group <- function(comparison_group, study, metadata, results_df) {
+  # Find number of subjects for the specified comparison group
   num_subjects <- metadata %>%
     filter(Study == study, 
            Diagnosis %in% c("Control", comparison_group)) %>%
     distinct(Sample_ID) %>%
     nrow()
+  
+  # Compute the training and test fold sizes for 10-fold CV
   training_size <- ceiling(0.9*num_subjects)
   test_size <- floor(0.1*num_subjects)
   
+  # Prep the resulting balanced accuracies with vs without univariate data
   data_for_correctR <- results_df %>%
     filter(Study == study, 
            Comparison_Group == comparison_group) %>%
     group_by(group_var) %>%
     filter(any(p_value_Bonferroni < 0.05)) %>%
     ungroup() %>%
-    pivot_wider(id_cols = c(Repeat_Number, group_var), 
-                names_from = Analysis_Type,
-                values_from = Balanced_Accuracy_Across_Repeats) %>%
-    dplyr::rename("x" = "Pairwise_SPI", "y" = "SPI_Univariate_Combo") %>%
-    group_by(group_var) %>%
+    dplyr::rename("model" = "Analysis_Type",
+                  "SPI" = "group_var",
+                  "k" = "Fold",
+                  "r" = "Repeat_Number",
+                  "values" = "Balanced_Accuracy") %>%
+    dplyr::select(model, SPI, k, r, values) %>%
+    dplyr::mutate(r = r + 1) %>%
+    group_by(SPI) %>%
     group_split()
-  
+
   res <- data_for_correctR %>%
-    purrr::map_df(~ as.data.frame(resampled_ttest(x=.x$x, 
-                                                  y=.x$y, 
-                                                  n=10, 
-                                                  n1=training_size, n2=test_size)) %>%
-                    mutate(SPI = unique(.x$group_var))) %>%
+    purrr::map_df(~ as.data.frame(repkfold_ttest(data = .x %>% dplyr::select(-SPI), 
+                                                 n1 = training_size,
+                                                 n2 = test_size,
+                                                 k = 10,
+                                                 r = 10)) %>%
+                    mutate(SPI = unique(.x$SPI))) %>%
     ungroup() %>%
     dplyr::rename("p_value_corr"="p.value") %>%
     mutate(p_value_corr_Bonferroni = p.adjust(p_value_corr, method="bonferroni"),
@@ -172,11 +256,10 @@ run_correctR_group <- function(comparison_group, study, metadata, results_df) {
   
 }
 
-# metadata <- plyr::rbind.fill(UCLA_CNP_metadata, ABIDE_ASD_metadata)
-results_df = plyr::rbind.fill(pairwise_balanced_accuracy_AUC_by_repeats %>% left_join(pairwise_p_values %>%
-                                                                                        dplyr::select(Study:group_var, p_value_Bonferroni)), 
-                              combo_univariate_pairwise_balanced_accuracy_AUC_by_repeats %>% left_join(combo_univariate_pairwise_p_values %>%
-                                                                                                         dplyr::select(Study:group_var, p_value_Bonferroni)))
+results_df = plyr::rbind.fill(pairwise_balanced_accuracy_AUC_all_folds %>% left_join(pairwise_p_values %>%
+                                                                                       dplyr::select(Study:group_var, p_value_Bonferroni)), 
+                              combo_univariate_pairwise_balanced_accuracy_AUC_all_folds %>% left_join(combo_univariate_pairwise_p_values %>%
+                                                                                                        dplyr::select(Study:group_var, p_value_Bonferroni)))
 
 corrected_SPI_T_res <- 1:nrow(study_group_df) %>%
   purrr::map_df(~ run_correctR_group(comparison_group = study_group_df$Comparison_Group[.x],
@@ -197,7 +280,7 @@ plyr::rbind.fill(pairwise_p_values,
                                       Comparison_Group == "Bipolar" ~ "BPD",
                                       T ~ Comparison_Group)) %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
-  ggplot(data=., mapping=aes(x=Analysis_Type, y=100*Balanced_Accuracy_Across_Repeats,
+  ggplot(data=., mapping=aes(x=Analysis_Type, y=100*Balanced_Accuracy_Across_Folds,
                              group = SPI)) +
   geom_line(aes(color = Comparison_Group, 
                 alpha = significant_diff_with_univariate), show.legend = FALSE) +
