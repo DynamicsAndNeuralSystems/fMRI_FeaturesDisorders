@@ -24,9 +24,10 @@ brain_region_lookup <- args$brain_region_lookup
 noise_proc <- args$noise_proc
 dataset_ID <- args$dataset_ID
 add_catch2 <- args$add_catch2
-# 
+#
 # univariate_feature_set <- "catch24"
 # github_dir <- "~/github/"
+# github_dir <- "~/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/github/"
 # add_catch2 <- TRUE
 
 # # UCLA CNP
@@ -53,10 +54,18 @@ TAF::mkdir(rdata_path)
 # Set the seed
 set.seed(127)
 
+# python_to_use <- "~/.conda/envs/pyspi/bin/python3"
+python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
+reticulate::use_python(python_to_use)
+
 # Load tidyverse
 library(tidyverse)
 library(theft)
 library(feather)
+library(reticulate)
+
+# Import pyarrow.feather as pyarrow_feather
+pyarrow_feather <- import("pyarrow.feather")
 
 #-------------------------------------------------------------------------------
 # Source helper scripts
@@ -88,7 +97,7 @@ system(sprintf("Rscript %s/fMRI_FeaturesDisorders/prep_data_and_QC/dataset_speci
 #-------------------------------------------------------------------------------
 
 # Load brain region lookup table
-brain_region_lookup_table <- feather::read_feather(paste0(data_path, "study_metadata/", brain_region_lookup))
+brain_region_lookup_table <- pyarrow_feather$read_feather(paste0(data_path, "study_metadata/", brain_region_lookup))
 read_in_sample_TS_data <- function(sample_ID, dataset_ID, noise_proc,
                                    brain_region_lookup_table) {
   noise_label <- gsub("\\+", "_", noise_proc)
@@ -96,7 +105,7 @@ read_in_sample_TS_data <- function(sample_ID, dataset_ID, noise_proc,
                                        "raw_data/time_series_files/",
                                        noise_label, "/",
                                        sample_ID, "_TS.csv"),
-                                header=F) %>%
+                                header=T) %>%
     mutate(timepoint = 1:nrow(.)) %>%
     pivot_longer(cols = c(-timepoint),
                  names_to = "Index",
@@ -133,7 +142,7 @@ if (!file.exists(paste0(data_path, "raw_data/",
   }
   
 } else {
-  np_TS_data <- feather::read_feather(paste0(data_path, "raw_data/",
+  np_TS_data <- pyarrow_feather$read_feather(paste0(data_path, "raw_data/",
                                            dataset_ID, "_", noise_label,  "_fMRI_TS.feather"))
 }
 
