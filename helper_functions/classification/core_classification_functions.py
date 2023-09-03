@@ -1,53 +1,41 @@
 
 import pandas as pd
 from sklearn import svm
-from sklearn import metrics
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, RobustScaler
 import os.path
 from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_validate, permutation_test_score
 import numpy as np
 from mixed_sigmoid_normalisation import MixedSigmoidScaler
+from sklearn.ensemble import RandomForestClassifier
 
 
-def run_k_fold_SVM_for_feature(feature_data, 
+def run_k_fold_classifier_for_feature(feature_data, 
                                grouping_var_name,
                                analysis_type,
                                sample_IDs,
                                class_labels,
-                               scaling_type,
-                               kernel = "linear",
+                               classifier_type = "Linear_SVM",
                                num_folds = 10,
                                num_repeats = 10,
                                num_jobs = 10):
         
     
-    print(f"Creating pipeline with {scaling_type} scaler.")
+    print(f"Creating {classifier_type} pipeline.")
 
-    # Define the pipeline -- one for binary predictions, one for probability predictions for ROC
-    if scaling_type == "mixedsigmoid":
+    # Define the pipeline
+    if classifier_type == "Linear_SVM":
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                         ('SVM', svm.SVC(kernel = kernel, C = 1, 
-                         class_weight = "balanced"))])
-        prob_pipe = Pipeline([('scaler',  MixedSigmoidScaler(unit_variance=True)), 
-                              ('SVM', svm.SVC(kernel=kernel, C=1, 
-                             class_weight="balanced", probability=True))])
+                         ('SVM', svm.SVC(kernel = "linear", C = 1, class_weight = "balanced"))])
     else: 
-        pipe = Pipeline([('scaler', StandardScaler()), 
-                         ('SVM', svm.SVC(kernel=kernel, C=1, 
-                                     class_weight="balanced"))])
-        prob_pipe = Pipeline([('scaler',  StandardScaler()), 
-                              ('SVM', svm.SVC(kernel=kernel, C=1, 
-                                 class_weight="balanced", probability=True))])
+        pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
+                         ('RF', RandomForestClassifier(class_weight = "balanced"))])
     
     # Define lists for: 
-    # (1) balanced accuracy and AUC by fold/repeat,
+    # (1) balanced accuracy by fold/repeat,
     # (2) fold assignments by repeat,
-    # (3) TPR/FPR by fold/repeat
-    # (4) The proportion of folds for which a subject was predicted correctly
+    # (3) The proportion of folds for which a subject was predicted correctly
     test_metrics_by_fold_list = []
     fold_assignments_list = []
-    TPR_FPR_list = []
     CV_sample_predictions_list = []
     
     for i in range(num_repeats):
@@ -64,50 +52,29 @@ def run_k_fold_SVM_for_feature(feature_data,
                                     n_jobs = int(num_jobs),
                                     return_estimator=True)
         
-        # Define a probabilistic SVM for ROC AUC
-        CV_prob = cross_val_predict(prob_pipe, feature_data, class_labels, cv=skf, method="predict_proba")
-        ROC_AUC_by_fold = []
-        
-        # Iterate over folds to save participant assignments and TPR/FPR
+        # Iterate over folds to save participant assignments
         for f in range(num_folds):
             # Split for fold number
             test_indices = splits[f][1]
             test_sample_IDs = [sample_IDs[index] for index in test_indices]
-            test_indices_df = pd.DataFrame(test_indices, columns=["Sample_Index"])
-            test_indices_df["Sample_ID"] = test_sample_IDs
-            test_indices_df["Fold"] = f+1
-            test_indices_df["Repeat"] = i+1        
+            test_indices_df = (pd.DataFrame(test_indices, columns=["Sample_Index"])
+                               .assign(Sample_ID = test_sample_IDs,
+                                       Fold = f+1,
+                                       Repeat = i+1)
+            ) 
             fold_split_list.append(test_indices_df)
-
-            # TPR and FPR to plot ROC
-            y_true_fold = [class_labels[index] for index in test_indices]
-            y_pred_fold = np.asarray(CV_prob[test_indices,1])
-            roc_auc_for_fold = metrics.roc_auc_score(y_true_fold, y_pred_fold)
-            ROC_AUC_by_fold.append(roc_auc_for_fold)
         
         # Combine lists into dataframes
         fold_splits = pd.concat(fold_split_list)
         fold_splits["Analysis_Type"] = analysis_type
         fold_assignments_list.append(fold_splits)
 
-        # FPR/TPR for ROC
-        y_true = np.asarray([int(u==1) for u in class_labels])
-        y_pred = np.asarray(CV_prob[:,1])
-        fpr, tpr, _ = metrics.roc_curve(y_true, y_pred, drop_intermediate=False)
-        TPR_FPR_data = pd.DataFrame({"fpr": fpr,
-                                 "tpr": tpr,
-                                 "Repeat_Number": i+1})
-        
-        # Append repeat results
-        TPR_FPR_list.append(TPR_FPR_data)
-
         # Extract balanced accuracy and ROC AUC by fold
         test_metrics_by_fold_df = pd.DataFrame({"group_var": grouping_var_name,
                                                 "Analysis_Type": analysis_type,
                                         "Fold": [*range(1, num_folds + 1, 1)],
                                         "Repeat_Number": i,
-                                        "Balanced_Accuracy": cv_results_balacc["test_balanced_accuracy"],
-                                        "ROC_AUC": ROC_AUC_by_fold})
+                                        "Balanced_Accuracy": cv_results_balacc["test_balanced_accuracy"]})
         test_metrics_by_fold_list.append(test_metrics_by_fold_df)
 
         # Find the proportion of folds for which a subject was predicted correctly as a DataFrame
@@ -124,9 +91,6 @@ def run_k_fold_SVM_for_feature(feature_data,
     fold_assignments = pd.concat(fold_assignments_list)
     fold_assignments["group_var"] = grouping_var_name
 
-    TPR_FPR = pd.concat(TPR_FPR_list)
-    TPR_FPR["group_var"] = grouping_var_name
-
     # Find the proportion of repeats for which each subject was correctly predicted as a DataFrame
     CV_sample_predictions = pd.concat(CV_sample_predictions_list)
     CV_sample_predictions["group_var"] = grouping_var_name
@@ -139,35 +103,32 @@ def run_k_fold_SVM_for_feature(feature_data,
     prop_correct_predictions["Analysis_Type"] = analysis_type
 
     return (test_metrics_by_fold,
-            TPR_FPR,
             fold_assignments,
             prop_correct_predictions)
 
-def run_univariate_SVM(univariate_feature_file,
+def run_univariate_classifier(univariate_feature_file,
                        univariate_feature_set, 
                        pairwise_feature_set,
                        dataset_ID,
                        metadata_file,
                        comparison_to_control_group,
                        data_path,
-                       pydata_path,
                        noise_proc,
-                       kernel="linear",
+                       classifier_type = "Linear_SVM",
                        num_folds = 10,
-                       scaling_type="mixedsigmoid",
                        num_jobs = 8,
                        num_repeats = 10,
                        overwrite=False):
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{kernel}_SVM_balanced_accuracy_AUC.feather") or overwrite:
+    if not os.path.isfile(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{classifier_type}_balanced_accuracy.feather") or overwrite:
         noise_label = noise_proc.replace("+", "_")
 
         # Load metadata
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{pydata_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
         
         # Univariate feature data
         univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -180,8 +141,7 @@ def run_univariate_SVM(univariate_feature_file,
         # Initialise lists for results
         fold_assignments_list = []
         test_metrics_list = []
-        TPR_FPR_list = []
-        prop_correct_predictions_list = prop_correct_predictions
+        prop_correct_predictions_list = []
         
         ###########################################################################
         # Region-wise
@@ -204,20 +164,18 @@ def run_univariate_SVM(univariate_feature_file,
             features_only = region_data_wide.reset_index(drop=True).to_numpy()
             
             # Run SVM
-            (test_metrics_by_fold, TPR_FPR, fold_assignments, prop_correct_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+            (test_metrics_by_fold, fold_assignments, prop_correct_predictions) = run_k_fold_classifier_for_feature(feature_data = features_only, 
                 grouping_var_name = ROI,
                 analysis_type = "Univariate_Brain_Region",
                 sample_IDs = sample_IDs,
                 class_labels = class_labels,
-                scaling_type = scaling_type,
-                kernel = kernel,
+                classifier_type = classifier_type,
                 num_folds = num_folds,
                 num_jobs = num_jobs,
                 num_repeats = num_repeats)
             
             # Save to list of dataframes
             test_metrics_list.append(test_metrics_by_fold)
-            TPR_FPR_list.append(TPR_FPR)
             fold_assignments_list.append(fold_assignments)
             prop_correct_predictions_list.append(prop_correct_predictions)
             
@@ -241,20 +199,18 @@ def run_univariate_SVM(univariate_feature_file,
             features_only = TS_feature_data_wide.reset_index(drop=True).to_numpy()
             
             # Run SVM
-            (test_metrics_by_fold, TPR_FPR, fold_assignments, prop_correct_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+            (test_metrics_by_fold, fold_assignments, prop_correct_predictions) = run_k_fold_classifier_for_feature(feature_data = features_only, 
                 grouping_var_name = TS_feature,
                 analysis_type = "Univariate_TS_Feature",
                 sample_IDs = sample_IDs,
                 class_labels = class_labels,
-                scaling_type = scaling_type,
-                kernel = kernel,
+                classifier_type = classifier_type,
                 num_folds = num_folds,
                 num_jobs = num_jobs,
                 num_repeats = num_repeats)
             
             # Save to list of dataframes
             test_metrics_list.append(test_metrics_by_fold)
-            TPR_FPR_list.append(TPR_FPR)
             fold_assignments_list.append(fold_assignments)
             prop_correct_predictions_list.append(prop_correct_predictions)
             
@@ -282,70 +238,59 @@ def run_univariate_SVM(univariate_feature_file,
         sample_IDs = index_data["Sample_ID"].tolist()
         
         # Run SVM
-        (test_metrics_by_fold, TPR_FPR, fold_assignments, prop_correct_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+        (test_metrics_by_fold, fold_assignments, prop_correct_predictions) = run_k_fold_classifier_for_feature(feature_data = features_only,
+                    grouping_var_name = "Combo",
+                    analysis_type = "Univariate_Combo", 
                     sample_IDs = sample_IDs,
                     class_labels = class_labels,
-                    scaling_type = scaling_type,
-                    kernel = kernel,
+                    classifier_type = classifier_type,
                     num_folds = num_folds,
                     num_jobs = num_jobs,
                     num_repeats = num_repeats)
         
         # Save to list of dataframes
         test_metrics_list.append(test_metrics_by_fold)
-        TPR_FPR_list.append(TPR_FPR)
         fold_assignments_list.append(fold_assignments)
         prop_correct_predictions_list.append(prop_correct_predictions)
         
         ###########################################################################
         # Merge + save results
         test_metrics_res = pd.concat(test_metrics_list).reset_index()
-        TPR_FPR_res = pd.concat(TPR_FPR_list).reset_index()
         fold_assignments_res = pd.concat(fold_assignments_list).reset_index()
         prop_correct_predictions_res = pd.concat(prop_correct_predictions_list).reset_index()
         
-        # Add comparison group info and normalisation method info
+        # Add comparison group info and classifier type info
         test_metrics_res["Comparison_Group"] = comparison_to_control_group
-        test_metrics_res["Scaling_Type"] = scaling_type
-        test_metrics_res["Kernel"] = kernel
-
-        TPR_FPR_res["Comparison_Group"] = comparison_to_control_group
-        TPR_FPR_res["Scaling_Type"] = scaling_type
-        TPR_FPR_res["Kernel"] = kernel
-
+        test_metrics_res["Classifier_Type"] = classifier_type
+        
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
-        fold_assignments_res["Scaling_Type"] = scaling_type
-        fold_assignments_res["Kernel"] = kernel
+        fold_assignments_res["Classifier_Type"] = classifier_type
 
         prop_correct_predictions_res["Comparison_Group"] = comparison_to_control_group
-        prop_correct_predictions_res["Scaling_Type"] = scaling_type
-        prop_correct_predictions_res["Kernel"] = kernel
+        prop_correct_predictions_res["Classifier_Type"] = classifier_type
 
-        test_metrics_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{kernel}_SVM_balanced_accuracy_AUC.feather")
-        TPR_FPR_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{kernel}_SVM_ROC_TPR_FPR.feather")
-        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{kernel}_SVM_fold_assignments.feather")
-        prop_correct_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{kernel}_SVM_prop_correct_pred.feather")
+        test_metrics_res.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{classifier_type}_balanced_accuracy.feather")
+        fold_assignments_res.to_feather(f"{data_path}/classification_results/fold_assignments/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{classifier_type}_fold_assignments.feather")
+        prop_correct_predictions_res.to_feather(f"{data_path}/classification_results/sample_predictions/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{classifier_type}_prop_correct_pred.feather")
         
-def run_pairwise_SVM_by_SPI(pairwise_feature_file,
+def run_pairwise_classifier_by_SPI(pairwise_feature_file,
                      SPI_directionality_file,
                        univariate_feature_set, 
                        pairwise_feature_set,
                        dataset_ID,
                        metadata_file,
                        comparison_to_control_group,
-                       pydata_path,
                        data_path,
                        noise_proc,
-                       kernel = "linear",
+                       classifier_type = "Linear_SVM",
                        num_folds = 10,
-                       scaling_type="mixedsigmoid",
                        num_jobs = 10,
                        num_repeats = 10,
                        overwrite=False):
     
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_balanced_accuracy_AUC.feather") or overwrite:
+    if not os.path.isfile(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{classifier_type}_balanced_accuracy.feather") or overwrite:
 
         # Define noise label
         noise_label = noise_proc.replace("+", "_")
@@ -358,7 +303,7 @@ def run_pairwise_SVM_by_SPI(pairwise_feature_file,
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{pydata_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
         
         # Pairwise feature data
         pairwise_feature_data = pd.read_feather(pairwise_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -370,7 +315,6 @@ def run_pairwise_SVM_by_SPI(pairwise_feature_file,
 
         # Initialise lists for results
         test_metrics_list = []
-        TPR_FPR_list = []
         fold_assignments_list = []
         prop_correct_predictions_list = []
         
@@ -413,73 +357,60 @@ def run_pairwise_SVM_by_SPI(pairwise_feature_file,
             features_only = SPI_data_imputed.reset_index(drop=True).to_numpy()
             
             # Run main SVM
-            (test_metrics_by_fold, TPR_FPR, fold_assignments, prop_correct_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only,
+            (test_metrics_by_fold, fold_assignments, prop_correct_predictions) = run_k_fold_classifier_for_feature(feature_data = features_only,
                                         grouping_var_name = this_SPI,
                                         analysis_type = "Pairwise_SPI",
                                         sample_IDs = sample_IDs,
-                                        kernel=kernel,
                                         class_labels = class_labels,
-                                        scaling_type = scaling_type,
+                                        classifier_type = classifier_type,
                                         num_folds = num_folds,
                                         num_jobs = num_jobs,
                                         num_repeats = num_repeats)
 
             # Save to list of dataframes
             test_metrics_list.append(test_metrics_by_fold)
-            TPR_FPR_list.append(TPR_FPR)
             fold_assignments_list.append(fold_assignments)
             prop_correct_predictions_list.append(prop_correct_predictions)
             
         ###########################################################################
         # Merge + save results
         test_metrics_res = pd.concat(test_metrics_list).reset_index()
-        TPR_FPR_res = pd.concat(TPR_FPR_list).reset_index()
         fold_assignments_res = pd.concat(fold_assignments_list).reset_index()
         prop_correct_predictions_res = pd.concat(prop_correct_predictions_list).reset_index()
         
         # Add comparison group info and normalisation method info
         test_metrics_res["Comparison_Group"] = comparison_to_control_group
-        test_metrics_res["Scaling_Type"] = scaling_type
-        test_metrics_res["Kernel"] = kernel
-
-        TPR_FPR_res["Comparison_Group"] = comparison_to_control_group
-        TPR_FPR_res["Scaling_Type"] = scaling_type
-        TPR_FPR_res["Kernel"] = kernel
+        test_metrics_res["Classifier_Type"] = classifier_type
 
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
-        fold_assignments_res["Scaling_Type"] = scaling_type
-        fold_assignments_res["Kernel"] = kernel
+        fold_assignments_res["Classifier_Type"] = classifier_type
 
         prop_correct_predictions_res["Comparison_Group"] = comparison_to_control_group
-        prop_correct_predictions_res["Scaling_Type"] = scaling_type
-        prop_correct_predictions_res["Kernel"] = kernel
+        prop_correct_predictions_res["Classifier_Type"] = classifier_type
             
         # Save results
-        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_fold_assignments.feather")
-        test_metrics_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_balanced_accuracy_AUC.feather")
-        TPR_FPR_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_ROC_TPR_FPR.feather")
-        prop_correct_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_prop_correct_pred.feather")
+        fold_assignments_res.to_feather(f"{data_path}/classification_results/fold_assignments/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{classifier_type}_fold_assignments.feather")
+        test_metrics_res.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{classifier_type}_balanced_accuracy.feather")
+        prop_correct_predictions_res.to_feather(f"{data_path}/classification_results/sample_predictions/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{classifier_type}_prop_correct_pred.feather")
 
-def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
-        pairwise_feature_file,
-                     SPI_directionality_file,
+def run_combined_uni_pairwise_classifier_by_SPI(univariate_feature_file,
+                       pairwise_feature_file,
+                       SPI_directionality_file,
                        univariate_feature_set, 
                        pairwise_feature_set,
                        dataset_ID,
                        metadata_file,
                        comparison_to_control_group,
-                       pydata_path,
                        data_path,
                        noise_proc,
-                        kernel = "linear",
-                       scaling_type = "mixedsigmoid",
+                       classifier_type = "Linear_SVM",
                        num_jobs = 10,
                        num_repeats = 10,
                        num_folds=10,
                        overwrite=False):
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_balanced_accuracy_AUC.feather") or overwrite:
+    if not os.path.isfile(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{classifier_type}_balanced_accuracy.feather") or overwrite:
         # Define noise label
         noise_label = noise_proc.replace("+", "_")
         
@@ -491,7 +422,7 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{pydata_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
         
         # Load in univariate feature data
         univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -507,7 +438,6 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
 
         # Initialise lists for results
         test_metrics_list = []
-        TPR_FPR_list = []
         fold_assignments_list = []
         prop_correct_predictions_list = []
         
@@ -568,79 +498,62 @@ def run_combined_uni_pairwise_SVM_by_SPI(univariate_feature_file,
             features_only = SPI_combo_data_imputed.reset_index(drop=True).to_numpy()
             
             # Run main SVM
-            (test_metrics_by_fold, TPR_FPR, fold_assignments, prop_correct_predictions) = run_k_fold_SVM_for_feature(feature_data = features_only, 
+            (test_metrics_by_fold, fold_assignments, prop_correct_predictions) = run_k_fold_classifier_for_feature(feature_data = features_only, 
                                         grouping_var_name = this_SPI,
                                         analysis_type = "Univariate_Pairwise_Combo",
                                         sample_IDs = sample_IDs,
                                         class_labels = class_labels,
-                                        kernel=kernel,
-                                        scaling_type = scaling_type,
+                                        classifier_type = classifier_type,
                                         num_jobs = num_jobs,
                                         num_folds = num_folds,
                                         num_repeats = num_repeats)
             
             # Save to list of dataframes
             test_metrics_list.append(test_metrics_by_fold)
-            TPR_FPR_list.append(TPR_FPR)
             fold_assignments_list.append(fold_assignments)
             prop_correct_predictions_list.append(prop_correct_predictions)
         
         ###########################################################################
         # Merge + save results
         test_metrics_res = pd.concat(test_metrics_list).reset_index()
-        TPR_FPR_res = pd.concat(TPR_FPR_list).reset_index()
         fold_assignments_res = pd.concat(fold_assignments_list).reset_index()
-        prop_correct_predictions_res = pd.concat(prop_correct_predictions).reset_index()
+        prop_correct_predictions_res = pd.concat(prop_correct_predictions_list).reset_index()
         
         # Add comparison group info and normalisation method info
         test_metrics_res["Comparison_Group"] = comparison_to_control_group
-        test_metrics_res["Scaling_Type"] = scaling_type
-        test_metrics_res["Kernel"] = kernel
-
-        TPR_FPR_res["Comparison_Group"] = comparison_to_control_group
-        TPR_FPR_res["Scaling_Type"] = scaling_type
-        TPR_FPR_res["Kernel"] = kernel
+        test_metrics_res["Classifier_Type"] = classifier_type
 
         fold_assignments_res["Comparison_Group"] = comparison_to_control_group
-        fold_assignments_res["Scaling_Type"] = scaling_type
-        fold_assignments_res["Kernel"] = kernel
+        fold_assignments_res["Classifier_Type"] = classifier_type
 
         prop_correct_predictions_res["Comparison_Group"] = comparison_to_control_group
-        prop_correct_predictions_res["Scaling_Type"] = scaling_type
-        prop_correct_predictions_res["Kernel"] = kernel
+        prop_correct_predictions_res["Classifier_Type"] = classifier_type
             
         # Save results
-        test_metrics_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_balanced_accuracy_AUC.feather")
-        TPR_FPR_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_ROC_TPR_FPR.feather")
-        fold_assignments_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_fold_assignments.feather")
-        prop_correct_predictions_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{kernel}_SVM_prop_correct_pred.feather")
+        test_metrics_res.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{classifier_type}_balanced_accuracy.feather")
+        fold_assignments_res.to_feather(f"{data_path}/classification_results/fold_assignments/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{classifier_type}_fold_assignments.feather")
+        prop_correct_predictions_res.to_feather(f"{data_path}/classification_results/sample_predictions/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{classifier_type}_prop_correct_pred.feather")
 
 ###################### NULLS ########################
 
 def run_nulls_for_feature(feature_data, 
                                output_file_base,
                                sample_and_class_df,
-                               scaling_type,
+                               classifier_type,
                                num_folds = 10,
                                num_null_iters = 1000,
                                num_repeats = 10,
                                num_jobs = 10):
 
-    print(f"Creating pipeline with {scaling_type} scaler.")
+    print(f"Creating pipeline with {classifier_type} classifier.")
 
     # Define the pipeline
-    if scaling_type == "robust":
-        pipe = Pipeline([('scaler', RobustScaler()), 
-                         ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
-                                     class_weight="balanced"))])
-    elif scaling_type == "mixedsigmoid":
+    if classifier_type == "Linear_SVM":
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                         ('SVM', svm.SVC(kernel = "linear", C = 1, shrinking = False, 
-                         class_weight = "balanced"))])
+                         ('SVM', svm.SVC(kernel = "linear", C = 1, class_weight = "balanced"))])
     else: 
-        pipe = Pipeline([('scaler', StandardScaler()), 
-                         ('SVM', svm.SVC(kernel="linear", C=1, shrinking=False, 
-                                     class_weight="balanced"))])
+        pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
+                         ('RF', RandomForestClassifier(class_weight = "balanced"))])
     
     # Run per number of null iterations
     for j in range(num_null_iters):
@@ -680,11 +593,11 @@ def run_nulls_for_feature(feature_data,
                                             return_estimator=False)
     
                 # Extract balanced accuracy by fold
-                null_balanced_accuracy_by_fold_df = pd.DataFrame(cv_results["test_score"],
-                                                            columns=["Null_Balanced_Accuracy"])
-                null_balanced_accuracy_by_fold_df["Null_Iter"] = j + 1
-                null_balanced_accuracy_by_fold_df["Fold"] = [*range(1, num_folds + 1, 1)]
-                null_balanced_accuracy_by_fold_df["Repeat_Number"] = n + 1
+                null_balanced_accuracy_by_fold_df = (pd.DataFrame(cv_results["test_score"],
+                                                                 columns=["Null_Balanced_Accuracy"])
+                                                                 .assign(Null_Iter = j + 1,
+                                                                         Fold = [*range(1, num_folds + 1, 1)],
+                                                                         Repeat_Number = n + 1))
                 
                 # Append repeat results to list for the given iter
                 null_iter_list.append(null_balanced_accuracy_by_fold_df)
@@ -699,6 +612,7 @@ def run_nulls_for_feature(feature_data,
 def combine_nulls_for_feature(grouping_var_name,
                                analysis_type,
                                output_file_base,
+                               classifier_type,
                                num_null_iters = 1000):
 
     # Initialise list
@@ -722,9 +636,10 @@ def combine_nulls_for_feature(grouping_var_name,
         null_balacc_list.append(null_iter_res_averaged_df)
     
     # Concatenate results across null iters
-    null_balacc_res = pd.concat(null_balacc_list)
-    null_balacc_res["Analysis_Type"] = analysis_type
-    null_balacc_res["group_var"] = grouping_var_name
+    null_balacc_res = (pd.concat(null_balacc_list)
+                       .assign(Analysis_Type = analysis_type,
+                               group_var = grouping_var_name,
+                               Classifier_Type = classifier_type))
 
     # Return the results
     return(null_balacc_res)
@@ -736,28 +651,27 @@ def run_univariate_nulls(univariate_feature_file,
                        metadata_file,
                        comparison_to_control_group,
                        data_path,
-                       pydata_path,
                        noise_proc,
                        num_null_iters = 1000,
                        num_folds = 10,
-                       scaling_type="mixedsigmoid",
+                       classifier_type = "Linear_SVM",
                        num_jobs = 10,
                        num_repeats = 10,
                        overwrite=False):
     
     # Try making output directory
-    if not os.path.isdir(f"{pydata_path}/null_results"):
-        os.mkdir(f"{pydata_path}/null_results")
+    if not os.path.isdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results"):
+        os.mkdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results")
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather") or overwrite:
+    if not os.path.isfile(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather") or overwrite:
         noise_label = noise_proc.replace("+", "_")
 
         # Load metadata
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{pydata_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
         
         # Univariate feature data
         univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -790,9 +704,9 @@ def run_univariate_nulls(univariate_feature_file,
             
             # Run nulls
             run_nulls_for_feature(feature_data = features_only, 
-                                    output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{ROI}_SVM",
+                                    output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{ROI}_SVM",
                                     sample_and_class_df = index_data,
-                                    scaling_type = scaling_type,
+                                    classifier_type = classifier_type,
                                     num_null_iters = num_null_iters,
                                     num_folds = num_folds,
                                     num_jobs = num_jobs,
@@ -801,7 +715,8 @@ def run_univariate_nulls(univariate_feature_file,
             # Combine nulls
             null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = ROI, 
                                                                  analysis_type="Univariate_Brain_Region", 
-                                                                 output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{ROI}_SVM", 
+                                                                 classifier_type=classifier_type,
+                                                                 output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{ROI}_SVM", 
                                                                  num_null_iters=num_null_iters)
 
             # Save to list of dataframes
@@ -826,9 +741,9 @@ def run_univariate_nulls(univariate_feature_file,
             
             # Run nulls
             run_nulls_for_feature(feature_data = features_only, 
-                                    output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{TS_feature}_SVM",
+                                    output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{TS_feature}_SVM",
                                     sample_and_class_df = index_data,
-                                    scaling_type = scaling_type,
+                                    classifier_type = classifier_type,
                                     num_null_iters = num_null_iters,
                                     num_folds = num_folds,
                                     num_jobs = num_jobs,
@@ -837,7 +752,8 @@ def run_univariate_nulls(univariate_feature_file,
             # Combine nulls
             null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = TS_feature, 
                                                                  analysis_type="Univariate_TS_Feature", 
-                                                                 output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_{TS_feature}_SVM", 
+                                                                    classifier_type=classifier_type,
+                                                                 output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{TS_feature}_SVM", 
                                                                  num_null_iters=num_null_iters)
             
             # Save to list of dataframes
@@ -866,9 +782,9 @@ def run_univariate_nulls(univariate_feature_file,
         
         # Run nulls
         run_nulls_for_feature(feature_data = features_only, 
-                                output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_Combo_SVM",
+                                output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Combo_SVM",
                                 sample_and_class_df = index_data,
-                                scaling_type = scaling_type,
+                                classifier_type = classifier_type,
                                 num_null_iters = num_null_iters,
                                 num_folds = num_folds,
                                 num_jobs = num_jobs,
@@ -877,7 +793,8 @@ def run_univariate_nulls(univariate_feature_file,
         # Combine nulls
         null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = "Combo", 
                                                                 analysis_type="Univariate_Combo", 
-                                                                output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_Combo_SVM", 
+                                                                classifier_type=classifier_type,
+                                                                output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Combo_SVM", 
                                                                 num_null_iters=num_null_iters)
         
         # Save to list of dataframes
@@ -889,10 +806,10 @@ def run_univariate_nulls(univariate_feature_file,
         
         # Add comparison group info and normalisation method info
         null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
-        null_balanced_accuracy_res["Scaling_Type"] = scaling_type
+        null_balanced_accuracy_res["Classifier_Type"] = classifier_type
         
         # Save results
-        null_balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
+        null_balanced_accuracy_res.to_feather(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather")
         
 def run_pairwise_nulls_by_SPI(pairwise_feature_file,
                      SPI_directionality_file,
@@ -901,22 +818,21 @@ def run_pairwise_nulls_by_SPI(pairwise_feature_file,
                        dataset_ID,
                        metadata_file,
                        comparison_to_control_group,
-                       pydata_path,
                        data_path,
                        noise_proc,
                        num_folds = 10,
-                       scaling_type="mixedsigmoid",
+                          classifier_type = "Linear_SVM",
                        num_null_iters = 1000,
                        num_jobs = 10,
                        num_repeats = 10,
                        overwrite=False):
     
     # Try making output directory
-    if not os.path.isdir(f"{pydata_path}/null_results"):
-        os.mkdir(f"{pydata_path}/null_results")
+    if not os.path.isdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results"):
+        os.mkdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results")
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather") or overwrite:
+    if not os.path.isfile(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather") or overwrite:
         
         # Define noise label
         noise_label = noise_proc.replace("+", "_")
@@ -929,7 +845,7 @@ def run_pairwise_nulls_by_SPI(pairwise_feature_file,
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{pydata_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
         
         # Pairwise feature data
         pairwise_feature_data = pd.read_feather(pairwise_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -981,9 +897,9 @@ def run_pairwise_nulls_by_SPI(pairwise_feature_file,
             
             # Run nulls
             run_nulls_for_feature(feature_data = features_only, 
-                                        output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{this_SPI}_SVM",
+                                        output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM",
                                         sample_and_class_df = index_data,
-                                        scaling_type = scaling_type,
+                                        classifier_type = classifier_type,
                                         num_null_iters = num_null_iters,
                                         num_folds = num_folds,
                                         num_jobs = num_jobs,
@@ -992,7 +908,8 @@ def run_pairwise_nulls_by_SPI(pairwise_feature_file,
             # Combine nulls
             null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = this_SPI, 
                                                                     analysis_type="Pairwise_SPI", 
-                                                                    output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{this_SPI}_SVM", 
+                                                                    classifier_type=classifier_type,
+                                                                    output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM", 
                                                                     num_null_iters=num_null_iters)
             
             # Save to list of dataframes
@@ -1004,10 +921,10 @@ def run_pairwise_nulls_by_SPI(pairwise_feature_file,
         
         # Add comparison group info and normalisation method info
         null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
-        null_balanced_accuracy_res["Scaling_Type"] = scaling_type
+        null_balanced_accuracy_res["Classifier_Type"] = classifier_type
         
         # Save results
-        null_balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
+        null_balanced_accuracy_res.to_feather(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather")
         
 def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
         pairwise_feature_file,
@@ -1017,10 +934,9 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
                        dataset_ID,
                        metadata_file,
                        comparison_to_control_group,
-                       pydata_path,
                        data_path,
                        noise_proc,
-                       scaling_type = "mixedsigmoid",
+                          classifier_type = "Linear_SVM",
                        num_jobs = 10,
                        num_repeats = 10,
                        num_folds=10,
@@ -1028,11 +944,11 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
                        overwrite=False):
     
     # Try making output directory
-    if not os.path.isdir(f"{pydata_path}/null_results"):
-        os.mkdir(f"{pydata_path}/null_results")
+    if not os.path.isdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results"):
+        os.mkdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results")
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather") or overwrite:
+    if not os.path.isfile(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather") or overwrite:
         
         # Define noise label
         noise_label = noise_proc.replace("+", "_")
@@ -1045,7 +961,7 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{pydata_path}/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
         
         # Load in univariate feature data
         univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -1079,9 +995,6 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
         univariate_combo_data_wide = univariate_combo_data.pivot(index=["Sample_ID", "Diagnosis"],
                                         columns = "Combo_Feature",
                                         values = "values")
-
-
-
         
         ###########################################################################
         # SPI-wise
@@ -1127,9 +1040,9 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
             
             # Run nulls
             run_nulls_for_feature(feature_data = features_only, 
-                                        output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{this_SPI}_SVM",
+                                        output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM",
                                         sample_and_class_df = index_data,
-                                        scaling_type = scaling_type,
+                                        classifier_type = classifier_type,
                                         num_null_iters = num_null_iters,
                                         num_folds = num_folds,
                                         num_jobs = num_jobs,
@@ -1138,7 +1051,8 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
             # Combine nulls
             null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = this_SPI, 
                                                                     analysis_type="Univariate_Pairwise_Combo", 
-                                                                    output_file_base = f"{pydata_path}/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_{this_SPI}_SVM", 
+                                                                    classifier_type=classifier_type,
+                                                                    output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM", 
                                                                     num_null_iters=num_null_iters)
             
             # Save to list of dataframes
@@ -1150,8 +1064,8 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
         
         # Add comparison group info and normalisation method info
         null_balanced_accuracy_res["Comparison_Group"] = comparison_to_control_group
-        null_balanced_accuracy_res["Scaling_Type"] = scaling_type
+        null_balanced_accuracy_res["Classifier_Type"] = classifier_type
         
         # Save results
-        null_balanced_accuracy_res.to_feather(f"{pydata_path}/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{scaling_type}_scaler_SVM_null_balanced_accuracy_distributions.feather")
+        null_balanced_accuracy_res.to_feather(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather")
         

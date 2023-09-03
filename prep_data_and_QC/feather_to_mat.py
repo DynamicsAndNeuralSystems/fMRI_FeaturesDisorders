@@ -3,9 +3,8 @@ import scipy.io
 import sys
 import os
 
-# input_feather_file_base = sys.argv[1]
-
-input_feather_file_base =  "/headnode1/abry4213/data/UCLA_CNP/raw_data/UCLA_CNP_AROMA_2P_GMR_fMRI_TS"
+input_feather_file_base = sys.argv[1]
+# input_feather_file_base =  "/headnode1/abry4213/data/UCLA_CNP/raw_data/UCLA_CNP_AROMA_2P_GMR_fMRI_TS"
 
 if not os.path.isfile(input_feather_file_base+".mat"):
     loaded_data = pd.read_feather(input_feather_file_base+".feather")

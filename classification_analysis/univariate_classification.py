@@ -18,8 +18,7 @@ parser.add_argument('--univariate_feature_set', default='catch22', dest='univari
 parser.add_argument('--pairwise_feature_set', default='pyspi14', dest='pairwise_feature_set')
 parser.add_argument('--univariate_feature_file', default="/headnode1/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch22_filtered_zscored.feather", dest='univariate_feature_file')
 parser.add_argument('--noise_proc', dest='noise_proc')
-parser.add_argument('--kernel', default="linear", dest='SVM_kernel')
-parser.add_argument('--scaling_type', default="mixedsigmoid", dest='scaling_type')
+parser.add_argument('--classifier_type', default="Linear_SVM", dest='classifier_type')
 parser.add_argument('--num_folds', default=10, dest='num_folds')
 parser.add_argument('--num_repeats', default=10, dest='num_repeats')
 parser.add_argument('--num_jobs', default=10, dest='num_jobs')
@@ -34,8 +33,7 @@ univariate_feature_set = args.univariate_feature_set
 pairwise_feature_set = args.pairwise_feature_set
 univariate_feature_file = args.univariate_feature_file
 noise_proc = args.noise_proc
-SVM_kernel = args.SVM_kernel
-scaling_type = args.scaling_type
+classifier_type = args.classifier_type
 num_folds = args.num_folds
 num_repeats = args.num_repeats
 num_jobs = args.num_jobs
@@ -49,7 +47,7 @@ dataset_ID = args.dataset_ID
 # pairwise_feature_set = "pyspi14"
 # univariate_feature_file = f"{data_path}/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather"
 # noise_proc = "AROMA+2P+GMR"
-# SVM_kernel = "linear"
+# classifier_type = "Linear_SVM"
 # num_folds = 10
 # num_null_iters = 2
 # num_repeats = 2
@@ -57,17 +55,15 @@ dataset_ID = args.dataset_ID
 # scaling_type = "mixedsigmoid"
 
 # Run the univariate main SVM
-run_univariate_SVM(dataset_ID=dataset_ID,
+run_univariate_classifier(dataset_ID=dataset_ID,
                     data_path=data_path,
-                    pydata_path=data_path + "processed_data/",
                     metadata_file=metadata_file,
                     comparison_to_control_group=comparison_group,
                     univariate_feature_set=univariate_feature_set, 
                     pairwise_feature_set=pairwise_feature_set,
                     univariate_feature_file=univariate_feature_file,
                     noise_proc=noise_proc,
-                    kernel = SVM_kernel,
-                    scaling_type = scaling_type,
+                    classifier_type = classifier_type,
                     num_folds = int(num_folds),
                     num_repeats = int(num_repeats),
                     num_jobs = int(num_jobs))

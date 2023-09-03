@@ -1,0 +1,34 @@
+#!/bin/bash
+#PBS -q yossarian
+#PBS -j oe
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/feather_to_mat_out.txt
+#PBS -l select=1:ncpus=1:mem=40GB
+#PBS -l walltime=24:00:00
+#PBS -q yossarian
+#PBS -M abry4213@uni.sydney.edu.au
+#PBS -m a
+#PBS -V
+
+cd "$PBS_O_WORKDIR" 
+
+# Load python
+#module load Anaconda3-5.1.0
+/usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
+source /usr/physics/python/anaconda3/etc/profile.d/conda.sh 
+
+conda activate pyspi
+
+# Define directories
+export github_dir=/headnode1/abry4213/github/
+mkdir -p $github_dir/fMRI_FeaturesDisorders/cluster_output/
+export feather_base=/headnode1/abry4213/data/ABIDE_ASD/raw_data/ABIDE_ASD_FC1000_fMRI_TS
+
+# Run script
+cmd="python3 $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/feather_to_mat.py $feather_base"
+echo $cmd
+$cmd
+
+exit
+
+# Verify the host on which the job ran
+hostname

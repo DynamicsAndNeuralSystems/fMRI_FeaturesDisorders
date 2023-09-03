@@ -5,7 +5,7 @@
 cd "$PBS_O_WORKDIR"
 
 # Run classification
-cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise_SVM_nulls.py \
+cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise_nulls.py \
 --data_path $data_path \
 --metadata_file $sample_metadata_file \
 --comparison_group $comparison_group \
@@ -16,7 +16,7 @@ cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise
 --noise_proc $noise_proc \
 --num_null_iters $num_null_iters \
 --num_folds $num_folds \
---scaling_type $scaling_type \
+--classifier_type $classifier_type \
 --num_jobs $num_jobs \
 --num_repeats $num_repeats \
 --dataset_ID $dataset_ID"
