@@ -163,7 +163,7 @@ for comparison_group in ASD; do
     job_memory=180
     num_hours=6
     num_folds=10
-    qsub -v classifier_type=$classifier_type,dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,univariate_feature_file=$univariate_feature_file,pairwise_feature_set=$pairwise_feature_set,pairwise_feature_file=$pairwise_feature_file,SPI_directionality_file=$SPI_directionality_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,{data_path}/processed_data/num_jobs=$num_jobs,num_repeats=$num_repeats \
+    qsub -v classifier_type=$classifier_type,dataset_ID=$dataset_ID,data_path=$data_path,comparison_group=$comparison_group,univariate_feature_set=$univariate_feature_set,univariate_feature_file=$univariate_feature_file,pairwise_feature_set=$pairwise_feature_set,pairwise_feature_file=$pairwise_feature_file,SPI_directionality_file=$SPI_directionality_file,sample_metadata_file=$sample_metadata_file,noise_proc=$noise_proc,num_jobs=$num_jobs,num_repeats=$num_repeats \
     -N ${dataset_ID}_${comparison_group}_${univariate_feature_set}_${pairwise_feature_set} \
     -o $github_dir/fMRI_FeaturesDisorders/cluster_output/run_combo_classification_${dataset_ID}_${comparison_group}_${univariate_feature_set}_${pairwise_feature_set}_${kernel}_kernel_${scaling_type}_scaler_out.txt \
     -m a -M $email -l select=1:ncpus=$num_jobs:mem=${job_memory}GB,walltime=${num_hours}:00:00 -q $cluster_queue  \
