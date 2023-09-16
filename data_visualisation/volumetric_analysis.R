@@ -105,6 +105,7 @@ univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_A
                 -ROC_AUC_Across_Repeats, -ROC_AUC_Across_Repeats_SD) %>%
   left_join(., univariate_balanced_accuracy)
 
+
 # Plot region-wise volume beta coefficients vs balanced accuracy
 all_regions_plot <- ROI_volume_beta_by_group %>%
   dplyr::select(Brain_Region, Comparison_Group, estimate) %>%
@@ -144,3 +145,48 @@ sig_regions_plot <- ROI_volume_beta_by_group %>%
 all_regions_plot + sig_regions_plot
 ggsave(glue("{plot_path}/Volume_vs_BalAcc_res.svg"),
        width=6, height=6, units="in", dpi=300)
+
+
+# Plot volume in the left vs right hemispheres by region/condition
+region_wise_volumes %>%
+  mutate(Hemisphere = case_when(str_detect(Brain_Region, "Left|lh-") ~ "Left",
+                                str_detect(Brain_Region, "Right|rh-") ~ "Right")) %>%
+  mutate(Brain_Region = gsub("Left-|ctx-lh-|Right-|ctx-rh-", "", Brain_Region)) %>%
+  dplyr::select(Sample_ID, Diagnosis, Brain_Region, Hemisphere, Num_Voxels) %>%
+  pivot_wider(id_cols = c(Sample_ID, Diagnosis, Brain_Region),
+              names_from = Hemisphere,
+              values_from = Num_Voxels) %>%
+  ggplot(data=., mapping=aes(x=Left, y=Right, color=Diagnosis)) +
+  geom_point() +
+  theme(legend.position="none") +
+  geom_abline(slope=1, intercept=0, color="black") +
+  facet_wrap(Diagnosis ~ .)
+
+
+# Are there any left-right volumetric differences by cohort?
+brain_regions_we_used <- univariate_p_values %>%
+  filter(Analysis_Type == "Univariate_Brain_Region",
+         Study=="UCLA_CNP") %>%
+  distinct(group_var) %>%
+  mutate(Hemisphere = case_when(str_detect(group_var, "Left|lh-") ~ "Left",
+                                str_detect(group_var, "Right|rh-") ~ "Right")) %>%
+  mutate(Brain_Region = gsub("Left-|ctx-lh-|Right-|ctx-rh-", "", group_var)) %>%
+  distinct(Brain_Region) %>%
+  pull(Brain_Region)
+
+left_right_paired_T_results <- region_wise_volumes %>%
+  mutate(Hemisphere = case_when(str_detect(Brain_Region, "Left|lh-") ~ "Left",
+                                str_detect(Brain_Region, "Right|rh-") ~ "Right")) %>%
+  mutate(Brain_Region = gsub("Left-|ctx-lh-|Right-|ctx-rh-", "", Brain_Region)) %>%
+  dplyr::select(Sample_ID, Diagnosis, Brain_Region, Hemisphere, Num_Voxels) %>%
+  filter(!is.na(Hemisphere) & Brain_Region %in% brain_regions_we_used) %>%
+  group_by(Diagnosis, Brain_Region) %>%
+  nest() %>%
+  mutate(
+    test = map(data, ~ t.test(Num_Voxels ~ Hemisphere, data=.x, paired=TRUE)), # S3 list-col
+    tidied = map(test, tidy)
+  ) %>%
+  unnest(tidied) %>%
+  ungroup() %>%
+  group_by(Diagnosis) %>%
+  mutate(p_val_Bonferroni = p.adjust(p.value, method="bonferroni"))

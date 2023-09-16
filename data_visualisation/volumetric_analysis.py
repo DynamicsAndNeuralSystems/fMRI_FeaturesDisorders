@@ -65,5 +65,5 @@ for aparc_aseg in os.listdir(input_data_path):
 # Concatenate results into one dataframe
 ROI_voxel_counts = pd.concat(ROI_voxel_counts_list, axis=0).reset_index(drop=True)
 
-her # Same voxel volumes to a feather file
+# Same voxel volumes to a feather file
 ROI_voxel_counts.to_feather("/Users/abry4213/data/UCLA_CNP/processed_data/aparc_aseg_BOLD_space_voxel_volumes.feather")

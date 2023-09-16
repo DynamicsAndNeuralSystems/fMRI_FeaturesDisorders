@@ -26,7 +26,7 @@ pyarrow_feather <- import("pyarrow.feather")
 # Define study/data paths
 ################################################################################
 
-github_dir <- "~/github/fMRI_FeaturesDisorders/"
+github_dir <- "~/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/github/fMRI_FeaturesDisorders/"
 source(glue("{github_dir}/data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/univariate_results/")
 icesTAF::mkdir(plot_path)
@@ -41,8 +41,79 @@ UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data
 # Load study metadata
 UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") 
 
+# Load univariate classification results across all folds
+univariate_balanced_accuracy_AUC_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather")) %>%
+  filter(Univariate_Feature_Set == univariate_feature_set, kernel==SVM_kernel)
+# Compute mean + SD performance across all folds
+univariate_balanced_accuracy <- univariate_balanced_accuracy_AUC_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, kernel) %>%
+  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T),
+          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T),
+          ROC_AUC_Across_Folds_SD = sd(ROC_AUC, na.rm=T))
+# Load p-values
+univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
+  filter(Univariate_Feature_Set == univariate_feature_set) %>%
+  dplyr::select(-Balanced_Accuracy_Across_Repeats, -Balanced_Accuracy_Across_Repeats_SD, 
+                -ROC_AUC_Across_Repeats, -ROC_AUC_Across_Repeats_SD) %>%
+  left_join(., univariate_balanced_accuracy)
 
 ################################################################################
+repkfold_ttest <- function(data, n1, n2, k, r){
+  
+  # Arg checks
+  
+  '%ni%' <- Negate('%in%')
+  
+  if("model" %ni% colnames(data) || "values" %ni% colnames(data) || "k" %ni% colnames(data) || "r" %ni% colnames(data)){
+    stop("data should contain at least four columns called 'model', 'values', 'k', and 'r'.")
+  }
+  
+  if(!is.numeric(data$values) || !is.numeric(data$k) || !is.numeric(data$r)){
+    stop("data should be a data.frame with only numerical values in columns 'values', 'k', and 'r'.")
+  }
+  
+  if(!is.numeric(n1) || !is.numeric(n2) || !is.numeric(k) || !is.numeric(r) ||
+     length(n1) != 1 || length(n2) != 1 || length(k) != 1 || length(r) != 1){
+    stop("n1, n2, k, and r should all be integer scalars.")
+  }
+  
+  if(length(unique(data$model)) != 2){
+    stop("Column 'model' in data should only have two unique labels (one for each model to compare).")
+  }
+  
+  # Calculations
+  
+  d <- c()
+  
+  for(i in 1:k){
+    for(j in 1:r){
+      x <- data[data$k == i, ]
+      x <- x[x$r == j, ]
+      d <- c(d, x[x$model == unique(x$model)[1], c("values")] - x[x$model == unique(x$model)[2], c("values")]) # Differences
+    }
+  }
+  
+  # Catch for when there is zero difference(s) between the models
+  
+  if (sum(unlist(d)) == 0) {
+    tmp <- data.frame(statistic = 0, p.value = 1)
+  } else{
+    
+    statistic <- mean(unlist(d), na.rm = TRUE) / sqrt(stats::var(unlist(d), na.rm = TRUE) * ((1/(k * r)) + (n2/n1))) # Calculate t-statistic
+    
+    if(statistic < 0){
+      p.value <- stats::pt(statistic, (k * r) - 1) # p-value for left tail
+    } else{
+      p.value <- stats::pt(statistic, (k * r) - 1, lower.tail = FALSE) # p-value for right tail
+    }
+    
+    tmp <- data.frame(statistic = statistic, p.value = p.value)
+  }
+  
+  return(tmp)
+}
+
 # Think about hemisphere differences in performance
 run_correctR_group <- function(metadata, study, results_df) {
   results_across_groups <- list()
@@ -65,18 +136,27 @@ run_correctR_group <- function(metadata, study, results_df) {
         left_join(., univariate_p_values) %>%
         group_by(Brain_Region) %>%
         filter(any(p_value_Bonferroni < 0.05)) %>%
-        pivot_wider(id_cols = c(Repeat_Number, Brain_Region), 
-                    names_from = Hemisphere,
-                    values_from = Balanced_Accuracy_Across_Folds) %>%
-        dplyr::rename("x" = "Right", "y" = "Left") %>%
+        filter(Study == study, 
+               Comparison_Group == comparison_group) %>%
+        group_by(Brain_Region) %>%
+        filter(any(p_value_Bonferroni < 0.05)) %>%
+        ungroup() %>%
+        dplyr::select(Hemisphere, Brain_Region, Fold, Repeat_Number, Balanced_Accuracy) %>%
+        dplyr::rename("model" = "Hemisphere",
+                      "k" = "Fold",
+                      "r" = "Repeat_Number",
+                      "values" = "Balanced_Accuracy") %>%
+        dplyr::select(model, Brain_Region, k, r, values) %>%
+        dplyr::mutate(r = r + 1) %>%
         group_by(Brain_Region) %>%
         group_split()
       
       res <- data_for_correctR %>%
-        purrr::map_df(~ as.data.frame(resampled_ttest(x=.x$x, 
-                                                      y=.x$y, 
-                                                      n=10, 
-                                                      n1=training_size, n2=test_size)) %>%
+        purrr::map_df(~ as.data.frame(repkfold_ttest(data = .x %>% dplyr::select(-Brain_Region), 
+                                                     n1 = training_size,
+                                                     n2 = test_size,
+                                                     k = 10,
+                                                     r = 10)) %>%
                         mutate(Brain_Region = unique(.x$Brain_Region))) %>%
         ungroup() %>%
         dplyr::rename("p_value_corr"="p.value") %>%
@@ -92,7 +172,7 @@ run_correctR_group <- function(metadata, study, results_df) {
 
 hemisphere_balacc_t_res <- run_correctR_group(metadata = UCLA_CNP_metadata,
                                               study = "UCLA_CNP",
-                                              results_df = subset(univariate_balanced_accuracy_AUC_by_repeats, 
+                                              results_df = subset(univariate_balanced_accuracy_AUC_all_folds, 
                                                                   Analysis_Type == "Univariate_Brain_Region"))
 
 # Plot regions across conditions

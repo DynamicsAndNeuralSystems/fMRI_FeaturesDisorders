@@ -57,6 +57,10 @@ data_path <- "~/data/TS_feature_manuscript/"
 UCLA_CNP_data_path <- "~/data/UCLA_CNP/"
 ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/"
 
+# Load in feature info
+catch24_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
+pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
+
 # Load data on subjects we actually used
 UCLA_CNP_subjects_used <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch24_pyspi14.feather")) %>%
   pull(Sample_ID)
@@ -68,9 +72,6 @@ UCLA_CNP_sample_metadata <- feather::read_feather(glue("{UCLA_CNP_data_path}/stu
   filter(Sample_ID %in% UCLA_CNP_subjects_used)
 ABIDE_ASD_sample_metadata <- feather::read_feather(glue("{ABIDE_ASD_data_path}/study_metadata/ABIDE_ASD_sample_metadata.feather")) %>%
   filter(Sample_ID %in% ABIDE_ASD_subjects_used)
-
-# Load feature info
-pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv")) 
 
 # Load mean framewise displacement data
 UCLA_CNP_mean_FD <- read.table(glue("{UCLA_CNP_data_path}/movement_data/fmriprep/UCLA_CNP_mFD.txt"), 
@@ -91,6 +92,12 @@ ABIDE_ASD_mean_FD <- ABIDE_ASD_mean_FD %>%
   left_join(., ABIDE_ASD_sample_metadata) %>%
   filter(Sample_ID %in% ABIDE_ASD_subjects_used) %>%
   mutate(Study = "ABIDE_ASD")
+
+# Load catch24 data
+UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")  %>%
+  left_join(., UCLA_CNP_sample_metadata)
+ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch24_filtered.feather")  %>%
+  left_join(., ABIDE_ASD_sample_metadata)
 
 ################################################################################
 # Compare FD-Power distributions between each case-control comparison
@@ -159,11 +166,6 @@ ggsave(paste0(plot_path, "mFD_Power_by_Group.svg"),
 
 if (!file.exists(glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr.feather"))) {
   # Load raw feature data
-  UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")  %>%
-    left_join(., UCLA_CNP_sample_metadata)
-  ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch24_filtered.feather")  %>%
-    left_join(., ABIDE_ASD_sample_metadata)
-  catch24_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
   UCLA_CNP_pyspi14 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")  %>%
     group_by(Sample_ID, SPI) %>%
     summarise(mean_across_brain = mean(value, na.rm=T)) %>%
@@ -326,11 +328,11 @@ plot_feature_vs_movement(feature_name = "DN_Spread_Std",
 ggsave(paste0(plot_path, "mFD_vs_SD.svg"),
        width = 3.75, height=5.75, units="in", dpi=300)
 
-# CO_Embed2_Dist_tau_d_expfit_meandiff
-plot_feature_vs_movement(feature_name = "CO_Embed2_Dist_tau_d_expfit_meandiff",
-                         title_label = "Embedding distance",
-                         y_label = "Mean embedding distance across brain")
-ggsave(paste0(plot_path, "mFD_vs_embedding_distance.svg"),
+# Periodicity
+plot_feature_vs_movement(feature_name = "PD_PeriodicityWang_th0_01",
+                         title_label = "Periodicity",
+                         y_label = "Mean periodicity across brain")
+ggsave(paste0(plot_path, "mFD_vs_periodicity.svg"),
        width = 3.75, height=5.75, units="in", dpi=300)
 
 

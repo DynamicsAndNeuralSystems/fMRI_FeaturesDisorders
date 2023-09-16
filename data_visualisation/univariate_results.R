@@ -422,7 +422,7 @@ SD_lm_beta_for_ggseg <- lm_beta_stats_catch24_whole_brain %>%
 min_fill <- round(min(SD_lm_beta_for_ggseg$estimate),2)
 max_fill <- round(max(SD_lm_beta_for_ggseg$estimate),2)
 bin_seq <- round(seq(min_fill, max_fill, by=0.2),1)
-fill_colors <- c("#053061", "#2072A6", "#85B9CE", "white", '#FF9373', "#BF0020")
+fill_colors <- c("#053061", "#2072A6", "#85B9CE", "white", '#FF9373', "#DB4246")
 
 SD_lm_in_brain <- plot_feature_in_brain(study_group_df = study_group_df,
                                                       lm_beta_df = SD_lm_beta_for_ggseg,
@@ -447,7 +447,7 @@ mean_lm_beta_for_ggseg <- lm_beta_stats_catch24_whole_brain %>%
 min_fill <- round(min(mean_lm_beta_for_ggseg$estimate),2)
 max_fill <- round(max(mean_lm_beta_for_ggseg$estimate),2)
 bin_seq <- round(seq(min_fill, max_fill, by=0.2),1)
-fill_colors <- c("#053061", "#005D9F", "#2E8AB9", "#82BED8", "white", '#FF9373', "#BF0020")
+fill_colors <- c("#053061", "#005D9F", "#2E8AB9", "#82BED8", "white", '#FF9373', "#df5a5d")
 
 mean_lm_in_brain <- plot_feature_in_brain(study_group_df = study_group_df,
                                         lm_beta_df = mean_lm_beta_for_ggseg,
