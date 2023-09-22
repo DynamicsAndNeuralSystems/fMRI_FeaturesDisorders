@@ -128,7 +128,7 @@ def run_univariate_classifier(univariate_feature_file,
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_final.feather")                                                                           
         
         # Univariate feature data
         univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -303,7 +303,7 @@ def run_pairwise_classifier_by_SPI(pairwise_feature_file,
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_final.feather")                                                                           
         
         # Pairwise feature data
         pairwise_feature_data = pd.read_feather(pairwise_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -422,7 +422,7 @@ def run_combined_uni_pairwise_classifier_by_SPI(univariate_feature_file,
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_final.feather")                                                                           
         
         # Load in univariate feature data
         univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -671,7 +671,7 @@ def run_univariate_nulls(univariate_feature_file,
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_final.feather")                                                                           
         
         # Univariate feature data
         univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -845,7 +845,7 @@ def run_pairwise_nulls_by_SPI(pairwise_feature_file,
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_final.feather")                                                                           
         
         # Pairwise feature data
         pairwise_feature_data = pd.read_feather(pairwise_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
@@ -961,7 +961,7 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
         metadata = pd.read_feather(data_path + "study_metadata/" + metadata_file)
 
         # Load in data containing subjects with both univariate and pairwise data available
-        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
+        samples_to_keep = pd.read_feather(f"{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_final.feather")                                                                           
         
         # Load in univariate feature data
         univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],

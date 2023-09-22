@@ -16,13 +16,12 @@ Rscript filter_subjects_based_on_head_movement.R --dataset_ID $dataset_ID \
 # ##########################################################################################
 # Prep univariate data in R
 echo "Now preparing univariate data"
-for feature_set in catch2 catch22 catch24; do
-    qsub -v dataset_ID=$dataset_ID,data_path=$data_path,univariate_feature_set=$feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_proc=$noise_proc \
-    -N prepare_univariate_data_${dataset_ID} \
-    -o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}_${feature_set}_out.txt \
-    -m a \
-    call_prepare_univariate_data.pbs
-done
+univariate_feature_set=catch25
+qsub -v dataset_ID=$dataset_ID,data_path=$data_path,univariate_feature_set=$univariate_feature_set,sample_metadata_file=$sample_metadata_file,brain_region_lookup=$brain_region_lookup,noise_proc=$noise_proc \
+-N prepare_univariate_data_${dataset_ID} \
+-o $github_dir/fMRI_FeaturesDisorders/cluster_output/prepare_univariate_data_${dataset_ID}_${feature_set}_out.txt \
+-m a \
+call_prepare_univariate_data.pbs
 
 ########################################################################################
 # Prep pairwise data

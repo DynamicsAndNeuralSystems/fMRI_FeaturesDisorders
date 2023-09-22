@@ -11,6 +11,14 @@ library(theft)
 library(feather)
 library(glue)
 
+python_to_use <- "~/.conda/envs/pyspi/bin/python3"
+reticulate::use_python(python_to_use)
+
+library(reticulate)
+
+# Import pyarrow.feather as pyarrow_feather
+pyarrow_feather <- import("pyarrow.feather")
+
 #-------------------------------------------------------------------------------
 # Function to read in univariate TS feature data and return subjects with NA 
 # values. For each noise-processing method, the number of TS features with all 
@@ -41,8 +49,7 @@ find_univariate_sample_na <- function(TS_feature_data,
 #-------------------------------------------------------------------------------
 
 find_univariate_feature_na <- function(TS_feature_data, 
-                                       dataset_ID = "UCLA_CNP",
-                                       univariate_feature_set = "catch22") {
+                                       dataset_ID = "UCLA_CNP") {
   
   NA_feature_data <- TS_feature_data %>%
     group_by(names, Noise_Proc) %>%
@@ -59,12 +66,12 @@ find_univariate_feature_na <- function(TS_feature_data,
 plot_NA_sample_ts <- function(dataset_ID = "UCLA_CNP",
                               grouping_var = "Brain_Region",
                               raw_TS_file = "UCLA_CNP_AROMA_2P_GMR_fMRI_data.feather",
-                              univariate_feature_set = "catch22",
+                              univariate_feature_set = "catch25",
                               NA_sample_IDs = c(),
                               noise_proc = "AROMA+2P+GMR") {
   
   if (length(NA_sample_IDs) > 0) {
-    ts_data <- feather::read_feather(raw_TS_file)
+    ts_data <- pyarrow_feather$read_feather(raw_TS_file)
     
     ts_data %>%
       filter(Sample_ID %in% NA_sample_IDs) %>%
@@ -121,10 +128,11 @@ remove_features_from_feature_matrix <- function(TS_feature_data,
 #-------------------------------------------------------------------------------
 
 run_QC_for_univariate_dataset <- function(data_path, 
-                                          proc_rdata_path,
                                           sample_metadata_file = "UCLA_CNP_sample_metadata.feather",
                                           dataset_ID = "UCLA_CNP",
-                                          univariate_feature_set = "catch22",
+                                          univariate_feature_set = "catch25",
+                                          theft_processed_data_file = "UCLA_CNP_AROMA_2P_GMR_catch24.feather",
+                                          fALFF_processed_data_file = "UCLA_CNP_AROMA_2P_GMR_fALFF.feather",
                                           raw_TS_file = "UCLA_CNP_AROMA_2P_GMR_fMRI_data.feather",
                                           noise_proc = "AROMA+2P+GMR",
                                           plot_dir) {
@@ -132,12 +140,18 @@ run_QC_for_univariate_dataset <- function(data_path,
   noise_label = gsub("\\+", "_", noise_proc)
   
   # Load sample metadata
-  sample_metadata <- feather::read_feather(paste0(data_path, "study_metadata/", sample_metadata_file))
+  sample_metadata <- pyarrow_feather$read_feather(glue("{data_path}/study_metadata/{sample_metadata_file}"))
   
   # Load TS feature data and subset by noise_proc
-  TS_feature_data <- feather::read_feather(paste0(rdata_path, dataset_ID, "_", noise_label, "_", 
-                                                univariate_feature_set, ".feather")) %>%
-    mutate(Feature_Set = univariate_feature_set)
+  theft_processed_data <- pyarrow_feather$read_feather(glue("{data_path}/processed_data/{theft_processed_data_file}")) %>%
+    filter(Noise_Proc == noise_proc) 
+  fALFF_processed_data <- pyarrow_feather$read_feather(glue("{data_path}/processed_data/{fALFF_processed_data_file}"))
+
+  # Merge theft and fALFF data
+  TS_feature_data <- theft_processed_data %>%
+    plyr::rbind.fill(fALFF_processed_data) %>%
+    dplyr::mutate(Feature_Set = univariate_feature_set)
+    
   
   # Samples identified with missing data for all features:
   univar_NA_samples <- find_univariate_sample_na(TS_feature_data,
@@ -151,8 +165,7 @@ run_QC_for_univariate_dataset <- function(data_path,
   
   # Features identified with missing data for all samples:
   univar_NA_features <- find_univariate_feature_na(TS_feature_data_filtered,
-                                                   dataset_ID = dataset_ID,
-                                                   univariate_feature_set = univariate_feature_set) %>%
+                                                   dataset_ID = dataset_ID) %>%
     pull(names)
   
   # Drop any samples shown above with NA features for 
@@ -168,29 +181,17 @@ run_QC_for_univariate_dataset <- function(data_path,
   # Find subjects to drop based on head movement
   lenient_FD_subjects_to_drop <- unname(unlist(read.table(glue("{data_path}/movement_data/fmriprep/{dataset_ID}_subjects_to_drop_lenient.txt"),
                        colClasses = "character")[1]))
-  TS_feature_data_filtered <- TS_feature_data_filtered %>%
+  TS_feature_data_filtered <- TS_feature_data_filtexered %>%
     dplyr::filter(!(Sample_ID %in% lenient_FD_subjects_to_drop))
   
   # Save filtered data to feather
-  feather::write_feather(TS_feature_data_filtered, paste0(proc_rdata_path,
-                                                        sprintf("%s_%s_%s_filtered.feather",
-                                                                dataset_ID,
-                                                                noise_label,
-                                                                univariate_feature_set)))
+  feather::write_feather(TS_feature_data_filtered, glue("{data_path}/processed_data/{dataset_ID}_{noise_label}_{univariate_feature_set}_filtered.feather"))
   
   # Save sample data post-filtering to a feather file:
   filtered_sample_info <- TS_feature_data_filtered %>%
     distinct(Sample_ID)                                            
   
-  feather::write_feather(filtered_sample_info, paste0(proc_rdata_path, 
-                                                    sprintf("%s_filtered_sample_info_%s_%s.feather",
-                                                            dataset_ID,
-                                                            noise_label,
-                                                            univariate_feature_set)))
+  feather::write_feather(filtered_sample_info, glue("{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}.feather"))
   
-  cat("Sample info saved to:", paste0(proc_rdata_path, 
-                                      sprintf("%s_filtered_sample_info_%s_%s.feather",
-                                              dataset_ID,
-                                              noise_label,
-                                              univariate_feature_set)), "\n")
+  cat("Filtered data saved to:", glue("{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_{univariate_feature_set}.feather"), "\n")
 }
