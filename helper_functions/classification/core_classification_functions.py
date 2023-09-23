@@ -660,11 +660,11 @@ def run_univariate_nulls(univariate_feature_file,
                        overwrite=False):
     
     # Try making output directory
-    if not os.path.isdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results"):
-        os.mkdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results")
+    if not os.path.isdir(f"{data_path}/classification_results/null_distributions/null_results"):
+        os.mkdir(f"{data_path}/classification_results/null_distributions/null_results")
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather") or overwrite:
+    if not os.path.isfile(f"{data_path}/classification_results/null_distributions/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather") or overwrite:
         noise_label = noise_proc.replace("+", "_")
 
         # Load metadata
@@ -704,7 +704,7 @@ def run_univariate_nulls(univariate_feature_file,
             
             # Run nulls
             run_nulls_for_feature(feature_data = features_only, 
-                                    output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{ROI}_SVM",
+                                    output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{ROI}_SVM",
                                     sample_and_class_df = index_data,
                                     classifier_type = classifier_type,
                                     num_null_iters = num_null_iters,
@@ -716,7 +716,7 @@ def run_univariate_nulls(univariate_feature_file,
             null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = ROI, 
                                                                  analysis_type="Univariate_Brain_Region", 
                                                                  classifier_type=classifier_type,
-                                                                 output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{ROI}_SVM", 
+                                                                 output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{ROI}_SVM", 
                                                                  num_null_iters=num_null_iters)
 
             # Save to list of dataframes
@@ -741,7 +741,7 @@ def run_univariate_nulls(univariate_feature_file,
             
             # Run nulls
             run_nulls_for_feature(feature_data = features_only, 
-                                    output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{TS_feature}_SVM",
+                                    output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{TS_feature}_SVM",
                                     sample_and_class_df = index_data,
                                     classifier_type = classifier_type,
                                     num_null_iters = num_null_iters,
@@ -753,7 +753,7 @@ def run_univariate_nulls(univariate_feature_file,
             null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = TS_feature, 
                                                                  analysis_type="Univariate_TS_Feature", 
                                                                     classifier_type=classifier_type,
-                                                                 output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{TS_feature}_SVM", 
+                                                                 output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{TS_feature}_SVM", 
                                                                  num_null_iters=num_null_iters)
             
             # Save to list of dataframes
@@ -782,7 +782,7 @@ def run_univariate_nulls(univariate_feature_file,
         
         # Run nulls
         run_nulls_for_feature(feature_data = features_only, 
-                                output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Combo_SVM",
+                                output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Combo_SVM",
                                 sample_and_class_df = index_data,
                                 classifier_type = classifier_type,
                                 num_null_iters = num_null_iters,
@@ -794,7 +794,7 @@ def run_univariate_nulls(univariate_feature_file,
         null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = "Combo", 
                                                                 analysis_type="Univariate_Combo", 
                                                                 classifier_type=classifier_type,
-                                                                output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Combo_SVM", 
+                                                                output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Combo_SVM", 
                                                                 num_null_iters=num_null_iters)
         
         # Save to list of dataframes
@@ -809,7 +809,7 @@ def run_univariate_nulls(univariate_feature_file,
         null_balanced_accuracy_res["Classifier_Type"] = classifier_type
         
         # Save results
-        null_balanced_accuracy_res.to_feather(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather")
+        null_balanced_accuracy_res.to_feather(f"{data_path}/classification_results/null_distributions/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather")
         
 def run_pairwise_nulls_by_SPI(pairwise_feature_file,
                      SPI_directionality_file,
@@ -828,11 +828,11 @@ def run_pairwise_nulls_by_SPI(pairwise_feature_file,
                        overwrite=False):
     
     # Try making output directory
-    if not os.path.isdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results"):
-        os.mkdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results")
+    if not os.path.isdir(f"{data_path}/classification_results/null_distributions/null_results"):
+        os.mkdir(f"{data_path}/classification_results/null_distributions/null_results")
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather") or overwrite:
+    if not os.path.isfile(f"{data_path}/classification_results/null_distributions/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather") or overwrite:
         
         # Define noise label
         noise_label = noise_proc.replace("+", "_")
@@ -897,7 +897,7 @@ def run_pairwise_nulls_by_SPI(pairwise_feature_file,
             
             # Run nulls
             run_nulls_for_feature(feature_data = features_only, 
-                                        output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM",
+                                        output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM",
                                         sample_and_class_df = index_data,
                                         classifier_type = classifier_type,
                                         num_null_iters = num_null_iters,
@@ -909,7 +909,7 @@ def run_pairwise_nulls_by_SPI(pairwise_feature_file,
             null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = this_SPI, 
                                                                     analysis_type="Pairwise_SPI", 
                                                                     classifier_type=classifier_type,
-                                                                    output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM", 
+                                                                    output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM", 
                                                                     num_null_iters=num_null_iters)
             
             # Save to list of dataframes
@@ -924,7 +924,7 @@ def run_pairwise_nulls_by_SPI(pairwise_feature_file,
         null_balanced_accuracy_res["Classifier_Type"] = classifier_type
         
         # Save results
-        null_balanced_accuracy_res.to_feather(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather")
+        null_balanced_accuracy_res.to_feather(f"{data_path}/classification_results/null_distributions/{dataset_ID}_{comparison_to_control_group}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather")
         
 def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
         pairwise_feature_file,
@@ -944,11 +944,11 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
                        overwrite=False):
     
     # Try making output directory
-    if not os.path.isdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results"):
-        os.mkdir(f"{data_path}/classification_results/null_balanced_accuracy/null_results")
+    if not os.path.isdir(f"{data_path}/classification_results/null_distributions/null_results"):
+        os.mkdir(f"{data_path}/classification_results/null_distributions/null_results")
 
     # Check if file already exists or overwrite flag is set
-    if not os.path.isfile(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather") or overwrite:
+    if not os.path.isfile(f"{data_path}/classification_results/null_distributions/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather") or overwrite:
         
         # Define noise label
         noise_label = noise_proc.replace("+", "_")
@@ -1040,7 +1040,7 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
             
             # Run nulls
             run_nulls_for_feature(feature_data = features_only, 
-                                        output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM",
+                                        output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM",
                                         sample_and_class_df = index_data,
                                         classifier_type = classifier_type,
                                         num_null_iters = num_null_iters,
@@ -1052,7 +1052,7 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
             null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = this_SPI, 
                                                                     analysis_type="Univariate_Pairwise_Combo", 
                                                                     classifier_type=classifier_type,
-                                                                    output_file_base = f"{data_path}/classification_results/null_balanced_accuracy/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM", 
+                                                                    output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM", 
                                                                     num_null_iters=num_null_iters)
             
             # Save to list of dataframes
@@ -1067,5 +1067,5 @@ def run_combined_uni_pairwise_nulls_by_SPI(univariate_feature_file,
         null_balanced_accuracy_res["Classifier_Type"] = classifier_type
         
         # Save results
-        null_balanced_accuracy_res.to_feather(f"{data_path}/classification_results/null_balanced_accuracy/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather")
+        null_balanced_accuracy_res.to_feather(f"{data_path}/classification_results/null_distributions/{dataset_ID}_{comparison_to_control_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather")
         

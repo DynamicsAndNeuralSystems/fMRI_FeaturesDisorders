@@ -150,12 +150,12 @@ if (!file.exists(paste0(data_path, "raw_data/",
 #-------------------------------------------------------------------------------
 # Run catch24
 #-------------------------------------------------------------------------------
-catch24_all_samples(full_TS_data = np_TS_data,
-                    data_path = data_path,
-                    noise_proc = noise_proc,
-                    dataset_ID = dataset_ID,
-                    unique_columns = c("Sample_ID", "Brain_Region", "Noise_Proc"),
-                    output_column_names = c("Sample_ID", "Brain_Region", "Noise_Proc"))
+# catch24_all_samples(full_TS_data = np_TS_data,
+#                     data_path = data_path,
+#                     noise_proc = noise_proc,
+#                     dataset_ID = dataset_ID,
+#                     unique_columns = c("Sample_ID", "Brain_Region", "Noise_Proc"),
+#                     output_column_names = c("Sample_ID", "Brain_Region", "Noise_Proc"))
 
 #-------------------------------------------------------------------------------
 # Compute fALFF to be 25th feature for all samples

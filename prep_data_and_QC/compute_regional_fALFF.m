@@ -12,11 +12,20 @@ load(TS_mat_file);
 [m, n] = size(feather_to_mat_struct.Sample_ID);
 % Initialise fALFF results
 fALFF_data = cell(m,3);
+TS_data = feather_to_mat_struct.Time_Series;
+[ts_rows, ts_cols] = size(TS_data);
 
 for i = 1:m
     sample_ID = feather_to_mat_struct.Sample_ID(i, :); % Extract sample ID
     brain_region = feather_to_mat_struct.Brain_Region(i, :); % Extract brain region
-    time_series = transpose(feather_to_mat_struct.Time_Series(i, :)); % Extract time series
+
+    % Check time series dimensions
+    if ts_rows==1
+        time_series = feather_to_mat_struct.Time_Series(:, i); % Extract time series
+        time_series = transpose(time_series{1});
+    else
+        time_series = transpose(feather_to_mat_struct.Time_Series(i, :)); % Extract time series
+    end
 
     % Compute fALFF for this participant/region
     SP_fALFF_res = SP_fALFF(time_series, samplingPeriod);

@@ -145,7 +145,8 @@ run_QC_for_univariate_dataset <- function(data_path,
   # Load TS feature data and subset by noise_proc
   theft_processed_data <- pyarrow_feather$read_feather(glue("{data_path}/processed_data/{theft_processed_data_file}")) %>%
     filter(Noise_Proc == noise_proc) 
-  fALFF_processed_data <- pyarrow_feather$read_feather(glue("{data_path}/processed_data/{fALFF_processed_data_file}"))
+  fALFF_processed_data <- pyarrow_feather$read_feather(glue("{data_path}/processed_data/{fALFF_processed_data_file}")) %>%
+    mutate(Sample_ID = trimws(Sample_ID))
 
   # Merge theft and fALFF data
   TS_feature_data <- theft_processed_data %>%
@@ -181,7 +182,7 @@ run_QC_for_univariate_dataset <- function(data_path,
   # Find subjects to drop based on head movement
   lenient_FD_subjects_to_drop <- unname(unlist(read.table(glue("{data_path}/movement_data/fmriprep/{dataset_ID}_subjects_to_drop_lenient.txt"),
                        colClasses = "character")[1]))
-  TS_feature_data_filtered <- TS_feature_data_filtexered %>%
+  TS_feature_data_filtered <- TS_feature_data_filtered %>%
     dplyr::filter(!(Sample_ID %in% lenient_FD_subjects_to_drop))
   
   # Save filtered data to feather

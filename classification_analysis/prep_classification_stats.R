@@ -4,7 +4,7 @@
 
 python_to_use <- "~/.conda/envs/pyspi/bin/python3"
 # python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
-univariate_feature_set <- "catch24"
+univariate_feature_set <- "catch25"
 pairwise_feature_set <- "pyspi14"
 github_dir <- "~/github/"
 data_path <- "~/data/"
@@ -70,45 +70,6 @@ compare_main_and_null <- function(main_df_iter, null_distribution_df) {
 ################################################################################
 # Compile balanced accuracy results
 ################################################################################
-
-#### ALFF_fALFF ####
-# Load balanced accuracy data, or construct if needed
-if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_ALFF_fALFF_balanced_accuracy_all_folds.feather"))) {
-  ALFF_fALFF_balanced_accuracy_all_folds_list <- list()
-  # First iterate over each study/comparison group
-  for (i in 1:nrow(study_group_df)) {
-    dataset_ID <- study_group_df$Study[i]
-    noise_proc <- study_group_df$Noise_Proc[i]
-    noise_label = gsub("\\+", "_", noise_proc)
-    comparison_group <- study_group_df$Comparison_Group[i]
-    
-    # Now iterate over each SVM kernel
-    for (kernel in SVM_kernels) {
-      balacc_across_folds <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/classification_results/balanced_accuracy/{dataset_ID}_{comparison_group}_Univariate_ALFF_fALFF_{kernel}_SVM_balanced_accuracy.feather"))
-      balacc_across_folds$Study <- dataset_ID
-      balacc_across_folds$kernel <- kernel
-      balacc_across_folds$Univariate_Feature_Set <- "ALFF_fALFF"
-      # Append to list
-      ALFF_fALFF_balanced_accuracy_all_folds_list <- list.append(ALFF_fALFF_balanced_accuracy_all_folds_list, balacc_across_folds)
-    }
-  }
-  
-  # Combine the list results into a dataframe
-  ALFF_fALFF_balanced_accuracy_all_folds <- do.call(plyr::rbind.fill, 
-                                                    ALFF_fALFF_balanced_accuracy_all_folds_list) %>%
-  mutate(group_var = trimws(group_var))
-  
-  # Save to feather file
-  feather::write_feather(ALFF_fALFF_balanced_accuracy_all_folds,
-                         glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_ALFF_fALFF_balanced_accuracy_all_folds.feather"))
-} else {
-  ALFF_fALFF_balanced_accuracy_all_folds <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_ALFF_fALFF_balanced_accuracy_all_folds.feather"))
-}
-
-# Aggregate the main results across folds and then across repeats
-ALFF_fALFF_balanced_accuracy <- ALFF_fALFF_balanced_accuracy_all_folds %>%
-  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, kernel) %>%
-  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T))
 
 #### Univariate ####
 # Load balanced accuracy data, or construct if needed
@@ -324,165 +285,145 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate
 # Compile null results
 ################################################################################
 
-# Univariate
-if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_balanced_accuracy_distributions.feather"))) {
-  univariate_null_balanced_accuracy_list <- list()
-  # First iterate over each study/comparison group
-  for (i in 1:nrow(study_group_df)) {
-    dataset_ID <- study_group_df$Study[i]
-    noise_proc <- study_group_df$Noise_Proc[i]
-    noise_label = gsub("\\+", "_", noise_proc)
-    comparison_group <- study_group_df$Comparison_Group[i]
+# # Univariate
+# if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_balanced_accuracy_distributions.feather"))) {
+#   univariate_null_balanced_accuracy_list <- list()
+#   # First iterate over each study/comparison group
+#   for (i in 1:nrow(study_group_df)) {
+#     dataset_ID <- study_group_df$Study[i]
+#     noise_proc <- study_group_df$Noise_Proc[i]
+#     noise_label = gsub("\\+", "_", noise_proc)
+#     comparison_group <- study_group_df$Comparison_Group[i]
     
-    null_dist <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/classification_results/null_distributions/{dataset_ID}_{comparison_group}_Univariate_{univariate_feature_set}_Linear_SVM_null_balanced_accuracy_distributions.feather"))
-    null_dist$Study <- dataset_ID
-    null_dist$Univariate_Feature_Set <- univariate_feature_set
-    # Append to list
-    univariate_null_balanced_accuracy_list <- list.append(univariate_null_balanced_accuracy_list, null_dist)
-  }
+#     null_dist <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/classification_results/null_distributions/{dataset_ID}_{comparison_group}_Univariate_{univariate_feature_set}_Linear_SVM_null_balanced_accuracy_distributions.feather"))
+#     null_dist$Study <- dataset_ID
+#     null_dist$Univariate_Feature_Set <- univariate_feature_set
+#     # Append to list
+#     univariate_null_balanced_accuracy_list <- list.append(univariate_null_balanced_accuracy_list, null_dist)
+#   }
   
-  # Combine the list results into a dataframe
-  univariate_null_balanced_accuracy <- do.call(plyr::rbind.fill, 
-                                               univariate_null_balanced_accuracy_list) %>%
-    mutate(Analysis_Type = case_when(str_detect(group_var, "_") ~ "Univariate_TS_Feature",
-                                     group_var == "Combo" ~ "Univariate_Combo",
-                                     T ~ "Univariate_Brain_Region"))
+#   # Combine the list results into a dataframe
+#   univariate_null_balanced_accuracy <- do.call(plyr::rbind.fill, 
+#                                                univariate_null_balanced_accuracy_list) %>%
+#     mutate(Analysis_Type = case_when(str_detect(group_var, "_") ~ "Univariate_TS_Feature",
+#                                      group_var == "Combo" ~ "Univariate_Combo",
+#                                      T ~ "Univariate_Brain_Region"))
   
-  # Save to feather file
-  feather::write_feather(univariate_null_balanced_accuracy,
-                         glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_balanced_accuracy_distributions.feather"))
-} else {
-  univariate_null_balanced_accuracy <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_balanced_accuracy_distributions.feather"))
-}
+#   # Save to feather file
+#   feather::write_feather(univariate_null_balanced_accuracy,
+#                          glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_balanced_accuracy_distributions.feather"))
+# } else {
+#   univariate_null_balanced_accuracy <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_balanced_accuracy_distributions.feather"))
+# }
 
-# Pairwise
-if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_null_balanced_accuracy_distributions.feather"))) {
-  pairwise_null_balanced_accuracy_list <- list()
-  # First iterate over each study/comparison group
-  for (i in 1:nrow(study_group_df)) {
-    dataset_ID <- study_group_df$Study[i]
-    noise_proc <- study_group_df$Noise_Proc[i]
-    noise_label = gsub("\\+", "_", noise_proc)
-    comparison_group <- study_group_df$Comparison_Group[i]
+# # Pairwise
+# if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_null_balanced_accuracy_distributions.feather"))) {
+#   pairwise_null_balanced_accuracy_list <- list()
+#   # First iterate over each study/comparison group
+#   for (i in 1:nrow(study_group_df)) {
+#     dataset_ID <- study_group_df$Study[i]
+#     noise_proc <- study_group_df$Noise_Proc[i]
+#     noise_label = gsub("\\+", "_", noise_proc)
+#     comparison_group <- study_group_df$Comparison_Group[i]
     
-    null_dist <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/classification_results/null_distributions/{dataset_ID}_{comparison_group}_Pairwise_{pairwise_feature_set}_Linear_SVM_null_balanced_accuracy_distributions.feather"))
-    null_dist$Study <- dataset_ID
-    null_dist$Pairwise_Feature_Set <- pairwise_feature_set
-    # Append to list
-    pairwise_null_balanced_accuracy_list <- list.append(pairwise_null_balanced_accuracy_list, null_dist)
-  }
+#     null_dist <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/classification_results/null_distributions/{dataset_ID}_{comparison_group}_Pairwise_{pairwise_feature_set}_Linear_SVM_null_balanced_accuracy_distributions.feather"))
+#     null_dist$Study <- dataset_ID
+#     null_dist$Pairwise_Feature_Set <- pairwise_feature_set
+#     # Append to list
+#     pairwise_null_balanced_accuracy_list <- list.append(pairwise_null_balanced_accuracy_list, null_dist)
+#   }
   
-  # Combine the list results into a dataframe
-  pairwise_null_balanced_accuracy <- do.call(plyr::rbind.fill, 
-                                               pairwise_null_balanced_accuracy_list) %>%
-    mutate(Analysis_Type = "Pairwise_SPI")
+#   # Combine the list results into a dataframe
+#   pairwise_null_balanced_accuracy <- do.call(plyr::rbind.fill, 
+#                                                pairwise_null_balanced_accuracy_list) %>%
+#     mutate(Analysis_Type = "Pairwise_SPI")
   
-  # Save to feather file
-  feather::write_feather(pairwise_null_balanced_accuracy,
-                         glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_null_balanced_accuracy_distributions.feather"))
-} else {
-  pairwise_null_balanced_accuracy <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_null_balanced_accuracy_distributions.feather"))
-}
+#   # Save to feather file
+#   feather::write_feather(pairwise_null_balanced_accuracy,
+#                          glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_null_balanced_accuracy_distributions.feather"))
+# } else {
+#   pairwise_null_balanced_accuracy <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_null_balanced_accuracy_distributions.feather"))
+# }
 
-# Univariate + pairwise combo
-if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_null_balanced_accuracy_distributions.feather"))) {
-  combined_univariate_pairwise_null_balanced_accuracy_list <- list()
-  # First iterate over each study/comparison group
-  for (i in 1:nrow(study_group_df)) {
-    dataset_ID <- study_group_df$Study[i]
-    noise_proc <- study_group_df$Noise_Proc[i]
-    noise_label = gsub("\\+", "_", noise_proc)
-    comparison_group <- study_group_df$Comparison_Group[i]
+# # Univariate + pairwise combo
+# if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_null_balanced_accuracy_distributions.feather"))) {
+#   combined_univariate_pairwise_null_balanced_accuracy_list <- list()
+#   # First iterate over each study/comparison group
+#   for (i in 1:nrow(study_group_df)) {
+#     dataset_ID <- study_group_df$Study[i]
+#     noise_proc <- study_group_df$Noise_Proc[i]
+#     noise_label = gsub("\\+", "_", noise_proc)
+#     comparison_group <- study_group_df$Comparison_Group[i]
     
-    # Now iterate over each univariate feature set
-    for (univariate_feature_set in c("catch24")) {
-    # Now iterate over each univariate feature set
-      null_dist <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/classification_results/null_distributions/{dataset_ID}_{comparison_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_Linear_SVM_null_balanced_accuracy_distributions.feather"))
-      null_dist$Study <- dataset_ID
-      null_dist$Univariate_Feature_Set <- univariate_feature_set
-      null_dist$Pairwise_Feature_Set <- pairwise_feature_set
-      # Append to list
-      combined_univariate_pairwise_null_balanced_accuracy_list <- list.append(combined_univariate_pairwise_null_balanced_accuracy_list, null_dist)
-    }
-  }
+#     # Now iterate over each univariate feature set
+#     for (univariate_feature_set in c("catch24")) {
+#     # Now iterate over each univariate feature set
+#       null_dist <- pyarrow_feather$read_feather(glue("{data_path}/{dataset_ID}/classification_results/null_distributions/{dataset_ID}_{comparison_group}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_Linear_SVM_null_balanced_accuracy_distributions.feather"))
+#       null_dist$Study <- dataset_ID
+#       null_dist$Univariate_Feature_Set <- univariate_feature_set
+#       null_dist$Pairwise_Feature_Set <- pairwise_feature_set
+#       # Append to list
+#       combined_univariate_pairwise_null_balanced_accuracy_list <- list.append(combined_univariate_pairwise_null_balanced_accuracy_list, null_dist)
+#     }
+#   }
   
-  # Combine the list results into a dataframe
-  combined_univariate_pairwise_null_balanced_accuracy <- do.call(plyr::rbind.fill, 
-                                               combined_univariate_pairwise_null_balanced_accuracy_list) %>%
-    mutate(Analysis_Type = "SPI_Univariate_Combo")
+#   # Combine the list results into a dataframe
+#   combined_univariate_pairwise_null_balanced_accuracy <- do.call(plyr::rbind.fill, 
+#                                                combined_univariate_pairwise_null_balanced_accuracy_list) %>%
+#     mutate(Analysis_Type = "SPI_Univariate_Combo")
   
-  # Save to feather file
-  feather::write_feather(combined_univariate_pairwise_null_balanced_accuracy,
-                         glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_null_balanced_accuracy_distributions.feather"))
-} else {
-  combined_univariate_pairwise_null_balanced_accuracy <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_null_balanced_accuracy_distributions.feather"))
-}
+#   # Save to feather file
+#   feather::write_feather(combined_univariate_pairwise_null_balanced_accuracy,
+#                          glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_null_balanced_accuracy_distributions.feather"))
+# } else {
+#   combined_univariate_pairwise_null_balanced_accuracy <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_null_balanced_accuracy_distributions.feather"))
+# }
 
 ################################################################################
 # Compile p-value results
 ################################################################################
 
-# ALFF/fALFF
-if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_ALFF_fALFF_empirical_p_values.feather"))) {
-  ALFF_fALFF_split <- ALFF_fALFF_balanced_accuracy %>%
-    group_by(Study, Comparison_Group, Analysis_Type, Univariate_Feature_Set, group_var, kernel) %>%
-    group_split()
+# # Univariate
+# if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather"))) {
+#   univariate_split <- univariate_balanced_accuracy %>%
+#     group_by(Study, Comparison_Group, Analysis_Type, Univariate_Feature_Set, group_var, kernel) %>%
+#     group_split()
   
-  ALFF_fALFF_p_values <- ALFF_fALFF_split %>%
-    purrr::map_df(~ compare_main_and_null(main_df_iter = .x,
-                                          null_distribution_df = univariate_null_balanced_accuracy)) %>%
-                                          mutate(Univariate_Feature_Set = "ALFF_fALFF")
+#   univariate_p_values <- univariate_split %>%
+#     purrr::map_df(~ compare_main_and_null(main_df_iter = .x,
+#                                           null_distribution_df = univariate_null_balanced_accuracy))
   
-  # Adjust p-values by group
-  ALFF_fALFF_p_values <- ALFF_fALFF_p_values %>%
-    group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, kernel) %>%
-    mutate(p_value_BH = p.adjust(p_value, method="BH"),
-           p_value_Bonferroni = p.adjust(p_value, method="bonferroni"))
+#   # Adjust p-values by group
+#   univariate_p_values <- univariate_p_values %>%
+#     group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, kernel) %>%
+#     mutate(p_value_BH = p.adjust(p_value, method="BH"),
+#            p_value_Bonferroni = p.adjust(p_value, method="bonferroni"))
   
-  feather::write_feather(ALFF_fALFF_p_values, glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_ALFF_fALFF_empirical_p_values.feather"))
-}
+#   feather::write_feather(univariate_p_values, glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather"))
+# } else {
+#   univariate_p_values <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather"))
+# }
 
-# Univariate
-if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather"))) {
-  univariate_split <- univariate_balanced_accuracy %>%
-    group_by(Study, Comparison_Group, Analysis_Type, Univariate_Feature_Set, group_var, kernel) %>%
-    group_split()
+# # Pairwise
+# if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_empirical_p_values.feather"))) {
+#   pairwise_split <- pairwise_balanced_accuracy %>%
+#     group_by(Study, Comparison_Group, Analysis_Type, Pairwise_Feature_Set, group_var) %>%
+#     group_split()
   
-  univariate_p_values <- univariate_split %>%
-    purrr::map_df(~ compare_main_and_null(main_df_iter = .x,
-                                          null_distribution_df = univariate_null_balanced_accuracy))
+#   pairwise_p_values <- pairwise_split %>%
+#     purrr::map_df(~ compare_main_and_null(main_df_iter = .x,
+#                                           null_distribution_df = pairwise_null_balanced_accuracy))
   
-  # Adjust p-values by group
-  univariate_p_values <- univariate_p_values %>%
-    group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, kernel) %>%
-    mutate(p_value_BH = p.adjust(p_value, method="BH"),
-           p_value_Bonferroni = p.adjust(p_value, method="bonferroni"))
+#   # Adjust p-values by group
+#   pairwise_p_values <- pairwise_p_values %>%
+#     group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type) %>%
+#     mutate(p_value_BH = p.adjust(p_value, method="BH"), 
+#            p_value_Bonferroni = p.adjust(p_value, method="bonferroni"))
   
-  feather::write_feather(univariate_p_values, glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather"))
-} else {
-  univariate_p_values <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather"))
-}
-
-# Pairwise
-if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_empirical_p_values.feather"))) {
-  pairwise_split <- pairwise_balanced_accuracy %>%
-    group_by(Study, Comparison_Group, Analysis_Type, Pairwise_Feature_Set, group_var) %>%
-    group_split()
-  
-  pairwise_p_values <- pairwise_split %>%
-    purrr::map_df(~ compare_main_and_null(main_df_iter = .x,
-                                          null_distribution_df = pairwise_null_balanced_accuracy))
-  
-  # Adjust p-values by group
-  pairwise_p_values <- pairwise_p_values %>%
-    group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type) %>%
-    mutate(p_value_BH = p.adjust(p_value, method="BH"), 
-           p_value_Bonferroni = p.adjust(p_value, method="bonferroni"))
-  
-  feather::write_feather(pairwise_p_values, glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_empirical_p_values.feather"))
-} else {
-  pairwise_p_values <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_empirical_p_values.feather"))
-}
+#   feather::write_feather(pairwise_p_values, glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_empirical_p_values.feather"))
+# } else {
+#   pairwise_p_values <- feather::read_feather(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_pairwise_empirical_p_values.feather"))
+# }
 
 # # Univariate and pairwise combo
 # if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_empirical_p_values.feather"))) {

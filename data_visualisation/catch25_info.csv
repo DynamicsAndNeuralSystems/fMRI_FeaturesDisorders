@@ -1,4 +1,4 @@
-Figure_name,catch24_name,Category,Description
+Figure_name,feature_name,Category,Description
 embedding_dist,CO_Embed2_Dist_tau_d_expfit_meandiff,Other,Goodness of exponential fit to embedding distance distribution
 ACF_timescale,CO_f1ecac,Linear autocorrelation,First 1/e crossing of the ACF
 ACF_first_min,CO_FirstMin_ac,Linear autocorrelation,First minimum of the ACF
@@ -23,3 +23,4 @@ DFA,SC_FluctAnal_2_dfa_50_1_2_logi_prop_r1,Self-affine scaling,Detrended fluctua
 rs_range,SC_FluctAnal_2_rsrangefit_50_1_logi_prop_r1,Self-affine scaling,Rescaled range fluctuation analysis (low-scale scaling)
 low_freq_power,SP_Summaries_welch_rect_area_5_1,Linear autocorrelation,Power in lowest 20% frequencies
 centroid_freq,SP_Summaries_welch_rect_centroid,Linear autocorrelation,Centroid frequency
+fALFF,fALFF,Linear autocorrelation,Ratio of spectral power in 0.01-0.08Hz range to the full frequency range

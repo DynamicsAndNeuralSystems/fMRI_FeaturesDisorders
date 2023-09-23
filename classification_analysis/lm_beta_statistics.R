@@ -9,7 +9,7 @@ TAF::mkdir(plot_path)
 python_to_use <- "~/.conda/envs/pyspi/bin/python3"
 # python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
-univariate_feature_set <- "catch24"
+univariate_feature_set <- "catch25"
 data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
@@ -36,7 +36,7 @@ library(broom)
 source(glue("{github_dir}/data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
 
 # Load in univariate time-series feature info
-catch24_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
+catch25_info <- read.csv(glue("{github_dir}/data_visualisation/catch25_info.csv"))
 pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 
 # Load study metadata
@@ -57,7 +57,7 @@ z_score <- function(data) {
   return(data_z)
 }
 
-# Ridge plot for catch24 features' Mann-Whitney U-statistics across entire brain
+# Ridge plot for catch25 features' Mann-Whitney U-statistics across entire brain
 lm_beta_stats_for_group <- function(comparison_group, input_data, study, group_nickname){
   res <- input_data %>%
     filter(Diagnosis %in% c(comparison_group, "Control"),
@@ -85,25 +85,25 @@ lm_beta_stats_for_group <- function(comparison_group, input_data, study, group_n
   return(res)
 }
 
-if (!file.exists(glue("{data_path}/univariate_catch24_lm_beta_statistics_by_brain_region.feather"))) {
+if (!file.exists(glue("{data_path}/univariate_catch25_lm_beta_statistics_by_brain_region.feather"))) {
   # Load raw feature data
-  UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")  %>%
+  UCLA_CNP_catch25 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather")  %>%
     left_join(., UCLA_CNP_metadata) %>%
     mutate(Study = "UCLA_CNP")
-  ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch24_filtered.feather")  %>%
+  ABIDE_ASD_catch25 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch25_filtered.feather")  %>%
     left_join(., ABIDE_ASD_metadata) %>%
     mutate(Study = "ABIDE_ASD")
   
-  combined_univariate_data <- plyr::rbind.fill(UCLA_CNP_catch24, ABIDE_ASD_catch24)
+  combined_univariate_data <- plyr::rbind.fill(UCLA_CNP_catch25, ABIDE_ASD_catch25)
   
-  beta_stats_catch24_whole_brain <- 1:4 %>%
+  beta_stats_catch25_whole_brain <- 1:4 %>%
     purrr::map_df(~ lm_beta_stats_for_group(input_data = combined_univariate_data,
                                       comparison_group = study_group_df$Comparison_Group[.x],
                                       study = study_group_df$Study[.x],
                                       group_nickname = study_group_df$Group_Nickname[.x]))
-  feather::write_feather(beta_stats_catch24_whole_brain, glue("{data_path}/univariate_catch24_lm_beta_statistics_by_brain_region.feather"))
+  feather::write_feather(beta_stats_catch25_whole_brain, glue("{data_path}/univariate_catch25_lm_beta_statistics_by_brain_region.feather"))
 } else {
-  beta_stats_catch24_whole_brain <- feather::read_feather(glue("{data_path}/univariate_catch24_lm_beta_statistics_by_brain_region.feather"))
+  beta_stats_catch25_whole_brain <- feather::read_feather(glue("{data_path}/univariate_catch25_lm_beta_statistics_by_brain_region.feather"))
 }
 
 # Pairwise pyspi14 lm fitting
