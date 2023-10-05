@@ -46,7 +46,7 @@ github_dir <- "~/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/g
 source(paste0(github_dir, "data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/movement_analysis/")
 TAF::mkdir(plot_path)
-univariate_feature_set <- "catch24"
+univariate_feature_set <- "catch25"
 
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
@@ -58,13 +58,13 @@ UCLA_CNP_data_path <- "~/data/UCLA_CNP/"
 ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/"
 
 # Load in feature info
-catch24_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
+catch25_info <- read.csv(glue("{github_dir}/data_visualisation/catch25_info.csv"))
 pyspi14_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 
 # Load data on subjects we actually used
-UCLA_CNP_subjects_used <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch24_pyspi14.feather")) %>%
+UCLA_CNP_subjects_used <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch25_pyspi14.feather")) %>%
   pull(Sample_ID)
-ABIDE_ASD_subjects_used <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/processed_data/ABIDE_ASD_filtered_sample_info_FC1000_catch24_pyspi14.feather")) %>%
+ABIDE_ASD_subjects_used <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/processed_data/ABIDE_ASD_filtered_sample_info_FC1000_catch25_pyspi14.feather")) %>%
   pull(Sample_ID)
 
 # Load subject metadata
@@ -93,10 +93,10 @@ ABIDE_ASD_mean_FD <- ABIDE_ASD_mean_FD %>%
   filter(Sample_ID %in% ABIDE_ASD_subjects_used) %>%
   mutate(Study = "ABIDE_ASD")
 
-# Load catch24 data
-UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")  %>%
+# Load catch25 data
+UCLA_CNP_catch25 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather")  %>%
   left_join(., UCLA_CNP_sample_metadata)
-ABIDE_ASD_catch24 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch24_filtered.feather")  %>%
+ABIDE_ASD_catch25 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch25_filtered.feather")  %>%
   left_join(., ABIDE_ASD_sample_metadata)
 
 ################################################################################
@@ -161,10 +161,10 @@ ggsave(paste0(plot_path, "mFD_Power_by_Group.svg"),
 
 
 ################################################################################
-# Compare correlation of catch24 features with mFD-Power by study
+# Compare correlation of catch25 features with mFD-Power by study
 ################################################################################
 
-if (!file.exists(glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr.feather"))) {
+if (!file.exists(glue("{data_path}UCLA_CNP_ABIDE_ASD_movement_feature_corr_whole_brain_avg.feather"))) {
   # Load raw feature data
   UCLA_CNP_pyspi14 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")  %>%
     group_by(Sample_ID, SPI) %>%
@@ -178,8 +178,8 @@ if (!file.exists(glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr.feat
     filter(!is.na(Diagnosis))
   
   # Calculate correlations
-  head_motion_univariate_feature_corrs <- UCLA_CNP_catch24 %>%
-    plyr::rbind.fill(., ABIDE_ASD_catch24) %>%
+  head_motion_univariate_feature_corrs <- UCLA_CNP_catch25 %>%
+    plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
     group_by(Sample_ID, names) %>%
     summarise(mean_across_brain = mean(values, na.rm=T)) %>%
     left_join(., plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)) %>%
@@ -214,18 +214,18 @@ if (!file.exists(glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr.feat
     dplyr::rename("names"="SPI")
   
   # Combine results and save to a feather file
-  head_motion_feature_corrs <- plyr::rbind.fill(head_motion_univariate_feature_corrs,
+  head_motion_feature_corrs_wb <- plyr::rbind.fill(head_motion_univariate_feature_corrs,
                                                 head_motion_pairwise_feature_corrs) 
-  pyarrow_feather$write_feather(head_motion_feature_corrs, glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr.feather"))
+  pyarrow_feather$write_feather(head_motion_feature_corrs_wb, glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr_whole_brain_avg.feather"))
   
 } else {
-  head_motion_feature_corrs <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr.feather"))
+  head_motion_feature_corrs_wb <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr_whole_brain_avg.feather"))
 }
 
 # Find features that correlate most strongly with head motion per study, 
 # plot in a barplot
-merged_time_series_info <- catch24_info %>%
-  dplyr::rename("names" = "catch24_name") %>%
+merged_time_series_info <- catch25_info %>%
+  dplyr::rename("names" = "feature_name") %>%
   mutate(Feature_Type = "Univariate") %>%
   plyr::rbind.fill(., pyspi14_info %>% 
                      dplyr::rename("names" = "pyspi_name") %>%
@@ -233,13 +233,13 @@ merged_time_series_info <- catch24_info %>%
 
 
 # Heatmap
-motion_corr_data_for_heatmap <- head_motion_feature_corrs %>%
+motion_corr_data_for_heatmap_wb <- head_motion_feature_corrs_wb %>%
   left_join(., merged_time_series_info) %>%
   mutate(Study = ifelse(Study == "ABIDE_ASD", "ABIDE", "UCLA CNP")) %>%
   mutate(Figure_name = fct_reorder(Figure_name, estimate, .fun="mean")) 
 
 # Annotation bar with feature type
-motion_corr_data_for_heatmap %>%
+motion_corr_data_for_heatmap_wb %>%
   filter(p_Bonferroni < 0.05) %>%
   mutate(Feature_Type = fct_reorder(Feature_Type, estimate, .fun="mean", .desc=F)) %>%
   ggplot(data=., mapping=aes(x=0, y=Figure_name, fill=Feature_Type)) +
@@ -257,7 +257,7 @@ ggsave(glue("{plot_path}/Feature_type_colorbar.svg"),
        width=6, height=6, units="in", dpi=300)
 
 # Actual heatmap
-motion_corr_data_for_heatmap %>%
+motion_corr_data_for_heatmap_wb %>%
   filter(p_Bonferroni < 0.05) %>%
   ggplot(data=., mapping=aes(x=Study, y=Figure_name, fill=estimate)) +
   geom_tile() +
@@ -266,15 +266,91 @@ motion_corr_data_for_heatmap %>%
   scale_fill_continuous_divergingx(palette="RdBu", rev=TRUE) +
   ylab("Time-series feature") +
   labs(fill="mFD \u03C1")
-ggsave(glue("{plot_path}/Movement_spearman_feature_corr.svg"),
+ggsave(glue("{plot_path}/Movement_spearman_feature_corr_whole_brain.svg"),
+       width=6, height=6, units="in", dpi=300)
+
+################################################################################
+# Compare region-specific feature values with whole-brain head movement
+################################################################################
+
+if (!file.exists(glue("{data_path}UCLA_CNP_ABIDE_ASD_movement_feature_corr_regional.feather"))) {
+
+  # Calculate correlations
+  head_motion_univariate_feature_corrs <- UCLA_CNP_catch25 %>%
+    plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
+    left_join(., plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)) %>%
+    left_join(., plyr::rbind.fill(UCLA_CNP_sample_metadata, ABIDE_ASD_sample_metadata)) %>%
+    group_by(Study, names, Brain_Region) %>%
+    nest() %>%
+    mutate(
+      test = map(data, ~ cor.test(.x$values, .x$Power, method="spearman")), # S3 list-col
+      tidied = map(test, tidy)
+    ) %>%
+    unnest(tidied) %>%
+    select(-data, -test) %>%
+    group_by(Study) %>%
+    mutate(p_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
+    arrange(desc(abs(estimate)))
+  
+  pyarrow_feather$write_feather(head_motion_univariate_feature_corrs, glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr_regional.feather"))
+  
+} else {
+  head_motion_univariate_feature_corrs <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr_regional.feather"))
+}
+
+# Find features that correlate most strongly with head motion per study, 
+# plot in a barplot
+merged_time_series_info <- catch25_info %>%
+  dplyr::rename("names" = "feature_name") %>%
+  mutate(Feature_Type = "Univariate") %>%
+  plyr::rbind.fill(., pyspi14_info %>% 
+                     dplyr::rename("names" = "pyspi_name") %>%
+                     mutate(Feature_Type = "Pairwise"))
+
+
+# Heatmap
+motion_corr_data_for_heatmap_wb <- head_motion_feature_corrs_wb %>%
+  left_join(., merged_time_series_info) %>%
+  mutate(Study = ifelse(Study == "ABIDE_ASD", "ABIDE", "UCLA CNP")) %>%
+  mutate(Figure_name = fct_reorder(Figure_name, estimate, .fun="mean")) 
+
+# Annotation bar with feature type
+motion_corr_data_for_heatmap_wb %>%
+  filter(p_Bonferroni < 0.05) %>%
+  mutate(Feature_Type = fct_reorder(Feature_Type, estimate, .fun="mean", .desc=F)) %>%
+  ggplot(data=., mapping=aes(x=0, y=Figure_name, fill=Feature_Type)) +
+  geom_tile() +
+  theme_void() +
+  scale_fill_manual(values=c("#803556", "#E8A6A9")) +
+  theme(legend.position = "bottom",
+        legend.title = element_blank(),
+        legend.text=element_text(size=14)) +
+  guides(fill = guide_legend(title.position = "top", 
+                             ncol = 2,
+                             byrow=T,
+                             title.hjust = 0.5)) 
+ggsave(glue("{plot_path}/Feature_type_colorbar.svg"),
+       width=6, height=6, units="in", dpi=300)
+
+# Actual heatmap
+motion_corr_data_for_heatmap_wb %>%
+  filter(p_Bonferroni < 0.05) %>%
+  ggplot(data=., mapping=aes(x=Study, y=Figure_name, fill=estimate)) +
+  geom_tile() +
+  geom_text(aes(label = round(estimate,2)),
+            size=5) +
+  scale_fill_continuous_divergingx(palette="RdBu", rev=TRUE) +
+  ylab("Time-series feature") +
+  labs(fill="mFD \u03C1")
+ggsave(glue("{plot_path}/Movement_spearman_feature_corr_whole_brain.svg"),
        width=6, height=6, units="in", dpi=300)
 
 
 ################################################################################
 # Plot individual features vs movement
 plot_feature_vs_movement <- function(feature_name, title_label, y_label, rho_pos) {
-  feature_data <- UCLA_CNP_catch24 %>%
-    plyr::rbind.fill(., ABIDE_ASD_catch24) %>%
+  feature_data <- UCLA_CNP_catch25 %>%
+    plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
     filter(names == feature_name) %>%
     group_by(Sample_ID) %>%
     summarise(meanval = mean(values, na.rm=T)) %>%
@@ -493,7 +569,7 @@ compare_main_and_null <- function(main_df_iter, null_distribution_df) {
   return(main_df_iter)
 }
 
-# Compare with the catch24 feature nulls
+# Compare with the catch25 feature nulls
 univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set,
          Analysis_Type == "Univariate_TS_Feature") %>%

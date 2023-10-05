@@ -9,8 +9,8 @@ TAF::mkdir(plot_path)
 # python_to_use <- "~/.conda/envs/pyspi/bin/python3"
 python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
-univariate_feature_set <- "catch24"
-SVM_kernel <- "linear"
+univariate_feature_set <- "catch25"
+SVM_kernel <- "Linear"
 data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
@@ -34,18 +34,12 @@ library(cowplot)
 library(ggseg)
 library(ggsegHO)
 library(ggsegDefaultExtra)
-library(knitr)
-library(kableExtra)
 library(patchwork)
 library(broom)
 library(colorspace)
-library(see)
-library(ggridges)
-library(splitstackshape)
-library(DescTools)
-library(metR)
 library(scales)
 library(correctR)
+library(splitstackshape)
 theme_set(theme_cowplot())
 
 # Source visualisation script
@@ -56,39 +50,35 @@ ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE
   mutate(Brain_Region = ifelse(Index==45, "Heschl's Gyrus (includes H1 and H2)", Brain_Region))
 
 # Load in univariate time-series feature info
-TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch24_info.csv"))
+TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch25_info.csv"))
 
 # Load univariate classification results across all folds
-univariate_balanced_accuracy_AUC_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather")) %>%
+univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_balanced_accuracy_all_folds.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set, kernel==SVM_kernel)
 # Compute mean + SD performance across all folds
-univariate_balanced_accuracy <- univariate_balanced_accuracy_AUC_all_folds %>%
+univariate_balanced_accuracy <- univariate_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, kernel) %>%
   reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
-          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T),
-          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T),
-          ROC_AUC_Across_Folds_SD = sd(ROC_AUC, na.rm=T))
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T))
+
 # Load p-values
-univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
+univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set) %>%
-  dplyr::select(-Balanced_Accuracy_Across_Repeats, -Balanced_Accuracy_Across_Repeats_SD, 
-                -ROC_AUC_Across_Repeats, -ROC_AUC_Across_Repeats_SD) %>%
+  dplyr::select(-Balanced_Accuracy_Across_Folds) %>%
   left_join(., univariate_balanced_accuracy)
+
 # Load null distribution
-univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather")) %>%
+univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_balanced_accuracy_distributions.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set)
 
-# Load TPR/FPR data
-univariate_TPR_FPR <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_ROC_TPR_FPR.feather")) %>%
-  filter(Univariate_Feature_Set == univariate_feature_set) 
-
 # Load study metadata
-UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") 
-ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather") 
+UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") %>%
+  mutate(Study="UCLA_CNP")
+ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather")  %>%
+  mutate(Study="ABIDE_ASD")
 
 # Load t-statistics
-lm_beta_stats_catch24_whole_brain <- feather::read_feather(glue("{data_path}/univariate_catch24_lm_beta_statistics_by_brain_region.feather"))
-
+lm_beta_stats_catch25_whole_brain <- feather::read_feather(glue("{data_path}/univariate_catch25_lm_beta_statistics_by_brain_region.feather"))
 
 ################################################################################
 # Univariate region-wise analysis
@@ -142,161 +132,116 @@ ggsave(glue("{plot_path}/Region_wise_violin_plot.svg"),
        width=3.5, height=6, units="in", dpi=300)
          
 # Plot balanced accuracy in the brain
+plot_balacc_in_brain <- function(significant_univariate_region_wise_results, 
+                                 color_palette=c("#FFCA3E", "#FF6F50", "#D03454", "#9C2162", "#772F67"),
+                                 bin_seq_range=seq(50,75,by=5)) {
 
+  # Find max fill and min fill values
+  min_fill <- floor(min(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Folds))
+  max_fill <- ceiling(max(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Folds))
+  
+  # Initialize list of ggseg plots
+  ggseg_plot_list <- list()
+  
+  # First plot within brain using ggseg
+  for (i in 1:nrow(study_group_df)) {
+    dataset_ID <- study_group_df$Study[i]
+    comparison_group <- study_group_df$Comparison_Group[i]
+    
+    # Define atlas by study
+    atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
+    
+    # If dataset is ABIDE ASD, convert regions to ggseg regions
+    if (dataset_ID == "ABIDE_ASD") {
+      significant_data_for_ggseg <- significant_univariate_region_wise_results %>%
+        filter(Study == dataset_ID,
+               Comparison_Group == comparison_group) %>%
+        dplyr::rename("Brain_Region" = "group_var") %>%
+        left_join(., ABIDE_ASD_brain_region_info)
+      
+    } else {
+      # Extract sig results to plot
+      significant_data_for_ggseg <- significant_univariate_region_wise_results %>%
+        filter(Study == dataset_ID,
+               Comparison_Group == comparison_group) %>%
+        distinct() %>%
+        mutate(label = ifelse(str_detect(group_var, "ctx-"),
+                              gsub("-", "_", group_var),
+                              as.character(group_var))) %>%
+        mutate(label = gsub("ctx_", "", label))
+    }
+    
+    
+    # Plot balanced accuracy data in cortex
+    dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+                                                   atlas_name = atlas,
+                                                   atlas_data = get(atlas) %>% as_tibble(),
+                                                   data_to_plot = significant_data_for_ggseg,
+                                                   fill_variable = "Balanced_Accuracy_Across_Folds",
+                                                   fill_colors = color_palette,
+                                                   bin_seq = bin_seq_range,
+                                                   line_color = "gray30",
+                                                   na_color = "white") +
+      labs(fill = "Mean Balanced Accuracy (%)") +
+      theme(plot.title = element_blank())
+    
+    # Append to list
+    ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
+    
+    # Add subcortical data for UCLA CNP
+    if (dataset_ID == "UCLA_CNP") {
+      dataset_ggseg_subctx <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+                                                            atlas_name = "aseg",
+                                                            atlas_data = aseg %>% as_tibble(),
+                                                            data_to_plot = significant_data_for_ggseg,
+                                                            fill_variable = "Balanced_Accuracy_Across_Folds",
+                                                            fill_colors = color_palette,
+                                                            bin_seq = bin_seq_range,
+                                                            line_color = "gray30",
+                                                            na_color = "white") +
+        labs(fill = "Mean Balanced Accuracy (%)") +
+        theme(plot.title = element_blank()) 
+      # Append to list
+      ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg_subctx)
+    }
+  }
+  return(ggseg_plot_list)
+}
+
+# catch25 features
 # Define dataset with univariate region-wise results
 significant_univariate_region_wise_results <- univariate_p_values %>%
-  filter(Univariate_Feature_Set == univariate_feature_set,
-         Analysis_Type == "Univariate_Brain_Region") %>%
+  filter(Analysis_Type == "Univariate_Brain_Region") %>%
   filter(p_value_Bonferroni < 0.05) %>%
   mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds)
 
-# Find max fill and min fill values
-min_fill <- floor(min(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Folds))
-max_fill <- ceiling(max(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Folds))
-
-# Initialize list of ggseg plots
-ggseg_plot_list <- list()
-
-# First plot within brain using ggseg
-for (i in 1:nrow(study_group_df)) {
-  dataset_ID <- study_group_df$Study[i]
-  comparison_group <- study_group_df$Comparison_Group[i]
-  
-  # Define atlas by study
-  atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
-  
-  # If dataset is ABIDE ASD, convert regions to ggseg regions
-  if (dataset_ID == "ABIDE_ASD") {
-    significant_data_for_ggseg <- significant_univariate_region_wise_results %>%
-      filter(Study == dataset_ID,
-             Comparison_Group == comparison_group) %>%
-      dplyr::rename("Brain_Region" = "group_var") %>%
-      left_join(., ABIDE_ASD_brain_region_info)
-    
-  } else {
-    # Extract sig results to plot
-    significant_data_for_ggseg <- significant_univariate_region_wise_results %>%
-      filter(Study == dataset_ID,
-             Comparison_Group == comparison_group) %>%
-      distinct() %>%
-      mutate(label = ifelse(str_detect(group_var, "ctx-"),
-                            gsub("-", "_", group_var),
-                            as.character(group_var))) %>%
-      mutate(label = gsub("ctx_", "", label))
-  }
-  
-  
-  # Plot balanced accuracy data in cortex
-  dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
-                                        atlas_name = atlas,
-                                        atlas_data = get(atlas) %>% as_tibble(),
-                                        data_to_plot = significant_data_for_ggseg,
-                                        fill_variable = "Balanced_Accuracy_Across_Repeats",
-                                        fill_colors = c("#FFCA3E", "#FF6F50", "#D03454", "#9C2162", "#772F67"),
-                                        bin_seq = seq(50,75,by=5),
-                                        line_color = "gray30",
-                                        na_color = "white") +
-    labs(fill = "Mean Balanced Accuracy (%)") +
-    theme(plot.title = element_blank())
-  
-  # Append to list
-  ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
-  
-  # Add subcortical data for UCLA CNP
-  if (dataset_ID == "UCLA_CNP") {
-    dataset_ggseg_subctx <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
-                                                 atlas_name = "aseg",
-                                                 atlas_data = aseg %>% as_tibble(),
-                                                 data_to_plot = significant_data_for_ggseg,
-                                                 fill_variable = "Balanced_Accuracy_Across_Repeats",
-                                                 fill_colors = c("#FFCA3E", "#FF6F50", "#D03454", "#9C2162", "#772F67"),
-                                                 bin_seq = seq(50,75,by=5),
-                                                 line_color = "gray30",
-                                                 na_color = "white") +
-      labs(fill = "Mean Balanced Accuracy (%)") +
-      theme(plot.title = element_blank()) 
-    # Append to list
-    ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg_subctx)
-  }
-}
-wrap_plots(ggseg_plot_list, 
+catch25_region_wise_balacc_plot_list <- plot_balacc_in_brain(significant_univariate_region_wise_results,
+                                                             color_palette=c("#FFCA3E", "#FF6F50", "#D03454", "#9C2162", "#772F67"),
+                                                             bin_seq_range=seq(50,75,by=5))
+wrap_plots(catch25_region_wise_balacc_plot_list, 
            ncol=2, 
            byrow=T) + 
   plot_layout(guides = "collect")
-
 ggsave(glue("{plot_path}/Region_wise_balacc_ggseg.svg"),
        width=5, height=7, units="in", dpi=300)
 
 
-################################################################################
-# Plot ROC of top-performing regions
-top_regions_to_find_AUC <- univariate_p_values %>%
-  filter(Analysis_Type == "Univariate_Brain_Region") %>%
-  group_by(Comparison_Group, Study) %>%
-  slice_max(n=1, order_by=Balanced_Accuracy_Across_Folds) %>%
-  mutate(Group_Nickname =  case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                     Comparison_Group == "Bipolar" ~ "BPD",
-                                     T ~ Comparison_Group)) %>%
-  dplyr::select(Study, Comparison_Group, Group_Nickname, group_var, ROC_AUC_Across_Folds)
-
-univariate_TPR_FPR  %>%
-  mutate(Group_Nickname =  case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                     Comparison_Group == "Bipolar" ~ "BPD",
-                                     T ~ Comparison_Group)) %>%
-  semi_join(top_regions_to_find_AUC)  %>%
-  ggplot(data=.) +
-  geom_abline(slope=1, linetype=2) +
-  geom_smooth(se=T, aes(color=Comparison_Group, x=fpr,y=tpr)) +
-  xlab("FPR") +
-  ylab("TPR") +
-  coord_equal() +
-  geom_text(data = top_regions_to_find_AUC,
-            aes(label=glue("{Group_Nickname}: {round(ROC_AUC_Across_Repeats, 2)}"),
-                color=Comparison_Group),
-            x = 1, y=c(0.1, 0.2, 0.3, 0.4), 
-            size=4.5, hjust=1) +
-  theme(legend.position = "none") +
-  scale_color_manual(values=c("Control" = "#5BB67B", 
-                              "Schizophrenia" = "#573DC7", 
-                              "Bipolar" = "#D5492A", 
-                              "ADHD" = "#0F9EA9", 
-                              "ASD" = "#C47B2F"))
-ggsave(glue("{plot_path}/univariate_top_region_ROC.svg"),
-       width=3, height=3, units="in", dpi=300)
+# Get region count by group
+significant_univariate_region_wise_results %>%
+  count(Comparison_Group)
 
 ################################################################################
+#
 # Figure 2C feature-based
+#
 ################################################################################
-# Annotation bar with feature type
-univariate_p_values %>%
-  filter(Univariate_Feature_Set == univariate_feature_set,
-         Analysis_Type == "Univariate_TS_Feature",
-         p_value_Bonferroni < 0.05) %>%
-  dplyr::rename("TS_Feature" = "group_var") %>%
-  left_join(., TS_feature_info) %>%
-  group_by(TS_Feature, Category) %>%
-  summarise(Balacc_Sum = sum(Balanced_Accuracy_Across_Folds)) %>%
-  ungroup() %>%
-  mutate(TS_Feature = fct_reorder(TS_Feature, Balacc_Sum),
-         Category = fct_reorder(Category, Balacc_Sum, .fun=sum, .desc=T)) %>%
-  ggplot(data=., mapping=aes(x=0, y=TS_Feature, fill=Category)) +
-  geom_tile() +
-  theme_void() +
-  theme(legend.position = "bottom",
-        legend.text=element_text(size=14)) +
-  guides(fill = guide_legend(title.position = "top", 
-                             ncol = 2,
-                             byrow=T,
-                             title.hjust = 0.5)) 
-ggsave(glue("{plot_path}/Feature_wise_colorbar.svg"),
-       width=6, height=6, units="in", dpi=300)
 
 # Actual heatmap
 univariate_p_values %>%
   filter(Univariate_Feature_Set == univariate_feature_set,
          Analysis_Type == "Univariate_TS_Feature",
          p_value_Bonferroni < 0.05) %>%
-  dplyr::rename("TS_Feature" = "group_var") %>%
+  dplyr::rename("feature_name" = "group_var") %>%
   left_join(., TS_feature_info) %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
                                       Comparison_Group == "Bipolar" ~ "BPD",
@@ -316,7 +261,6 @@ univariate_p_values %>%
   theme(legend.position="none")
 ggsave(glue("{plot_path}/Feature_wise_results.svg"),
        width=4.5, height=5.5, units="in", dpi=300)
-
 
 ################################################################################
 # Helper function to plot the beta coefficients for a given feature in the brain
@@ -386,23 +330,18 @@ plot_feature_in_brain <- function(study_group_df, lm_beta_df, feature_name, min_
 
 # Plot lm beta statistics for Wang Periodicity in the brain
 
-periodicity_wang_lm_beta_for_ggseg <- lm_beta_stats_catch24_whole_brain %>%
+periodicity_wang_lm_beta_for_ggseg <- lm_beta_stats_catch25_whole_brain %>%
   filter(TS_Feature == "PD_PeriodicityWang_th0_01") %>%
   mutate(estimate = estimate) %>%
   dplyr::select(Study, Comparison_Group, TS_Feature, Brain_Region, TS_Feature, estimate, p.value)
 
-min_fill <- round(min(periodicity_wang_lm_beta_for_ggseg$estimate),2)
-max_fill <- round(max(periodicity_wang_lm_beta_for_ggseg$estimate),2)
-bin_seq <- round(seq(min_fill, max_fill, by=0.2),1)
-fill_colors <- c("#053061", "#4393C3","white", "white", '#F2686D')
-
 wang_periodicity_lm_in_brain <- plot_feature_in_brain(study_group_df = study_group_df,
                                                       lm_beta_df = periodicity_wang_lm_beta_for_ggseg,
                                                       feature_name = "Wang Periodicity",
-                                                      min_fill = min_fill,
-                                                      max_fill = max_fill,
-                                                      bin_seq = bin_seq,
-                                                      fill_colors = fill_colors)
+                                                      min_fill = round(min(periodicity_wang_lm_beta_for_ggseg$estimate),2),
+                                                      max_fill = round(max(periodicity_wang_lm_beta_for_ggseg$estimate),2),
+                                                      bin_seq = round(seq(min_fill, max_fill, by=0.2),1),
+                                                      fill_colors = c("#053061", "#4393C3","white", "white", '#F2686D'))
 
 wrap_plots(wang_periodicity_lm_in_brain, 
            ncol=2, 
@@ -415,22 +354,17 @@ ggsave(glue("{plot_path}/Wang_Periodicity_lm_beta_stats.svg"),
 # Plot lm beta coefficients for SD + mean in the brain
 
 # SD
-SD_lm_beta_for_ggseg <- lm_beta_stats_catch24_whole_brain %>%
+SD_lm_beta_for_ggseg <- lm_beta_stats_catch25_whole_brain %>%
   filter(TS_Feature == "DN_Spread_Std") %>%
   mutate(estimate = estimate) %>%
   dplyr::select(Study, Comparison_Group, TS_Feature, Brain_Region, TS_Feature, estimate, p.value)
-min_fill <- round(min(SD_lm_beta_for_ggseg$estimate),2)
-max_fill <- round(max(SD_lm_beta_for_ggseg$estimate),2)
-bin_seq <- round(seq(min_fill, max_fill, by=0.2),1)
-fill_colors <- c("#053061", "#2072A6", "#85B9CE", "white", '#FF9373', "#DB4246")
-
 SD_lm_in_brain <- plot_feature_in_brain(study_group_df = study_group_df,
                                                       lm_beta_df = SD_lm_beta_for_ggseg,
                                                       feature_name = "SD",
-                                                      min_fill = min_fill,
-                                                      max_fill = max_fill,
-                                                      bin_seq = bin_seq,
-                                                      fill_colors = fill_colors)
+                                                      min_fill = round(min(SD_lm_beta_for_ggseg$estimate),2),
+                                                      max_fill = round(max(SD_lm_beta_for_ggseg$estimate),2),
+                                                      bin_seq = round(seq(min_fill, max_fill, by=0.2),1),
+                                                      fill_colors = c("#053061", "#2072A6", "#85B9CE", "white", '#FF9373', "#DB4246"))
 
 wrap_plots(SD_lm_in_brain, 
            ncol=2, 
@@ -439,34 +373,32 @@ wrap_plots(SD_lm_in_brain,
 ggsave(glue("{plot_path}/SD_lm_beta_stats.svg"),
        width=5, height=7, units="in", dpi=300)
 
-# Mean
-mean_lm_beta_for_ggseg <- lm_beta_stats_catch24_whole_brain %>%
-  filter(TS_Feature == "DN_Mean") %>%
+# fALFF
+fALFF_lm_beta_for_ggseg <- lm_beta_stats_catch25_whole_brain %>%
+  filter(TS_Feature == "fALFF") %>%
   mutate(estimate = estimate) %>%
   dplyr::select(Study, Comparison_Group, TS_Feature, Brain_Region, TS_Feature, estimate, p.value)
-min_fill <- round(min(mean_lm_beta_for_ggseg$estimate),2)
-max_fill <- round(max(mean_lm_beta_for_ggseg$estimate),2)
-bin_seq <- round(seq(min_fill, max_fill, by=0.2),1)
-fill_colors <- c("#053061", "#005D9F", "#2E8AB9", "#82BED8", "white", '#FF9373', "#df5a5d")
+fALFF_lm_in_brain <- plot_feature_in_brain(study_group_df = study_group_df,
+                                           lm_beta_df = fALFF_lm_beta_for_ggseg,
+                                           feature_name = "SD",
+                                           min_fill = round(min(fALFF_lm_beta_for_ggseg$estimate),2),
+                                           max_fill = round(max(fALFF_lm_beta_for_ggseg$estimate),2),
+                                           bin_seq = round(seq( round(min(fALFF_lm_beta_for_ggseg$estimate),2), 
+                                                                round(max(fALFF_lm_beta_for_ggseg$estimate),2), 
+                                                                by=0.2),1),
+                                           fill_colors = c("#053061", "#2072A6", "#85B9CE", "white", '#FF9373'))
 
-mean_lm_in_brain <- plot_feature_in_brain(study_group_df = study_group_df,
-                                        lm_beta_df = mean_lm_beta_for_ggseg,
-                                        feature_name = "Mean",
-                                        min_fill = min_fill,
-                                        max_fill = max_fill,
-                                        bin_seq = bin_seq,
-                                        fill_colors = fill_colors)
-
-wrap_plots(mean_lm_in_brain, 
+wrap_plots(fALFF_lm_in_brain, 
            ncol=2, 
            byrow=T) + 
   plot_layout(guides = "collect")
-ggsave(glue("{plot_path}/Mean_lm_beta_stats.svg"),
+ggsave(glue("{plot_path}/fALFF_lm_beta_stats.svg"),
        width=5, height=7, units="in", dpi=300)
 
+
 ################################################################################
-# Ridge plot for catch24 features' lm beta coefficients across entire brain
-lm_beta_stats_catch24_whole_brain %>%
+# Ridge plot for catch25 features' lm beta coefficients across entire brain
+lm_beta_stats_catch25_whole_brain %>%
   ungroup() %>%
   left_join(., TS_feature_info) %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))%>%
@@ -474,7 +406,7 @@ lm_beta_stats_catch24_whole_brain %>%
   ggplot(data=., mapping=aes(x=estimate, y=Figure_Name, fill=Comparison_Group, color=Comparison_Group)) +
   geom_density_ridges(alpha=0.6, scale=1.1, rel_min_height = 0.05) +
   xlab("Beta coefficients across\nall brain regions") +
-  ylab("catch24 time-series feature") +
+  ylab("catch25 time-series feature") +
   scale_fill_manual(values=c("Control" = "#5BB67B", 
                              "SCZ" = "#573DC7", 
                              "BPD" = "#D5492A", 
@@ -495,91 +427,14 @@ lm_beta_stats_catch24_whole_brain %>%
         axis.text.x = element_text(size=15),
         legend.text = element_text(size=16),
         legend.title = element_blank())
-ggsave(glue("{plot_path}/catch24_feature_lm_beta_across_brain.svg"),
+ggsave(glue("{plot_path}/catch25_feature_lm_beta_across_brain.svg"),
        width=4.75, height=10, units="in", dpi=300)
 
-# Plot ROC of top-performing features
-top_features_to_find_AUC <- univariate_p_values %>%
-  filter(Analysis_Type == "Univariate_TS_Feature") %>%
-  group_by(Comparison_Group, Study) %>%
-  slice_max(n=1, order_by=Balanced_Accuracy_Across_Repeats) %>%
-  mutate(Group_Nickname =  case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                     Comparison_Group == "Bipolar" ~ "BPD",
-                                     T ~ Comparison_Group)) %>%
-  dplyr::select(Study, Comparison_Group, Group_Nickname, group_var, ROC_AUC_Across_Repeats)
-
-univariate_TPR_FPR  %>%
-  mutate(Group_Nickname =  case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                     Comparison_Group == "Bipolar" ~ "BPD",
-                                     T ~ Comparison_Group)) %>%
-  semi_join(top_features_to_find_AUC)  %>%
-  ggplot(data=.) +
-  geom_abline(slope=1, linetype=2) +
-  geom_smooth(se=T, aes(color=Comparison_Group, x=fpr,y=tpr)) +
-  xlab("FPR") +
-  ylab("TPR") +
-  coord_equal() +
-  geom_text(data = top_features_to_find_AUC,
-            aes(label=glue("{Group_Nickname}: {round(ROC_AUC_Across_Repeats, 2)}"),
-                color=Comparison_Group),
-            x = 1, y=c(0.1, 0.2, 0.3, 0.4), 
-            size=4.5, hjust=1) +
-  theme(legend.position = "none") +
-  scale_color_manual(values=c("Control" = "#5BB67B", 
-                              "Schizophrenia" = "#573DC7", 
-                              "Bipolar" = "#D5492A", 
-                              "ADHD" = "#0F9EA9", 
-                              "ASD" = "#C47B2F"))
-ggsave(glue("{plot_path}/univariate_top_feature_ROC.svg"),
-       width=3, height=3, units="in", dpi=300)
 
 ################################################################################
 # Figure 2D combo-based
 ################################################################################
-combo_null_data <- univariate_null_distribution %>%
-  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, Repeat, group_var, kernel) %>%
-  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T)) %>%
-  filter(Analysis_Type == "Univariate_Combo") %>%
-  dplyr::rename("Balanced_Accuracy_Across_Folds" = Null_Balanced_Accuracy) %>%
-  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
-         Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
-                                      T ~ Comparison_Group)) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
-  dplyr::select(Comparison_Group, Balanced_Accuracy_Across_Folds)
 
-univariate_balanced_accuracy_AUC_all_folds %>%
-  filter(Univariate_Feature_Set == univariate_feature_set,
-         Analysis_Type == "Univariate_Combo") %>%
-  mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds,
-         Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
-                                      T ~ Comparison_Group)) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
-  ggplot(data=., mapping=aes(x=Comparison_Group,
-                             y=Balanced_Accuracy_Across_Folds)) +
-  scale_fill_manual(values=c("#573DC7", "#D5492A", "#0F9EA9","#C47B2F")) +
-  geom_violinhalf(aes(fill=Comparison_Group)) +
-  geom_boxplot(width=0.1, notch=FALSE, notchwidth = 0.4, outlier.shape = NA,
-               fill=NA, color=alpha("white", 0.7),
-               position = position_nudge(x=0.058), coef = 0) +
-  geom_violinhalf(data = combo_null_data, fill="gray80", flip=T) +
-  geom_boxplot(data = combo_null_data, 
-               width=0.1, notch=FALSE, 
-               notchwidth = 0.4, outlier.shape = NA,
-               fill=NA, color=alpha("black", 0.7),
-               position = position_nudge(x=-0.058), coef = 0) +
-  geom_hline(yintercept = 50, linetype=2, alpha=0.5) +
-  xlab("Clinical Group") +
-  ylab("Balanced Accuracy\nper Repeat (%)") +
-  theme(legend.position = "none",
-        axis.title = element_text(size=17), 
-        axis.text = element_text(size=15)) 
-ggsave(glue("{plot_path}/Combo_wise_results.svg"),
-       width=4.5, height=3, units="in", dpi=300)
-
-
-################################################################################
 # Bowtie plot comparing each brain region and feature to combo-wise performance
 num_comparisons <- univariate_p_values %>%
   filter(Analysis_Type != "Univariate_Combo") %>%
@@ -601,15 +456,15 @@ univariate_p_values %>%
                                       Comparison_Group == "Bipolar" ~ "BPD",
                                       T ~ Comparison_Group),
          Analysis_Label = case_when(Analysis_Type == "Univariate_Combo" ~ "All\nRegions \u00D7\nFeatures",
-                                    Analysis_Type == "Univariate_TS_Feature" ~ "Individual\ncatch24\nFeatures",
+                                    Analysis_Type == "Univariate_TS_Feature" ~ "Individual\ncatch25\nFeatures",
                                     T ~ "Individual\nBrain\nRegions")) %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")),
-         Analysis_Label = factor(Analysis_Label, levels = c("Individual\ncatch24\nFeatures",
+         Analysis_Label = factor(Analysis_Label, levels = c("Individual\ncatch25\nFeatures",
                                                             "All\nRegions \u00D7\nFeatures",
                                                             "Individual\nBrain\nRegions"))) %>%
   group_by(Study, Comparison_Group, group_ID) %>%
   mutate(Comparison_Sig = paste0(Comparison_Group, "_", p_value_Bonferroni[Analysis_Type != "Univariate_Combo"]<0.05)) %>% 
-  ggplot(data=., mapping=aes(x=Analysis_Label, y=100*Balanced_Accuracy_Across_Repeats, 
+  ggplot(data=., mapping=aes(x=Analysis_Label, y=100*Balanced_Accuracy_Across_Folds, 
                              group=group_ID, color=Comparison_Sig)) +
   geom_line(alpha=0.5) +
   geom_point(size=1.25) +
@@ -630,40 +485,6 @@ univariate_p_values %>%
   coord_flip()
 ggsave(glue("{plot_path}/univariate_bowtie_balanced_accuracy.svg"),
        width=9, height=2.5, units="in", dpi=300)
-
-
-# Plot ROC of region X feature combos
-combo_ROC_data = univariate_p_values  %>%
-  filter(Analysis_Type=="Univariate_Combo")  %>%
-  mutate(Group_Nickname =  case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                     Comparison_Group == "Bipolar" ~ "BPD",
-                                     T ~ Comparison_Group))  %>%
-  dplyr::select(Study, Comparison_Group, Group_Nickname, group_var, ROC_AUC_Across_Repeats)
-
-univariate_TPR_FPR %>%
-  mutate(Group_Nickname =  case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                     Comparison_Group == "Bipolar" ~ "BPD",
-                                     T ~ Comparison_Group)) %>%
-  semi_join(combo_ROC_data) %>%
-  ggplot(data=.) +
-  geom_abline(slope=1, linetype=2) +
-  geom_smooth(se=T, aes(color=Comparison_Group, x=fpr,y=tpr)) +
-  xlab("FPR") +
-  ylab("TPR") +
-  coord_equal() +
-  geom_text(data = combo_ROC_data, 
-            aes(label=glue("{Group_Nickname}: {round(ROC_AUC_Across_Repeats, 2)}"),
-                color=Comparison_Group),
-            x = 1, y=c(0.1, 0.2, 0.3, 0.4), 
-            size=4.5, hjust=1) +
-  theme(legend.position = "none") +
-  scale_color_manual(values=c("Control" = "#5BB67B", 
-                              "Schizophrenia" = "#573DC7", 
-                              "Bipolar" = "#D5492A", 
-                              "ADHD" = "#0F9EA9", 
-                              "ASD" = "#C47B2F"))
-ggsave(glue("{plot_path}/univariate_combo_ROC.svg"),
-       width=3, height=3, units="in", dpi=300)
 
 ################################################################################
 # Compare performance with L1-regularized SVM balanced accuracy implemented with LinearSVC()

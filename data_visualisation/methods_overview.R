@@ -5,6 +5,7 @@
 github_dir <- "~/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/github/fMRI_FeaturesDisorders/"
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/methods_overview/")
 TAF::mkdir(plot_path)
+data_path <- "~/data/TS_feature_manuscript"
 
 library(tidyverse)
 library(glue)
@@ -19,6 +20,14 @@ library(ggraph)
 library(igraph)
 library(dendextend)
 theme_set(theme_cowplot())
+
+python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
+reticulate::use_python(python_to_use)
+
+library(reticulate)
+
+# Import pyarrow.feather as pyarrow_feather
+pyarrow_feather <- import("pyarrow.feather")
 
 ################################################################################
 # fMRI --> MTS overview
@@ -143,7 +152,7 @@ ggsave(glue("{plot_path}/example_feature_vector.svg"),
        width=3,height=0.2,units="in", dpi=300)
 
 
-brain_colors <- viridis::viridis(24)
+brain_colors <- viridis::viridis(25)
 
 # Sample region vector
 data.frame(x=sample(1:35),
@@ -158,7 +167,7 @@ data.frame(x=sample(1:35),
 ggsave(glue("{plot_path}/example_region_vector.svg"),
        width=3,height=0.2,units="in", dpi=300)
 
-# Brains with 24 example features
+# Brains with 25 example features
 plot_feature_in_brain <- function(fill_color_gradient, region_label="all") {
   if (region_label=="all") {
     p <- dk %>%
@@ -191,12 +200,12 @@ plot_feature_in_brain <- function(fill_color_gradient, region_label="all") {
 
 
 # Plot the full brain
-plots <- sample(1:24) %>%
+plots <- sample(1:25) %>%
   purrr::map(~ plot_feature_in_brain(fill_color_gradient=brain_colors[.x], 
                                      region_label="all"))
-wrap_plots(plots, nrow=4)
+wrap_plots(plots, nrow=5)
 ggsave(glue("{plot_path}/Univariate_feature_brains.svg"),
-       width=9, height=4.5, units="in", dpi=300, bg="white")
+       width=6, height=5, units="in", dpi=300, bg="white")
 
 # Plot just one example feature
 this_plot <- plot_feature_in_brain(fill_color_gradient=brain_colors[12], 
@@ -207,7 +216,7 @@ ggsave(glue("{plot_path}/Example_univariate_feature_brain.svg"),
 
 # Plot feature X region matrix
 feature_vec_plot_list <- list()
-for (i in sample(1:24)) {
+for (i in sample(1:25)) {
   p <- data.frame(x=sample(1:10),
              y=as.character(1:10)) %>%
     ggplot(data=., mapping=aes(x=y, y=0, fill=x)) +
@@ -226,80 +235,69 @@ ggsave(glue("{plot_path}/example_region_feature_vector.svg"),
 
 ################################################################################
 
-# Simple examples from catch22 docs
-examples_from_catch22_docs <- read.csv("~/data/TS_feature_manuscript/periodicity_example_TS.csv")
-
-# Low-periodicity example from docs
-low_periodicity_example_from_docs <- subset(examples_from_catch22_docs, Periodicity_Type=="Low")
-low_periodicity_example_from_docs %>%
-  filter(Timepoint<=150) %>%
-  ggplot(data=., mapping=aes(x=Timepoint, y=Value)) +
-  geom_line(color = "blue") +
-  xlab("Time (s)") +
-  ylab("Value")
-low_periodicity_example_from_docs_ACF <- acf(low_periodicity_example_from_docs$Value, 
-                                             lag.max = (1/3)*length(unique(low_periodicity_example_from_docs$Timepoint)),
-                           type = "correlation",
-                           plot = FALSE, na.action = na.fail, demean = TRUE)
-data.frame(low_periodicity_example_from_docs_ACF$lag,
-           low_periodicity_example_from_docs_ACF$acf) %>%
-  ggplot(data=., mapping = aes(x=low_periodicity_example_from_docs_ACF$lag,
-                               y=low_periodicity_example_from_docs_ACF$acf)) + 
-  geom_line() +
-  geom_vline(xintercept = 4, color="blue")
-
-# High-periodicity example from docs
-high_periodicity_example_from_docs <- subset(examples_from_catch22_docs, Periodicity_Type=="High")
-high_periodicity_example_from_docs %>%
-  filter(Timepoint<=1000) %>%
-  ggplot(data=., mapping=aes(x=Timepoint, y=Value)) +
-  geom_line(color = "red") +
-  xlab("Time (s)") +
-  ylab("Value")
-
 # Wang's periodicity infographic
-Raw_TS_data_UCLA_CNP <- pyarrow_feather$read_feather("~/data/UCLA_CNP/raw_data/UCLA_CNP_AROMA_2P_GMR_fMRI_TS.feather")
 
-# 
-compute_ACF_for_region <- function(split_df) {
-  region_ACF <- acf(split_df$values, 
-                    lag.max = (1/3)*length(unique(split_df$timepoint)),
-                    type = "correlation",
-                    plot = FALSE, na.action = na.fail, demean = TRUE)
-  region_ACF_df <- data.frame(Brain_Region = unique(split_df$Brain_Region),
-                              Sample_ID = unique(split_df$Sample_ID),
-                              ACF = region_ACF$acf,
-                              Lag = region_ACF$lag - 1) %>%
-    filter(Lag > 0)
-  return(region_ACF_df)
+# Isolate brain regions of interest
+if (!(file.exists(glue("{data_path}/BOLD_data_for_wangs_PD.csv")))) {
+  UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") %>%
+    mutate(Study="UCLA_CNP")
+  
+  UCLA_CNP_catch24 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")  %>%
+    left_join(., UCLA_CNP_sample_metadata)
+  
+  Raw_TS_data_UCLA_CNP <- pyarrow_feather$read_feather("~/data/UCLA_CNP/raw_data/UCLA_CNP_AROMA_2P_GMR_fMRI_TS.feather")
+  
+  # 
+  compute_ACF_for_region <- function(split_df) {
+    region_ACF <- acf(split_df$values, 
+                      lag.max = (1/3)*length(unique(split_df$timepoint)),
+                      type = "correlation",
+                      plot = FALSE, na.action = na.fail, demean = TRUE)
+    region_ACF_df <- data.frame(Brain_Region = unique(split_df$Brain_Region),
+                                Sample_ID = unique(split_df$Sample_ID),
+                                ACF = region_ACF$acf,
+                                Lag = region_ACF$lag - 1) %>%
+      filter(Lag > 0)
+    return(region_ACF_df)
+  }
+  TS_data_broken_down <- Raw_TS_data_UCLA_CNP %>%
+    group_by(Sample_ID, Brain_Region) %>%
+    group_split()
+  
+  All_samples_regions_ACF <- do.call(plyr::rbind.fill, TS_data_broken_down %>%
+                                       purrr::map(~ compute_ACF_for_region(split_df=.x)))
+  
+  # Filter to only lags +/- periodicity value and only ACF > 0.1
+  All_samples_regions_ACF %>%
+    left_join(., UCLA_CNP_catch24 %>% filter(names=="PD_PeriodicityWang_th0_01")) %>%
+    group_by(Sample_ID, Brain_Region) %>%
+    filter(between(Lag, values-1, values+1)) %>%
+    filter(n() == 3) %>%
+    mutate(diff_before = ACF[Lag==values] - ACF[Lag < values],
+           diff_after = ACF[Lag==values] - ACF[Lag > values]) %>%
+    ungroup() %>%
+    filter(ACF > 0.15, Lag==values, Lag > 2) %>%
+    filter(diff_before > 0.1, diff_after > 0.1) %>%
+    group_by(Sample_ID) %>%
+    filter(Lag %in% c(min(Lag), max(Lag))) %>%
+    mutate(Lag_Diff = max(Lag) - min(Lag)) %>%
+    arrange(desc(Lag_Diff))
+  
+  BOLD_data_for_wangs_PD <- Raw_TS_data_UCLA_CNP  %>%
+    filter(Sample_ID == "sub-10440",
+           Brain_Region %in% c("ctx-lh-caudalmiddlefrontal",
+                               "ctx-lh-parstriangularis"))
+  
+  write.table(BOLD_data_for_wangs_PD,
+              glue("{data_path}/BOLD_data_for_wangs_PD.csv"),
+              sep=",", row.names = F)
+} else {
+  BOLD_data_for_wangs_PD <- read.csv(glue("{data_path}/BOLD_data_for_wangs_PD.csv"))
 }
-TS_data_broken_down <- Raw_TS_data_UCLA_CNP %>%
-  group_by(Sample_ID, Brain_Region) %>%
-  group_split()
 
-All_samples_regions_ACF <- do.call(plyr::rbind.fill, TS_data_broken_down %>%
-  purrr::map(~ compute_ACF_for_region(split_df=.x)))
+# Read in cubic spline detrended time series from Matlab
+BOLD_data_for_wangs_PD_DT <- read.csv(glue("{data_path}/brain_region_TS_detrended.csv"))
 
-# Filter to only lags +/- periodicity value and only ACF > 0.1
-All_samples_regions_ACF %>%
-  left_join(., UCLA_CNP_catch24 %>% filter(names=="PD_PeriodicityWang_th0_01")) %>%
-  group_by(Sample_ID, Brain_Region) %>%
-  filter(between(Lag, values-1, values+1)) %>%
-  filter(n() == 3) %>%
-  mutate(diff_before = ACF[Lag==values] - ACF[Lag < values],
-         diff_after = ACF[Lag==values] - ACF[Lag > values]) %>%
-  ungroup() %>%
-  filter(ACF > 0.15, Lag==values, Lag > 2) %>%
-  filter(diff_before > 0.1, diff_after > 0.1) %>%
-  group_by(Sample_ID) %>%
-  filter(Lag %in% c(min(Lag), max(Lag))) %>%
-  mutate(Lag_Diff = max(Lag) - min(Lag)) %>%
-  arrange(desc(Lag_Diff))
-
-BOLD_data_for_wangs_PD <- Raw_TS_data_UCLA_CNP  %>%
-  filter(Sample_ID == "sub-10440",
-         Brain_Region %in% c("ctx-lh-caudalmiddlefrontal",
-                             "ctx-lh-parstriangularis"))
 
 # Low periodicity TS
 BOLD_data_for_wangs_PD %>%
@@ -311,9 +309,10 @@ BOLD_data_for_wangs_PD %>%
 ggsave(glue("{plot_path}/Periodicity_Low_TS.svg"), width=3, height=1.25, units="in", dpi=300)
 
 #
-low_periodicity_ACF <- acf(BOLD_data_for_wangs_PD %>%
-                             filter(Brain_Region == "ctx-lh-caudalmiddlefrontal") %>% 
-                             pull(values), lag.max = (1/3)*length(unique(BOLD_data_for_wangs_PD$timepoint)),
+low_periodicity_ACF <- acf(BOLD_data_for_wangs_PD_DT %>%
+                             filter(Periodicity_Type=="Low") %>% 
+                             pull(Detrended_Value), 
+                           lag.max = (1/3)*length(unique(BOLD_data_for_wangs_PD_DT$Timepoint)),
                            type = "correlation",
                            plot = FALSE, na.action = na.fail, demean = TRUE)
 data.frame(Lag=low_periodicity_ACF$lag,
@@ -336,9 +335,10 @@ BOLD_data_for_wangs_PD %>%
 ggsave(glue("{plot_path}/Periodicity_High_TS.svg"), width=3, height=1.25, units="in", dpi=300)
 
 # Compute autocorrelation for each TS
-high_periodicity_ACF <- acf(BOLD_data_for_wangs_PD %>%
-                             filter(Brain_Region == "ctx-lh-parstriangularis") %>% 
-                             pull(values), lag.max = (1/3)*length(unique(BOLD_data_for_wangs_PD$timepoint)),
+high_periodicity_ACF <- acf(BOLD_data_for_wangs_PD_DT %>%
+                             filter(Periodicity_Type=="High") %>% 
+                             pull(Detrended_Value), 
+                           lag.max = (1/3)*length(unique(BOLD_data_for_wangs_PD_DT$Timepoint)),
                            type = "correlation",
                            plot = FALSE, na.action = na.fail, demean = TRUE)
 data.frame(Lag = high_periodicity_ACF$lag,

@@ -42,6 +42,9 @@ SVM_kernel <- "linear"
 UCLA_CNP_data_path <- "~/data/UCLA_CNP"
 data_path <- "~/data/TS_feature_manuscript"
 
+# Load in univariate time-series feature info
+TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch25_info.csv"))
+
 # Read in metadata
 UCLA_CNP_sample_metadata <- feather::read_feather(glue("{UCLA_CNP_data_path}/study_metadata/UCLA_CNP_sample_metadata.feather"))
 UCLA_CNP_brain_region_info <- read.csv("~/data/UCLA_CNP/study_metadata/UCLA_CNP_Brain_Region_info.csv")
@@ -89,25 +92,23 @@ ROI_volume_beta_by_group <- 1:3 %>%
   mutate(p_value_Bonferroni = p.adjust(p.value, method="bonferroni"))
 
 # Load univariate classification results across all folds
-univariate_balanced_accuracy_AUC_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather")) %>%
+univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_balanced_accuracy_all_folds.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set, kernel==SVM_kernel)
 # Compute mean + SD performance across all folds
-univariate_balanced_accuracy <- univariate_balanced_accuracy_AUC_all_folds %>%
+univariate_balanced_accuracy <- univariate_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, kernel) %>%
   reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
-          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T),
-          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T),
-          ROC_AUC_Across_Folds_SD = sd(ROC_AUC, na.rm=T))
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T))
+
 # Load p-values
-univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
+univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set) %>%
-  dplyr::select(-Balanced_Accuracy_Across_Repeats, -Balanced_Accuracy_Across_Repeats_SD, 
-                -ROC_AUC_Across_Repeats, -ROC_AUC_Across_Repeats_SD) %>%
+  dplyr::select(-Balanced_Accuracy_Across_Folds) %>%
   left_join(., univariate_balanced_accuracy)
 
 
 # Plot region-wise volume beta coefficients vs balanced accuracy
-all_regions_plot <- ROI_volume_beta_by_group %>%
+ROI_volume_beta_by_group %>%
   dplyr::select(Brain_Region, Comparison_Group, estimate) %>%
   dplyr::rename("beta_coef" = "estimate") %>%
   left_join(., univariate_p_values %>% dplyr::rename("Brain_Region" = "group_var")) %>%
@@ -121,72 +122,36 @@ all_regions_plot <- ROI_volume_beta_by_group %>%
   scale_color_manual(values=c("Schizophrenia" = "#573DC7", 
                               "Bipolar" = "#D5492A", 
                               "ADHD" = "#0F9EA9")) +
-  theme(legend.position = "none")
-
-
-# Re-plot only with significant regions
-sig_regions_plot <- ROI_volume_beta_by_group %>%
-  dplyr::select(Brain_Region, Comparison_Group, estimate) %>%
-  dplyr::rename("beta_coef" = "estimate") %>%
-  left_join(., univariate_p_values %>% dplyr::rename("Brain_Region" = "group_var")) %>%
-  filter(p_value_Bonferroni < 0.05) %>%
-  ggplot(data=., mapping=aes(x=beta_coef, y=100*Balanced_Accuracy_Across_Folds, color=Comparison_Group)) +
-  geom_point() +
-  facet_grid(Comparison_Group ~ ., scales="free", switch="both") +
-  ylab("Mean Balanced Accuracy for Region") +
-  xlab("\u03b2 for Region Volume") +
-  stat_cor(method="spearman", cor.coef.name="rho", color="black", label.sep = "\n") +
-  stat_smooth(method="lm", color="black") +
-  scale_color_manual(values=c("Schizophrenia" = "#573DC7", 
-                              "Bipolar" = "#D5492A", 
-                              "ADHD" = "#0F9EA9")) +
-  theme(legend.position = "none")
-
-all_regions_plot + sig_regions_plot
+  theme(legend.position = "none",
+        panel.border = element_blank(),
+        panel.background = element_blank(), 
+        strip.placement = "outside")
 ggsave(glue("{plot_path}/Volume_vs_BalAcc_res.svg"),
-       width=6, height=6, units="in", dpi=300)
+       width=3, height=6, units="in", dpi=300)
 
+# Do any features correlate with general region size?
+UCLA_CNP_catch25 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather")  %>%
+  left_join(., UCLA_CNP_sample_metadata)
 
-# Plot volume in the left vs right hemispheres by region/condition
-region_wise_volumes %>%
-  mutate(Hemisphere = case_when(str_detect(Brain_Region, "Left|lh-") ~ "Left",
-                                str_detect(Brain_Region, "Right|rh-") ~ "Right")) %>%
-  mutate(Brain_Region = gsub("Left-|ctx-lh-|Right-|ctx-rh-", "", Brain_Region)) %>%
-  dplyr::select(Sample_ID, Diagnosis, Brain_Region, Hemisphere, Num_Voxels) %>%
-  pivot_wider(id_cols = c(Sample_ID, Diagnosis, Brain_Region),
-              names_from = Hemisphere,
-              values_from = Num_Voxels) %>%
-  ggplot(data=., mapping=aes(x=Left, y=Right, color=Diagnosis)) +
-  geom_point() +
-  theme(legend.position="none") +
-  geom_abline(slope=1, intercept=0, color="black") +
-  facet_wrap(Diagnosis ~ .)
+UCLA_CNP_catch25 %>%
+  left_join(., region_wise_volumes) %>%
+  dplyr::select(Sample_ID, Brain_Region, names, Num_Voxels, values) %>%
+  left_join(., TS_feature_info, by=c("names"="feature_name")) %>%
+  filter(!is.na(Num_Voxels)) %>%
+  group_by(Brain_Region, names, Figure_name) %>%
+  summarise(mean_num_voxels = mean(Num_Voxels),
+            mean_feature_values = mean(values)) %>%
+  ggplot(data=., mapping=aes(x=mean_num_voxels, y=mean_feature_values, color=Figure_name)) +
+  geom_point() + 
+  ylab("Average feature value in region") +
+  xlab("Average # voxels in region") +
+  stat_smooth(se=FALSE, color="black", geom="line", alpha=0.7, size=1) +
+  facet_wrap(Figure_name ~ ., nrow=5, scales="free_y") +
+  theme(legend.position="none",
+        strip.background = element_blank(),
+        strip.text = element_text(face="bold"),
+        axis.ticks.y = element_blank(),
+        axis.text=element_blank())
+ggsave(glue("{plot_path}/Volume_vs_Feature_Values.svg"),
+       width=8, height=6, units="in", dpi=300)
 
-
-# Are there any left-right volumetric differences by cohort?
-brain_regions_we_used <- univariate_p_values %>%
-  filter(Analysis_Type == "Univariate_Brain_Region",
-         Study=="UCLA_CNP") %>%
-  distinct(group_var) %>%
-  mutate(Hemisphere = case_when(str_detect(group_var, "Left|lh-") ~ "Left",
-                                str_detect(group_var, "Right|rh-") ~ "Right")) %>%
-  mutate(Brain_Region = gsub("Left-|ctx-lh-|Right-|ctx-rh-", "", group_var)) %>%
-  distinct(Brain_Region) %>%
-  pull(Brain_Region)
-
-left_right_paired_T_results <- region_wise_volumes %>%
-  mutate(Hemisphere = case_when(str_detect(Brain_Region, "Left|lh-") ~ "Left",
-                                str_detect(Brain_Region, "Right|rh-") ~ "Right")) %>%
-  mutate(Brain_Region = gsub("Left-|ctx-lh-|Right-|ctx-rh-", "", Brain_Region)) %>%
-  dplyr::select(Sample_ID, Diagnosis, Brain_Region, Hemisphere, Num_Voxels) %>%
-  filter(!is.na(Hemisphere) & Brain_Region %in% brain_regions_we_used) %>%
-  group_by(Diagnosis, Brain_Region) %>%
-  nest() %>%
-  mutate(
-    test = map(data, ~ t.test(Num_Voxels ~ Hemisphere, data=.x, paired=TRUE)), # S3 list-col
-    tidied = map(test, tidy)
-  ) %>%
-  unnest(tidied) %>%
-  ungroup() %>%
-  group_by(Diagnosis) %>%
-  mutate(p_val_Bonferroni = p.adjust(p.value, method="bonferroni"))
