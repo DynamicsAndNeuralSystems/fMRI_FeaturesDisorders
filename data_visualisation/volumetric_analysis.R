@@ -36,8 +36,8 @@ github_dir <- "~/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/g
 
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/volumetric_analysis/")
 TAF::mkdir(plot_path)
-univariate_feature_set <- "catch24"
-SVM_kernel <- "linear"
+univariate_feature_set <- "catch25"
+SVM_kernel <- "Linear"
 
 UCLA_CNP_data_path <- "~/data/UCLA_CNP"
 data_path <- "~/data/TS_feature_manuscript"
@@ -106,12 +106,13 @@ univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_A
   dplyr::select(-Balanced_Accuracy_Across_Folds) %>%
   left_join(., univariate_balanced_accuracy)
 
-
+################################################################################
 # Plot region-wise volume beta coefficients vs balanced accuracy
 ROI_volume_beta_by_group %>%
   dplyr::select(Brain_Region, Comparison_Group, estimate) %>%
   dplyr::rename("beta_coef" = "estimate") %>%
   left_join(., univariate_p_values %>% dplyr::rename("Brain_Region" = "group_var")) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("Schizophrenia", "Bipolar", "ADHD"))) %>%
   ggplot(data=., mapping=aes(x=beta_coef, y=100*Balanced_Accuracy_Across_Folds, color=Comparison_Group)) +
   geom_point() +
   facet_grid(Comparison_Group ~ ., scales="free", switch="both") +
@@ -124,11 +125,67 @@ ROI_volume_beta_by_group %>%
                               "ADHD" = "#0F9EA9")) +
   theme(legend.position = "none",
         panel.border = element_blank(),
-        panel.background = element_blank(), 
+        strip.background = element_blank(), 
         strip.placement = "outside")
 ggsave(glue("{plot_path}/Volume_vs_BalAcc_res.svg"),
        width=3, height=6, units="in", dpi=300)
 
+# Do correlation test with Bonferroni correction
+ROI_volume_beta_by_group %>%
+  dplyr::select(Brain_Region, Comparison_Group, estimate) %>%
+  dplyr::rename("beta_coef" = "estimate") %>%
+  left_join(., univariate_p_values %>% dplyr::rename("Brain_Region" = "group_var")) %>%
+  group_by(Comparison_Group) %>%
+  do(tidy(cor.test(.$beta_coef, .$Balanced_Accuracy_Across_Folds, method="spearman"))) %>%
+  ungroup() %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("Schizophrenia", "Bipolar", "ADHD")),
+         p_val_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
+  arrange(Comparison_Group)
+
+################################################################################
+# Does the average volume of a region relate to its balanced accuracy?
+region_wise_volumes %>%
+  group_by(Diagnosis, Brain_Region) %>%
+  summarise(mean_volume = mean(Num_Voxels)) %>%
+  filter(Diagnosis != "Control") %>%
+  dplyr::rename("Comparison_Group"="Diagnosis") %>%
+  left_join(., univariate_p_values %>% dplyr::rename("Brain_Region" = "group_var")) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("Schizophrenia", "Bipolar", "ADHD"))) %>%
+  ggplot(data=., mapping=aes(x=mean_volume, y=100*Balanced_Accuracy_Across_Folds, color=Comparison_Group)) +
+  geom_point() +
+  facet_grid(Comparison_Group ~ ., scales="free", switch="both") +
+  ylab("Mean Balanced Accuracy for Region") +
+  xlab("Mean Region Volume") +
+  stat_cor(method="spearman", cor.coef.name="rho", color="black", label.sep = "\n",
+           label.x.npc="right") +
+  stat_smooth(method="lm", color="black") +
+  scale_color_manual(values=c("Schizophrenia" = "#573DC7",
+                              "Bipolar" = "#D5492A",
+                              "ADHD" = "#0F9EA9")) +
+  theme(legend.position = "none",
+        panel.border = element_blank(),
+        strip.background = element_blank(),
+        strip.placement = "outside")
+ggsave(glue("{plot_path}/Average_Volume_vs_BalAcc_res.svg"),
+       width=3, height=6, units="in", dpi=300)
+
+
+# Do correlation test with Bonferroni correction
+region_wise_volumes %>%
+  group_by(Diagnosis, Brain_Region) %>%
+  summarise(mean_volume = mean(Num_Voxels)) %>%
+  filter(Diagnosis != "Control") %>%
+  dplyr::rename("Comparison_Group"="Diagnosis") %>%
+  left_join(., univariate_p_values %>% dplyr::rename("Brain_Region" = "group_var")) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("Schizophrenia", "Bipolar", "ADHD"))) %>%
+  group_by(Comparison_Group) %>%
+  do(tidy(cor.test(.$mean_volume, .$Balanced_Accuracy_Across_Folds, method="spearman"))) %>%
+  ungroup() %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("Schizophrenia", "Bipolar", "ADHD")),
+         p_val_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
+  arrange(Comparison_Group)
+
+################################################################################
 # Do any features correlate with general region size?
 UCLA_CNP_catch25 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather")  %>%
   left_join(., UCLA_CNP_sample_metadata)

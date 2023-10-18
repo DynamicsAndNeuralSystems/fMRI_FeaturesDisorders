@@ -20,6 +20,9 @@ library(broom)
 library(see)
 library(colorspace)
 library(scales)
+library(ggseg)
+library(ggsegHO)
+library(ggsegDefaultExtra)
 theme_set(theme_cowplot())
 
 # Import pyarrow.feather as pyarrow_feather
@@ -159,192 +162,92 @@ wrap_plots(plots, nrow=1)
 ggsave(paste0(plot_path, "mFD_Power_by_Group.svg"),
        width = 10, height=2.5, units="in", dpi=300)
 
-
 ################################################################################
-# Compare correlation of catch25 features with mFD-Power by study
-################################################################################
-
-if (!file.exists(glue("{data_path}UCLA_CNP_ABIDE_ASD_movement_feature_corr_whole_brain_avg.feather"))) {
-  # Load raw feature data
-  UCLA_CNP_pyspi14 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")  %>%
-    group_by(Sample_ID, SPI) %>%
-    summarise(mean_across_brain = mean(value, na.rm=T)) %>%
-    left_join(., UCLA_CNP_sample_metadata) %>%
-    filter(!is.na(Diagnosis))
-  ABIDE_ASD_pyspi14 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_pyspi14_filtered.feather")  %>%
-    group_by(Sample_ID, SPI) %>%
-    summarise(mean_across_brain = mean(value, na.rm=T)) %>%
-    left_join(., ABIDE_ASD_sample_metadata) %>%
-    filter(!is.na(Diagnosis))
-  
-  # Calculate correlations
-  head_motion_univariate_feature_corrs <- UCLA_CNP_catch25 %>%
-    plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
-    group_by(Sample_ID, names) %>%
-    summarise(mean_across_brain = mean(values, na.rm=T)) %>%
-    left_join(., plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)) %>%
-    left_join(., plyr::rbind.fill(UCLA_CNP_sample_metadata, ABIDE_ASD_sample_metadata)) %>%
-    group_by(Study, names) %>%
-    nest() %>%
-    mutate(
-      test = map(data, ~ cor.test(.x$mean_across_brain, .x$Power, method="spearman")), # S3 list-col
-      tidied = map(test, tidy)
-    ) %>%
-    unnest(tidied) %>%
-    select(-data, -test) %>%
-    group_by(Study) %>%
-    mutate(p_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
-    arrange(desc(abs(estimate)))
-  
-  head_motion_pairwise_feature_corrs <- UCLA_CNP_pyspi14 %>%
-    plyr::rbind.fill(., ABIDE_ASD_pyspi14) %>%
-    left_join(., plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)) %>%
-    arrange(SPI) %>%
-    group_by(Study, SPI) %>%
-    nest() %>%
-    mutate(
-      test = map(data, ~ cor.test(.x$mean_across_brain, .x$Power, method="spearman")), # S3 list-col
-      tidied = map(test, tidy)
-    ) %>%
-    unnest(tidied) %>%
-    select(-data, -test) %>%
-    group_by(Study) %>%
-    mutate(p_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
-    arrange(desc(abs(estimate))) %>%
-    dplyr::rename("names"="SPI")
-  
-  # Combine results and save to a feather file
-  head_motion_feature_corrs_wb <- plyr::rbind.fill(head_motion_univariate_feature_corrs,
-                                                head_motion_pairwise_feature_corrs) 
-  pyarrow_feather$write_feather(head_motion_feature_corrs_wb, glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr_whole_brain_avg.feather"))
-  
-} else {
-  head_motion_feature_corrs_wb <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr_whole_brain_avg.feather"))
-}
-
-# Find features that correlate most strongly with head motion per study, 
-# plot in a barplot
-merged_time_series_info <- catch25_info %>%
-  dplyr::rename("names" = "feature_name") %>%
-  mutate(Feature_Type = "Univariate") %>%
-  plyr::rbind.fill(., pyspi14_info %>% 
-                     dplyr::rename("names" = "pyspi_name") %>%
-                     mutate(Feature_Type = "Pairwise"))
-
-
-# Heatmap
-motion_corr_data_for_heatmap_wb <- head_motion_feature_corrs_wb %>%
-  left_join(., merged_time_series_info) %>%
-  mutate(Study = ifelse(Study == "ABIDE_ASD", "ABIDE", "UCLA CNP")) %>%
-  mutate(Figure_name = fct_reorder(Figure_name, estimate, .fun="mean")) 
-
-# Annotation bar with feature type
-motion_corr_data_for_heatmap_wb %>%
-  filter(p_Bonferroni < 0.05) %>%
-  mutate(Feature_Type = fct_reorder(Feature_Type, estimate, .fun="mean", .desc=F)) %>%
-  ggplot(data=., mapping=aes(x=0, y=Figure_name, fill=Feature_Type)) +
-  geom_tile() +
-  theme_void() +
-  scale_fill_manual(values=c("#803556", "#E8A6A9")) +
-  theme(legend.position = "bottom",
-        legend.title = element_blank(),
-        legend.text=element_text(size=14)) +
-  guides(fill = guide_legend(title.position = "top", 
-                             ncol = 2,
-                             byrow=T,
-                             title.hjust = 0.5)) 
-ggsave(glue("{plot_path}/Feature_type_colorbar.svg"),
-       width=6, height=6, units="in", dpi=300)
-
-# Actual heatmap
-motion_corr_data_for_heatmap_wb %>%
-  filter(p_Bonferroni < 0.05) %>%
-  ggplot(data=., mapping=aes(x=Study, y=Figure_name, fill=estimate)) +
-  geom_tile() +
-  geom_text(aes(label = round(estimate,2)),
-            size=5) +
-  scale_fill_continuous_divergingx(palette="RdBu", rev=TRUE) +
-  ylab("Time-series feature") +
-  labs(fill="mFD \u03C1")
-ggsave(glue("{plot_path}/Movement_spearman_feature_corr_whole_brain.svg"),
-       width=6, height=6, units="in", dpi=300)
-
-################################################################################
-# Compare region-specific feature values with whole-brain head movement
+# Compare region-specific SD values with whole-brain head movement
 ################################################################################
 
-if (!file.exists(glue("{data_path}UCLA_CNP_ABIDE_ASD_movement_feature_corr_regional.feather"))) {
+# Calculate correlations
+head_motion_SD_corr_regional <- UCLA_CNP_catch25 %>%
+  plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
+  filter(names == "DN_Spread_Std") %>%
+  left_join(., plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)) %>%
+  left_join(., plyr::rbind.fill(UCLA_CNP_sample_metadata, ABIDE_ASD_sample_metadata)) %>%
+  group_by(Study, Brain_Region) %>%
+  nest() %>%
+  mutate(
+    test = map(data, ~ cor.test(.x$values, .x$Power, method="spearman")), # S3 list-col
+    tidied = map(test, tidy)
+  ) %>%
+  unnest(tidied) %>%
+  select(-data, -test) %>%
+  group_by(Study) %>%
+  mutate(p_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
+  arrange(desc(abs(estimate)))
 
-  # Calculate correlations
-  head_motion_univariate_feature_corrs <- UCLA_CNP_catch25 %>%
-    plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
-    left_join(., plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)) %>%
-    left_join(., plyr::rbind.fill(UCLA_CNP_sample_metadata, ABIDE_ASD_sample_metadata)) %>%
-    group_by(Study, names, Brain_Region) %>%
-    nest() %>%
-    mutate(
-      test = map(data, ~ cor.test(.x$values, .x$Power, method="spearman")), # S3 list-col
-      tidied = map(test, tidy)
-    ) %>%
-    unnest(tidied) %>%
-    select(-data, -test) %>%
-    group_by(Study) %>%
-    mutate(p_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
-    arrange(desc(abs(estimate)))
-  
-  pyarrow_feather$write_feather(head_motion_univariate_feature_corrs, glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr_regional.feather"))
-  
-} else {
-  head_motion_univariate_feature_corrs <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_feature_corr_regional.feather"))
-}
-
-# Find features that correlate most strongly with head motion per study, 
-# plot in a barplot
-merged_time_series_info <- catch25_info %>%
-  dplyr::rename("names" = "feature_name") %>%
-  mutate(Feature_Type = "Univariate") %>%
-  plyr::rbind.fill(., pyspi14_info %>% 
-                     dplyr::rename("names" = "pyspi_name") %>%
-                     mutate(Feature_Type = "Pairwise"))
+# Plot regional SD correlations by brain region within the brain
 
 
-# Heatmap
-motion_corr_data_for_heatmap_wb <- head_motion_feature_corrs_wb %>%
-  left_join(., merged_time_series_info) %>%
-  mutate(Study = ifelse(Study == "ABIDE_ASD", "ABIDE", "UCLA CNP")) %>%
-  mutate(Figure_name = fct_reorder(Figure_name, estimate, .fun="mean")) 
+# Bar plot of correlated regions
+head_motion_SD_corr_regional %>%
+  mutate(Brain_Region = fct_reorder(Brain_Region, abs(estimate))) %>%
+  ggplot(data=., mapping=aes(x=Brain_Region,
+                             y=abs(estimate),
+                             fill=p_Bonferroni<0.05)) +
+  geom_bar(stat="identity") +
+  facet_grid(Study ~ ., scales="free", switch="both",
+             space="free") +
+  coord_flip() +
+  scale_fill_manual(values=list("TRUE"="#4C7FC0",
+                                "FALSE"="gray80")) +
+  labs(fill = "Significant") +
+  theme(strip.background = element_blank(),
+        legend.position="bottom",
+        strip.placement="outside")
+ggsave(paste0(plot_path, "SD_Correlation_with_Movement_by_Region.svg"),
+       width = 9, height = 16, units="in", dpi=300)
 
-# Annotation bar with feature type
-motion_corr_data_for_heatmap_wb %>%
-  filter(p_Bonferroni < 0.05) %>%
-  mutate(Feature_Type = fct_reorder(Feature_Type, estimate, .fun="mean", .desc=F)) %>%
-  ggplot(data=., mapping=aes(x=0, y=Figure_name, fill=Feature_Type)) +
-  geom_tile() +
-  theme_void() +
-  scale_fill_manual(values=c("#803556", "#E8A6A9")) +
-  theme(legend.position = "bottom",
-        legend.title = element_blank(),
-        legend.text=element_text(size=14)) +
-  guides(fill = guide_legend(title.position = "top", 
-                             ncol = 2,
-                             byrow=T,
-                             title.hjust = 0.5)) 
-ggsave(glue("{plot_path}/Feature_type_colorbar.svg"),
-       width=6, height=6, units="in", dpi=300)
 
-# Actual heatmap
-motion_corr_data_for_heatmap_wb %>%
-  filter(p_Bonferroni < 0.05) %>%
-  ggplot(data=., mapping=aes(x=Study, y=Figure_name, fill=estimate)) +
-  geom_tile() +
-  geom_text(aes(label = round(estimate,2)),
-            size=5) +
-  scale_fill_continuous_divergingx(palette="RdBu", rev=TRUE) +
-  ylab("Time-series feature") +
-  labs(fill="mFD \u03C1")
-ggsave(glue("{plot_path}/Movement_spearman_feature_corr_whole_brain.svg"),
-       width=6, height=6, units="in", dpi=300)
+# Plot brain-wide average SD vs head movement
+SD_brain_wide_avg <- UCLA_CNP_catch25 %>%
+  plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
+  filter(names == "DN_Spread_Std") %>%
+  group_by(Sample_ID) %>%
+  summarise(meanval = mean(values, na.rm=T)) %>%
+  left_join(., plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)) %>%
+  left_join(., plyr::rbind.fill(UCLA_CNP_sample_metadata, ABIDE_ASD_sample_metadata)) %>%
+  mutate(Study = ifelse(Study == "UCLA_CNP", "UCLA CNP", "ABIDE"))  %>%
+  mutate(Diagnosis = case_when(Diagnosis == "Schizophrenia" ~ "SCZ",
+                               Diagnosis == "Bipolar" ~ "BPD",
+                               T ~ Diagnosis))
 
+SD_brain_wide_avg %>%
+  ggplot(data=., mapping=aes(x=Power, y=meanval, color=Diagnosis)) +
+  geom_point(alpha=0.5) +
+  facet_grid(Study ~ ., scale="free", switch="both") +
+  ylab("Brain-wide BOLD SD") +
+  xlab("Mean framewise displacement (FD)") +
+  scale_color_manual(values = c("SCZ"="#573DC7", 
+                                "BPD"="#D5492A", 
+                                "ADHD"="#0F9EA9",
+                                "ASD"="#C47B2F",
+                                "Control"="#5BB67B")) +
+  stat_smooth(method="lm", se=F) +
+  theme(strip.background = element_blank(),
+        legend.position="bottom",
+        strip.placement="outside") +
+  stat_cor(method="spearman")
+ggsave(paste0(plot_path, "mFD_vs_SD.svg"),
+       width = 3.75, height=5.75, units="in", dpi=300)
+
+# Calculate correlations
+SD_brain_wide_avg %>%
+  group_by(Study) %>%
+  nest() %>%
+  mutate(
+    test = map(data, ~ cor.test(.x$meanval, .x$Power)), # S3 list-col
+    tidied = map(test, tidy)
+  ) %>%
+  unnest(tidied)
 
 ################################################################################
 # Plot individual features vs movement

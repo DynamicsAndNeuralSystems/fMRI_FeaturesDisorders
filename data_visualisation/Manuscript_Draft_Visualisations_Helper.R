@@ -46,16 +46,16 @@ plot_boxplot_shaded_null <- function(dataset_ID,
 
 # Plot cortical + subcortical data in a continuous gradient
 plot_data_with_ggseg_gradient <- function(dataset_ID,
-                                 atlas_name,
-                                 atlas_data,
-                                 data_to_plot,
-                                 fill_variable,
-                                 min_fill=NULL,
-                                 max_fill=NULL,
-                                 hemisphere = NULL,
-                                 line_color="darkgrey",
-                                 na_color="white",
-                                 fill_colors=c("blue", "red")) {
+                                          atlas_name,
+                                          atlas_data,
+                                          data_to_plot,
+                                          fill_variable,
+                                          min_fill=NULL,
+                                          max_fill=NULL,
+                                          hemisphere = NULL,
+                                          line_color="darkgrey",
+                                          na_color="white",
+                                          fill_colors=c("blue", "red")) {
   
   ggseg_data <- data_to_plot %>%
     left_join(., atlas_data %>% as_tibble()) %>%
@@ -123,13 +123,13 @@ plot_data_with_ggseg_discrete <- function(dataset_ID,
     ggseg_plot <- ggseg_data %>%
       ggseg(atlas = atlas_name, mapping = aes_string(fill = fill_variable),
             position = "stacked", colour = line_color)
-     
+    
   }
   
   if (is.null(bin_seq)) {
     bin_seq <- seq(min(ggseg_data %>% pull(fill_variable)),
-                      max(ggseg_data %>% pull(fill_variable)),
-                      length.out = num_bins + 1)
+                   max(ggseg_data %>% pull(fill_variable)),
+                   length.out = num_bins + 1)
   }
   
   ggseg_plot <- ggseg_plot + 
@@ -150,13 +150,13 @@ plot_data_with_ggseg_discrete <- function(dataset_ID,
 
 # Plot cortical + subcortical data in a divering gradient
 plot_data_with_ggseg_diverging <- function(dataset_ID,
-                                 atlas_name,
-                                 atlas_data,
-                                 data_to_plot,
-                                 fill_variable,
-                                 min_fill=NULL,
-                                 max_fill=NULL,
-                                 fill_palette="RdBu") {
+                                           atlas_name,
+                                           atlas_data,
+                                           data_to_plot,
+                                           fill_variable,
+                                           min_fill=NULL,
+                                           max_fill=NULL,
+                                           fill_palette="RdBu") {
   
   ggseg_data <- data_to_plot %>%
     left_join(., atlas_data %>% as_tibble()) %>%
@@ -194,3 +194,129 @@ plot_data_with_ggseg_diverging <- function(dataset_ID,
 
 
 
+################################################################################
+# Helper function to plot the beta coefficients for a given feature in the brain
+plot_feature_in_brain <- function(study_group_df, lm_beta_df, feature_name, min_fill,
+                                  max_fill, bin_seq, fill_colors) {
+  
+  ggseg_plot_list <- list()
+  
+  for (i in 1:nrow(study_group_df)) {
+    dataset_ID <- study_group_df$Study[i]
+    comparison_group <- study_group_df$Group_Nickname[i]
+    
+    # Define atlas by study
+    atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
+    
+    if (dataset_ID == "ABIDE_ASD") {
+      lm_beta_stat_data <- lm_beta_df %>%
+        filter(Study == dataset_ID, 
+               Comparison_Group == comparison_group) %>%
+        left_join(., ABIDE_ASD_brain_region_info) %>%
+        distinct() 
+    } else {
+      lm_beta_stat_data <- lm_beta_df %>%
+        filter(Study == dataset_ID, 
+               Comparison_Group == comparison_group) %>%
+        mutate(label = ifelse(str_detect(Brain_Region, "ctx-"),
+                              gsub("-", "_", Brain_Region),
+                              as.character(Brain_Region))) %>%
+        mutate(label = gsub("ctx_", "", label)) %>%
+        distinct()
+    }
+    
+    # Plot T stat data in cortex
+    dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+                                                   atlas_name=atlas,
+                                                   atlas_data=get(atlas) %>% as_tibble(),
+                                                   data_to_plot = lm_beta_stat_data,
+                                                   fill_variable = "estimate",
+                                                   fill_colors = fill_colors,
+                                                   bin_seq = bin_seq,
+                                                   line_color = "gray30",
+                                                   na_color = "white")  +
+      labs(fill="Beta")
+    
+    ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
+    
+    # Add subcortical data for UCLA CNP
+    if (dataset_ID == "UCLA_CNP") {
+      dataset_ggseg_subctx <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+                                                            atlas_name = "aseg",
+                                                            atlas_data = aseg %>% as_tibble(),
+                                                            data_to_plot=lm_beta_stat_data,
+                                                            fill_variable = "estimate",
+                                                            fill_colors = fill_colors,
+                                                            bin_seq = bin_seq,
+                                                            line_color = "gray30",
+                                                            na_color = "white")  +
+        labs(fill="Beta")
+      
+      # Append to list
+      ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg_subctx)
+    }
+  }
+  
+  return(ggseg_plot_list)
+}
+
+
+plot_mvmt_corr_in_brain <- function(study_group, corr_df, min_fill,
+                                    max_fill, bin_seq, 
+                                    fill_variable="mean_abs_mvmt_corr", 
+                                    fill_colors) {
+  
+  ggseg_plot_list <- list()
+  
+  
+  # Define atlas by study
+  atlas <- ifelse(study_group == "UCLA_CNP", "dk", "hoCort")
+  
+  if (study_group == "ABIDE_ASD") {
+    corr_df <- corr_df %>%
+      filter(Study == "ABIDE_ASD") %>%
+      left_join(., ABIDE_ASD_brain_region_info) %>%
+      distinct() 
+  } else {
+    corr_df <- corr_df %>%
+      filter(Study == study_group) %>%
+      mutate(label = ifelse(str_detect(Brain_Region, "ctx-"),
+                            gsub("-", "_", Brain_Region),
+                            as.character(Brain_Region))) %>%
+      mutate(label = gsub("ctx_", "", label)) %>%
+      distinct()
+  }
+  
+  # Plot T stat data in cortex
+  dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID = study_group,
+                                                 atlas_name=atlas,
+                                                 atlas_data=get(atlas) %>% as_tibble(),
+                                                 data_to_plot = corr_df,
+                                                 fill_variable = fill_variable,
+                                                 fill_colors = fill_colors,
+                                                 bin_seq = bin_seq,
+                                                 line_color = "gray30",
+                                                 na_color = "white")  +
+    theme(legend.title = element_blank())
+  
+  ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
+  
+  # Add subcortical data for UCLA CNP
+  if (study_group == "UCLA_CNP") {
+    dataset_ggseg_subctx <- plot_data_with_ggseg_discrete(dataset_ID = study_group,
+                                                          atlas_name = "aseg",
+                                                          atlas_data = aseg %>% as_tibble(),
+                                                          data_to_plot=corr_df,
+                                                          fill_variable = fill_variable,
+                                                          fill_colors = fill_colors,
+                                                          bin_seq = bin_seq,
+                                                          line_color = "gray30",
+                                                          na_color = "white")  +
+      theme(legend.title = element_blank())
+    
+    # Append to list
+    ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg_subctx)
+  }
+  
+  return(ggseg_plot_list)
+}

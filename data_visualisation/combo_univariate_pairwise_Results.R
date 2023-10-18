@@ -59,8 +59,6 @@ SPI_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
 UCLA_CNP_brain_region_info <- read.csv("~/data/UCLA_CNP/study_metadata/UCLA_CNP_Brain_Region_info.csv")
 ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.txt", sep=";", header = T) %>%
   mutate(Brain_Region = ifelse(Index==45, "Heschl's Gyrus (includes H1 and H2)", Brain_Region))
-region_node_to_from <- read.csv("~/data/TS_feature_manuscript/node_to_from_structure.csv") %>%
-  mutate(Study = ifelse(Study == "ABIDE", "ABIDE_ASD", "ABIDE"))
 
 # Load participants included
 UCLA_CNP_subjects_to_keep <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch24_pyspi14.feather")
@@ -73,52 +71,29 @@ ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metad
   mutate(Study = "ABIDE_ASD")
 
 # Load pairwise stats data
-pairwise_balanced_accuracy_AUC_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather"))
+pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_balanced_accuracy_all_folds.feather"))
 # Compute mean + SD performance across all folds
-pairwise_balanced_accuracy <- pairwise_balanced_accuracy_AUC_all_folds %>%
+pairwise_balanced_accuracy <- pairwise_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
   reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
-          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T),
-          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T),
-          ROC_AUC_Across_Folds_SD = sd(ROC_AUC, na.rm=T))
-pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
-  dplyr::select(-Balanced_Accuracy_Across_Repeats, -Balanced_Accuracy_Across_Repeats_SD, 
-                -ROC_AUC_Across_Repeats, -ROC_AUC_Across_Repeats_SD) %>%
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T))
+pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_empirical_p_values.feather")) %>%
+  dplyr::select(-Balanced_Accuracy_Across_Folds) %>%
   left_join(., pairwise_balanced_accuracy)
-pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
+pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_null_balanced_accuracy_distributions.feather"))
 
 # Load combined pairwise + univariate data
-combo_univariate_pairwise_balanced_accuracy_AUC_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_balanced_accuracy_AUC_all_folds.feather")) %>%
+combo_univariate_pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_balanced_accuracy_all_folds.feather")) %>%
   mutate(Analysis_Type = "SPI_Univariate_Combo")
 # Compute mean + SD performance across all folds
-combo_univariate_pairwise_balanced_accuracy <- combo_univariate_pairwise_balanced_accuracy_AUC_all_folds %>%
+combo_univariate_pairwise_balanced_accuracy <- combo_univariate_pairwise_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
   reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
-          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T),
-          ROC_AUC_Across_Folds = mean(ROC_AUC, na.rm=T),
-          ROC_AUC_Across_Folds_SD = sd(ROC_AUC, na.rm=T))
-combo_univariate_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_empirical_p_values.feather")) %>%
-  dplyr::select(-Balanced_Accuracy_Across_Repeats, -Balanced_Accuracy_Across_Repeats_SD, 
-                -ROC_AUC_Across_Repeats, -ROC_AUC_Across_Repeats_SD) %>%
+          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T))
+combo_univariate_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_empirical_p_values.feather")) %>%
+  dplyr::select(-Balanced_Accuracy_Across_Folds) %>%
   left_join(., combo_univariate_pairwise_balanced_accuracy)
-combo_univariate_pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_null_balanced_accuracy_distributions.feather"))
-
-
-# Take performance by repeats
-pairwise_balanced_accuracy_AUC_by_repeats <- pairwise_balanced_accuracy_AUC_all_folds %>%
-  group_by(Study, Comparison_Group, Analysis_Type, group_var, Repeat_Number) %>%
-  summarise(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy, na.rm=T))
-combo_univariate_pairwise_balanced_accuracy_AUC_by_repeats <- combo_univariate_pairwise_balanced_accuracy_AUC_all_folds %>%
-  group_by(Study, Comparison_Group, Analysis_Type, group_var, Repeat_Number) %>%
-  summarise(Balanced_Accuracy_Across_Repeats = mean(Balanced_Accuracy, na.rm=T))
-
-# Load TPR/FPR data
-pairwise_TPR_FPR <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_mixedsigmoid_scaler_ROC_TPR_FPR.feather")) %>%
-  filter(Pairwise_Feature_Set == pairwise_feature_set) 
-combo_univariate_pairwise_TPR_FPR <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_mixedsigmoid_scaler_ROC_TPR_FPR.feather")) %>%
-  filter(Pairwise_Feature_Set == pairwise_feature_set,
-         Univariate_Feature_Set == univariate_feature_set) 
-
+combo_univariate_pairwise_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_null_balanced_accuracy_distributions.feather"))
 
 ################################################################################
 # Actual heatmap
@@ -144,8 +119,8 @@ combo_univariate_pairwise_p_values %>%
                        na.value=NA)  + 
   scale_y_discrete(labels = wrap_format(28)) +
   labs(fill = "Mean Balanced Accuracy (%)") +
-  xlab("Clinical Group") +
-  ylab("Pairwise SPI with All Univariate Info") +
+  xlab("Disorder") +
+  ylab("FC + Brain-wide local dynamics") +
   theme(legend.position="none",
         axis.text.y = element_text(size=10))
 ggsave(glue("{plot_path}/Combo_univariate_pairwise_SPI_wise_heatmap.svg"),
@@ -256,26 +231,27 @@ run_correctR_group <- function(comparison_group, study, metadata, results_df) {
   
 }
 
-results_df = plyr::rbind.fill(pairwise_balanced_accuracy_AUC_all_folds %>% left_join(pairwise_p_values %>%
+results_df = plyr::rbind.fill(pairwise_balanced_accuracy_all_folds %>% left_join(pairwise_p_values %>%
                                                                                        dplyr::select(Study:group_var, p_value_Bonferroni)), 
-                              combo_univariate_pairwise_balanced_accuracy_AUC_all_folds %>% left_join(combo_univariate_pairwise_p_values %>%
+                              combo_univariate_pairwise_balanced_accuracy_all_folds %>% left_join(combo_univariate_pairwise_p_values %>%
                                                                                                         dplyr::select(Study:group_var, p_value_Bonferroni)))
 
 corrected_SPI_T_res <- 1:nrow(study_group_df) %>%
   purrr::map_df(~ run_correctR_group(comparison_group = study_group_df$Comparison_Group[.x],
                                      study = study_group_df$Study[.x],
                                      metadata = plyr::rbind.fill(UCLA_CNP_metadata, ABIDE_ASD_metadata),
-                                     results_df = results_df)) 
+                                     results_df = results_df)) %>%
+  left_join(., SPI_info, by=c("SPI"="pyspi_name"))
 
 plyr::rbind.fill(pairwise_p_values,
                  combo_univariate_pairwise_p_values) %>%
   dplyr::rename("SPI" = group_var) %>%
   semi_join(., corrected_SPI_T_res %>% dplyr::select(SPI, Comparison_Group)) %>%
   left_join(., corrected_SPI_T_res) %>%
-  mutate(Analysis_Type = ifelse(Analysis_Type == "Pairwise_SPI", "SPI\nOnly", "SPI + Univariate\nRegion ×\nFeature"),
-         individually_significant = ifelse(p_value_Bonferroni < 0.05, "Significant", "Not significant"),
+  mutate(Analysis_Type = ifelse(Analysis_Type == "Pairwise_SPI", "FC", "FC + Local\nDynamics"),
+         individually_significant = ifelse(p_value_Bonferroni < 0.05, "pcorr < 0.05", "Not significant"),
          significant_diff_with_univariate = ifelse(p_value_corr_Bonferroni < 0.05, "Sig Diff", "No Sig Diff"),
-         Analysis_Type = factor(Analysis_Type, levels=c("SPI\nOnly", "SPI + Univariate\nRegion ×\nFeature")),
+         Analysis_Type = factor(Analysis_Type, levels=c("FC", "FC + Local\nDynamics")),
          Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
                                       Comparison_Group == "Bipolar" ~ "BPD",
                                       T ~ Comparison_Group)) %>%
@@ -290,7 +266,7 @@ plyr::rbind.fill(pairwise_p_values,
                               "BPD" = "#D5492A", 
                               "ADHD" = "#0F9EA9", 
                               "ASD" = "#C47B2F")) +
-  facet_wrap(Comparison_Group ~ ., ncol=1, scales="fixed", strip.position = "right") +
+  facet_wrap(Comparison_Group ~ ., ncol=1, scales="fixed", strip.position = "left") +
   new_scale_colour() +  # start a new scale
   geom_point(aes(color = individually_significant)) +
   scale_color_manual(values = c("gray60", "#5BB67B")) +
@@ -301,44 +277,9 @@ plyr::rbind.fill(pairwise_p_values,
   scale_x_discrete(expand=c(0,0.2,0,0.2)) +
   theme(legend.position = "bottom",
         strip.placement = "outside",
-        strip.text.y.right = element_text(angle=0),
+        strip.background = element_blank(),
+        strip.text.y.left = element_text(angle=0, face="bold"),
         plot.margin = margin(1,30,1,1, unit="pt"),
         legend.title = element_blank())
 ggsave(glue("{plot_path}/SPI_with_vs_without_univariate_spaghetti.svg"),
        width=3.5, height=5, units="in", dpi=300)
-
-################################################################################
-# Plot ROC of top-performing features
-top_SPIs_to_find_AUC <- combo_univariate_pairwise_p_values %>%
-  filter(Analysis_Type == "SPI_Univariate_Combo") %>%
-  group_by(Comparison_Group, Study) %>%
-  slice_max(n=1, order_by=Balanced_Accuracy_Across_Repeats) %>%
-  mutate(Group_Nickname =  case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                     Comparison_Group == "Bipolar" ~ "BPD",
-                                     T ~ Comparison_Group)) %>%
-  dplyr::select(Study, Comparison_Group, Group_Nickname, group_var, ROC_AUC_Across_Repeats)
-
-combo_univariate_pairwise_TPR_FPR  %>%
-  mutate(Group_Nickname =  case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                     Comparison_Group == "Bipolar" ~ "BPD",
-                                     T ~ Comparison_Group)) %>%
-  semi_join(top_SPIs_to_find_AUC)  %>%
-  ggplot(data=.) +
-  geom_abline(slope=1, linetype=2) +
-  geom_smooth(se=T, aes(color=Comparison_Group, x=fpr,y=tpr)) +
-  xlab("FPR") +
-  ylab("TPR") +
-  coord_equal() +
-  geom_text(data = top_SPIs_to_find_AUC,
-            aes(label=glue("{Group_Nickname}: {round(ROC_AUC_Across_Repeats, 2)}"),
-                color=Comparison_Group),
-            x = 1, y=c(0.1, 0.2, 0.3, 0.4), 
-            size=4.5, hjust=1) +
-  theme(legend.position = "none") +
-  scale_color_manual(values=c("Control" = "#5BB67B", 
-                              "Schizophrenia" = "#573DC7", 
-                              "Bipolar" = "#D5492A", 
-                              "ADHD" = "#0F9EA9", 
-                              "ASD" = "#C47B2F"))
-ggsave(glue("{plot_path}/combined_univariate_pairwise_top_SPI_ROC.svg"),
-       width=3, height=3, units="in", dpi=300)
