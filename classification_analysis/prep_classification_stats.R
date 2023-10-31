@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 python_to_use <- "~/.conda/envs/pyspi/bin/python3"
-# python_to_use <- "/Users/abry4213/opt/anaconda3/envs/pyspi/bin/python3"
+# python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
 univariate_feature_set <- "catch25"
 pairwise_feature_set <- "pyspi14"
 github_dir <- "~/github/"
@@ -400,7 +400,7 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_null_bal
   # Combine the list results into a dataframe
   univariate_null_balanced_accuracy <- do.call(plyr::rbind.fill, 
                                                univariate_null_balanced_accuracy_list) %>%
-    mutate(Analysis_Type = case_when(str_detect(group_var, "_") ~ "Univariate_TS_Feature",
+    mutate(Analysis_Type = case_when(str_detect(group_var, "_") | group_var=="fALFF" ~ "Univariate_TS_Feature",
                                      group_var == "Combo" ~ "Univariate_Combo",
                                      T ~ "Univariate_Brain_Region"))
   
@@ -483,6 +483,9 @@ if (!file.exists(glue("{output_data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirica
   univariate_split <- univariate_balanced_accuracy %>%
     group_by(Study, Comparison_Group, Analysis_Type, Univariate_Feature_Set, group_var, kernel) %>%
     group_split()
+  
+  main_df_iter = univariate_balanced_accuracy %>%
+    filter(Study=="UCLA_CNP", Comparison_Group=="Schizophrenia", Analysis_Type=="Univariate_TS_Feature", Univariate_Feature_Set=="catch25", group_var=="fALFF", kernel=="Linear") 
   
   univariate_p_values <- univariate_split %>%
     purrr::map_df(~ compare_main_and_null(main_df_iter = .x,
