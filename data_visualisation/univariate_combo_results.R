@@ -15,7 +15,7 @@ data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
-                             Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
+                             Group_Nickname = c("SCZ", "BP", "ADHD", "ASD"))
 reticulate::use_python(python_to_use)
 
 library(reticulate)
@@ -97,12 +97,12 @@ univariate_p_values %>%
                      mutate(group_ID = paste0(Comparison_Group, "_", row_number()))) %>%
   rowwise() %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      Comparison_Group == "Bipolar" ~ "BP",
                                       T ~ Comparison_Group),
          Analysis_Label = case_when(Analysis_Type == "Univariate_Combo" ~ "All\nRegions \u00D7\nFeatures",
                                     Analysis_Type == "Univariate_TS_Feature" ~ "Individual\ncatch25\nFeatures",
                                     T ~ "Individual\nBrain\nRegions")) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")),
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD")),
          Analysis_Label = factor(Analysis_Label, levels = c("Individual\ncatch25\nFeatures",
                                                             "All\nRegions \u00D7\nFeatures",
                                                             "Individual\nBrain\nRegions"))) %>%
@@ -120,11 +120,11 @@ univariate_p_values %>%
                              "Univariate_TS_Feature"=1.5,
                              "Univariate_Brain_Region" = 1.5)) +
   scale_color_manual(values = c("SCZ_TRUE"="#573DC7", 
-                                "BPD_TRUE"="#D5492A", 
+                                "BP_TRUE"="#D5492A", 
                                 "ADHD_TRUE"="#0F9EA9",
                                 "ASD_TRUE"="#C47B2F",
                                 "SCZ_FALSE"="gray70", 
-                                "BPD_FALSE"="gray70", 
+                                "BP_FALSE"="gray70", 
                                 "ADHD_FALSE"="gray70",
                                 "ASD_FALSE"="gray70")) +
   facet_grid(. ~ Comparison_Group, scales="free_x", space="free") +
@@ -172,7 +172,7 @@ ABIDE_pca_scores <- as.data.frame(ABIDE_pca_res$ind$coord) %>%
 
 UCLA_CNP_biplot <- UCLA_CNP_pca_scores %>%
   mutate(Diagnosis = case_when(Diagnosis == "Schizophrenia" ~ "SCZ",
-                               Diagnosis == "Bipolar" ~ "BPD",
+                               Diagnosis == "Bipolar" ~ "BP",
                                T ~ Diagnosis)) %>%
   ggplot(data=., mapping=aes(x=`Dim.1`, y=`Dim.2`, color=Diagnosis)) +
   geom_point() +
@@ -183,11 +183,11 @@ UCLA_CNP_biplot <- UCLA_CNP_pca_scores %>%
   ylab("PC2") +
   xlab("PC1") +
   scale_fill_manual(values = c("SCZ"="#573DC7", 
-                                "BPD"="#D5492A", 
+                                "BP"="#D5492A", 
                                 "ADHD"="#0F9EA9",
                                 "Control" = "#5BB67B")) +
   scale_color_manual(values = c("SCZ"="#573DC7", 
-                                "BPD"="#D5492A", 
+                                "BP"="#D5492A", 
                                 "ADHD"="#0F9EA9",
                                 "Control" = "#5BB67B")) +
   theme(legend.position = "bottom")
@@ -248,7 +248,7 @@ SVM_L1_balanced_accuracy_by_repeats %>%
   dplyr::select(-Balanced_Accuracy_Across_Folds_SD) %>%
   plyr::rbind.fill(univariate_balanced_accuracy_by_repeats %>% filter(Analysis_Type=="Univariate_Combo")) %>%
   left_join(study_group_df) %>%
-  mutate(Group_Nickname = factor(Group_Nickname, levels=c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  mutate(Group_Nickname = factor(Group_Nickname, levels=c("SCZ", "BP", "ADHD", "ASD"))) %>%
   ggplot(data=., mapping=aes(x=Group_Nickname, y=Balanced_Accuracy_Across_Folds)) +
   geom_violin(aes(fill = Analysis_Type), position = position_dodge(width = 0.75),
               scale="width", width=0.6) +

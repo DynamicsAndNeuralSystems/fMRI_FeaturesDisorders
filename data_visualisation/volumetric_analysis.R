@@ -55,7 +55,7 @@ aparc_aseg_LUT <- read.table("~/data/neuroimaging_atlases/FreeSurferLUT.txt",
 study_group_df <- data.frame(Study = rep("UCLA_CNP", 3),
                              Noise_Proc = rep("AROMA+2P+GMR",3),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD"),
-                             Group_Nickname = c("SCZ", "BPD", "ADHD"))
+                             Group_Nickname = c("SCZ", "BP", "ADHD"))
 
 # Read in region-wise volumes
 region_wise_volumes <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/processed_data/aparc_aseg_BOLD_space_voxel_volumes.feather")) %>%

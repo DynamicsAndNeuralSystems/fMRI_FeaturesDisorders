@@ -15,7 +15,7 @@ data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
-                             Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
+                             Group_Nickname = c("SCZ", "BP", "ADHD", "ASD"))
 reticulate::use_python(python_to_use)
 
 library(reticulate)
@@ -86,7 +86,7 @@ lm_beta_stats_catch25_whole_brain <- feather::read_feather(glue("{data_path}/uni
          
 # Plot balanced accuracy in the brain
 plot_balacc_in_brain <- function(significant_univariate_region_wise_results, 
-                                 color_palette=c("#FFCA3E", "#FF6F50", "#D03454", "#9C2162", "#772F67"),
+                                 color_palette=c("#FFEE75", "#FCA769", "#fb6555", "#D32345", "#401057"),
                                  bin_seq_range=seq(50,75,by=5)) {
 
   # Find max fill and min fill values
@@ -169,7 +169,6 @@ significant_univariate_region_wise_results <- univariate_p_values %>%
   mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds)
 
 catch25_region_wise_balacc_plot_list <- plot_balacc_in_brain(significant_univariate_region_wise_results,
-                                                             color_palette=c("#FFCA3E", "#FF6F50", "#D03454", "#9C2162", "#772F67"),
                                                              bin_seq_range=seq(50,75,by=5))
 wrap_plots(catch25_region_wise_balacc_plot_list, 
            ncol=2, 

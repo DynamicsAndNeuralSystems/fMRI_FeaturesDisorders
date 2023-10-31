@@ -54,7 +54,7 @@ univariate_feature_set <- "catch25"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
-                             Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
+                             Group_Nickname = c("SCZ", "BP", "ADHD", "ASD"))
 
 data_path <- "~/data/TS_feature_manuscript/"
 UCLA_CNP_data_path <- "~/data/UCLA_CNP/"
@@ -217,7 +217,7 @@ SD_brain_wide_avg <- UCLA_CNP_catch25 %>%
   left_join(., plyr::rbind.fill(UCLA_CNP_sample_metadata, ABIDE_ASD_sample_metadata)) %>%
   mutate(Study = ifelse(Study == "UCLA_CNP", "UCLA CNP", "ABIDE"))  %>%
   mutate(Diagnosis = case_when(Diagnosis == "Schizophrenia" ~ "SCZ",
-                               Diagnosis == "Bipolar" ~ "BPD",
+                               Diagnosis == "Bipolar" ~ "BP",
                                T ~ Diagnosis))
 
 SD_brain_wide_avg %>%
@@ -227,7 +227,7 @@ SD_brain_wide_avg %>%
   ylab("Brain-wide BOLD SD") +
   xlab("Mean framewise displacement (FD)") +
   scale_color_manual(values = c("SCZ"="#573DC7", 
-                                "BPD"="#D5492A", 
+                                "BP"="#D5492A", 
                                 "ADHD"="#0F9EA9",
                                 "ASD"="#C47B2F",
                                 "Control"="#5BB67B")) +
@@ -261,7 +261,7 @@ plot_feature_vs_movement <- function(feature_name, title_label, y_label, rho_pos
     left_join(., plyr::rbind.fill(UCLA_CNP_sample_metadata, ABIDE_ASD_sample_metadata)) %>%
     mutate(Study = ifelse(Study == "UCLA_CNP", "UCLA CNP", "ABIDE"))  %>%
     mutate(Diagnosis = case_when(Diagnosis == "Schizophrenia" ~ "SCZ",
-                                        Diagnosis == "Bipolar" ~ "BPD",
+                                        Diagnosis == "Bipolar" ~ "BP",
                                         T ~ Diagnosis))
   
   p <- feature_data %>%
@@ -273,7 +273,7 @@ plot_feature_vs_movement <- function(feature_name, title_label, y_label, rho_pos
     geom_point(aes(color=Diagnosis)) +
     scale_color_manual(values=c("Control" = "#5BB67B", 
                                 "SCZ" = "#573DC7", 
-                                "BPD" = "#D5492A", 
+                                "BP" = "#D5492A", 
                                 "ADHD" = "#0F9EA9", 
                                 "ASD" = "#C47B2F")) +
     stat_smooth(method="lm", 
@@ -398,9 +398,9 @@ if (!file.exists(glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_SVM_results.feath
   # Combine results
   combined_movement_SVM_res <- do.call(plyr::rbind.fill, list(scz_mvmt_res, bpd_mvmt_res, adhd_mvmt_res, asd_mvmt_res)) %>%
     mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                        Comparison_Group == "Bipolar" ~ "BPD",
+                                        Comparison_Group == "Bipolar" ~ "BP",
                                         T ~ Comparison_Group)) %>%
-    mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))
+    mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD")))
   
   # Save to feather
   pyarrow_feather$write_feather(combined_movement_SVM_res, glue("{data_path}/UCLA_CNP_ABIDE_ASD_movement_SVM_results.feather"))
@@ -425,12 +425,12 @@ combined_movement_SVM_res %>%
              size = 1) +
   scale_fill_manual(values=c("Control" = "#5BB67B", 
                               "SCZ" = "#573DC7", 
-                              "BPD" = "#D5492A", 
+                              "BP" = "#D5492A", 
                               "ADHD" = "#0F9EA9", 
                               "ASD" = "#C47B2F")) +
   scale_color_manual(values=c("Control" = "#5BB67B", 
                              "SCZ" = "#573DC7", 
-                             "BPD" = "#D5492A", 
+                             "BP" = "#D5492A", 
                              "ADHD" = "#0F9EA9", 
                              "ASD" = "#C47B2F")) +
   ylab("Fold Balanced Accuracy (%)") +
@@ -477,7 +477,7 @@ univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/U
   filter(Univariate_Feature_Set == univariate_feature_set,
          Analysis_Type == "Univariate_TS_Feature") %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      Comparison_Group == "Bipolar" ~ "BP",
                                       T ~ Comparison_Group))
          
 combined_movement_SVM_res_summary_split <- split.data.frame(combined_movement_SVM_res_summary, combined_movement_SVM_res_summary$Comparison_Group)

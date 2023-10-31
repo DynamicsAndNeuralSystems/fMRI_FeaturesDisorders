@@ -14,7 +14,7 @@ data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
-                             Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
+                             Group_Nickname = c("SCZ", "BP", "ADHD", "ASD"))
 reticulate::use_python(python_to_use)
 
 library(reticulate)

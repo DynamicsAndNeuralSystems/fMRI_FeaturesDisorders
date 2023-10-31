@@ -5,8 +5,8 @@ from sklearn.pipeline import Pipeline
 import os.path
 from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_validate, permutation_test_score
 import numpy as np
-from mixed_sigmoid_normalisation import MixedSigmoidScaler
 from sklearn.ensemble import RandomForestClassifier
+from mixed_sigmoid_normalisation import MixedSigmoidScaler
 
 
 def run_k_fold_classifier_for_feature(feature_data, 

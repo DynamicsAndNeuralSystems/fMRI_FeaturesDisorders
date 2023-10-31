@@ -106,11 +106,11 @@ combo_univariate_pairwise_p_values %>%
   dplyr::rename("pyspi_name" = "group_var") %>%
   left_join(., SPI_info) %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      Comparison_Group == "Bipolar" ~ "BP",
                                       T ~ Comparison_Group),
          Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds) %>%
   mutate(Figure_name = fct_reorder(Figure_name, Balanced_Accuracy_Across_Folds, .fun=mean),
-         Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+         Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD"))) %>%
   ggplot(data=., mapping=aes(x=Comparison_Group, y=Figure_name, 
                              fill=Balanced_Accuracy_Across_Folds)) +
   geom_tile()+
@@ -253,9 +253,9 @@ plyr::rbind.fill(pairwise_p_values,
          significant_diff_with_univariate = ifelse(p_value_corr_Bonferroni < 0.05, "Sig Diff", "No Sig Diff"),
          Analysis_Type = factor(Analysis_Type, levels=c("FC", "FC + Local\nDynamics")),
          Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      Comparison_Group == "Bipolar" ~ "BP",
                                       T ~ Comparison_Group)) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD"))) %>%
   ggplot(data=., mapping=aes(x=Analysis_Type, y=100*Balanced_Accuracy_Across_Folds,
                              group = SPI)) +
   geom_line(aes(color = Comparison_Group, 
@@ -263,7 +263,7 @@ plyr::rbind.fill(pairwise_p_values,
   scale_alpha_manual(values=c("Sig Diff" = 1, "No Sig Diff" = 0.2)) +
   scale_color_manual(values=c("Control" = "#5BB67B", 
                               "SCZ" = "#573DC7", 
-                              "BPD" = "#D5492A", 
+                              "BP" = "#D5492A", 
                               "ADHD" = "#0F9EA9", 
                               "ASD" = "#C47B2F")) +
   facet_wrap(Comparison_Group ~ ., ncol=1, scales="fixed", strip.position = "left") +

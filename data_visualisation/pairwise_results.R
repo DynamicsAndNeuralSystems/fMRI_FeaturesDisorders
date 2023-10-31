@@ -15,7 +15,7 @@ data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
-                             Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
+                             Group_Nickname = c("SCZ", "BP", "ADHD", "ASD"))
 
 reticulate::use_python(python_to_use)
 
@@ -85,11 +85,11 @@ pairwise_p_values %>%
   dplyr::rename("pyspi_name" = "group_var") %>%
   left_join(., SPI_info) %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      Comparison_Group == "Bipolar" ~ "BP",
                                       T ~ Comparison_Group),
          Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds) %>%
   mutate(Figure_name = fct_reorder(Figure_name, Balanced_Accuracy_Across_Folds, .fun=mean),
-         Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+         Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD"))) %>%
   ggplot(data=., mapping=aes(x=Comparison_Group, y=Figure_name, 
                              fill=Balanced_Accuracy_Across_Folds)) +
   geom_tile()+
@@ -224,8 +224,8 @@ pairwise_p_values %>%
   as.data.frame() %>%
   rownames_to_column(var="group1") %>%
   pivot_longer(cols=c(-group1), names_to="group2", values_to="Spearman_Corr") %>%
-  mutate(group1 = factor(group1, levels = c("SCZ", "BPD", "ADHD", "ASD")),
-         group2 = factor(group2, levels = rev(c("SCZ", "BPD", "ADHD", "ASD")))) %>%
+  mutate(group1 = factor(group1, levels = c("SCZ", "BP", "ADHD", "ASD")),
+         group2 = factor(group2, levels = rev(c("SCZ", "BP", "ADHD", "ASD")))) %>%
   ggplot(data=., mapping=aes(x=group1, y=group2, fill=Spearman_Corr)) + 
   geom_tile() +
   geom_text(aes(label=round(Spearman_Corr,2))) +
@@ -316,12 +316,12 @@ pyspi14_lm_beta_coefficients %>%
             sd_estimate = sd(abs(estimate))) %>%
   left_join(., SPI_info, by=c("SPI"="pyspi_name")) %>%
   filter(Directed=="Yes") %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD"))) %>%
   ggplot(data=., mapping=aes(x=Direction, y=mean_estimate, group=Brain_Region, color=Comparison_Group)) +
   geom_line(alpha=0.8) +
   facet_grid(Figure_name ~ Comparison_Group, switch="y", space="free") +
   scale_color_manual(values = c("SCZ"="#573DC7", 
-                                "BPD"="#D5492A", 
+                                "BP"="#D5492A", 
                                 "ADHD"="#0F9EA9",
                                 "ASD"="#C47B2F")) +
   ylab("Mean |\u03b2| per Region") +
@@ -347,12 +347,12 @@ pyspi14_lm_beta_coefficients %>%
             sd_estimate = sd(abs(estimate))) %>%
   left_join(., SPI_info, by=c("SPI"="pyspi_name")) %>%
   filter(Directed=="Yes") %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD"))) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD"))) %>%
   ggplot(data=., mapping=aes(x=Direction, y=mean_estimate, group=Brain_Region, color=Comparison_Group)) +
   geom_line(alpha=0.8) +
   facet_grid(Figure_name ~ Comparison_Group, switch="y", space="free") +
   scale_color_manual(values = c("SCZ"="#573DC7", 
-                                "BPD"="#D5492A", 
+                                "BP"="#D5492A", 
                                 "ADHD"="#0F9EA9",
                                 "ASD"="#C47B2F")) +
   ylab("Mean |\u03b2| per Region") +

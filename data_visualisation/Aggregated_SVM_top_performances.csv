@@ -1,6 +1,0 @@
-﻿Analysis Type,ASD,ADHD,Bipolar,Schizophrenia
-Individual brain regions,Superior Frontal Gyrus: 55 $\pm$ 4.7,ctx-rh-posteriorcingulate: 60.8,Left-Thalamus-Proper: 65.2,ctx-lh-pericalcarine: 71.7
-Individual catch24 regions,Combo: 53.6 $\pm$ 4.9,Combo: 50.5,Combo: 68.7,Combo: 66.6
-All univariate regions times features,SD: 59.4 $\pm$ 4.1,periodicity: 58.3,periodicity: 61,SD: 68.9
-Individual SPIs,Pearson: 59.1 $\pm$ 3.9,phi-star: 54,di_gaussian: 60.9,Pearson: 69.1
-SPIs with all univariate regions times features (SPI+),phi-star+: 58.9 $\pm$ 4.8,phi-star+: 51.7,DTW+: 67.2,Pearson: 71.2

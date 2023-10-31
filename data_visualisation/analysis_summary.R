@@ -15,7 +15,7 @@ data_path <- "~/data/TS_feature_manuscript"
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD", "ASD"),
-                             Group_Nickname = c("SCZ", "BPD", "ADHD", "ASD"))
+                             Group_Nickname = c("SCZ", "BP", "ADHD", "ASD"))
 reticulate::use_python(python_to_use)
 
 library(reticulate)
@@ -86,10 +86,10 @@ all_p_values <- do.call(plyr::rbind.fill, list(univariate_p_values,
                                                pairwise_p_values,
                                                combo_univariate_pairwise_p_values)) %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
-                                      Comparison_Group == "Bipolar" ~ "BPD",
+                                      Comparison_Group == "Bipolar" ~ "BP",
                                       T ~ Comparison_Group),
          Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BPD", "ADHD", "ASD")))
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD")))
   
 ################################################################################
 # Violin plot by disorder
