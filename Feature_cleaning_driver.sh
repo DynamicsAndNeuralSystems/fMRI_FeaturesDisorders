@@ -37,7 +37,7 @@ qsub -N merge_${dataset_ID}_${pairwise_feature_set} -q yossarian -j oe \
 -v github_dir=$github_dir,conda_env=$conda_env,data_path=$data_path,noise_proc=$noise_proc,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,univariate_feature_set=$univariate_feature_set,brain_region_lookup=$brain_region_lookup \
 -o $github_dir/fMRI_FeaturesDisorders/cluster_output/merge_pairwise_data_${dataset_ID}_${pairwise_feature_set}.txt \
 -l select=1:ncpus=4:mem=120GB:mpiprocs=4 -l walltime=1:00:00 -M $email -m a -V \
-prep_data_and_QC/call_merge_pairwise_data.pbs
+call_merge_pairwise_data.pbs
 
 # Run feature cleaning for pairwise data
 qsub -N ${dataset_ID}_${pairwise_feature_set}_${univariate_feature_set} -q yossarian -j oe \
@@ -61,7 +61,7 @@ qsub -N merge_${dataset_ID}_${pairwise_feature_set} -q yossarian -j oe \
 -v github_dir=$github_dir,conda_env=$conda_env,data_path=$data_path,noise_proc=$noise_proc,dataset_ID=$dataset_ID,pairwise_feature_set=$pairwise_feature_set,univariate_feature_set=$univariate_feature_set,brain_region_lookup=$brain_region_lookup \
 -o $github_dir/fMRI_FeaturesDisorders/cluster_output/merge_pairwise_data_${dataset_ID}_${pairwise_feature_set}.txt \
 -l select=1:ncpus=4:mem=120GB:mpiprocs=4 -l walltime=1:00:00 -M $email -m a -V \
-prep_data_and_QC/call_merge_pairwise_data.pbs
+call_merge_pairwise_data.pbs
 
 # Run feature cleaning for pairwise data
 qsub -N ${dataset_ID}_${pairwise_feature_set}_${univariate_feature_set} -q yossarian -j oe \

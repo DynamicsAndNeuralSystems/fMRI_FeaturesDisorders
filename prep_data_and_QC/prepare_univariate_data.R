@@ -2,29 +2,29 @@
 # Define paths
 #-------------------------------------------------------------------------------
 # Parse arguments
-# library(argparse)
-# parser <- ArgumentParser(description = "Define data paths and feature set")
+library(argparse)
+parser <- ArgumentParser(description = "Define data paths and feature set")
 
-# parser$add_argument("--github_dir", default="~/github/")
-# parser$add_argument("--data_path", default="~/data/UCLA_CNP/")
-# parser$add_argument("--univariate_feature_set", default="catch24")
-# parser$add_argument("--sample_metadata_file", default="UCLA_CNP_sample_metadata.feather")
-# parser$add_argument("--brain_region_lookup", default="", nargs='?')
-# parser$add_argument("--noise_proc", default="")
-# parser$add_argument("--dataset_ID", default="UCLA_CNP")
+parser$add_argument("--github_dir", default="~/github/")
+parser$add_argument("--data_path", default="~/data/UCLA_CNP/")
+parser$add_argument("--univariate_feature_set", default="catch24")
+parser$add_argument("--sample_metadata_file", default="UCLA_CNP_sample_metadata.feather")
+parser$add_argument("--brain_region_lookup", default="", nargs='?')
+parser$add_argument("--noise_proc", default="")
+parser$add_argument("--dataset_ID", default="UCLA_CNP")
 
-# # Parse input arguments
-# args <- parser$parse_args()
-# github_dir <- args$github_dir
-# data_path <- args$data_path
-# univariate_feature_set <- args$univariate_feature_set
-# sample_metadata_file <- args$sample_metadata_file
-# brain_region_lookup <- args$brain_region_lookup
-# noise_proc <- args$noise_proc
-# dataset_ID <- args$dataset_ID
-# 
-univariate_feature_set <- "catch25"
-github_dir <- "~/github/"
+# Parse input arguments
+args <- parser$parse_args()
+github_dir <- args$github_dir
+data_path <- args$data_path
+univariate_feature_set <- args$univariate_feature_set
+sample_metadata_file <- args$sample_metadata_file
+brain_region_lookup <- args$brain_region_lookup
+noise_proc <- args$noise_proc
+dataset_ID <- args$dataset_ID
+
+# univariate_feature_set <- "catch25"
+# github_dir <- "~/github/"
 # github_dir <- "~/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/github/"
 
 # # UCLA CNP
@@ -34,12 +34,12 @@ github_dir <- "~/github/"
 # noise_proc <- "AROMA+2P+GMR"
 # brain_region_lookup <- "UCLA_CNP_Brain_Region_Lookup.feather"
 
-# ABIDE ASD
-data_path <- "~/data/ABIDE_ASD/"
-dataset_ID <- "ABIDE_ASD"
-sample_metadata_file <- "ABIDE_ASD_sample_metadata.feather"
-noise_proc <- "FC1000"
-brain_region_lookup <- "ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.txt"
+# # ABIDE ASD
+# data_path <- "~/data/ABIDE_ASD/"
+# dataset_ID <- "ABIDE_ASD"
+# sample_metadata_file <- "ABIDE_ASD_sample_metadata.feather"
+# noise_proc <- "FC1000"
+# brain_region_lookup <- "ABIDE_ASD_Harvard_Oxford_cort_prob_2mm_ROI_lookup.txt"
 
 noise_label <- gsub("\\+", "_", noise_proc)
 plot_dir <- paste0(data_path, "plots/")
@@ -160,24 +160,24 @@ if (!file.exists(paste0(data_path, "raw_data/",
 #-------------------------------------------------------------------------------
 # Compute fALFF to be 25th feature for all samples
 #-------------------------------------------------------------------------------
-file_base <- glue("{data_path}/raw_data/{dataset_ID}_{noise_label}_fMRI_TS")
+# file_base <- glue("{data_path}/raw_data/{dataset_ID}_{noise_label}_fMRI_TS")
 
-# Convert mat file to feather
-system(sprintf("python3 %s/fMRI_FeaturesDisorders/prep_data_and_QC/feather_to_mat.py %s mat",
-               github_dir, file_base))
+# # Convert mat file to feather
+# system(sprintf("python3 %s/fMRI_FeaturesDisorders/prep_data_and_QC/feather_to_mat.py %s mat",
+#                github_dir, file_base))
                
-# Run matlab fALFF script
-SP_fALFF_script_path <- glue("{github_dir}/fMRI_FeaturesDisorders/prep_data_and_QC/")
-TS_mat_file <- glue("{data_path}/raw_data/{dataset_ID}_{noise_label}_fMRI_TS.mat")
-output_mat_file <- glue("{data_path}/processed_data/{dataset_ID}_{noise_label}_fALFF.mat")
-system(sprintf("/usr/physics/matlab/matlab2019b/bin/matlab -nodisplay -singleCompThread -r \"compute_regional_fALFF %s %s %s %s; exit\"",
-                 data_path, SP_fALFF_script_path, TS_mat_file, output_mat_file))
+# # Run matlab fALFF script
+# SP_fALFF_script_path <- glue("{github_dir}/fMRI_FeaturesDisorders/prep_data_and_QC/")
+# TS_mat_file <- glue("{data_path}/raw_data/{dataset_ID}_{noise_label}_fMRI_TS.mat")
+# output_mat_file <- glue("{data_path}/processed_data/{dataset_ID}_{noise_label}_fALFF.mat")
+# system(sprintf("/usr/physics/matlab/matlab2019b/bin/matlab -nodisplay -singleCompThread -r \"compute_regional_fALFF %s %s %s %s; exit\"",
+#                  data_path, SP_fALFF_script_path, TS_mat_file, output_mat_file))
 
-# Convert resulting mat file back to feather
-fALFF_file_base =  glue("{data_path}/processed_data/{dataset_ID}_{noise_label}_fALFF")
-samples_to_use = glue("{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_final.feather")
-system(sprintf("python3 %s/fMRI_FeaturesDisorders/prep_data_and_QC/feather_to_mat.py %s feather %s %s %s",
-               github_dir, fALFF_file_base, dataset_ID, noise_proc, samples_to_use))
+# # Convert resulting mat file back to feather
+# fALFF_file_base =  glue("{data_path}/processed_data/{dataset_ID}_{noise_label}_fALFF")
+# samples_to_use = glue("{data_path}/processed_data/{dataset_ID}_filtered_sample_info_{noise_label}_final.feather")
+# system(sprintf("python3 %s/fMRI_FeaturesDisorders/prep_data_and_QC/feather_to_mat.py %s feather %s %s %s",
+#                github_dir, fALFF_file_base, dataset_ID, noise_proc, samples_to_use))
 
 
 #-------------------------------------------------------------------------------

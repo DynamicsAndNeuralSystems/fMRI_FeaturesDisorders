@@ -146,7 +146,8 @@ run_QC_for_univariate_dataset <- function(data_path,
   theft_processed_data <- pyarrow_feather$read_feather(glue("{data_path}/processed_data/{theft_processed_data_file}")) %>%
     filter(Noise_Proc == noise_proc) 
   fALFF_processed_data <- pyarrow_feather$read_feather(glue("{data_path}/processed_data/{fALFF_processed_data_file}")) %>%
-    mutate(Sample_ID = trimws(Sample_ID))
+    mutate(Sample_ID = trimws(Sample_ID),
+           Brain_Region = trimws(Brain_Region))
 
   # Merge theft and fALFF data
   TS_feature_data <- theft_processed_data %>%
