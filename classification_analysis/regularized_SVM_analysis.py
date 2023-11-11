@@ -1,28 +1,18 @@
+import sys
+sys.path.append("/headnode1/abry4213/github/fMRI_FeaturesDisorders/helper_functions/classification/")
+from mixed_sigmoid_normalisation import MixedSigmoidScaler
+
 import pandas as pd
 from sklearn import svm
 from sklearn import metrics
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, RobustScaler
 import os.path
 from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_validate, permutation_test_score
 import numpy as np
 
-# dataset_ID = "UCLA_CNP"
-# data_path = "/headnode1/abry4213/data/UCLA_CNP/"
-# metadata_file = "UCLA_CNP_sample_metadata.feather"
-# comparison_group = "Schizophrenia"
-# univariate_feature_set = "catch24"
-# pairwise_feature_set = "pyspi14"
-# univariate_feature_file = f"{data_path}/processed_data/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather"
-# noise_proc = "AROMA+2P+GMR"
-# num_folds = 10
-# num_null_iters = 2
-# num_repeats = 2
-# num_jobs = 1
-# scaling_type = "mixedsigmoid"
 
 data_path_base = "/headnode1/abry4213/data/"
-univariate_feature_set = "catch24"
+univariate_feature_set = "catch25"
 pairwise_feature_set = "pyspi14"
 num_repeats = 10
 num_folds = 10
