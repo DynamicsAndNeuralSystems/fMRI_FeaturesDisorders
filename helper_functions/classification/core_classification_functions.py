@@ -50,6 +50,7 @@ def run_k_fold_classifier_for_feature(feature_data,
         cv_results_balacc = cross_validate(pipe, feature_data, class_labels, 
                                     cv=skf, scoring=["balanced_accuracy"],
                                     n_jobs = int(num_jobs),
+                                    return_train_score=True, 
                                     return_estimator=True)
         
         # Iterate over folds to save participant assignments
@@ -74,6 +75,7 @@ def run_k_fold_classifier_for_feature(feature_data,
                                                 "Analysis_Type": analysis_type,
                                         "Fold": [*range(1, num_folds + 1, 1)],
                                         "Repeat_Number": i,
+                                        "Training_Balanced_Accuracy": cv_results_balacc["train_balanced_accuracy"],
                                         "Balanced_Accuracy": cv_results_balacc["test_balanced_accuracy"]})
         test_metrics_by_fold_list.append(test_metrics_by_fold_df)
 
