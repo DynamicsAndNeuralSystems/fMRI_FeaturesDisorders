@@ -18,37 +18,46 @@ num_folds = 10
 num_repeats = 10
 
 # Load metadata
-metadata = pd.read_feather("/Users/abry4213/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather")
+UCLA_CNP_metadata = pd.read_feather("/Users/abry4213/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather")
+ABIDE_metadata = pd.read_feather("/Users/abry4213/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather")
 
 # Load in data containing subjects with both univariate and pairwise data available
-samples_to_keep = pd.read_feather("/Users/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_final.feather")                                                                           
+UCLA_CNP_samples_to_keep = pd.read_feather("/Users/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_final.feather") 
+ABIDE_samples_to_keep = pd.read_feather("/Users/abry4213/data/ABIDE_ASD/processed_data/ABIDE_ASD_filtered_sample_info_FC1000_final.feather")       
+samples_to_keep = pd.concat([UCLA_CNP_samples_to_keep, ABIDE_samples_to_keep], axis=0).Sample_ID.tolist()                                                  
 
 # Load in catch25 data
-univariate_feature_file = "/Users/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather"
-univariate_feature_data = pd.read_feather(univariate_feature_file).merge(metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
-                                                                        axis = 1)
+UCLA_CNP_univariate_feature_data = pd.read_feather("/Users/abry4213/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather").merge(UCLA_CNP_metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
+                                                                        axis = 1).assign(Study = "UCLA_CNP")
+ABIDE_univariate_feature_data = pd.read_feather("/Users/abry4213/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch25_filtered.feather").merge(ABIDE_metadata, on='Sample_ID', how='left').drop(["Age", "Sex"],
+                                                                        axis = 1).assign(Study = "ABIDE_ASD")
+
 
 # Filter univariate data by samples with both univariate and pairwise
 # Filter by samples with univariate data available as well
-univariate_feature_data = univariate_feature_data[univariate_feature_data.Sample_ID.isin(samples_to_keep.Sample_ID)]                                                                           
+univariate_feature_data = pd.concat([UCLA_CNP_univariate_feature_data, ABIDE_univariate_feature_data], axis=0)
+univariate_feature_data = univariate_feature_data[univariate_feature_data.Sample_ID.isin(samples_to_keep)]                                                                           
 
 
 # Define helper function to compare linear SVM with versus without inverse probability weighting
-def compare_SVM_weightings(univariate_feature_data, comparison_to_control_group, grouping_var_name, grouping_var_type, num_repeats=10, num_folds=10):
+def compare_SVM_weightings(univariate_feature_data, study, comparison_to_control_group, grouping_var_name, grouping_var_type, num_repeats=10, num_folds=10):
     
     # Subset data to TS feature
     if grouping_var_type == "TS_Feature":
-        TS_feature_data = univariate_feature_data.query("names == @grouping_var_name & Diagnosis in ['Control', @comparison_to_control_group]").drop(["names", "Noise_Proc",
+        TS_feature_data = univariate_feature_data.query("names == @grouping_var_name & Study == @study & Diagnosis in ['Control', @comparison_to_control_group]").drop(["names", "Noise_Proc",
                                                                                 "method"], axis=1)
         # Pivot from long to wide
         feature_data_wide = TS_feature_data.pivot(index=['Sample_ID', 'Diagnosis'], columns='Brain_Region', values='values')
         
     else:
-        TS_feature_data = univariate_feature_data.query("Brain_Region == @grouping_var_name & Diagnosis in ['Control', @comparison_to_control_group]").drop(["Brain_Region", "Noise_Proc",
+        TS_feature_data = univariate_feature_data.query("Brain_Region == @grouping_var_name & Study == @study & Diagnosis in ['Control', @comparison_to_control_group]").drop(["Brain_Region", "Noise_Proc",
                                                                                 "method"], axis=1)
         # Pivot from long to wide
         feature_data_wide = TS_feature_data.pivot(index=['Sample_ID', 'Diagnosis'], columns='names', values='values')
         
+    # Check that there are two groups for Diagnosis
+    if len(TS_feature_data.Diagnosis.unique()) < 2:
+        return
 
     # Extract sample ID and diagnosis as lists
     index_data = feature_data_wide.index.to_frame().reset_index(drop=True)
@@ -120,26 +129,40 @@ def compare_SVM_weightings(univariate_feature_data, comparison_to_control_group,
 
 
 # Iterate over each brain region and time-series feature across all three UCLA CNP disorders
+study_group_df = pd.DataFrame({"study": ["UCLA_CNP","UCLA_CNP","UCLA_CNP","ABIDE_ASD"],
+                               "disorder": ["Schizophrenia", "Bipolar", "ADHD", "ASD"]})
+
 balacc_res_list = []
 
-for disorder in ["Schizophrenia", "Bipolar", "ADHD"]:
-    # Iterate over regions
+# UCLA CNP disorders
+for index, row in study_group_df.iterrows():
+    study = row["study"]
+    disorder = row["disorder"]
+    
     for brain_region in univariate_feature_data.Brain_Region.unique().tolist():
-        region_balacc = compare_SVM_weightings(univariate_feature_data = univariate_feature_data, 
+        try:
+            region_balacc = compare_SVM_weightings(univariate_feature_data = univariate_feature_data, 
+                                               study = study,
                                                          comparison_to_control_group = disorder, 
                                                          grouping_var_type = "Brain_Region",
                                                          grouping_var_name = brain_region)
-        region_balacc["Comparison_Group"] = disorder
-        balacc_res_list.append(region_balacc)
+            region_balacc["Comparison_Group"] = disorder
+            balacc_res_list.append(region_balacc)
+        except:
+            pass
         
     # Iterate over catch25 features
     for catch25_feature in univariate_feature_data.names.unique().tolist():
-        feature_balacc = compare_SVM_weightings(univariate_feature_data = univariate_feature_data, 
-                                                         comparison_to_control_group = disorder, 
-                                                         grouping_var_type = "TS_Feature",
-                                                         grouping_var_name = catch25_feature)
-        feature_balacc["Comparison_Group"] = disorder
-        balacc_res_list.append(feature_balacc)
+        try:
+            feature_balacc = compare_SVM_weightings(univariate_feature_data = univariate_feature_data, 
+                                                   study = study,
+                                                             comparison_to_control_group = disorder, 
+                                                             grouping_var_type = "TS_Feature",
+                                                             grouping_var_name = catch25_feature)
+            feature_balacc["Comparison_Group"] = disorder
+            balacc_res_list.append(feature_balacc)
+        except:
+            pass
         
 
 # Concatenate results and save to feather file

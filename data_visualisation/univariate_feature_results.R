@@ -74,11 +74,16 @@ univariate_null_distribution <- pyarrow_feather$read_feather(glue("{data_path}/U
   filter(Univariate_Feature_Set == univariate_feature_set)
 
 # Load study metadata
-UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") %>%
+UCLA_CNP_sample_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") %>%
   mutate(Study="UCLA_CNP")
-ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather")  %>%
+ABIDE_ASD_sample_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather")  %>%
   mutate(Study="ABIDE_ASD")
 
+# Load catch25 data
+UCLA_CNP_catch25 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather")  %>%
+  left_join(., UCLA_CNP_sample_metadata)
+ABIDE_ASD_catch25 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_data/ABIDE_ASD_FC1000_catch25_filtered.feather")  %>%
+  left_join(., ABIDE_ASD_sample_metadata)
 
 ################################################################################
 # Balanced accuracy heatmap
@@ -87,7 +92,7 @@ univariate_p_values %>%
          Analysis_Type == "Univariate_TS_Feature") %>%
   dplyr::rename("feature_name" = "group_var") %>%
   left_join(., TS_feature_info) %>%
-  filter(p_value_Bonferroni<0.05) %>%
+  filter(p_value_HolmBonferroni<0.05) %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
                                       Comparison_Group == "Bipolar" ~ "BP",
                                       T ~ Comparison_Group),
@@ -101,8 +106,8 @@ univariate_p_values %>%
   scale_fill_gradientn(colors=c(alpha("#4C7FC0", 0.1), "#4C7FC0"), 
                        na.value=NA) +
   labs(fill = "Mean Balanced Accuracy (%)") +
-  xlab("Clinical Group") +
-  ylab("Univariate catch25 feature") +
+  xlab("Disorder") +
+  ylab("Univariate time-series feature") +
   theme(legend.position="none",
         strip.background = element_blank(),
         strip.text = element_blank())
@@ -113,17 +118,17 @@ ggsave(glue("{plot_path}/Feature_wise_results.svg"),
 ################################################################################
 # Create adjacency matrix of feature values across all participants
 
-top10_features <- univariate_p_values %>%
+top_features <- univariate_p_values %>%
   filter(Univariate_Feature_Set == univariate_feature_set,
          Analysis_Type == "Univariate_TS_Feature") %>%
-  filter(p_value_Bonferroni<0.05) %>%
   group_by(group_var) %>%
+  filter(sum(p_value_HolmBonferroni<0.05)>=3) %>%
   summarise(sum_balacc = sum(Balanced_Accuracy_Across_Folds)) %>%
   slice_max(sum_balacc, n=10) %>%
   pull(group_var)
 
 data_for_corr_heatmap <- plyr::rbind.fill(UCLA_CNP_catch25, ABIDE_ASD_catch25) %>%
-  filter(names %in% top10_features) %>%
+  filter(names %in% top_features) %>%
   mutate(unique_ID = paste0(Sample_ID, "__", Brain_Region), .keep="unused") %>%
   left_join(., TS_feature_info, by=c("names"="feature_name")) %>%
   dplyr::select(unique_ID, Figure_name, values) %>%
@@ -138,7 +143,7 @@ data_for_corr_long <- data_for_corr_heatmap %>%
   rownames_to_column(var="feature1") %>%
   pivot_longer(cols=c(-feature1), names_to="feature2", values_to="spearman_corr_abs")
 
-num_branches <- 3
+num_branches <- 2
 
 ht1 <- ComplexHeatmap::Heatmap(data_for_corr_heatmap,
                                clustering_distance_rows = "spearman",
@@ -147,8 +152,8 @@ ht1 <- ComplexHeatmap::Heatmap(data_for_corr_heatmap,
                                clustering_method_columns = "average",
                                row_names_side = "right",
                                row_dend_side = "left", 
-                               row_dend_width = unit(3, "cm"),
-                               row_dend_gp = gpar(lwd=unit(3, "cm")),
+                               row_dend_width = unit(1, "cm"),
+                               row_dend_gp = gpar(lwd=unit(2, "cm")),
                                row_split = num_branches,
                                column_split = num_branches,
                                column_gap = unit(3, "mm"),
@@ -157,13 +162,14 @@ ht1 <- ComplexHeatmap::Heatmap(data_for_corr_heatmap,
                                show_row_names = TRUE,
                                show_column_names = FALSE,
                                show_column_dend = FALSE,
+                               border = TRUE,
                                col = c("white", RColorBrewer::brewer.pal(12, "Reds")),
                                name = "Spearman rank correlation, \u03c1",
                                heatmap_legend_param = list(legend_direction = "horizontal",
                                                            legend_width = unit(5, "cm")))
 
 svg(glue("{plot_path}/catch25_top_feature_spearman_corr.svg"),
-    width=7, height=6, bg=NA)
+    width=4.25, height=3, bg=NA)
 draw(ht1, heatmap_legend_side = "bottom",
      background = "transparent")
 dev.off()

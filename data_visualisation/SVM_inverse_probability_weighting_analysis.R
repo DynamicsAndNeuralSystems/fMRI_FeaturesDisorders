@@ -38,29 +38,57 @@ SVM_balacc_with_vs_without_inv_prob <- pyarrow_feather$read_feather(glue("{data_
 
 # For each brain region, compare the difference in mean balanced accuracy with versus without inverse probability weighting
 SVM_balacc_with_vs_without_inv_prob %>%
+  filter(Analysis_Type=="Brain_Region") %>%
+  mutate(Comparison_Group = case_when(Comparison_Group=="Schizophrenia" ~ "SCZ",
+                                      Comparison_Group=="Bipolar" ~ "BP",
+                                      T ~ Comparison_Group)) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD")),
+         Weighting_Type = factor(Weighting_Type, levels=c("None", "Balanced"))) %>%
   group_by(Comparison_Group, Analysis_Type, group_var, Weighting_Type) %>%
   summarise(Mean_Balanced_Accuracy = mean(Balanced_Accuracy)) %>%
   group_by(Comparison_Group, Analysis_Type, group_var) %>%
-  summarise(Weighting_Diff = Mean_Balanced_Accuracy[Weighting_Type=="Balanced"] - Mean_Balanced_Accuracy[Weighting_Type=="None"]) %>%
-  mutate(Comparison_Group = factor(Comparison_Group, levels = c("Schizophrenia", "Bipolar", "ADHD"))) %>%
+  mutate(Weighting_Diff = Mean_Balanced_Accuracy[Weighting_Type=="Balanced"] - Mean_Balanced_Accuracy[Weighting_Type=="None"]) %>%
   ungroup() %>%
-  mutate(group_var = fct_reorder(group_var, Weighting_Diff, .fun=mean)) %>%
-  ggplot(data=., mapping=aes(x=Comparison_Group, y=group_var, fill=Weighting_Diff)) +
-  geom_tile() +
-  scale_fill_gradient2(low="blue", mid="white", high="red", limits=c(-0.15, 0.15)) +
-  ylab("Representation for SVM") +
-  xlab("Disorder") +
-  facet_grid(Analysis_Type ~ ., scales="free", space="free", switch="both") +
-  theme(legend.position = "bottom",
+  ggplot(data=., mapping=aes(x=Weighting_Type, y=100*Mean_Balanced_Accuracy, group=group_var, color=Weighting_Diff)) +
+  geom_hline(yintercept = 50, linetype=2) +
+  geom_line() +
+  xlab("SVM Weighting Type") +
+  ylab("Mean Balanced Accuracy (%)") +
+  scale_color_gradient2(low="blue", mid="gray70", high="red", midpoint = 0) +
+  facet_grid(. ~ Comparison_Group, scales="free", space="free") +
+  theme(legend.position = "none",
         axis.text.y = element_text(size=8),
-        strip.placement="outside",
-        axis.text.x = element_text(face="bold"),
-        strip.text.y.left = element_text(angle=0, face="bold"),
+        strip.text.x = element_text(angle=0, face="bold"),
         strip.background = element_blank())
+ggsave(paste0(plot_path, "brain_region_linear_SVM_performance_based_on_weighting_type.svg"),
+       width = 6, height=3, units="in", dpi=300)
 
-ggsave(paste0(plot_path, "Linear_SVM_Performance_based_on_weighting_type.svg"),
-       width = 7, height=10, units="in", dpi=300)
-
+# For each catch25 feature, compare the difference in mean balanced accuracy with versus without inverse probability weighting
+SVM_balacc_with_vs_without_inv_prob %>%
+  filter(Analysis_Type=="TS_Feature") %>%
+  mutate(Comparison_Group = case_when(Comparison_Group=="Schizophrenia" ~ "SCZ",
+                                      Comparison_Group=="Bipolar" ~ "BP",
+                                      T ~ Comparison_Group)) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD")),
+         Weighting_Type = factor(Weighting_Type, levels=c("None", "Balanced"))) %>%
+  group_by(Comparison_Group, Analysis_Type, group_var, Weighting_Type) %>%
+  summarise(Mean_Balanced_Accuracy = mean(Balanced_Accuracy)) %>%
+  group_by(Comparison_Group, Analysis_Type, group_var) %>%
+  mutate(Weighting_Diff = Mean_Balanced_Accuracy[Weighting_Type=="Balanced"] - Mean_Balanced_Accuracy[Weighting_Type=="None"]) %>%
+  ungroup() %>%
+  ggplot(data=., mapping=aes(x=Weighting_Type, y=100*Mean_Balanced_Accuracy, group=group_var, color=Weighting_Diff)) +
+  geom_hline(yintercept = 50, linetype=2) +
+  geom_line(linewidth=0.7) +
+  xlab("SVM Weighting Type") +
+  ylab("Mean Balanced Accuracy (%)") +
+  scale_color_gradient2(low="blue", mid="gray70", high="red", midpoint = 0) +
+  facet_grid(. ~ Comparison_Group, scales="free", space="free") +
+  theme(legend.position = "none",
+        axis.text.y = element_text(size=8),
+        strip.text.x = element_text(angle=0, face="bold"),
+        strip.background = element_blank())
+ggsave(paste0(plot_path, "catch25_feature_linear_SVM_performance_based_on_weighting_type.svg"),
+       width = 6, height=3, units="in", dpi=300)
 
 ################################################################################
 

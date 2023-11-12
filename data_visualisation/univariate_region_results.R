@@ -77,9 +77,6 @@ UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadat
 ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metadata/ABIDE_ASD_sample_metadata.feather")  %>%
   mutate(Study="ABIDE_ASD")
 
-# Load t-statistics
-lm_beta_stats_catch25_whole_brain <- feather::read_feather(glue("{data_path}/univariate_catch25_lm_beta_statistics_by_brain_region.feather"))
-
 ################################################################################
 # Univariate region-wise analysis
 ################################################################################
@@ -165,7 +162,7 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
 # Define dataset with univariate region-wise results
 significant_univariate_region_wise_results <- univariate_p_values %>%
   filter(Analysis_Type == "Univariate_Brain_Region") %>%
-  filter(p_value_Bonferroni < 0.05) %>%
+  filter(p_value_HolmBonferroni < 0.05) %>%
   mutate(Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds)
 
 catch25_region_wise_balacc_plot_list <- plot_balacc_in_brain(significant_univariate_region_wise_results,
@@ -182,3 +179,16 @@ ggsave(glue("{plot_path}/Region_wise_balacc_ggseg.svg"),
 significant_univariate_region_wise_results %>%
   count(Comparison_Group)
 
+# Save regional results to a CSV file as a table
+univariate_p_values %>%
+  filter(Analysis_Type=="Univariate_Brain_Region") %>%
+  dplyr::select(Comparison_Group, group_var, p_value_HolmBonferroni, Balanced_Accuracy_Across_Folds, Balanced_Accuracy_Across_Folds_SD) %>%
+  dplyr::rename("Brain_Region" = "group_var",
+                "Disorder" = "Comparison_Group") %>%
+  mutate(Balanced_Accuracy_Across_Folds = round(100*Balanced_Accuracy_Across_Folds,1),
+         Balanced_Accuracy_Across_Folds_SD = round(100*Balanced_Accuracy_Across_Folds_SD,1),
+         Disorder = case_when(Disorder == "Bipolar" ~ "BP",
+                              Disorder == "Schizophrenia" ~ "SCZ",
+                              T ~ Disorder)) %>%
+  write.csv(., glue("{plot_path}/Region_wise_performance_results.csv"),
+            row.names = F)

@@ -1,0 +1,295 @@
+"Disorder","Brain_Region","p_value_HolmBonferroni","Balanced_Accuracy_Across_Folds","Balanced_Accuracy_Across_Folds_SD"
+"ASD","Angular Gyrus",1,46.5,4.5
+"ASD","Central Opercular Cortex",0.759220077044365,51,5.1
+"ASD","Cingulate Gyrus, anterior division",0.140482755037119,51.5,4.3
+"ASD","Cingulate Gyrus, posterior division",0.00256020361561766,52.3,3.8
+"ASD","Cuneal Cortex",0.0130823278209579,52,4.2
+"ASD","Frontal Medial Cortex",1,50.5,4.9
+"ASD","Frontal Operculum Cortex",2.2104790095371e-06,53.3,4
+"ASD","Frontal Orbital Cortex",1.58164661955746e-05,52.9,4.9
+"ASD","Frontal Pole",3.91059690863908e-06,53.2,3.9
+"ASD","Heschl's Gyrus (includes H1 and H2)",1,50.3,4.3
+"ASD","Inferior Frontal Gyrus, pars opercularis",0.0428340987569335,51.8,4.4
+"ASD","Inferior Frontal Gyrus, pars triangularis",1.47942931869538e-09,54.2,4.6
+"ASD","Inferior Temporal Gyrus, anterior division",4.42607218473251e-09,53.8,5
+"ASD","Inferior Temporal Gyrus, posterior division",6.084257512686e-11,54.5,4.3
+"ASD","Inferior Temporal Gyrus, temporooccipital part",1,50,4.5
+"ASD","Insular Cortex",0.000619315777947265,52.6,4.8
+"ASD","Intracalcarine Cortex",1,49.9,4.5
+"ASD","Juxtapositional Lobule Cortex (formerly Supplementary Motor Cortex)",0.0220567059525811,51.9,4.5
+"ASD","Lateral Occipital Cortex, inferior division",0.00350526843608977,52.4,4.4
+"ASD","Lateral Occipital Cortex, superior division",1,49.9,4.9
+"ASD","Lingual Gyrus",1,48.8,4.5
+"ASD","Middle Frontal Gyrus",1.59982066279257e-10,54.1,3.9
+"ASD","Middle Temporal Gyrus, anterior division",1,49.8,4.2
+"ASD","Middle Temporal Gyrus, posterior division",0.000461586220013022,52.6,4.2
+"ASD","Middle Temporal Gyrus, temporooccipital part",9.76760588904848e-05,52.9,4.3
+"ASD","Occipital Fusiform Gyrus",1,50.9,4.2
+"ASD","Occipital Pole",0.190619852732933,51.5,4.6
+"ASD","Paracingulate Gyrus",0.00470628302482355,52.3,4.4
+"ASD","Parahippocampal Gyrus, anterior division",4.86231512241563e-12,54.4,4.8
+"ASD","Parahippocampal Gyrus, posterior division",1.10212346938725e-09,54.1,4.7
+"ASD","Parietal Operculum Cortex",0.000580907228105149,52.5,4.5
+"ASD","Planum Polare",0.0147151252938488,52,4.4
+"ASD","Planum Temporale",2.81924792578972e-07,53.4,4
+"ASD","Postcentral Gyrus",0.000129952750737597,52.8,4.1
+"ASD","Precentral Gyrus",1,50.8,4.5
+"ASD","Precuneous Cortex",0.100688444050481,51.6,4.7
+"ASD","Subcallosal Cortex",0.472671319539823,51.2,4.2
+"ASD","Superior Frontal Gyrus",1.80591136459756e-13,54.9,4.2
+"ASD","Superior Parietal Lobule",1,50.6,4.7
+"ASD","Superior Temporal Gyrus, anterior division",3.02089386347904e-07,53.5,4.6
+"ASD","Superior Temporal Gyrus, posterior division",6.23686393194815e-05,52.9,4.3
+"ASD","Supracalcarine Cortex",1,50.1,5
+"ASD","Supramarginal Gyrus, anterior division",0.00444522655227571,52.3,4.9
+"ASD","Supramarginal Gyrus, posterior division",1,50,4.6
+"ASD","Temporal Fusiform Cortex, anterior division",0.190619852732933,51.4,4.6
+"ASD","Temporal Fusiform Cortex, posterior division",1.2079171008689e-06,53.4,4.2
+"ASD","Temporal Occipital Fusiform Cortex",1,49.4,4.4
+"ASD","Temporal Pole",2.00584516646008e-05,52.9,3.8
+"ADHD","Left-Accumbens-area",1,51.8,14.2
+"ADHD","Left-Amygdala",1,51,14.4
+"ADHD","Left-Caudate",1,42.9,13.1
+"ADHD","Left-Hippocampus",1,46.2,14.6
+"ADHD","Left-Pallidum",1,48.1,13.4
+"ADHD","Left-Putamen",1,46.6,14.3
+"ADHD","Left-Thalamus-Proper",0.0150662619621333,56.9,13.8
+"ADHD","Right-Accumbens-area",1,49.7,12.3
+"ADHD","Right-Amygdala",1,45.7,13.6
+"ADHD","Right-Caudate",0.00276995189140796,57.7,13.9
+"ADHD","Right-Hippocampus",1,51.8,12.2
+"ADHD","Right-Pallidum",1,52.7,13.8
+"ADHD","Right-Putamen",1,45.8,14.6
+"ADHD","Right-Thalamus-Proper",0.00537550194926521,57.2,12.4
+"ADHD","ctx-lh-bankssts",1,42.3,12.3
+"ADHD","ctx-lh-caudalanteriorcingulate",1,46.3,12.8
+"ADHD","ctx-lh-caudalmiddlefrontal",1,48.5,14.1
+"ADHD","ctx-lh-cuneus",1,53,13.9
+"ADHD","ctx-lh-entorhinal",1,46.1,13.9
+"ADHD","ctx-lh-frontalpole",0.000778189340814032,57.9,13.1
+"ADHD","ctx-lh-fusiform",5.0882010513151e-05,59.1,13.4
+"ADHD","ctx-lh-inferiorparietal",1,45.7,11.3
+"ADHD","ctx-lh-inferiortemporal",1,51.8,15.6
+"ADHD","ctx-lh-insula",1,51.4,13.2
+"ADHD","ctx-lh-isthmuscingulate",1,51.8,13.4
+"ADHD","ctx-lh-lateraloccipital",1,50.9,13.4
+"ADHD","ctx-lh-lateralorbitofrontal",1,53.6,13.9
+"ADHD","ctx-lh-lingual",1,47.8,12.8
+"ADHD","ctx-lh-medialorbitofrontal",1,48.3,12.5
+"ADHD","ctx-lh-middletemporal",1,49,14
+"ADHD","ctx-lh-paracentral",1,48.7,12.5
+"ADHD","ctx-lh-parahippocampal",0.214481144109231,55.1,12.9
+"ADHD","ctx-lh-parsopercularis",0.725599174613581,54.3,13.5
+"ADHD","ctx-lh-parsorbitalis",9.77380063096182e-07,60.5,14.6
+"ADHD","ctx-lh-parstriangularis",0.291116899940334,54.9,13.4
+"ADHD","ctx-lh-pericalcarine",1,49.7,12.3
+"ADHD","ctx-lh-postcentral",1,42.4,11.3
+"ADHD","ctx-lh-posteriorcingulate",1,51.9,14.2
+"ADHD","ctx-lh-precentral",0.000233828974983494,58.6,13.9
+"ADHD","ctx-lh-precuneus",1,46.8,13.6
+"ADHD","ctx-lh-rostralanteriorcingulate",1,48.8,13.5
+"ADHD","ctx-lh-rostralmiddlefrontal",1,48.3,13.2
+"ADHD","ctx-lh-superiorfrontal",1,45.1,12.6
+"ADHD","ctx-lh-superiorparietal",1,41.5,11.2
+"ADHD","ctx-lh-superiortemporal",1,50.9,13.4
+"ADHD","ctx-lh-supramarginal",1,47.5,14
+"ADHD","ctx-lh-temporalpole",1,51.3,12.8
+"ADHD","ctx-lh-transversetemporal",1,42.2,12.7
+"ADHD","ctx-rh-bankssts",0.443534834263086,54.6,12.2
+"ADHD","ctx-rh-caudalanteriorcingulate",1,45.6,13.7
+"ADHD","ctx-rh-caudalmiddlefrontal",1,51.3,13.8
+"ADHD","ctx-rh-cuneus",1,50,14.6
+"ADHD","ctx-rh-entorhinal",0.102264051242291,55.5,14.1
+"ADHD","ctx-rh-frontalpole",1,44.6,9.7
+"ADHD","ctx-rh-fusiform",0.220480352845671,55,14.2
+"ADHD","ctx-rh-inferiorparietal",1,53.1,13
+"ADHD","ctx-rh-inferiortemporal",1,53.9,13.2
+"ADHD","ctx-rh-insula",0.0165016326252339,56.7,13
+"ADHD","ctx-rh-isthmuscingulate",1.46165485982473e-05,60,11.8
+"ADHD","ctx-rh-lateraloccipital",0.004526580834867,57.3,12.4
+"ADHD","ctx-rh-lateralorbitofrontal",1,52.6,13.2
+"ADHD","ctx-rh-lingual",1,53.2,15.5
+"ADHD","ctx-rh-medialorbitofrontal",1,53.5,12.1
+"ADHD","ctx-rh-middletemporal",0.00461575205707098,57.4,13.7
+"ADHD","ctx-rh-paracentral",0.0111341884862838,56.7,10.7
+"ADHD","ctx-rh-parahippocampal",0.574221190529844,54.4,14.6
+"ADHD","ctx-rh-parsopercularis",0.0794147250002826,55.8,11.5
+"ADHD","ctx-rh-parsorbitalis",1,51.5,14.6
+"ADHD","ctx-rh-parstriangularis",0.0153180852450001,56.5,14.4
+"ADHD","ctx-rh-pericalcarine",1,49.5,13.8
+"ADHD","ctx-rh-postcentral",0.00330261476126569,57.5,14.3
+"ADHD","ctx-rh-posteriorcingulate",2.85385296723018e-08,61.7,13.1
+"ADHD","ctx-rh-precentral",0.214481144109231,55.1,12.7
+"ADHD","ctx-rh-precuneus",2.02842290299669e-06,60.3,12
+"ADHD","ctx-rh-rostralanteriorcingulate",0.0020785090641383,57.7,14.4
+"ADHD","ctx-rh-rostralmiddlefrontal",1,48,12.8
+"ADHD","ctx-rh-superiorfrontal",0.0099051478703239,56.9,14.3
+"ADHD","ctx-rh-superiorparietal",0.501202492302271,54.5,13.4
+"ADHD","ctx-rh-superiortemporal",1,49.8,12.9
+"ADHD","ctx-rh-supramarginal",1,44.7,12.7
+"ADHD","ctx-rh-temporalpole",1,53.2,13.4
+"ADHD","ctx-rh-transversetemporal",1,50.7,13.6
+"BP","Left-Accumbens-area",1,51.5,13.8
+"BP","Left-Amygdala",1,49,11.3
+"BP","Left-Caudate",2.05333912229929e-15,64.9,13.2
+"BP","Left-Hippocampus",3.37973667226743e-10,62,11.8
+"BP","Left-Pallidum",0.0217477991692989,55.6,12
+"BP","Left-Putamen",0.130369537315235,54.5,11.3
+"BP","Left-Thalamus-Proper",7.44239745441068e-14,64.4,12.6
+"BP","Right-Accumbens-area",1,47.6,10.6
+"BP","Right-Amygdala",0.0708260714637041,55.1,13.1
+"BP","Right-Caudate",0.00590839295280432,56.2,12.6
+"BP","Right-Hippocampus",8.74270413744362e-18,65.6,11.4
+"BP","Right-Pallidum",0.130628796171986,54.4,13.3
+"BP","Right-Putamen",0.000719263014410584,57.3,14
+"BP","Right-Thalamus-Proper",6.02427540805786e-08,60.9,11
+"BP","ctx-lh-bankssts",0.176184463756685,54.3,11.9
+"BP","ctx-lh-caudalanteriorcingulate",1,49.1,12.4
+"BP","ctx-lh-caudalmiddlefrontal",0.000285942926477039,58.1,12
+"BP","ctx-lh-cuneus",0.578723758344864,53.5,14
+"BP","ctx-lh-entorhinal",0.411112482141061,53.8,10.8
+"BP","ctx-lh-frontalpole",0.000240106771185856,57.9,13.5
+"BP","ctx-lh-fusiform",4.84287271377824e-05,58.7,12.5
+"BP","ctx-lh-inferiorparietal",1.78574977369325e-10,62.5,11.8
+"BP","ctx-lh-inferiortemporal",2.16959209148472e-05,58.9,12.1
+"BP","ctx-lh-insula",0.0845581406300566,55.1,12.1
+"BP","ctx-lh-isthmuscingulate",5.02862095826884e-05,58.5,13.2
+"BP","ctx-lh-lateraloccipital",0.000436846150070865,57.6,13
+"BP","ctx-lh-lateralorbitofrontal",9.60343553332333e-08,60.6,10.5
+"BP","ctx-lh-lingual",1,52.6,12.2
+"BP","ctx-lh-medialorbitofrontal",0.0708260714637041,55.3,11.8
+"BP","ctx-lh-middletemporal",1,50.9,11.7
+"BP","ctx-lh-paracentral",0.000243412204209694,57.9,12.2
+"BP","ctx-lh-parahippocampal",0.129858503882866,54.6,13.4
+"BP","ctx-lh-parsopercularis",6.01311622078108e-07,59.7,12.7
+"BP","ctx-lh-parsorbitalis",1,48.1,11.2
+"BP","ctx-lh-parstriangularis",1,46.5,11.7
+"BP","ctx-lh-pericalcarine",0.114525734863877,54.5,12.5
+"BP","ctx-lh-postcentral",1.57745538580996e-08,61.3,13.1
+"BP","ctx-lh-posteriorcingulate",0.0181283127054628,55.7,12.6
+"BP","ctx-lh-precentral",4.19798555025871e-08,60.6,11.6
+"BP","ctx-lh-precuneus",0.000308308291926616,57.6,11.4
+"BP","ctx-lh-rostralanteriorcingulate",0.770827657600312,53.2,12.1
+"BP","ctx-lh-rostralmiddlefrontal",1,50,12.1
+"BP","ctx-lh-superiorfrontal",1,52.2,11.7
+"BP","ctx-lh-superiorparietal",1.25893611548862e-07,60.4,13.8
+"BP","ctx-lh-superiortemporal",0.00403572899140219,56.6,11.9
+"BP","ctx-lh-supramarginal",1,51.1,13.1
+"BP","ctx-lh-temporalpole",0.000211234199532432,57.9,12.6
+"BP","ctx-lh-transversetemporal",0.00468156387987214,56.2,12.5
+"BP","ctx-rh-bankssts",0.0111589370580871,56.3,12.3
+"BP","ctx-rh-caudalanteriorcingulate",7.70390841003775e-07,60.2,12.7
+"BP","ctx-rh-caudalmiddlefrontal",0.0579057131983632,55.2,12.5
+"BP","ctx-rh-cuneus",1,51.6,11.6
+"BP","ctx-rh-entorhinal",1,48.8,11.3
+"BP","ctx-rh-frontalpole",0.0224190856657666,55.5,13.6
+"BP","ctx-rh-fusiform",1,52.1,13.2
+"BP","ctx-rh-inferiorparietal",0.0179347810037327,56,14
+"BP","ctx-rh-inferiortemporal",1,47.6,12.5
+"BP","ctx-rh-insula",3.39083100166138e-11,62.6,10.8
+"BP","ctx-rh-isthmuscingulate",1,51.9,13.5
+"BP","ctx-rh-lateraloccipital",7.94981056311049e-05,58.1,12
+"BP","ctx-rh-lateralorbitofrontal",0.00560813381416281,56.6,12.2
+"BP","ctx-rh-lingual",1,50.7,12.4
+"BP","ctx-rh-medialorbitofrontal",0.000285942926477039,57.9,13.1
+"BP","ctx-rh-middletemporal",6.49945153355472e-06,59,11.7
+"BP","ctx-rh-paracentral",7.9894158766285e-06,59,10.7
+"BP","ctx-rh-parahippocampal",6.24432779145022e-13,62.7,12.6
+"BP","ctx-rh-parsopercularis",8.60714947099204e-09,61,12.5
+"BP","ctx-rh-parsorbitalis",1,49.9,12.7
+"BP","ctx-rh-parstriangularis",0.437406199897673,53.7,12.8
+"BP","ctx-rh-pericalcarine",1,49.9,13.8
+"BP","ctx-rh-postcentral",6.92120549726129e-06,59.1,13.1
+"BP","ctx-rh-posteriorcingulate",0.351043878838322,53.9,12.3
+"BP","ctx-rh-precentral",2.71398706659838e-06,59.6,11.8
+"BP","ctx-rh-precuneus",0.0579057131983632,55.2,12.3
+"BP","ctx-rh-rostralanteriorcingulate",0.000517510371673497,57.3,12.9
+"BP","ctx-rh-rostralmiddlefrontal",1,46.2,12.1
+"BP","ctx-rh-superiorfrontal",5.35525435020238e-05,58.6,11.2
+"BP","ctx-rh-superiorparietal",0.1965316831402,54.2,11
+"BP","ctx-rh-superiortemporal",2.12228386900686e-11,63.3,11.6
+"BP","ctx-rh-supramarginal",0.0883058082381321,54.9,12.2
+"BP","ctx-rh-temporalpole",0.000227879745722587,58,11.4
+"BP","ctx-rh-transversetemporal",0.00574751406467268,56.6,11.6
+"SCZ","Left-Accumbens-area",0.0183787786467684,55.8,15.1
+"SCZ","Left-Amygdala",0.0183787786467684,55.7,12
+"SCZ","Left-Caudate",0.0515179629995855,54.8,11.8
+"SCZ","Left-Hippocampus",0.687141344691179,52.7,11.4
+"SCZ","Left-Pallidum",1,49.2,13
+"SCZ","Left-Putamen",3.71401298326682e-06,59.2,12.8
+"SCZ","Left-Thalamus-Proper",3.84417690926366e-08,60.3,12.9
+"SCZ","Right-Accumbens-area",0.00240074896926651,56.7,13.1
+"SCZ","Right-Amygdala",2.86465671590354e-16,65.2,12.4
+"SCZ","Right-Caudate",1.56319968839774e-07,60.8,13.7
+"SCZ","Right-Hippocampus",1.16915772405514e-06,59.7,13.6
+"SCZ","Right-Pallidum",0.0190194379755932,55.5,12.3
+"SCZ","Right-Putamen",1,50.5,13
+"SCZ","Right-Thalamus-Proper",0.000123998626209939,58,13.3
+"SCZ","ctx-lh-bankssts",1.50540123576004e-20,67,11.1
+"SCZ","ctx-lh-caudalanteriorcingulate",9.36084110183648e-19,66.7,12.3
+"SCZ","ctx-lh-caudalmiddlefrontal",4.44077055365492e-07,60.1,12.2
+"SCZ","ctx-lh-cuneus",8.47771957136607e-26,69.2,11.5
+"SCZ","ctx-lh-entorhinal",0.86657001392416,52.3,12.7
+"SCZ","ctx-lh-frontalpole",3.39890185968563e-06,59.3,12.1
+"SCZ","ctx-lh-fusiform",0.000737655205500793,57,13.3
+"SCZ","ctx-lh-inferiorparietal",3.6739789763638e-11,62.5,12.7
+"SCZ","ctx-lh-inferiortemporal",2.26424318918897e-06,59.4,12.1
+"SCZ","ctx-lh-insula",1.19331299724125e-13,64.2,12.2
+"SCZ","ctx-lh-isthmuscingulate",5.1952646403552e-05,58.6,12.8
+"SCZ","ctx-lh-lateraloccipital",1.66314751690274e-13,63.6,12.9
+"SCZ","ctx-lh-lateralorbitofrontal",0.0183787786467684,55.6,10.8
+"SCZ","ctx-lh-lingual",1.278344970582e-16,65.3,12.3
+"SCZ","ctx-lh-medialorbitofrontal",0.00259354329268644,56.7,12.9
+"SCZ","ctx-lh-middletemporal",1,47.2,13.3
+"SCZ","ctx-lh-paracentral",4.59031458205105e-06,59.3,13.6
+"SCZ","ctx-lh-parahippocampal",0.689719536884149,52.6,11.7
+"SCZ","ctx-lh-parsopercularis",0.0667923845576772,54.7,12.9
+"SCZ","ctx-lh-parsorbitalis",1,50.2,12.5
+"SCZ","ctx-lh-parstriangularis",1,48.8,13.8
+"SCZ","ctx-lh-pericalcarine",9.27120090887255e-33,72.4,12.8
+"SCZ","ctx-lh-postcentral",5.41822648140541e-05,58.4,12.6
+"SCZ","ctx-lh-posteriorcingulate",6.32972072434504e-07,59.8,13.4
+"SCZ","ctx-lh-precentral",0.000395568150886753,57.4,12.4
+"SCZ","ctx-lh-precuneus",1.69824737561221e-19,66.7,11.5
+"SCZ","ctx-lh-rostralanteriorcingulate",0.14471108142536,54.2,11.7
+"SCZ","ctx-lh-rostralmiddlefrontal",0.580436143875267,52.9,13.3
+"SCZ","ctx-lh-superiorfrontal",0.000455185883416348,57.5,13.1
+"SCZ","ctx-lh-superiorparietal",0.0381978025245748,55.1,13.8
+"SCZ","ctx-lh-superiortemporal",4.61388519657354e-10,62.2,12.9
+"SCZ","ctx-lh-supramarginal",4.29524038374988e-07,60.4,12.7
+"SCZ","ctx-lh-temporalpole",1.87491471349982e-09,61.3,12.4
+"SCZ","ctx-lh-transversetemporal",0.00484044127389414,56.2,13.2
+"SCZ","ctx-rh-bankssts",0.00076197515107927,57.2,12.9
+"SCZ","ctx-rh-caudalanteriorcingulate",2.47496959592058e-08,60.9,11
+"SCZ","ctx-rh-caudalmiddlefrontal",0.431075110928694,53.4,11.1
+"SCZ","ctx-rh-cuneus",1.63379205283523e-27,70,11.8
+"SCZ","ctx-rh-entorhinal",0.00537354331280402,56.3,12.2
+"SCZ","ctx-rh-frontalpole",0.034442558967936,55.1,12
+"SCZ","ctx-rh-fusiform",0.14471108142536,54,13.2
+"SCZ","ctx-rh-inferiorparietal",0.034442558967936,55.2,13.7
+"SCZ","ctx-rh-inferiortemporal",1,47.5,13.7
+"SCZ","ctx-rh-insula",0.000219926547499084,57.5,11.6
+"SCZ","ctx-rh-isthmuscingulate",1.01437199363402e-13,63.5,12.2
+"SCZ","ctx-rh-lateraloccipital",1.43209952865391e-22,68.3,11.7
+"SCZ","ctx-rh-lateralorbitofrontal",3.30782239258773e-10,62.1,12.2
+"SCZ","ctx-rh-lingual",9.36084110183648e-19,66.5,12.4
+"SCZ","ctx-rh-medialorbitofrontal",1.52206409607281e-06,59.5,13.2
+"SCZ","ctx-rh-middletemporal",3.86297570926265e-10,62,12.7
+"SCZ","ctx-rh-paracentral",5.84671341132821e-06,59.1,12.9
+"SCZ","ctx-rh-parahippocampal",1.34175557868026e-06,59.5,12.7
+"SCZ","ctx-rh-parsopercularis",2.02759911515858e-07,60.2,11.8
+"SCZ","ctx-rh-parsorbitalis",0.00299496169482949,56.5,13.2
+"SCZ","ctx-rh-parstriangularis",3.68615433272097e-05,58.7,12.4
+"SCZ","ctx-rh-pericalcarine",3.48251507071243e-18,66.4,12.2
+"SCZ","ctx-rh-postcentral",2.73576650332444e-13,63.8,12.8
+"SCZ","ctx-rh-posteriorcingulate",2.0091930910671e-07,60.3,13.3
+"SCZ","ctx-rh-precentral",6.47644795456928e-08,60.6,12.5
+"SCZ","ctx-rh-precuneus",1.35941727349089e-07,60.3,12.8
+"SCZ","ctx-rh-rostralanteriorcingulate",1,47.4,13.4
+"SCZ","ctx-rh-rostralmiddlefrontal",0.00144985488801614,57,12.1
+"SCZ","ctx-rh-superiorfrontal",3.29707825396703e-08,60.5,11.6
+"SCZ","ctx-rh-superiorparietal",4.34733545486717e-08,60.9,12.3
+"SCZ","ctx-rh-superiortemporal",5.65246760015656e-16,65.1,12.1
+"SCZ","ctx-rh-supramarginal",2.72249497260656e-08,60.9,13.1
+"SCZ","ctx-rh-temporalpole",1,47.7,13.3
+"SCZ","ctx-rh-transversetemporal",1.47792383635854e-10,62,13.2

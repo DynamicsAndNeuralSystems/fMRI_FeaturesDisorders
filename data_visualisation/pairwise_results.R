@@ -81,7 +81,7 @@ pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABI
 pairwise_p_values %>%
   filter(Pairwise_Feature_Set == pairwise_feature_set,
          Analysis_Type == "Pairwise_SPI",
-         p_value_Bonferroni < 0.05) %>%
+         p_value_HolmBonferroni < 0.05) %>%
   dplyr::rename("pyspi_name" = "group_var") %>%
   left_join(., SPI_info) %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
@@ -102,7 +102,7 @@ pairwise_p_values %>%
   ylab("Pairwise SPI") +
   theme(legend.position="none")
 ggsave(glue("{plot_path}/SPI_wise_results.svg"),
-       width=5, height=4.5, units="in", dpi=300)
+       width=4.25, height=4.5, units="in", dpi=300)
 
 
 ################################################################################
@@ -159,7 +159,7 @@ if (!file.exists(glue("{data_path}/SPI_performance_correlation_across_disorders.
 sig_SPIs <- pairwise_p_values %>%
   filter(Pairwise_Feature_Set == pairwise_feature_set,
          Analysis_Type == "Pairwise_SPI",
-         p_value_Bonferroni < 0.05) %>%
+         p_value_HolmBonferroni < 0.05) %>%
   distinct(group_var) %>%
   dplyr::rename("pyspi_name" = "group_var") %>%
   left_join(., SPI_info) %>%
@@ -196,6 +196,7 @@ ht1 <- ComplexHeatmap::Heatmap(data_for_corr_heatmap,
                                row_title = NULL,
                                column_title = NULL,
                                show_row_names = TRUE,
+                               row_names_gp = grid::gpar(fontsize = 26),
                                show_column_names = FALSE,
                                show_column_dend = FALSE,
                                border = TRUE,
@@ -205,7 +206,7 @@ ht1 <- ComplexHeatmap::Heatmap(data_for_corr_heatmap,
                                                            legend_width = unit(5, "cm")))
 
 svg(glue("{plot_path}/pyspi14_feature_spearman_corr.svg"),
-    width=7.5, height=6, bg=NA)
+    width=8.25, height=6, bg=NA)
 draw(ht1, heatmap_legend_side = "bottom",
      background = "transparent")
 dev.off()

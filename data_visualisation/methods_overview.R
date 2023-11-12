@@ -208,11 +208,21 @@ ggsave(glue("{plot_path}/Univariate_feature_brains.svg"),
        width=6, height=5, units="in", dpi=300, bg="white")
 
 # Plot just one example feature
-this_plot <- plot_feature_in_brain(fill_color_gradient=brain_colors[12], 
+plot_feature_in_brain(fill_color_gradient="#548AC5", 
                       region_label="all")
-this_plot
 ggsave(glue("{plot_path}/Example_univariate_feature_brain.svg"),
        width=3, height=2, units="in", dpi=300)
+data.frame(x=sample(1:10),
+           y=as.character(1:10)) %>%
+  ggplot(data=., mapping=aes(y=y, x=0, fill=x)) +
+  geom_tile(color="black") +
+  scale_fill_gradientn(colors=c(alpha("#548AC5", 0.3), 
+                                "#548AC5"), 
+                       na.value=NA) +
+  theme_void() +
+  theme(legend.position = "none")
+ggsave(glue("{plot_path}/Example_univariate_feature_brain_vector.svg"),
+       width=1, height=2, units="in", dpi=300)
 
 # Plot feature X region matrix
 feature_vec_plot_list <- list()
@@ -293,7 +303,7 @@ plot_network_data <- function(edge_color) {
     labs(edge_width="Pearson\nCorrelation") + 
     geom_node_point(aes(filter = leaf, 
                         x = x*1.05, y=y*1.05),   
-                    size=2) +
+                    size=3) +
     scale_edge_color_gradientn(colors=c(alpha(edge_color,0.3), edge_color)) +
     theme_void() + 
     theme(plot.title=element_text(size=14, face="bold", hjust=0.5),
@@ -308,3 +318,8 @@ wrap_plots(plots, nrow=3)
 ggsave(glue("{plot_path}/Pairwise_feature_brains.svg"),
        width=9, height=5, units="in", dpi=300, bg="white")
 
+
+# Plot example purple network
+plot_network_data(edge_color="#BF91D0")
+ggsave(glue("{plot_path}/Example_network.svg"),
+       width=3, height=3, units="in", dpi=300, bg="white")
