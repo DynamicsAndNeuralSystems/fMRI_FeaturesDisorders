@@ -8,7 +8,7 @@ TAF::mkdir(plot_path)
 
 # python_to_use <- "~/.conda/envs/pyspi/bin/python3"
 python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
-univariate_feature_set <- "catch24"
+univariate_feature_set <- "catch25"
 pairwise_feature_set <- "pyspi14"
 data_path <- "~/data/TS_feature_manuscript"
 UCLA_CNP_sample_metadata <- "~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather"
@@ -17,7 +17,7 @@ study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
                              Num_Samples = c(166, 157, 167, 1150), 
                              Noise_Proc = c(rep("AROMA+2P+GMR",3), "FC1000"),
                              Comparison_Group = c("Schizophrenia", "ADHD", "Bipolar", "ASD"))
-univariate_feature_sets <- c("catch22", "catch2", "catch24")
+univariate_feature_sets <- c("catch22", "catch2", "catch25")
 
 reticulate::use_python(python_to_use)
 
@@ -61,7 +61,7 @@ ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE
   mutate(Brain_Region = ifelse(Index==45, "Heschl's Gyrus (includes H1 and H2)", Brain_Region))
 
 # Load participants included
-UCLA_CNP_subjects_to_keep <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch24_pyspi14.feather")
+UCLA_CNP_subjects_to_keep <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch25_pyspi14.feather")
 
 # Load study metadata
 UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") %>%
@@ -102,7 +102,7 @@ combo_univariate_pairwise_null_distribution <- pyarrow_feather$read_feather(glue
 combo_univariate_pairwise_p_values %>%
   filter(Pairwise_Feature_Set == pairwise_feature_set,
          Analysis_Type == "SPI_Univariate_Combo",
-         p_value_Bonferroni < 0.05) %>%
+         p_value_HolmBonferroni < 0.05) %>%
   dplyr::rename("pyspi_name" = "group_var") %>%
   left_join(., SPI_info) %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
@@ -124,7 +124,7 @@ combo_univariate_pairwise_p_values %>%
   theme(legend.position="none",
         axis.text.y = element_text(size=10))
 ggsave(glue("{plot_path}/Combo_univariate_pairwise_SPI_wise_heatmap.svg"),
-       width=4.5, height=4.5, units="in", dpi=300)
+       width=4, height=4.5, units="in", dpi=300)
 
 ################################################################################
 # Compare SPIs with vs without univariate info
@@ -203,7 +203,7 @@ run_correctR_group <- function(comparison_group, study, metadata, results_df) {
     filter(Study == study, 
            Comparison_Group == comparison_group) %>%
     group_by(group_var) %>%
-    filter(any(p_value_Bonferroni < 0.05)) %>%
+    filter(any(p_value_HolmBonferroni < 0.05)) %>%
     ungroup() %>%
     dplyr::rename("model" = "Analysis_Type",
                   "SPI" = "group_var",
@@ -224,7 +224,7 @@ run_correctR_group <- function(comparison_group, study, metadata, results_df) {
                     mutate(SPI = unique(.x$SPI))) %>%
     ungroup() %>%
     dplyr::rename("p_value_corr"="p.value") %>%
-    mutate(p_value_corr_Bonferroni = p.adjust(p_value_corr, method="bonferroni"),
+    mutate(p_value_corr_HolmBonferroni = p.adjust(p_value_corr, method="bonferroni"),
            Comparison_Group = comparison_group)
   
   return(res)
@@ -232,9 +232,9 @@ run_correctR_group <- function(comparison_group, study, metadata, results_df) {
 }
 
 results_df = plyr::rbind.fill(pairwise_balanced_accuracy_all_folds %>% left_join(pairwise_p_values %>%
-                                                                                       dplyr::select(Study:group_var, p_value_Bonferroni)), 
+                                                                                       dplyr::select(Study:group_var, p_value_HolmBonferroni)), 
                               combo_univariate_pairwise_balanced_accuracy_all_folds %>% left_join(combo_univariate_pairwise_p_values %>%
-                                                                                                        dplyr::select(Study:group_var, p_value_Bonferroni)))
+                                                                                                        dplyr::select(Study:group_var, p_value_HolmBonferroni)))
 
 corrected_SPI_T_res <- 1:nrow(study_group_df) %>%
   purrr::map_df(~ run_correctR_group(comparison_group = study_group_df$Comparison_Group[.x],
@@ -249,8 +249,8 @@ plyr::rbind.fill(pairwise_p_values,
   semi_join(., corrected_SPI_T_res %>% dplyr::select(SPI, Comparison_Group)) %>%
   left_join(., corrected_SPI_T_res) %>%
   mutate(Analysis_Type = ifelse(Analysis_Type == "Pairwise_SPI", "FC", "FC + Local\nDynamics"),
-         individually_significant = ifelse(p_value_Bonferroni < 0.05, "pcorr < 0.05", "Not significant"),
-         significant_diff_with_univariate = ifelse(p_value_corr_Bonferroni < 0.05, "Sig Diff", "No Sig Diff"),
+         individually_significant = ifelse(p_value_HolmBonferroni < 0.05, "pcorr < 0.05", "Not significant"),
+         significant_diff_with_univariate = ifelse(p_value_corr_HolmBonferroni < 0.05, "Sig Diff", "No Sig Diff"),
          Analysis_Type = factor(Analysis_Type, levels=c("FC", "FC + Local\nDynamics")),
          Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
                                       Comparison_Group == "Bipolar" ~ "BP",

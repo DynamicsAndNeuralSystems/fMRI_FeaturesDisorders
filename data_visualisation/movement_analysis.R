@@ -106,8 +106,8 @@ ABIDE_ASD_catch25 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_da
 # Compare FD-Power distributions between each case-control comparison
 ################################################################################
 
-control_color <- "#5BB67B"
-group_colors <- c("#573DC7", "#D5492A", "#0F9EA9","#C47B2F")
+control_color <- "#439E47"
+group_colors <- c("#9d60a8", "#2F77C0", "#e45075","#E28328")
 
 plot_group_vs_control <- function(FD_dataset,
                                   study,
@@ -206,7 +206,6 @@ head_motion_SD_corr_regional %>%
 ggsave(paste0(plot_path, "SD_Correlation_with_Movement_by_Region.svg"),
        width = 9, height = 16, units="in", dpi=300)
 
-
 # Plot brain-wide average SD vs head movement
 SD_brain_wide_avg <- UCLA_CNP_catch25 %>%
   plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
@@ -226,11 +225,11 @@ SD_brain_wide_avg %>%
   facet_grid(Study ~ ., scale="free", switch="both") +
   ylab("Brain-wide BOLD SD") +
   xlab("Mean framewise displacement (FD)") +
-  scale_color_manual(values = c("SCZ"="#573DC7", 
-                                "BP"="#D5492A", 
-                                "ADHD"="#0F9EA9",
-                                "ASD"="#C47B2F",
-                                "Control"="#5BB67B")) +
+  scale_color_manual(values = c("Control" = "#439E47", 
+                                "SCZ" = "#9d60a8", 
+                                "BP" = "#2F77C0", 
+                                "ADHD" = "#e45075", 
+                                "ASD" = "#E28328")) +
   stat_smooth(method="lm", se=F) +
   theme(strip.background = element_blank(),
         legend.position="bottom",
@@ -248,71 +247,6 @@ SD_brain_wide_avg %>%
     tidied = map(test, tidy)
   ) %>%
   unnest(tidied)
-
-################################################################################
-# Plot individual features vs movement
-plot_feature_vs_movement <- function(feature_name, title_label, y_label, rho_pos) {
-  feature_data <- UCLA_CNP_catch25 %>%
-    plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
-    filter(names == feature_name) %>%
-    group_by(Sample_ID) %>%
-    summarise(meanval = mean(values, na.rm=T)) %>%
-    left_join(., plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)) %>%
-    left_join(., plyr::rbind.fill(UCLA_CNP_sample_metadata, ABIDE_ASD_sample_metadata)) %>%
-    mutate(Study = ifelse(Study == "UCLA_CNP", "UCLA CNP", "ABIDE"))  %>%
-    mutate(Diagnosis = case_when(Diagnosis == "Schizophrenia" ~ "SCZ",
-                                        Diagnosis == "Bipolar" ~ "BP",
-                                        T ~ Diagnosis))
-  
-  p <- feature_data %>%
-    ggplot(data=., mapping=aes(x=Power, y=meanval)) +
-    xlab("mFD-Power") +
-    ylab(y_label) +
-    ggtitle(title_label) +
-    facet_grid(Study ~ ., scales="free", switch="both") +
-    geom_point(aes(color=Diagnosis)) +
-    scale_color_manual(values=c("Control" = "#5BB67B", 
-                                "SCZ" = "#573DC7", 
-                                "BP" = "#D5492A", 
-                                "ADHD" = "#0F9EA9", 
-                                "ASD" = "#C47B2F")) +
-    stat_smooth(method="lm", 
-                color="black",
-                se=F) +
-    guides(color = guide_legend(title.position = "top", 
-                                nrow = 3,
-                                byrow=T,
-                                override.aes = list(size=5),
-                                title.hjust = 0.5)) +
-    theme(legend.position="bottom",
-          plot.title = element_text(hjust=0.5),
-          strip.placement = "outside")
-  
-  # Print correlation
-  cat("Correlations for", feature_name)
-  df <- feature_data %>%
-    group_by(Study) %>%
-    rstatix::cor_test(meanval, Power, method="spearman") %>%
-    select(Study, cor, p)
-  print(df)
-  
-  return(p)
-}
-
-# SD
-plot_feature_vs_movement(feature_name = "DN_Spread_Std",
-                         title_label = "Standard deviation",
-                         y_label = "Mean SD across brain")
-# Calculate corr
-ggsave(paste0(plot_path, "mFD_vs_SD.svg"),
-       width = 3.75, height=5.75, units="in", dpi=300)
-
-# Periodicity
-plot_feature_vs_movement(feature_name = "PD_PeriodicityWang_th0_01",
-                         title_label = "Periodicity",
-                         y_label = "Mean periodicity across brain")
-ggsave(paste0(plot_path, "mFD_vs_periodicity.svg"),
-       width = 3.75, height=5.75, units="in", dpi=300)
 
 
 ################################################################################
@@ -423,16 +357,16 @@ combined_movement_SVM_res %>%
   geom_point(aes(color = Comparison_Group), position = position_jitterdodge(dodge.width = 1,
                                                                             jitter.width = 0.7),
              size = 1) +
-  scale_fill_manual(values=c("Control" = "#5BB67B", 
-                              "SCZ" = "#573DC7", 
-                              "BP" = "#D5492A", 
-                              "ADHD" = "#0F9EA9", 
-                              "ASD" = "#C47B2F")) +
-  scale_color_manual(values=c("Control" = "#5BB67B", 
-                             "SCZ" = "#573DC7", 
-                             "BP" = "#D5492A", 
-                             "ADHD" = "#0F9EA9", 
-                             "ASD" = "#C47B2F")) +
+  scale_fill_manual(values=c("Control" = "#439E47", 
+                              "SCZ" = "#9d60a8", 
+                              "BP" = "#2F77C0", 
+                              "ADHD" = "#e45075", 
+                              "ASD" = "#E28328")) +
+  scale_color_manual(values=c("Control" = "#439E47", 
+                             "SCZ" = "#9d60a8", 
+                             "BP" = "#2F77C0", 
+                             "ADHD" = "#e45075", 
+                             "ASD" = "#E28328")) +
   ylab("Fold Balanced Accuracy (%)") +
   xlab("Clinical Group") +
   theme(legend.position = "none")

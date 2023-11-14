@@ -45,7 +45,6 @@ ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE
 # Load in univariate time-series feature info
 TS_feature_info <- read.csv(glue("{github_dir}/data_visualisation/catch25_info.csv"))
 
-
 # Load study metadata
 UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") %>%
   mutate(Study="UCLA_CNP")
@@ -53,30 +52,39 @@ ABIDE_ASD_metadata <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/study_metad
   mutate(Study="ABIDE_ASD")
 
 # Univariate results
-univariate_balanced_accuracy <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_balanced_accuracy_all_folds.feather")) %>%
+univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_balanced_accuracy_all_folds.feather")) 
+univariate_balanced_accuracy <- univariate_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, kernel) %>%
   reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Training_Balanced_Accuracy_Across_Folds = mean(Training_Balanced_Accuracy, na.rm=T),
           Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T))
+
+
 univariate_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_empirical_p_values.feather")) %>%
   filter(Univariate_Feature_Set == univariate_feature_set) %>%
   dplyr::select(-Balanced_Accuracy_Across_Folds) %>%
   left_join(., univariate_balanced_accuracy)
 
 # Pairwise results
-pairwise_balanced_accuracy <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_balanced_accuracy_all_folds.feather")) %>%
+pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_balanced_accuracy_all_folds.feather"))
+pairwise_balanced_accuracy <- pairwise_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
   reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Training_Balanced_Accuracy_Across_Folds = mean(Training_Balanced_Accuracy, na.rm=T),
           Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T))
 pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_pairwise_empirical_p_values.feather")) %>%
   dplyr::select(-Balanced_Accuracy_Across_Folds) %>%
   left_join(., pairwise_balanced_accuracy)
 
 # Univariate+Pairwise Combo Results
-combo_univariate_pairwise_balanced_accuracy <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_balanced_accuracy_all_folds.feather")) %>%
-  mutate(Analysis_Type = "SPI_Univariate_Combo") %>%
+combo_univariate_pairwise_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_balanced_accuracy_all_folds.feather")) %>%
+  mutate(Analysis_Type = "SPI_Univariate_Combo") 
+combo_univariate_pairwise_balanced_accuracy <- combo_univariate_pairwise_balanced_accuracy_all_folds %>%
   group_by(Study, Comparison_Group, Univariate_Feature_Set, Pairwise_Feature_Set, Analysis_Type, group_var) %>%
   reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
+          Training_Balanced_Accuracy_Across_Folds = mean(Training_Balanced_Accuracy, na.rm=T),
           Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T))
+
 combo_univariate_pairwise_p_values <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_combined_univariate_pairwise_empirical_p_values.feather")) %>%
   dplyr::select(-Balanced_Accuracy_Across_Folds) %>%
   left_join(., combo_univariate_pairwise_balanced_accuracy)
@@ -90,6 +98,17 @@ all_p_values <- do.call(plyr::rbind.fill, list(univariate_p_values,
                                       T ~ Comparison_Group),
          Balanced_Accuracy_Across_Folds = 100*Balanced_Accuracy_Across_Folds) %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD")))
+
+all_balacc_top_in_sample <- do.call(plyr::rbind.fill, list(univariate_balanced_accuracy,
+                                               pairwise_balanced_accuracy,
+                                               combo_univariate_pairwise_balanced_accuracy)) %>%
+  mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
+                                      Comparison_Group == "Bipolar" ~ "BP",
+                                      T ~ Comparison_Group)) %>%
+  mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD"))) %>%
+  group_by(Study, Comparison_Group, Analysis_Type) %>%
+  filter(Training_Balanced_Accuracy_Across_Folds == max(Training_Balanced_Accuracy_Across_Folds))
+  
   
 ################################################################################
 # Violin plot by disorder
@@ -134,3 +153,6 @@ all_p_values %>%
         legend.position="none")
 ggsave(paste0(plot_path, "Performance_across_representations.svg"),
        width = 6, height= 6, units="in", dpi=300)
+
+################################################################################
+# Violin plot by disorder

@@ -204,6 +204,7 @@ ht2 <- ComplexHeatmap::Heatmap(feature_accuracy_corr_data,
                                show_row_names = TRUE,
                                show_column_names = FALSE,
                                show_column_dend = FALSE,
+                               border = TRUE,
                                cell_fun = function(j, i, x, y, width, height, fill) {
                                  grid.text(sprintf("%.2f", feature_accuracy_corr_data[i, j]), x, y, gp = gpar(fontsize = 16))
                                },

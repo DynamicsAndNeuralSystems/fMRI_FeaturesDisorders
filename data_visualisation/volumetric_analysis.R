@@ -89,7 +89,7 @@ ROI_volume_beta_by_group <- 1:3 %>%
   purrr::map_df(~ run_lm_beta_stats_for_group(region_wise_volumes = region_wise_volumes,
                                           comparison_group = study_group_df$Comparison_Group[.x])) %>%
   group_by(Comparison_Group) %>%
-  mutate(p_value_Bonferroni = p.adjust(p.value, method="bonferroni"))
+  mutate(p_value_HolmBonferroni = p.adjust(p.value, method="holm"))
 
 # Load univariate classification results across all folds
 univariate_balanced_accuracy_all_folds <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_balanced_accuracy_all_folds.feather")) %>%
@@ -120,9 +120,9 @@ ROI_volume_beta_by_group %>%
   xlab("\u03b2 for Region Volume") +
   stat_cor(method="spearman", cor.coef.name="rho", color="black", label.sep = "\n") +
   stat_smooth(method="lm", color="black") +
-  scale_color_manual(values=c("Schizophrenia" = "#573DC7", 
-                              "Bipolar" = "#D5492A", 
-                              "ADHD" = "#0F9EA9")) +
+  scale_color_manual(values=c("Schizophrenia" = "#9d60a8", 
+                              "Bipolar" = "#2f77c0", 
+                              "ADHD" = "#e45075")) +
   theme(legend.position = "none",
         panel.border = element_blank(),
         strip.background = element_blank(), 
@@ -130,7 +130,7 @@ ROI_volume_beta_by_group %>%
 ggsave(glue("{plot_path}/Volume_vs_BalAcc_res.svg"),
        width=3, height=6, units="in", dpi=300)
 
-# Do correlation test with Bonferroni correction
+# Do correlation test with Holm-Bonferroni correction
 ROI_volume_beta_by_group %>%
   dplyr::select(Brain_Region, Comparison_Group, estimate) %>%
   dplyr::rename("beta_coef" = "estimate") %>%
@@ -139,7 +139,7 @@ ROI_volume_beta_by_group %>%
   do(tidy(cor.test(.$beta_coef, .$Balanced_Accuracy_Across_Folds, method="spearman"))) %>%
   ungroup() %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("Schizophrenia", "Bipolar", "ADHD")),
-         p_val_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
+         p_val_HolmBonferroni = p.adjust(p.value, method="holm")) %>%
   arrange(Comparison_Group)
 
 ################################################################################
@@ -169,7 +169,6 @@ region_wise_volumes %>%
 ggsave(glue("{plot_path}/Average_Volume_vs_BalAcc_res.svg"),
        width=3, height=6, units="in", dpi=300)
 
-
 # Do correlation test with Bonferroni correction
 region_wise_volumes %>%
   group_by(Diagnosis, Brain_Region) %>%
@@ -182,33 +181,5 @@ region_wise_volumes %>%
   do(tidy(cor.test(.$mean_volume, .$Balanced_Accuracy_Across_Folds, method="spearman"))) %>%
   ungroup() %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("Schizophrenia", "Bipolar", "ADHD")),
-         p_val_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
+         p_val_HolmBonferroni = p.adjust(p.value, method="bonferroni")) %>%
   arrange(Comparison_Group)
-
-################################################################################
-# Do any features correlate with general region size?
-UCLA_CNP_catch25 <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather")  %>%
-  left_join(., UCLA_CNP_sample_metadata)
-
-UCLA_CNP_catch25 %>%
-  left_join(., region_wise_volumes) %>%
-  dplyr::select(Sample_ID, Brain_Region, names, Num_Voxels, values) %>%
-  left_join(., TS_feature_info, by=c("names"="feature_name")) %>%
-  filter(!is.na(Num_Voxels)) %>%
-  group_by(Brain_Region, names, Figure_name) %>%
-  summarise(mean_num_voxels = mean(Num_Voxels),
-            mean_feature_values = mean(values)) %>%
-  ggplot(data=., mapping=aes(x=mean_num_voxels, y=mean_feature_values, color=Figure_name)) +
-  geom_point() + 
-  ylab("Average feature value in region") +
-  xlab("Average # voxels in region") +
-  stat_smooth(se=FALSE, color="black", geom="line", alpha=0.7, size=1) +
-  facet_wrap(Figure_name ~ ., nrow=5, scales="free_y") +
-  theme(legend.position="none",
-        strip.background = element_blank(),
-        strip.text = element_text(face="bold"),
-        axis.ticks.y = element_blank(),
-        axis.text=element_blank())
-ggsave(glue("{plot_path}/Volume_vs_Feature_Values.svg"),
-       width=8, height=6, units="in", dpi=300)
-

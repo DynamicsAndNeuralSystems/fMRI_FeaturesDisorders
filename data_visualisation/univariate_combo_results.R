@@ -223,6 +223,13 @@ ggsave(glue("{plot_path}/univariate_bowtie_balanced_accuracy_supplement.svg"),
 ################################################################################
 # Compare performance with L1-regularized SVM balanced accuracy implemented with LinearSVC()
 SVM_L1_balanced_accuracy_by_folds <- pyarrow_feather$read_feather(glue("{data_path}/SVM_L1_Regularized_Balanced_Accuracy.feather"))
+SVM_L1_coefficients <- pyarrow_feather$read_feather(glue("{data_path}/SVM_L1_Regularized_Coefficients.feather"))
+
+# Find number of unique features by disorder
+SVM_L1_coefficients %>%
+  group_by(Comparison_Group) %>%
+  distinct(`Feature Name`) %>%
+  count()
 
 # Aggregate balanced accuracy by repeats
 SVM_L1_balanced_accuracy <- SVM_L1_balanced_accuracy_by_folds %>%
@@ -271,8 +278,7 @@ SVM_L1_balanced_accuracy_by_folds %>%
         strip.text = element_text(face="bold"),
         strip.background = element_blank())
 ggsave(glue("{plot_path}/Univariate_Combo_with_vs_without_Regularization.svg"),
-       width=6, height=4, units="in", dpi=300)
-
+       width=6, height=3.5, units="in", dpi=300)
 
 ################################################################################
 # How do samples compare in PC space?
@@ -351,3 +357,32 @@ ggsave(glue("{plot_path}/Univariate_combo_PCA_biplots.svg"),
 ################################################################################
 # Comparing classification performance using the first 25 PCs per disorder
 
+univariate_combo_first25_PCs_balanced_accuracy <- pyarrow_feather$read_feather("~/data/TS_feature_manuscript/Univariate_combo_first25_PCs_balanced_accuracy.feather")
+
+univariate_combo_first25_PCs_balanced_accuracy %>%
+  plyr::rbind.fill(univariate_balanced_accuracy_all_folds %>% filter(Analysis_Type=="Univariate_Combo")) %>%
+  left_join(study_group_df) %>%
+  mutate(Group_Nickname = factor(Group_Nickname, levels=c("SCZ", "BP", "ADHD", "ASD"))) %>%
+  ggplot(data=., mapping=aes(x=Analysis_Type, y=100*Balanced_Accuracy)) +
+  xlab("SVM Type") +
+  ylab("Balanced Accuracy (%)") +
+  geom_violinhalf(aes(fill = Analysis_Type), 
+                  position = position_nudge(x=0.2),
+                  scale="width", width=0.6)  +
+  geom_boxplot(width=0.1, notch=FALSE, notchwidth = 0.4, outlier.shape = NA,
+               fill=NA, color="white",
+               position = position_nudge(x=0.27), coef = 0) +
+  geom_hline(yintercept = 50, linetype=2, alpha=0.5) +
+  facet_grid(. ~ Group_Nickname) +
+  geom_point(aes(color = Analysis_Type), position = position_jitter(width=0.1),
+             size = 1.75, alpha=0.6, stroke=0) +
+  labs(fill="", color="") +
+  scale_fill_manual(values = c("#a86ba3", "#cfafcd")) +
+  scale_color_manual(values = c("#a86ba3", "#cfafcd")) +
+  theme(legend.position = "bottom",
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        strip.text = element_text(face="bold"),
+        strip.background = element_blank())
+ggsave(glue("{plot_path}/Univariate_Combo_vs_First_25_PCs.svg"),
+       width=6, height=3.5, units="in", dpi=300)

@@ -9,7 +9,7 @@ TAF::mkdir(plot_path)
 # python_to_use <- "~/.conda/envs/pyspi/bin/python3"
 python_to_use <- "/Users/abry4213/anaconda3/envs/pyspi/bin/python3"
 pairwise_feature_set <- "pyspi14"
-univariate_feature_set <- "catch24"
+univariate_feature_set <- "catch25"
 data_path <- "~/data/TS_feature_manuscript"
 
 study_group_df <- data.frame(Study = c(rep("UCLA_CNP", 3), "ABIDE_ASD"),
@@ -54,7 +54,7 @@ ABIDE_ASD_brain_region_info <- read.table("~/data/ABIDE_ASD/study_metadata/ABIDE
   mutate(Brain_Region = ifelse(Index==45, "Heschl's Gyrus (includes H1 and H2)", Brain_Region))
 
 # Load participants included
-UCLA_CNP_subjects_to_keep <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch24_pyspi14.feather")
+UCLA_CNP_subjects_to_keep <- pyarrow_feather$read_feather("~/data/UCLA_CNP/processed_data/UCLA_CNP_filtered_sample_info_AROMA_2P_GMR_catch25_pyspi14.feather")
   
 # Load study metadata
 UCLA_CNP_metadata <- pyarrow_feather$read_feather("~/data/UCLA_CNP/study_metadata/UCLA_CNP_sample_metadata.feather") %>%
@@ -178,7 +178,7 @@ data_for_corr_heatmap[is.na(data_for_corr_heatmap)] <- 1
 # Rearrange rows and columns
 data_for_corr_heatmap <- data_for_corr_heatmap[sig_SPIs, sig_SPIs]
 
-num_branches <- 4
+num_branches <- 6
 
 ht1 <- ComplexHeatmap::Heatmap(data_for_corr_heatmap,
                                clustering_distance_rows = "spearman",
@@ -270,6 +270,7 @@ ht2 <- ComplexHeatmap::Heatmap(SPI_accuracy_corr_data,
                                show_row_names = TRUE,
                                show_column_names = FALSE,
                                show_column_dend = FALSE,
+                               border = TRUE,
                                cell_fun = function(j, i, x, y, width, height, fill) {
                                  grid.text(sprintf("%.2f", SPI_accuracy_corr_data[i, j]), x, y, gp = gpar(fontsize = 16))
                                },
