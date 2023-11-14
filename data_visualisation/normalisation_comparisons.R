@@ -33,26 +33,26 @@ UCLA_CNP_data_path <- "~/data/UCLA_CNP/processed_data/"
 ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/processed_data/"
 
 # Load feature info data
-catch24_feature_info <- read.csv("~/github/fMRI_FeaturesDisorders/data_visualisation/catch24_info.csv")
+catch25_feature_info <- read.csv("~/github/fMRI_FeaturesDisorders/data_visualisation/catch25_info.csv")
 pyspi14_feature_info <- read.csv("~/github/fMRI_FeaturesDisorders/data_visualisation/SPI_info.csv")
 
-# Load univariate catch24 data
-UCLA_CNP_catch24_raw_data <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch24_filtered.feather")) %>%
+# Load univariate catch25 data
+UCLA_CNP_catch25_raw_data <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather")) %>%
   mutate(Normalization = "Raw Data")
 
-ABIDE_ASD_catch24_raw_data <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch24_filtered.feather")) %>%
+ABIDE_ASD_catch25_raw_data <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered.feather")) %>%
   mutate(Normalization = "Raw Data")
 
-UCLA_CNP_catch24_z <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch24_filtered_zscored.feather")) %>%
+UCLA_CNP_catch25_z <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_zscored.feather")) %>%
   mutate(Normalization = "z-scored")
 
-ABIDE_ASD_catch24_z <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch24_filtered_zscored.feather")) %>%
+ABIDE_ASD_catch25_z <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_zscored.feather")) %>%
   mutate(Normalization = "z-score")
 
-UCLA_CNP_catch24_RS <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch24_filtered_MixedSigmoid.feather")) %>%
+UCLA_CNP_catch25_RS <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_MixedSigmoid.feather")) %>%
   mutate(Normalization = "Mixed Sigmoid")
 
-ABIDE_ASD_catch24_RS <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch24_filtered_MixedSigmoid.feather")) %>%
+ABIDE_ASD_catch25_RS <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_MixedSigmoid.feather")) %>%
   mutate(Normalization = "Mixed Sigmoid")
 
 # Load pairwise pyspi14 data
@@ -80,7 +80,7 @@ ABIDE_ASD_pyspi14_RS <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}
 
 
 # Plot values for UCLA CNP
-# Function to plot raw data, z-scored data, and mixed sigmoid-transformed data for each catch24 featuree
+# Function to plot raw data, z-scored data, and mixed sigmoid-transformed data for each catch25 featuree
 plot_values <- function(feature_data, TS_feature_info, norm_type="none", y_label="Raw\nValues") {
   p <- feature_data %>%
     left_join(., TS_feature_info) %>%
@@ -112,13 +112,13 @@ plot_values <- function(feature_data, TS_feature_info, norm_type="none", y_label
   return(p)
 }
 
-# catch24
-UCLA_CNP_catch24_plot_list <- list(plot_values(feature_data=UCLA_CNP_catch24_raw_data %>% dplyr::rename("catch24_name" = "names"), TS_feature_info=catch24_feature_info, norm_type="none", "Raw\nValues"),
-                                   plot_values(UCLA_CNP_catch24_z %>% dplyr::rename("catch24_name" = "names"), TS_feature_info=catch24_feature_info, norm_type="z_score", "z-score"),
-                                   plot_values(UCLA_CNP_catch24_RS %>% dplyr::rename("catch24_name" = "names"), TS_feature_info=catch24_feature_info, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
+# catch25
+UCLA_CNP_catch25_plot_list <- list(plot_values(feature_data=UCLA_CNP_catch25_raw_data %>% dplyr::rename("feature_name" = "names"), TS_feature_info=catch25_feature_info, norm_type="none", "Raw\nValues"),
+                                   plot_values(UCLA_CNP_catch25_z %>% dplyr::rename("feature_name" = "names"), TS_feature_info=catch25_feature_info, norm_type="z_score", "z-score"),
+                                   plot_values(UCLA_CNP_catch25_RS %>% dplyr::rename("feature_name" = "names"), TS_feature_info=catch25_feature_info, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
 
-wrap_plots(UCLA_CNP_catch24_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
-ggsave(glue("{plot_path}/UCLA_CNP_catch24_norms.svg"), bg="white",
+wrap_plots(UCLA_CNP_catch25_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
+ggsave(glue("{plot_path}/UCLA_CNP_catch25_norms.svg"), bg="white",
        width = 28, height = 5, units = "in", dpi = 300)
 
 # pyspi14
@@ -132,13 +132,13 @@ ggsave(glue("{plot_path}/UCLA_CNP_pyspi14_norms.svg"), bg="white",
 
 # Plot values for ABIDE ASD
 
-# catch24
-ABIDE_ASD_catch24_plot_list <- list(plot_values(ABIDE_ASD_catch24_raw_data %>% dplyr::rename("catch24_name" = "names"), TS_feature_info=catch24_feature_info, norm_type="none", "Raw\nValues"),
-                                    plot_values(ABIDE_ASD_catch24_z %>% dplyr::rename("catch24_name" = "names"), TS_feature_info=catch24_feature_info, norm_type="z_score", "z-score"),
-                                    plot_values(ABIDE_ASD_catch24_RS %>% dplyr::rename("catch24_name" = "names"), TS_feature_info=catch24_feature_info, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
+# catch25
+ABIDE_ASD_catch25_plot_list <- list(plot_values(ABIDE_ASD_catch25_raw_data %>% dplyr::rename("feature_name" = "names"), TS_feature_info=catch25_feature_info, norm_type="none", "Raw\nValues"),
+                                    plot_values(ABIDE_ASD_catch25_z %>% dplyr::rename("feature_name" = "names"), TS_feature_info=catch25_feature_info, norm_type="z_score", "z-score"),
+                                    plot_values(ABIDE_ASD_catch25_RS %>% dplyr::rename("feature_name" = "names"), TS_feature_info=catch25_feature_info, norm_type="mixed_sigmoid", "Mixed\nSigmoid"))
 
-wrap_plots(ABIDE_ASD_catch24_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
-ggsave(glue("{plot_path}/ABIDE_ASD_catch24_norms.svg"), bg="white",
+wrap_plots(ABIDE_ASD_catch25_plot_list, ncol=1, heights=c(0.36, 0.3, 0.3))
+ggsave(glue("{plot_path}/ABIDE_ASD_catch25_norms.svg"), bg="white",
        width = 28, height = 5, units = "in", dpi = 300)
 
 # pyspi14
