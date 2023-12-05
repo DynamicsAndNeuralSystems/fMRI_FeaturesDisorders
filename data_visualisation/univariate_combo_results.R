@@ -150,68 +150,48 @@ ggsave(glue("{plot_path}/univariate_bowtie_balanced_accuracy.svg"),
        width=9, height=2.5, units="in", dpi=300)
 
 ################################################################################
-# Take only the top-performing region and time-series feature from training data
-univariate_balanced_accuracy_best_in_sample <- univariate_balanced_accuracy_all_folds %>%
-  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, kernel) %>%
-  reframe(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
-          Training_Balanced_Accuracy_Across_Folds = mean(Training_Balanced_Accuracy, na.rm=T),
-          Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) %>%
-  group_by(Study, Comparison_Group, Analysis_Type) %>%
-  filter(Training_Balanced_Accuracy_Across_Folds == max(Training_Balanced_Accuracy_Across_Folds))
+# Take only the top-performing region and time-series feature from training data folds
+univariate_balanced_accuracy_best_from_in_sample_all_folds <- univariate_balanced_accuracy_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, Fold, Repeat_Number) %>%
+  filter(Training_Balanced_Accuracy==max(Training_Balanced_Accuracy)) %>%
+  ungroup() %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type) %>%
+  mutate(Mean_CV_Balanced_Accuracy_Overall = mean(Balanced_Accuracy),
+         SD_Balanced_Accuracy_Overall = sd(Balanced_Accuracy)) 
+univariate_balanced_accuracy_best_from_in_sample <- univariate_balanced_accuracy_best_from_in_sample_all_folds %>%
+  group_by(Study, Comparison_Group, Univariate_Feature_Set, Analysis_Type, group_var, Mean_CV_Balanced_Accuracy_Overall) %>%
+  reframe(percent_of_100 = n()/100)
 
-univariate_p_values_best_in_sample <- univariate_balanced_accuracy_best_in_sample %>%
-  filter(group_var!="Combo") %>%
-  left_join(., univariate_p_values) %>%
-  group_by(Study, Comparison_Group) %>%
-  mutate(group_ID = paste0(Comparison_Group, "_", row_number()))
-
-# Bowtie plot comparing each brain region and feature to combo-wise performance
-num_comparisons <- univariate_balanced_accuracy_best_in_sample %>%
-  filter(Analysis_Type != "Univariate_Combo") %>%
-  group_by(Study, Comparison_Group) %>%
-  count()
-
-univariate_p_values %>%
-  filter(Analysis_Type == "Univariate_Combo") %>% 
-  left_join(., num_comparisons) %>%
-  expandRows("n") %>%
-  group_by(Study, Comparison_Group) %>%
-  mutate(group_ID = paste0(Comparison_Group, "_", row_number())) %>%
-  plyr::rbind.fill(., univariate_p_values_best_in_sample) %>%
-  rowwise() %>%
+# Violin plot
+univariate_balanced_accuracy_best_from_in_sample_all_folds %>%
   mutate(Comparison_Group = case_when(Comparison_Group == "Schizophrenia" ~ "SCZ",
                                       Comparison_Group == "Bipolar" ~ "BP",
                                       T ~ Comparison_Group),
          Analysis_Label = case_when(Analysis_Type == "Univariate_Combo" ~ "All\nRegions \u00D7\nFeatures",
                                     Analysis_Type == "Univariate_TS_Feature" ~ "Individual\ncatch25\nFeatures",
-                                    T ~ "Individual\nBrain\nRegions"),
-         Analysis_Sig = paste0(Comparison_Group, "_", p_value_HolmBonferroni < 0.05)) %>%
+                                    T ~ "Individual\nBrain\nRegions")) %>%
   mutate(Comparison_Group = factor(Comparison_Group, levels = c("SCZ", "BP", "ADHD", "ASD")),
          Analysis_Label = factor(Analysis_Label, levels = c("Individual\ncatch25\nFeatures",
                                                             "All\nRegions \u00D7\nFeatures",
                                                             "Individual\nBrain\nRegions"))) %>%
-  group_by(Study, Comparison_Group, group_ID) %>%
-  mutate(Comparison_Sig = paste0(Comparison_Group, "_", p_value_HolmBonferroni[Analysis_Type != "Univariate_Combo"]<0.05)) %>% 
-  ggplot(data=., mapping=aes(x=Analysis_Label, y=100*Balanced_Accuracy_Across_Folds, 
-                             group=group_ID, color=Comparison_Sig)) +
-  geom_line(alpha=0.5) +
-  geom_point(aes(size=Analysis_Type, color=Analysis_Sig)) +
+  ggplot(data=., mapping=aes(x=Analysis_Label, y=100*Balanced_Accuracy, 
+                             fill=Comparison_Group, color = Comparison_Group)) +
+  geom_violin(alpha=0.2) +
+  facet_grid(. ~ Comparison_Group, scales="free", space="free") +
   ylab("Mean Balanced Accuracy Across Repeats (%)") +
   xlab("Classifier Inputs") +
   geom_hline(yintercept = 50, linetype=2) +
-  scale_x_discrete(expand=c(0.05,0.05,0.05,0.05)) +
-  scale_size_manual(values=c("Univariate_Combo"=4,
-                             "Univariate_TS_Feature"=1.5,
-                             "Univariate_Brain_Region" = 1.5)) +
-  scale_color_manual(values = c("SCZ_TRUE"="#9d60a8", 
-                                "BP_TRUE"="#2F77C0", 
-                                "ADHD_TRUE"="#e45075",
-                                "ASD_TRUE"="#E28328",
-                                "SCZ_FALSE"="gray70", 
-                                "BP_FALSE"="gray70", 
-                                "ADHD_FALSE"="gray70",
-                                "ASD_FALSE"="gray70")) +
-  facet_grid(. ~ Comparison_Group, scales="free_x", space="free") +
+  stat_summary(fun = "mean",
+               geom = "crossbar", 
+               width = 0.5) +
+  scale_fill_manual(values = c("SCZ"="#9d60a8", 
+                                "BP"="#2F77C0", 
+                                "ADHD"="#e45075",
+                                "ASD"="#E28328")) +
+  scale_color_manual(values = c("SCZ"="#9d60a8", 
+                                "BP"="#2F77C0", 
+                                "ADHD"="#e45075",
+                                "ASD"="#E28328")) +
   theme(legend.position = "none",
         plot.margin = margin(1,10,1,1),
         strip.background = element_blank(),
@@ -219,6 +199,14 @@ univariate_p_values %>%
   coord_flip()
 ggsave(glue("{plot_path}/univariate_bowtie_balanced_accuracy_supplement.svg"),
        width=9, height=2.5, units="in", dpi=300)
+
+# What are the top-performing regions and features in general by disorder?
+
+univariate_balanced_accuracy_best_from_in_sample %>%
+  group_by(Comparison_Group, Analysis_Type) %>%
+  top_n(n=1, wt=percent_of_100) %>%
+  left_join(., TS_feature_info, by=c("group_var"="feature_name")) %>%
+  dplyr::select(Comparison_Group, Analysis_Type, group_var, Figure_name, percent_of_100)
 
 ################################################################################
 # Compare performance with L1-regularized SVM balanced accuracy implemented with LinearSVC()

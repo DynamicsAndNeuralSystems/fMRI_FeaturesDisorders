@@ -172,6 +172,7 @@ repkfold_ttest <- function(data, n1, n2, k, r){
   } else{
     
     statistic <- mean(unlist(d), na.rm = TRUE) / sqrt(stats::var(unlist(d), na.rm = TRUE) * ((1/(k * r)) + (n2/n1))) # Calculate t-statistic
+    df <- n1 + n2 - 2
     
     if(statistic < 0){
       p.value <- stats::pt(statistic, (k * r) - 1) # p-value for left tail
@@ -179,7 +180,7 @@ repkfold_ttest <- function(data, n1, n2, k, r){
       p.value <- stats::pt(statistic, (k * r) - 1, lower.tail = FALSE) # p-value for right tail
     }
     
-    tmp <- data.frame(statistic = statistic, p.value = p.value)
+    tmp <- data.frame(statistic = statistic, p.value = p.value, df = df)
   }
   
   return(tmp)
@@ -283,3 +284,13 @@ plyr::rbind.fill(pairwise_p_values,
         legend.title = element_blank())
 ggsave(glue("{plot_path}/SPI_with_vs_without_univariate_spaghetti.svg"),
        width=3.5, height=5, units="in", dpi=300)
+
+# Save stats to a CSV file as a supplementary table
+corrected_SPI_T_res %>%
+  dplyr::select(Figure_name, Comparison_Group, statistic, df, p_value_corr_HolmBonferroni) %>%
+  dplyr::rename("SPI" = "Figure_name",
+                "Disorder" = "Comparison_Group",
+                "T-statistic" = "statistic",
+                "Holm-Bonferroni corrected P" = "p_value_corr_HolmBonferroni") %>%
+  write.csv(., glue("{github_dir}/plots/Manuscript_Draft/tables/combined_pairwise_univariate_corr_T_test_res.csv"),
+            row.names = F)

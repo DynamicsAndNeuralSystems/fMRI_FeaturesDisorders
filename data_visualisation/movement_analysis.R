@@ -240,10 +240,10 @@ ggsave(paste0(plot_path, "mFD_vs_SD.svg"),
 
 # Calculate correlations
 SD_brain_wide_avg %>%
-  group_by(Study) %>%
+  group_by(Study, Diagnosis) %>%
   nest() %>%
   mutate(
-    test = map(data, ~ cor.test(.x$meanval, .x$Power)), # S3 list-col
+    test = map(data, ~ cor.test(.x$meanval, .x$Power, method="spearman")), # S3 list-col
     tidied = map(test, tidy)
   ) %>%
   unnest(tidied)
