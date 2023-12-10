@@ -28,13 +28,13 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="1.1768341"
-     inkscape:cx="156.35169"
-     inkscape:cy="184.8179"
-     inkscape:window-width="1869"
-     inkscape:window-height="939"
-     inkscape:window-x="0"
-     inkscape:window-y="25"
+     inkscape:zoom="1.0830346"
+     inkscape:cx="380.87426"
+     inkscape:cy="222.06124"
+     inkscape:window-width="1470"
+     inkscape:window-height="811"
+     inkscape:window-x="1920"
+     inkscape:window-y="110"
      inkscape:window-maximized="0"
      inkscape:current-layer="layer1" />
   <defs
@@ -2774,6 +2774,42 @@
          height="216"
          id="rect3615528-7" />
     </clipPath>
+    <clipPath
+       id="cpODIuNTh8MjIyLjExfDEuMDB8NjYuMTE=-4">
+      <rect
+         x="82.580002"
+         y="1"
+         width="139.53"
+         height="65.120003"
+         id="rect39937" />
+    </clipPath>
+    <clipPath
+       id="cpODIuNTh8MjIyLjExfDczLjA5fDEzOC4yMQ==-91">
+      <rect
+         x="82.580002"
+         y="73.089996"
+         width="139.53"
+         height="65.120003"
+         id="rect40030" />
+    </clipPath>
+    <clipPath
+       id="cpODIuNTh8MjIyLjExfDE0NS4xOHwyMTAuMzA=-7">
+      <rect
+         x="82.580002"
+         y="145.17999"
+         width="139.53"
+         height="65.120003"
+         id="rect40123" />
+    </clipPath>
+    <clipPath
+       id="cpODIuNTh8MjIyLjExfDIxNy4yN3wyODIuMzk=-5">
+      <rect
+         x="82.580002"
+         y="217.27"
+         width="139.53"
+         height="65.120003"
+         id="rect40138" />
+    </clipPath>
   </defs>
   <g
      inkscape:label="Layer 1"
@@ -2830,14 +2866,14 @@
        xml:space="preserve"><tspan
          x="160.60001"
          y="284.51999"
-         id="tspan18111">FC + local dynamics<tspan
+         id="tspan51404">FC + local dynamics<tspan
    y="284.51999"
-   id="tspan18113"> </tspan></tspan><tspan
+   id="tspan51406"> </tspan></tspan><tspan
          x="160.60001"
          y="295.31998"
-         id="tspan18117">(A<tspan
+         id="tspan51410">(A<tspan
    style="font-size:65%;baseline-shift:sub"
-   id="tspan18115">FC_Combo</tspan>)</tspan></text>
+   id="tspan51408">FC_Combo</tspan>)</tspan></text>
     <text
        x="109.29"
        y="326.62"
@@ -2928,14 +2964,14 @@
        transform="matrix(0.67074361,0,0,0.67074361,80.412931,-50.02763)"><tspan
          x="104.15717"
          y="87.600288"
-         id="tspan18121"><tspan
+         id="tspan51414"><tspan
            style="fill:#000000;stroke:none"
-           id="tspan18119">Repeat for </tspan></tspan><tspan
+           id="tspan51412">Repeat for </tspan></tspan><tspan
          x="104.15717"
          y="91.319622"
-         id="tspan18125"><tspan
+         id="tspan51418"><tspan
            style="fill:#000000;stroke:none"
-           id="tspan18123">all SPIs</tspan></tspan></text>
+           id="tspan51416">all SPIs</tspan></tspan></text>
     <text
        fill="#000000"
        fill-opacity="1"
@@ -2958,7 +2994,7 @@
        xml:space="preserve"><tspan
          x="138.5105"
          y="87.085915"
-         id="tspan18127">SPIs (S)</tspan></text>
+         id="tspan51420">SPIs (S)</tspan></text>
     <rect
        style="fill:#f2f2f2;fill-opacity:1;fill-rule:evenodd;stroke:#eead0e;stroke-width:0.228422;stroke-dasharray:none;stroke-opacity:1"
        id="rect150262-96-5"
@@ -3357,14 +3393,14 @@
        xml:space="preserve"><tspan
          x="153.4968"
          y="87.085915"
-         id="tspan18131"><tspan
+         id="tspan51424"><tspan
            style="text-align:center;text-anchor:middle"
-           id="tspan18129">Brain region </tspan></tspan><tspan
+           id="tspan51422">Brain region </tspan></tspan><tspan
          x="153.4968"
          y="89.91206"
-         id="tspan18135"><tspan
+         id="tspan51428"><tspan
            style="text-align:center;text-anchor:middle"
-           id="tspan18133">pairs (P)</tspan></tspan></text>
+           id="tspan51426">pairs (P)</tspan></tspan></text>
     <g
        id="g316623"
        transform="matrix(0.56013976,0,0,0.56013976,40.123392,-76.658309)">
@@ -3489,22 +3525,22 @@
          transform="translate(0,-12.1228)"><tspan
            x="176.18568"
            y="161.11647"
-           id="tspan18137">SPI 1 with all<tspan
+           id="tspan51430">SPI 1 with all<tspan
    y="161.11647"
-   id="tspan18139"> </tspan></tspan><tspan
+   id="tspan51432"> </tspan></tspan><tspan
            x="176.18568"
            y="165.12726"
-           id="tspan18141">brain-wide<tspan
+           id="tspan51434">brain-wide<tspan
    y="165.12726"
-   id="tspan18143"> </tspan></tspan><tspan
+   id="tspan51436"> </tspan></tspan><tspan
            x="176.18568"
            y="169.13805"
-           id="tspan18145">maps of local<tspan
+           id="tspan51438">maps of local<tspan
    y="169.13805"
-   id="tspan18147"> </tspan></tspan><tspan
+   id="tspan51440"> </tspan></tspan><tspan
            x="176.18568"
            y="173.14883"
-           id="tspan18149">dynamics</tspan></text>
+           id="tspan51442">dynamics</tspan></text>
     </g>
     <path
        d="m 126.55215,4.2319112 c 1.39393,0 2.52372,3.1236056 2.52372,6.9769098 v 0 c 0,3.853326 1.12977,6.976926 2.5237,6.976926 -1.39393,0 -2.5237,3.123615 -2.5237,6.976914 0,3.853321 -1.12979,6.976926 -2.52372,6.976926"
@@ -4640,698 +4676,6 @@
        y="37.114925"><tspan
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:'Tw Cen MT';-inkscape-font-specification:'Tw Cen MT';fill:#c08c0c;fill-opacity:1;stroke-width:0.0423079"
          id="tspan28962">Balanced Accuracy (%)</tspan></text>
-    <g
-       clip-path="url(#cpODIuNTh8MjIyLjExfDEuMDB8NjYuMTE=-5)"
-       id="g4869237"
-       transform="matrix(0.23753139,0,0,0.23599099,111.21281,37.484204)">
-      <polyline
-         points="102.52,50.55 202.18,19.96 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
-         id="polyline4869153" />
-      <polyline
-         points="102.52,56.46 202.18,16.55 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
-         id="polyline4869155" />
-      <polyline
-         points="102.52,23.01 202.18,18.18 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869157" />
-      <polyline
-         points="102.52,41.47 202.18,18.34 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869159" />
-      <polyline
-         points="102.52,9.61 202.18,3.96 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869161" />
-      <polyline
-         points="102.52,25.37 202.18,12.40 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869163" />
-      <polyline
-         points="102.52,20.40 202.18,14.94 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869165" />
-      <polyline
-         points="102.52,35.15 202.18,11.72 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869167" />
-      <polyline
-         points="102.52,47.88 202.18,20.21 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
-         id="polyline4869169" />
-      <polyline
-         points="102.52,55.25 202.18,38.34 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869171" />
-      <polyline
-         points="102.52,49.38 202.18,21.63 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
-         id="polyline4869173" />
-      <polyline
-         points="102.52,50.24 202.18,25.26 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869175" />
-      <polyline
-         points="102.52,53.11 202.18,32.73 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
-         id="polyline4869177" />
-      <polyline
-         points="102.52,52.78 202.18,24.07 "
-         style="fill:none;stroke:#573dc7;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
-         id="polyline4869179" />
-      <circle
-         cx="102.52"
-         cy="50.549999"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869181" />
-      <circle
-         cx="102.52"
-         cy="56.459999"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869183" />
-      <circle
-         cx="102.52"
-         cy="23.01"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869185" />
-      <circle
-         cx="102.52"
-         cy="41.470001"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869187" />
-      <circle
-         cx="102.52"
-         cy="9.6099997"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869189" />
-      <circle
-         cx="102.52"
-         cy="25.370001"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869191" />
-      <circle
-         cx="102.52"
-         cy="20.4"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869193" />
-      <circle
-         cx="102.52"
-         cy="35.150002"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869195" />
-      <circle
-         cx="102.52"
-         cy="47.880001"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869197" />
-      <circle
-         cx="102.52"
-         cy="55.25"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869199" />
-      <circle
-         cx="102.52"
-         cy="49.380001"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869201" />
-      <circle
-         cx="102.52"
-         cy="50.240002"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869203" />
-      <circle
-         cx="102.52"
-         cy="53.110001"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869205" />
-      <circle
-         cx="102.52"
-         cy="52.779999"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869207" />
-      <circle
-         cx="202.17999"
-         cy="19.959999"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869209" />
-      <circle
-         cx="202.17999"
-         cy="16.549999"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869211" />
-      <circle
-         cx="202.17999"
-         cy="18.18"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869213" />
-      <circle
-         cx="202.17999"
-         cy="18.34"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869215" />
-      <circle
-         cx="202.17999"
-         cy="3.96"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869217" />
-      <circle
-         cx="202.17999"
-         cy="12.4"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869219" />
-      <circle
-         cx="202.17999"
-         cy="14.94"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869221" />
-      <circle
-         cx="202.17999"
-         cy="11.72"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869223" />
-      <circle
-         cx="202.17999"
-         cy="20.209999"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869225" />
-      <circle
-         cx="202.17999"
-         cy="38.34"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869227" />
-      <circle
-         cx="202.17999"
-         cy="21.629999"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869229" />
-      <circle
-         cx="202.17999"
-         cy="25.26"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869231" />
-      <circle
-         cx="202.17999"
-         cy="32.73"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869233" />
-      <circle
-         cx="202.17999"
-         cy="24.07"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869235" />
-    </g>
-    <g
-       clip-path="url(#cpODIuNTh8MjIyLjExfDczLjA5fDEzOC4yMQ==-9)"
-       id="g4869324"
-       transform="matrix(0.23753139,0,0,0.23599099,111.21281,37.484204)">
-      <polyline
-         points="102.52,126.63 202.18,108.90 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869246" />
-      <polyline
-         points="102.52,135.25 202.18,108.07 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
-         id="polyline4869248" />
-      <polyline
-         points="102.52,125.92 202.18,103.46 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869250" />
-      <polyline
-         points="102.52,104.40 202.18,94.24 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869252" />
-      <polyline
-         points="102.52,103.21 202.18,89.36 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869254" />
-      <polyline
-         points="102.52,100.83 202.18,88.36 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869256" />
-      <polyline
-         points="102.52,108.22 202.18,85.37 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869258" />
-      <polyline
-         points="102.52,132.02 202.18,102.51 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
-         id="polyline4869260" />
-      <polyline
-         points="102.52,116.61 202.18,86.03 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
-         id="polyline4869262" />
-      <polyline
-         points="102.52,117.25 202.18,103.63 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869264" />
-      <polyline
-         points="102.52,109.91 202.18,101.73 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869266" />
-      <polyline
-         points="102.52,127.54 202.18,114.49 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869268" />
-      <polyline
-         points="102.52,127.18 202.18,108.45 "
-         style="fill:none;stroke:#d5492a;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869270" />
-      <circle
-         cx="102.52"
-         cy="126.63"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869272" />
-      <circle
-         cx="102.52"
-         cy="135.25"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869274" />
-      <circle
-         cx="102.52"
-         cy="125.92"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869276" />
-      <circle
-         cx="102.52"
-         cy="104.4"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869278" />
-      <circle
-         cx="102.52"
-         cy="103.21"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869280" />
-      <circle
-         cx="102.52"
-         cy="100.83"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869282" />
-      <circle
-         cx="102.52"
-         cy="108.22"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869284" />
-      <circle
-         cx="102.52"
-         cy="132.02"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869286" />
-      <circle
-         cx="102.52"
-         cy="116.61"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869288" />
-      <circle
-         cx="102.52"
-         cy="117.25"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869290" />
-      <circle
-         cx="102.52"
-         cy="109.91"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869292" />
-      <circle
-         cx="102.52"
-         cy="127.54"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869294" />
-      <circle
-         cx="102.52"
-         cy="127.18"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869296" />
-      <circle
-         cx="202.17999"
-         cy="108.9"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869298" />
-      <circle
-         cx="202.17999"
-         cy="108.07"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869300" />
-      <circle
-         cx="202.17999"
-         cy="103.46"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869302" />
-      <circle
-         cx="202.17999"
-         cy="94.239998"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869304" />
-      <circle
-         cx="202.17999"
-         cy="89.360001"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869306" />
-      <circle
-         cx="202.17999"
-         cy="88.360001"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869308" />
-      <circle
-         cx="202.17999"
-         cy="85.370003"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869310" />
-      <circle
-         cx="202.17999"
-         cy="102.51"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869312" />
-      <circle
-         cx="202.17999"
-         cy="86.029999"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869314" />
-      <circle
-         cx="202.17999"
-         cy="103.63"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869316" />
-      <circle
-         cx="202.17999"
-         cy="101.73"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869318" />
-      <circle
-         cx="202.17999"
-         cy="114.49"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869320" />
-      <circle
-         cx="202.17999"
-         cy="108.45"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869322" />
-    </g>
-    <g
-       clip-path="url(#cpODIuNTh8MjIyLjExfDE0NS4xOHwyMTAuMzA=-2)"
-       id="g4869339"
-       transform="matrix(0.23753139,0,0,0.23599099,111.21281,37.484204)">
-      <polyline
-         points="102.52,188.85 202.18,194.18 "
-         style="fill:none;stroke:#0f9ea9;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869333" />
-      <circle
-         cx="102.52"
-         cy="188.85001"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869335" />
-      <circle
-         cx="202.17999"
-         cy="194.17999"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869337" />
-    </g>
-    <g
-       clip-path="url(#cpODIuNTh8MjIyLjExfDIxNy4yN3wyODIuMzk=-7)"
-       id="g4869432"
-       transform="matrix(0.23753139,0,0,0.23599099,111.21281,37.484204)">
-      <polyline
-         points="102.52,269.50 202.18,260.49 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869348" />
-      <polyline
-         points="102.52,269.22 202.18,255.98 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
-         id="polyline4869350" />
-      <polyline
-         points="102.52,261.13 202.18,259.89 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869352" />
-      <polyline
-         points="102.52,262.55 202.18,258.32 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869354" />
-      <polyline
-         points="102.52,249.09 202.18,250.06 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869356" />
-      <polyline
-         points="102.52,255.39 202.18,253.17 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869358" />
-      <polyline
-         points="102.52,257.72 202.18,254.23 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869360" />
-      <polyline
-         points="102.52,258.95 202.18,256.55 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869362" />
-      <polyline
-         points="102.52,252.50 202.18,248.40 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869364" />
-      <polyline
-         points="102.52,268.45 202.18,261.22 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869366" />
-      <polyline
-         points="102.52,267.16 202.18,256.63 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869368" />
-      <polyline
-         points="102.52,273.20 202.18,261.37 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869370" />
-      <polyline
-         points="102.52,272.32 202.18,263.85 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869372" />
-      <polyline
-         points="102.52,264.48 202.18,256.21 "
-         style="fill:none;stroke:#c47b2f;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
-         id="polyline4869374" />
-      <circle
-         cx="102.52"
-         cy="269.5"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869376" />
-      <circle
-         cx="102.52"
-         cy="269.22"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869378" />
-      <circle
-         cx="102.52"
-         cy="261.13"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869380" />
-      <circle
-         cx="102.52"
-         cy="262.54999"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869382" />
-      <circle
-         cx="102.52"
-         cy="249.09"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869384" />
-      <circle
-         cx="102.52"
-         cy="255.39"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869386" />
-      <circle
-         cx="102.52"
-         cy="257.72"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869388" />
-      <circle
-         cx="102.52"
-         cy="258.95001"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869390" />
-      <circle
-         cx="102.52"
-         cy="252.5"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869392" />
-      <circle
-         cx="102.52"
-         cy="268.45001"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869394" />
-      <circle
-         cx="102.52"
-         cy="267.16"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869396" />
-      <circle
-         cx="102.52"
-         cy="273.20001"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869398" />
-      <circle
-         cx="102.52"
-         cy="272.32001"
-         r="1.95"
-         style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869400" />
-      <circle
-         cx="102.52"
-         cy="264.48001"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869402" />
-      <circle
-         cx="202.17999"
-         cy="260.48999"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869404" />
-      <circle
-         cx="202.17999"
-         cy="255.98"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869406" />
-      <circle
-         cx="202.17999"
-         cy="259.89001"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869408" />
-      <circle
-         cx="202.17999"
-         cy="258.32001"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869410" />
-      <circle
-         cx="202.17999"
-         cy="250.06"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869412" />
-      <circle
-         cx="202.17999"
-         cy="253.17"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869414" />
-      <circle
-         cx="202.17999"
-         cy="254.23"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869416" />
-      <circle
-         cx="202.17999"
-         cy="256.54999"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869418" />
-      <circle
-         cx="202.17999"
-         cy="248.39999"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869420" />
-      <circle
-         cx="202.17999"
-         cy="261.22"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869422" />
-      <circle
-         cx="202.17999"
-         cy="256.63"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869424" />
-      <circle
-         cx="202.17999"
-         cy="261.37"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869426" />
-      <circle
-         cx="202.17999"
-         cy="263.85001"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869428" />
-      <circle
-         cx="202.17999"
-         cy="256.20999"
-         r="1.95"
-         style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
-         id="circle4869430" />
-    </g>
     <polyline
        points="82.58,66.11 82.58,1.00 "
        style="fill:none;stroke:#000000;stroke-width:1.07;stroke-linecap:square;stroke-linejoin:round;stroke-miterlimit:10"
@@ -5549,10 +4893,10 @@
        xml:space="preserve"><tspan
          x="101.82471"
          y="46.354412"
-         id="tspan18151">Region </tspan><tspan
+         id="tspan51444">Region </tspan><tspan
          x="101.82471"
          y="49.337253"
-         id="tspan18153">pairs</tspan></text>
+         id="tspan51446">pairs</tspan></text>
     <path
        d="M 9.1714495e-6,-5.72917 211.67715,-4.9141165 211.15493,5.3221133 -9.1714506e-6,5.72917 Z M 194.53976,-14.60452 225.44,3.60892e-4 194.23479,14.954641 Z"
        fill="#000000"
@@ -8782,13 +8126,13 @@
        xml:space="preserve"><tspan
          x="41.301395"
          y="180.49579"
-         id="tspan18155">Time-</tspan><tspan
+         id="tspan51448">Time-</tspan><tspan
          x="41.301395"
          y="183.72901"
-         id="tspan18157">series </tspan><tspan
+         id="tspan51450">series </tspan><tspan
          x="41.301395"
          y="186.96223"
-         id="tspan18159">features</tspan></text>
+         id="tspan51452">features</tspan></text>
     <path
        d="M 9.1714498e-6,-5.72917 212.66652,-4.9141165 212.66254,5.4677105 -9.1714501e-6,5.72917 Z M 212.21812,-16.635763 225.44,3.60892e-4 212.17101,16.374593 Z"
        fill="#000000"
@@ -9144,7 +8488,7 @@
        xml:space="preserve"><tspan
          x="153.4968"
          y="87.085915"
-         id="tspan18161">Participants</tspan></text>
+         id="tspan51454">Participants</tspan></text>
     <g
        clip-path="url(#cpMC4wMHwyMTYuMDB8MC4wMHwyMTYuMDA=-4-0)"
        id="g3615795-2"
@@ -11566,5 +10910,717 @@
        lengthAdjust="spacingAndGlyphs"
        id="text340924"
        transform="matrix(0.09373242,0,0,0.2979292,35.488651,-0.41626353)">Φ*</text>
+    <g
+       id="g41323"
+       transform="matrix(0.67159869,0,0,0.67159869,8.0340943,16.887276)">
+      <g
+         clip-path="url(#cpODIuNTh8MjIyLjExfDEuMDB8NjYuMTE=-4)"
+         id="g40026"
+         transform="matrix(0.35277777,0,0,0.35277777,153.76904,30.475761)">
+        <polyline
+           points="102.52,50.55 202.18,19.96 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
+           id="polyline39942" />
+        <polyline
+           points="102.52,56.46 202.18,16.55 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
+           id="polyline39944" />
+        <polyline
+           points="102.52,23.01 202.18,18.18 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline39946" />
+        <polyline
+           points="102.52,41.47 202.18,18.34 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline39948" />
+        <polyline
+           points="102.52,9.61 202.18,3.96 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline39950" />
+        <polyline
+           points="102.52,25.37 202.18,12.40 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline39952" />
+        <polyline
+           points="102.52,20.40 202.18,14.94 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline39954" />
+        <polyline
+           points="102.52,35.15 202.18,11.72 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline39956" />
+        <polyline
+           points="102.52,47.88 202.18,20.21 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
+           id="polyline39958" />
+        <polyline
+           points="102.52,55.25 202.18,38.34 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline39960" />
+        <polyline
+           points="102.52,49.38 202.18,21.63 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
+           id="polyline39962" />
+        <polyline
+           points="102.52,50.24 202.18,25.26 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline39964" />
+        <polyline
+           points="102.52,53.11 202.18,32.73 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
+           id="polyline39966" />
+        <polyline
+           points="102.52,52.78 202.18,24.07 "
+           style="fill:none;stroke:#9d60a8;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
+           id="polyline39968" />
+        <circle
+           cx="102.52"
+           cy="50.549999"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39970" />
+        <circle
+           cx="102.52"
+           cy="56.459999"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39972" />
+        <circle
+           cx="102.52"
+           cy="23.01"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39974" />
+        <circle
+           cx="102.52"
+           cy="41.470001"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39976" />
+        <circle
+           cx="102.52"
+           cy="9.6099997"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39978" />
+        <circle
+           cx="102.52"
+           cy="25.370001"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39980" />
+        <circle
+           cx="102.52"
+           cy="20.4"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39982" />
+        <circle
+           cx="102.52"
+           cy="35.150002"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39984" />
+        <circle
+           cx="102.52"
+           cy="47.880001"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39986" />
+        <circle
+           cx="102.52"
+           cy="55.25"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39988" />
+        <circle
+           cx="102.52"
+           cy="49.380001"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39990" />
+        <circle
+           cx="102.52"
+           cy="50.240002"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39992" />
+        <circle
+           cx="102.52"
+           cy="53.110001"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39994" />
+        <circle
+           cx="102.52"
+           cy="52.779999"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39996" />
+        <circle
+           cx="202.17999"
+           cy="19.959999"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle39998" />
+        <circle
+           cx="202.17999"
+           cy="16.549999"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40000" />
+        <circle
+           cx="202.17999"
+           cy="18.18"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40002" />
+        <circle
+           cx="202.17999"
+           cy="18.34"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40004" />
+        <circle
+           cx="202.17999"
+           cy="3.96"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40006" />
+        <circle
+           cx="202.17999"
+           cy="12.4"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40008" />
+        <circle
+           cx="202.17999"
+           cy="14.94"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40010" />
+        <circle
+           cx="202.17999"
+           cy="11.72"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40012" />
+        <circle
+           cx="202.17999"
+           cy="20.209999"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40014" />
+        <circle
+           cx="202.17999"
+           cy="38.34"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40016" />
+        <circle
+           cx="202.17999"
+           cy="21.629999"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40018" />
+        <circle
+           cx="202.17999"
+           cy="25.26"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40020" />
+        <circle
+           cx="202.17999"
+           cy="32.73"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40022" />
+        <circle
+           cx="202.17999"
+           cy="24.07"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40024" />
+      </g>
+      <g
+         clip-path="url(#cpODIuNTh8MjIyLjExfDczLjA5fDEzOC4yMQ==-91)"
+         id="g40119"
+         transform="matrix(0.35277777,0,0,0.35277777,153.76904,30.475761)">
+        <polyline
+           points="102.52,126.63 202.18,108.90 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40035" />
+        <polyline
+           points="102.52,135.25 202.18,108.07 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
+           id="polyline40037" />
+        <polyline
+           points="102.52,125.92 202.18,103.46 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40039" />
+        <polyline
+           points="102.52,104.40 202.18,94.24 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40041" />
+        <polyline
+           points="102.52,103.21 202.18,89.36 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40043" />
+        <polyline
+           points="102.52,100.83 202.18,88.36 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40045" />
+        <polyline
+           points="102.52,108.22 202.18,85.37 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40047" />
+        <polyline
+           points="102.52,132.02 202.18,102.51 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
+           id="polyline40049" />
+        <polyline
+           points="102.52,116.61 202.18,86.03 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
+           id="polyline40051" />
+        <polyline
+           points="102.52,127.36 202.18,122.53 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40053" />
+        <polyline
+           points="102.52,117.25 202.18,103.63 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40055" />
+        <polyline
+           points="102.52,109.91 202.18,101.73 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40057" />
+        <polyline
+           points="102.52,127.54 202.18,114.49 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40059" />
+        <polyline
+           points="102.52,127.18 202.18,108.45 "
+           style="fill:none;stroke:#2f77c0;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40061" />
+        <circle
+           cx="102.52"
+           cy="126.63"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40063" />
+        <circle
+           cx="102.52"
+           cy="135.25"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40065" />
+        <circle
+           cx="102.52"
+           cy="125.92"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40067" />
+        <circle
+           cx="102.52"
+           cy="104.4"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40069" />
+        <circle
+           cx="102.52"
+           cy="103.21"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40071" />
+        <circle
+           cx="102.52"
+           cy="100.83"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40073" />
+        <circle
+           cx="102.52"
+           cy="108.22"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40075" />
+        <circle
+           cx="102.52"
+           cy="132.02"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40077" />
+        <circle
+           cx="102.52"
+           cy="116.61"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40079" />
+        <circle
+           cx="102.52"
+           cy="127.36"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40081" />
+        <circle
+           cx="102.52"
+           cy="117.25"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40083" />
+        <circle
+           cx="102.52"
+           cy="109.91"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40085" />
+        <circle
+           cx="102.52"
+           cy="127.54"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40087" />
+        <circle
+           cx="102.52"
+           cy="127.18"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40089" />
+        <circle
+           cx="202.17999"
+           cy="108.9"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40091" />
+        <circle
+           cx="202.17999"
+           cy="108.07"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40093" />
+        <circle
+           cx="202.17999"
+           cy="103.46"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40095" />
+        <circle
+           cx="202.17999"
+           cy="94.239998"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40097" />
+        <circle
+           cx="202.17999"
+           cy="89.360001"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40099" />
+        <circle
+           cx="202.17999"
+           cy="88.360001"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40101" />
+        <circle
+           cx="202.17999"
+           cy="85.370003"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40103" />
+        <circle
+           cx="202.17999"
+           cy="102.51"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40105" />
+        <circle
+           cx="202.17999"
+           cy="86.029999"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40107" />
+        <circle
+           cx="202.17999"
+           cy="122.53"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40109" />
+        <circle
+           cx="202.17999"
+           cy="103.63"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40111" />
+        <circle
+           cx="202.17999"
+           cy="101.73"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40113" />
+        <circle
+           cx="202.17999"
+           cy="114.49"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40115" />
+        <circle
+           cx="202.17999"
+           cy="108.45"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40117" />
+      </g>
+      <g
+         clip-path="url(#cpODIuNTh8MjIyLjExfDE0NS4xOHwyMTAuMzA=-7)"
+         id="g40134"
+         transform="matrix(0.35277777,0,0,0.35277777,153.76904,30.475761)">
+        <polyline
+           points="102.52,188.85 202.18,194.18 "
+           style="fill:none;stroke:#e45075;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40128" />
+        <circle
+           cx="102.52"
+           cy="188.85001"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40130" />
+        <circle
+           cx="202.17999"
+           cy="194.17999"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40132" />
+      </g>
+      <g
+         clip-path="url(#cpODIuNTh8MjIyLjExfDIxNy4yN3wyODIuMzk=-5)"
+         id="g40227"
+         transform="matrix(0.35277777,0,0,0.35277777,153.76904,30.475761)">
+        <polyline
+           points="102.52,269.50 202.18,260.49 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40143" />
+        <polyline
+           points="102.52,269.22 202.18,255.98 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10"
+           id="polyline40145" />
+        <polyline
+           points="102.52,261.13 202.18,259.89 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40147" />
+        <polyline
+           points="102.52,262.55 202.18,258.32 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40149" />
+        <polyline
+           points="102.52,249.09 202.18,250.06 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40151" />
+        <polyline
+           points="102.52,255.39 202.18,253.17 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40153" />
+        <polyline
+           points="102.52,257.72 202.18,254.23 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40155" />
+        <polyline
+           points="102.52,258.95 202.18,256.55 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40157" />
+        <polyline
+           points="102.52,252.50 202.18,248.40 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40159" />
+        <polyline
+           points="102.52,268.45 202.18,261.22 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40161" />
+        <polyline
+           points="102.52,267.16 202.18,256.63 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40163" />
+        <polyline
+           points="102.52,273.20 202.18,261.37 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40165" />
+        <polyline
+           points="102.52,272.32 202.18,263.85 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40167" />
+        <polyline
+           points="102.52,264.48 202.18,256.21 "
+           style="fill:none;stroke:#e28328;stroke-width:1.07;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:10;stroke-opacity:0.2"
+           id="polyline40169" />
+        <circle
+           cx="102.52"
+           cy="269.5"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40171" />
+        <circle
+           cx="102.52"
+           cy="269.22"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40173" />
+        <circle
+           cx="102.52"
+           cy="261.13"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40175" />
+        <circle
+           cx="102.52"
+           cy="262.54999"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40177" />
+        <circle
+           cx="102.52"
+           cy="249.09"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40179" />
+        <circle
+           cx="102.52"
+           cy="255.39"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40181" />
+        <circle
+           cx="102.52"
+           cy="257.72"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40183" />
+        <circle
+           cx="102.52"
+           cy="258.95001"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40185" />
+        <circle
+           cx="102.52"
+           cy="252.5"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40187" />
+        <circle
+           cx="102.52"
+           cy="268.45001"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40189" />
+        <circle
+           cx="102.52"
+           cy="267.16"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40191" />
+        <circle
+           cx="102.52"
+           cy="273.20001"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40193" />
+        <circle
+           cx="102.52"
+           cy="272.32001"
+           r="1.95"
+           style="fill:#999999;stroke:#999999;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40195" />
+        <circle
+           cx="102.52"
+           cy="264.48001"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40197" />
+        <circle
+           cx="202.17999"
+           cy="260.48999"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40199" />
+        <circle
+           cx="202.17999"
+           cy="255.98"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40201" />
+        <circle
+           cx="202.17999"
+           cy="259.89001"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40203" />
+        <circle
+           cx="202.17999"
+           cy="258.32001"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40205" />
+        <circle
+           cx="202.17999"
+           cy="250.06"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40207" />
+        <circle
+           cx="202.17999"
+           cy="253.17"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40209" />
+        <circle
+           cx="202.17999"
+           cy="254.23"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40211" />
+        <circle
+           cx="202.17999"
+           cy="256.54999"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40213" />
+        <circle
+           cx="202.17999"
+           cy="248.39999"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40215" />
+        <circle
+           cx="202.17999"
+           cy="261.22"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40217" />
+        <circle
+           cx="202.17999"
+           cy="256.63"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40219" />
+        <circle
+           cx="202.17999"
+           cy="261.37"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40221" />
+        <circle
+           cx="202.17999"
+           cy="263.85001"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40223" />
+        <circle
+           cx="202.17999"
+           cy="256.20999"
+           r="1.95"
+           style="fill:#5bb67b;stroke:#5bb67b;stroke-width:0.71;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10"
+           id="circle40225" />
+      </g>
+    </g>
   </g>
 </svg>

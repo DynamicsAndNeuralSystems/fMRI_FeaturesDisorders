@@ -356,6 +356,37 @@ plot_network_data <- function(edge_color) {
   return(p)
 }
 
+plot_feature_in_brain <- function(fill_color_gradient, region_label="all") {
+  if (region_label=="all") {
+    p <- dk %>%
+      as_tibble() %>%
+      mutate(region_values = runif(nrow(.))) %>%
+      ggseg(atlas = "dk", mapping = aes(fill = region_values),
+            hemisphere="left",
+            view = "lateral",
+            position = "stacked", colour = "black") +
+      scale_fill_gradientn(colors=c(alpha(fill_color_gradient, 0.3), 
+                                    fill_color_gradient), 
+                           na.value=NA)
+  } else {
+    p <- dk %>%
+      as_tibble() %>%
+      mutate(region_values = ifelse(label==region_label, "1", NA_character_)) %>%
+      ggseg(atlas = "dk", mapping = aes(fill = region_values),
+            hemisphere="left",
+            view = "lateral",
+            position = "stacked", colour = "gray40") +
+      scale_fill_manual(values=c(fill_color_gradient),
+                        na.value="white")
+  }
+
+  p <- p  +
+    theme_void() +
+    theme(plot.title = element_blank(),
+          legend.position = "none") 
+}
+
+
 # Plot balanced accuracy in the brain
 plot_balacc_in_brain <- function(significant_univariate_region_wise_results, 
                                  color_palette=c("#FFEE75", "#FCA769", "#fb6555", "#D32345", "#401057"),
@@ -431,4 +462,133 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
     }
   }
   return(ggseg_plot_list)
+}
+
+
+repkfold_ttest <- function(data, n1, n2, k, r){
+  
+  # Arg checks
+  
+  '%ni%' <- Negate('%in%')
+  
+  if("model" %ni% colnames(data) || "values" %ni% colnames(data) || "k" %ni% colnames(data) || "r" %ni% colnames(data)){
+    stop("data should contain at least four columns called 'model', 'values', 'k', and 'r'.")
+  }
+  
+  if(!is.numeric(data$values) || !is.numeric(data$k) || !is.numeric(data$r)){
+    stop("data should be a data.frame with only numerical values in columns 'values', 'k', and 'r'.")
+  }
+  
+  if(!is.numeric(n1) || !is.numeric(n2) || !is.numeric(k) || !is.numeric(r) ||
+     length(n1) != 1 || length(n2) != 1 || length(k) != 1 || length(r) != 1){
+    stop("n1, n2, k, and r should all be integer scalars.")
+  }
+  
+  if(length(unique(data$model)) != 2){
+    stop("Column 'model' in data should only have two unique labels (one for each model to compare).")
+  }
+  
+  # Calculations
+  
+  d <- c()
+  
+  for(i in 1:k){
+    for(j in 1:r){
+      x <- data[data$k == i, ]
+      x <- x[x$r == j, ]
+      d <- c(d, x[x$model == unique(x$model)[1], c("values")] - x[x$model == unique(x$model)[2], c("values")]) # Differences
+    }
+  }
+  
+  # Catch for when there is zero difference(s) between the models
+  
+  if (sum(unlist(d)) == 0) {
+    tmp <- data.frame(statistic = 0, p.value = 1)
+  } else{
+    
+    statistic <- mean(unlist(d), na.rm = TRUE) / sqrt(stats::var(unlist(d), na.rm = TRUE) * ((1/(k * r)) + (n2/n1))) # Calculate t-statistic
+    df <- n1 + n2 - 2
+    
+    if(statistic < 0){
+      p.value <- stats::pt(statistic, (k * r) - 1) # p-value for left tail
+    } else{
+      p.value <- stats::pt(statistic, (k * r) - 1, lower.tail = FALSE) # p-value for right tail
+    }
+    
+    tmp <- data.frame(statistic = statistic, p.value = p.value, df = df)
+  }
+  
+  return(tmp)
+}
+
+run_correctR_group <- function(comparison_group, study, metadata, results_df) {
+  # Find number of subjects for the specified comparison group
+  num_subjects <- metadata %>%
+    filter(Study == study, 
+           Diagnosis %in% c("Control", comparison_group)) %>%
+    distinct(Sample_ID) %>%
+    nrow()
+  
+  # Compute the training and test fold sizes for 10-fold CV
+  training_size <- ceiling(0.9*num_subjects)
+  test_size <- floor(0.1*num_subjects)
+  
+  # Prep the resulting balanced accuracies with vs without univariate data
+  data_for_correctR <- results_df %>%
+    filter(Study == study, 
+           Comparison_Group == comparison_group) %>%
+    group_by(group_var) %>%
+    filter(any(p_value_HolmBonferroni < 0.05)) %>%
+    ungroup() %>%
+    dplyr::rename("model" = "Analysis_Type",
+                  "SPI" = "group_var",
+                  "k" = "Fold",
+                  "r" = "Repeat_Number",
+                  "values" = "Balanced_Accuracy") %>%
+    dplyr::select(model, SPI, k, r, values) %>%
+    dplyr::mutate(r = r + 1) %>%
+    group_by(SPI) %>%
+    group_split()
+
+  res <- data_for_correctR %>%
+    purrr::map_df(~ as.data.frame(repkfold_ttest(data = .x %>% dplyr::select(-SPI), 
+                                                 n1 = training_size,
+                                                 n2 = test_size,
+                                                 k = 10,
+                                                 r = 10)) %>%
+                    mutate(SPI = unique(.x$SPI))) %>%
+    ungroup() %>%
+    dplyr::rename("p_value_corr"="p.value") %>%
+    mutate(p_value_corr_HolmBonferroni = p.adjust(p_value_corr, method="bonferroni"),
+           Comparison_Group = comparison_group)
+  
+  return(res)
+  
+}
+
+
+plot_fold_heatmap_for_dataset <- function(fold_assignments_df, group_var_to_use, plot_title) {
+  p <- fold_assignments_df %>%
+    filter(group_var == group_var_to_use) %>%
+    mutate(Repeat = factor(Repeat),
+           Fold = factor(Fold)) %>%
+    ggplot(data=., mapping=aes(x = Sample_ID, y = Repeat, fill = Fold )) +
+    facet_grid(. ~ Diagnosis, scales="free", space="free") +
+    geom_tile() +
+    xlab("Samples") +
+    ylab("CV-SVM Repeat") +
+    labs(fill = "k-fold") +
+    ggtitle(plot_title) +
+    scale_fill_viridis_d() +
+    theme_bw() +
+    theme(axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          plot.title = element_text(hjust=0.5),
+          legend.position = "bottom") +
+    guides(fill = guide_legend(title.position = "top", 
+                               nrow = 1,
+                               title.hjust = 0.5,
+                               label.position = "bottom")) 
+  
+  return(p)
 }

@@ -211,33 +211,12 @@ univariate_balanced_accuracy_best_from_in_sample %>%
 ################################################################################
 # Compare performance with L1-regularized SVM balanced accuracy implemented with LinearSVC()
 SVM_L1_balanced_accuracy_by_folds <- pyarrow_feather$read_feather(glue("{data_path}/SVM_L1_Regularized_Balanced_Accuracy.feather"))
-SVM_L1_coefficients <- pyarrow_feather$read_feather(glue("{data_path}/SVM_L1_Regularized_Coefficients.feather"))
-
-# Find number of unique features by disorder
-SVM_L1_coefficients %>%
-  group_by(Comparison_Group) %>%
-  distinct(`Feature Name`) %>%
-  count()
 
 # Aggregate balanced accuracy by repeats
 SVM_L1_balanced_accuracy <- SVM_L1_balanced_accuracy_by_folds %>%
   group_by(Study, Comparison_Group, Analysis_Type) %>%
   summarise(Balanced_Accuracy_Across_Folds = mean(Balanced_Accuracy, na.rm=T),
             Balanced_Accuracy_Across_Folds_SD = sd(Balanced_Accuracy, na.rm=T)) 
-
-SVM_L1_regularized_coefficients_by_folds <- pyarrow_feather$read_feather(glue("{data_path}/SVM_L1_Regularized_Coefficients.feather")) %>%
-  dplyr::rename("Feature_Name" = "Feature Name", "Repeat_Number" = "Repeat Number")
-SVM_L1_regularized_coefficients <- SVM_L1_regularized_coefficients_by_folds %>%
-  group_by(Study, Comparison_Group, Analysis_Type, Feature_Name) %>%
-  summarise(Coefficient_Across_Folds = mean(Coefficient, na.rm=T),
-            Coefficient_Across_Folds_SD = sd(Coefficient, na.rm=T)) 
-
-# Find number of zero vs non-zero components per group
-SVM_L1_regularized_coefficients %>%
-  group_by(Study, Comparison_Group, Analysis_Type) %>%
-  summarise(num_zero = sum(Coefficient_Across_Folds == 0),
-            num_nonzero = sum(Coefficient_Across_Folds != 0),
-            total = n())
 
 # Plot performance in normal SVM vs. L1-regularized SVM
 SVM_L1_balanced_accuracy_by_folds %>%

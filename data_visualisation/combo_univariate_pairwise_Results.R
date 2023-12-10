@@ -50,7 +50,7 @@ library(ggnewscale)
 theme_set(theme_cowplot())
 
 # Source visualisation script
-source(glue("{github_dir}/data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
+source(glue("{github_dir}/data_visualisation/visualization_helper_functions.R"))
 
 # Load in SPI info
 SPI_info <- read.csv(glue("{github_dir}/data_visualisation/SPI_info.csv"))
@@ -187,50 +187,6 @@ repkfold_ttest <- function(data, n1, n2, k, r){
 }
 
 # Use correctR to test for difference across resamples for FTM vs catch22+FTM
-run_correctR_group <- function(comparison_group, study, metadata, results_df) {
-  # Find number of subjects for the specified comparison group
-  num_subjects <- metadata %>%
-    filter(Study == study, 
-           Diagnosis %in% c("Control", comparison_group)) %>%
-    distinct(Sample_ID) %>%
-    nrow()
-  
-  # Compute the training and test fold sizes for 10-fold CV
-  training_size <- ceiling(0.9*num_subjects)
-  test_size <- floor(0.1*num_subjects)
-  
-  # Prep the resulting balanced accuracies with vs without univariate data
-  data_for_correctR <- results_df %>%
-    filter(Study == study, 
-           Comparison_Group == comparison_group) %>%
-    group_by(group_var) %>%
-    filter(any(p_value_HolmBonferroni < 0.05)) %>%
-    ungroup() %>%
-    dplyr::rename("model" = "Analysis_Type",
-                  "SPI" = "group_var",
-                  "k" = "Fold",
-                  "r" = "Repeat_Number",
-                  "values" = "Balanced_Accuracy") %>%
-    dplyr::select(model, SPI, k, r, values) %>%
-    dplyr::mutate(r = r + 1) %>%
-    group_by(SPI) %>%
-    group_split()
-
-  res <- data_for_correctR %>%
-    purrr::map_df(~ as.data.frame(repkfold_ttest(data = .x %>% dplyr::select(-SPI), 
-                                                 n1 = training_size,
-                                                 n2 = test_size,
-                                                 k = 10,
-                                                 r = 10)) %>%
-                    mutate(SPI = unique(.x$SPI))) %>%
-    ungroup() %>%
-    dplyr::rename("p_value_corr"="p.value") %>%
-    mutate(p_value_corr_HolmBonferroni = p.adjust(p_value_corr, method="bonferroni"),
-           Comparison_Group = comparison_group)
-  
-  return(res)
-  
-}
 
 results_df = plyr::rbind.fill(pairwise_balanced_accuracy_all_folds %>% left_join(pairwise_p_values %>%
                                                                                        dplyr::select(Study:group_var, p_value_HolmBonferroni)), 
@@ -263,10 +219,10 @@ plyr::rbind.fill(pairwise_p_values,
                 alpha = significant_diff_with_univariate), show.legend = FALSE) +
   scale_alpha_manual(values=c("Sig Diff" = 1, "No Sig Diff" = 0.2)) +
   scale_color_manual(values=c("Control" = "#5BB67B", 
-                              "SCZ" = "#573DC7", 
-                              "BP" = "#D5492A", 
-                              "ADHD" = "#0F9EA9", 
-                              "ASD" = "#C47B2F")) +
+                              "SCZ" = "#9d60a8", 
+                              "BP" = "#2F77C0", 
+                              "ADHD" = "#e45075", 
+                              "ASD" = "#E28328")) +
   facet_wrap(Comparison_Group ~ ., ncol=1, scales="fixed", strip.position = "left") +
   new_scale_colour() +  # start a new scale
   geom_point(aes(color = individually_significant)) +

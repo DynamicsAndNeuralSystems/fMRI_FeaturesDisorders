@@ -35,38 +35,13 @@ UCLA_CNP_sample_metadata <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_pa
 ABIDE_ASD_sample_metadata <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/study_metadata/ABIDE_ASD_sample_metadata.feather"))
 
 # Load fold assignments
-univariate_fold_assignments <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_mixedsigmoid_scaler_fold_assignments.feather")) %>%
-  filter(Univariate_Feature_Set == "catch24")
+univariate_fold_assignments <- pyarrow_feather$read_feather(glue("{data_path}/UCLA_CNP_ABIDE_ASD_univariate_fold_assignments.feather")) %>%
+  filter(Univariate_Feature_Set == "catch25")
 
 ################################################################################
 # Heatmap visualisations
 ################################################################################
 
-plot_heatmap_for_dataset <- function(fold_assignments_df, group_var_to_use, plot_title) {
-  p <- fold_assignments_df %>%
-    filter(group_var == group_var_to_use) %>%
-    mutate(Repeat = factor(Repeat),
-           Fold = factor(Fold)) %>%
-    ggplot(data=., mapping=aes(x = Sample_ID, y = Repeat, fill = Fold )) +
-    facet_grid(. ~ Diagnosis, scales="free", space="free") +
-    geom_tile() +
-    xlab("Samples") +
-    ylab("CV-SVM Repeat") +
-    labs(fill = "k-fold") +
-    ggtitle(plot_title) +
-    scale_fill_viridis_d() +
-    theme_bw() +
-    theme(axis.text.x = element_blank(),
-          axis.ticks.x = element_blank(),
-          plot.title = element_text(hjust=0.5),
-          legend.position = "bottom") +
-    guides(fill = guide_legend(title.position = "top", 
-                               nrow = 1,
-                               title.hjust = 0.5,
-                               label.position = "bottom")) 
-  
-  return(p)
-}
 
 # UCLA CNP schizophrenia vs. control ctx-lh-caudalanteriorcingulate
 UCLA_scz_heatmap <- univariate_fold_assignments %>%
@@ -110,7 +85,7 @@ wrap_plots(list(UCLA_scz_heatmap,
            ncol = 1) + 
   plot_layout(guides = "collect") & theme(legend.position = 'bottom',
                                           plot.title = element_text(size=12))
-ggsave(glue("{plot_path}/All_catch24_robustsigmoid_scaler_fold_distributions.svg"),
+ggsave(glue("{plot_path}/All_catch25_robustsigmoid_scaler_fold_distributions.svg"),
        width = 8, height = 9, units="in", dpi=300)
 
 ################################################################################
@@ -120,8 +95,7 @@ ggsave(glue("{plot_path}/All_catch24_robustsigmoid_scaler_fold_distributions.svg
 
 univariate_fold_assignments %>%
   filter(Study == "UCLA_CNP", Comparison_Group == "Schizophrenia",
-         Analysis_Type == "Brain_Region", Univariate_Feature_Set == "catch24", 
-         Repeat == 1, Scaling_Type == "mixedsigmoid") %>%
+         Analysis_Type == "Brain_Region", Repeat == 1) %>%
   mutate(Fold = factor(Fold)) %>%
   ggplot(data = ., mapping = aes(x=fct_reorder(Sample_ID, as.numeric(Fold)), y = group_var, fill = Fold)) +
   geom_raster() +
@@ -147,16 +121,17 @@ ggsave(glue("{plot_path}/UCLA_CNP_Schizophrenia_Brain_Regions_Repeat1_Allocation
 # Calculate distributions across folds
 ################################################################################
 
-# UCLA Schizophrenia vs. control
-UCLA_CNP_schizophrenia_catch24_fold_assignments %>%
+univariate_fold_assignments %>%
+  left_join(., plyr::rbind.fill(UCLA_CNP_sample_metadata, ABIDE_ASD_sample_metadata)) %>%
+  group_by(Comparison_Group, Study) %>%
   mutate(num_samples = length(unique(Sample_ID))) %>%
-  group_by(group_var, Repeat) %>%
+  group_by(Study, Comparison_Group, group_var, Repeat) %>%
   mutate(Control_Prop = sum(Diagnosis == "Control")/num_samples) %>%
-  group_by(group_var, Fold, Repeat, Control_Prop) %>%
+  group_by(Study, Comparison_Group, group_var, Fold, Repeat, Control_Prop) %>%
   summarise(num_subjects_in_test_fold = n(),
          num_controls_in_test_fold = sum(Diagnosis == "Control"),
          control_prop_in_fold = num_controls_in_test_fold/num_subjects_in_test_fold) %>%
-  group_by(Control_Prop) %>%
+  group_by(Study, Comparison_Group, Control_Prop) %>%
   summarise(mean_control_prop_across_folds = 100*mean(control_prop_in_fold),
             min_control_prop_across_folds = 100*min(control_prop_in_fold),
             max_control_prop_across_folds = 100*max(control_prop_in_fold),
@@ -164,7 +139,7 @@ UCLA_CNP_schizophrenia_catch24_fold_assignments %>%
 
 
 # UCLA ADHD vs. control
-UCLA_CNP_ADHD_catch24_fold_assignments %>%
+UCLA_CNP_ADHD_fold_assignments %>%
   mutate(num_samples = length(unique(Sample_ID))) %>%
   group_by(group_var, Repeat) %>%
   mutate(Control_Prop = sum(Diagnosis == "Control")/num_samples) %>%
@@ -181,7 +156,7 @@ UCLA_CNP_ADHD_catch24_fold_assignments %>%
 
 
 # UCLA bipolar vs. control
-UCLA_CNP_bipolar_catch24_fold_assignments %>%
+UCLA_CNP_bipolar_fold_assignments %>%
   mutate(num_samples = length(unique(Sample_ID))) %>%
   group_by(group_var, Repeat) %>%
   mutate(Control_Prop = sum(Diagnosis == "Control")/num_samples) %>%
@@ -198,7 +173,7 @@ UCLA_CNP_bipolar_catch24_fold_assignments %>%
 
 
 # ABIDE ASD vs. control
-ABIDE_ASD_catch24_fold_assignments %>%
+ABIDE_ASD_fold_assignments %>%
   mutate(num_samples = length(unique(Sample_ID))) %>%
   group_by(group_var, Repeat) %>%
   mutate(Control_Prop = sum(Diagnosis == "Control")/num_samples) %>%

@@ -57,8 +57,12 @@ study_group_df <- data.frame(Study = rep("UCLA_CNP", 3),
                              Comparison_Group = c("Schizophrenia", "Bipolar", "ADHD"),
                              Group_Nickname = c("SCZ", "BP", "ADHD"))
 
+# 
+ROI_voxel_counts <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/processed_data/aparc_aseg_BOLD_space_voxel_volumes.feather"))
+
+
 # Read in region-wise volumes
-region_wise_volumes <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/processed_data/aparc_aseg_BOLD_space_voxel_volumes.feather")) %>%
+region_wise_volumes <-  ROI_voxel_counts %>%
   left_join(., UCLA_CNP_sample_metadata) %>%
   left_join(., aparc_aseg_LUT) %>%
   left_join(., UCLA_CNP_brain_region_info) %>%
@@ -86,7 +90,7 @@ run_lm_beta_stats_for_group <- function(comparison_group, region_wise_volumes){
 }
 
 ROI_volume_beta_by_group <- 1:3 %>%
-  purrr::map_df(~ run_lm_beta_stats_for_group(region_wise_volumes = region_wise_volumes,
+  purrr::map_df(~ run_lm_beta_stats_for_group(region_wise_volumes = region_wise_volumes2,
                                           comparison_group = study_group_df$Comparison_Group[.x])) %>%
   group_by(Comparison_Group) %>%
   mutate(p_value_HolmBonferroni = p.adjust(p.value, method="holm"))

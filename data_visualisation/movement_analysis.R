@@ -109,13 +109,15 @@ ABIDE_ASD_catch25 <- pyarrow_feather$read_feather("~/data/ABIDE_ASD/processed_da
 control_color <- "#439E47"
 group_colors <- c("#9d60a8", "#2F77C0", "#e45075","#E28328")
 
-plot_group_vs_control <- function(FD_dataset,
-                                  study,
-                                  dx,
-                                  dx_title,
-                                  ymin,
-                                  ymax,
-                                  group_color) {
+
+# Find ymin and ymax
+plot_group_vs_control_mean_FD <- function(FD_dataset,
+                                          study,
+                                          dx,
+                                          dx_title,
+                                          ymin,
+                                          ymax,
+                                          group_color) {
   p <- FD_dataset %>%
     filter(Study==study,
            Diagnosis %in% c("Control", dx)) %>%
@@ -145,12 +147,12 @@ plot_group_vs_control <- function(FD_dataset,
   return(p)
 }
 
-# Find ymin and ymax
+
 FD_dataset = plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)
 ymin <- 0
 ymax <- max(FD_dataset$Power)
 plots <- 1:4 %>%
-  purrr::map(~ plot_group_vs_control(FD_dataset = FD_dataset,
+  purrr::map(~ plot_group_vs_control_mean_FD(FD_dataset = FD_dataset,
                                      study = study_group_df$Study[.x],
                                      dx = study_group_df$Comparison_Group[.x],
                                      dx_title = study_group_df$Group_Nickname[.x],
@@ -181,7 +183,7 @@ head_motion_SD_corr_regional <- UCLA_CNP_catch25 %>%
   unnest(tidied) %>%
   select(-data, -test) %>%
   group_by(Study) %>%
-  mutate(p_Bonferroni = p.adjust(p.value, method="bonferroni")) %>%
+  mutate(p_HolmBonferroni = p.adjust(p.value, method="holm")) %>%
   arrange(desc(abs(estimate)))
 
 # Plot regional SD correlations by brain region within the brain
@@ -192,7 +194,7 @@ head_motion_SD_corr_regional %>%
   mutate(Brain_Region = fct_reorder(Brain_Region, abs(estimate))) %>%
   ggplot(data=., mapping=aes(x=Brain_Region,
                              y=abs(estimate),
-                             fill=p_Bonferroni<0.05)) +
+                             fill=p_HolmBonferroni<0.05)) +
   geom_bar(stat="identity") +
   facet_grid(Study ~ ., scales="free", switch="both",
              space="free") +
