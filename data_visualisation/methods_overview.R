@@ -97,7 +97,7 @@ dk %>%
         hemisphere="left",
         view = "lateral",
         position = "stacked", colour = "gray50") +
-  scale_fill_manual(values=c("#ED702D", "#4E70BF", "#B12718"),
+  scale_fill_manual(values=c("#39b600", "#e76bf3", "#00b0f6"),
                     na.value="white") +
   theme_void() +
   theme(plot.title = element_blank(),
@@ -114,7 +114,7 @@ dk %>%
         hemisphere="left",
         view = "lateral",
         position = "stacked", colour = "gray50") +
-  scale_fill_manual(values=c("#ED702D"),
+  scale_fill_manual(values=c("#39b600"),
                     na.value="white") +
   theme_void() +
   theme(plot.title = element_blank(),
@@ -132,7 +132,7 @@ dk %>%
         hemisphere="left",
         view = "lateral",
         position = "stacked", colour = "gray50") +
-  scale_fill_manual(values=c("#4E70BF", "#B12718"),
+  scale_fill_manual(values=c("#e76bf3", "#00b0f6"),
                     na.value="white") +
   theme_void() +
   theme(plot.title = element_blank(),
@@ -151,10 +151,8 @@ data.frame(x=sample(1:24),
 ggsave(glue("{plot_path}/example_feature_vector.svg"),
        width=3,height=0.2,units="in", dpi=300)
 
-
-brain_colors <- viridis::viridis(25)
-
 # Sample region vector
+brain_colors <- viridis::viridis(25)
 data.frame(x=sample(1:35),
            y=as.character(1:35)) %>%
   ggplot(data=., mapping=aes(x=y, y=0, fill=x)) +
@@ -276,41 +274,6 @@ vertices = data.frame(name = unique(c(as.character(edges$from), as.character(edg
 vertices$group <- edges$from[match(vertices$name, edges$to)]
 # Create an igraph object
 mygraph <- graph_from_data_frame(edges, vertices=vertices)
-
-# Function to plot specific data in a given iteration
-plot_network_data <- function(edge_color) {
-  
-  # connect = dataframe of pairwise correlations between cortical ROIs
-  connect <- data.frame("from" = sample(rois$to, 500, replace=T),
-                        "to" = sample(rois$to,500, replace=T),
-                        value = runif(500, 0, 1)) %>%
-    arrange(from, to) %>%
-    sample_n(100)
-  
-  # Collect edges where from = selected ROI and to = ROIs connected to the selected ROI
-  from <- match(connect$from, vertices$name)
-  to <- match(connect$to, vertices$name)
-  
-  # mygraph = igraph object linking each cortical ROI
-  # convert to a circular dendrogram-shaped ggraph object
-  p <- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) + 
-    theme_void() +  geom_conn_bundle(data = get_con(from = from, to = to, 
-                                                    value=connect$value), 
-                                     tension=runif(1, 0.55, 0.85), 
-                                     width=1,
-                                     aes(color=value,
-                                         alpha=value))  +
-    labs(edge_width="Pearson\nCorrelation") + 
-    geom_node_point(aes(filter = leaf, 
-                        x = x*1.05, y=y*1.05),   
-                    size=3) +
-    scale_edge_color_gradientn(colors=c(alpha(edge_color,0.3), edge_color)) +
-    theme_void() + 
-    theme(plot.title=element_text(size=14, face="bold", hjust=0.5),
-          legend.position="none")
-  
-  return(p)
-}
 
 plots <- sample(1:14) %>%
   purrr::map(~ plot_network_data(pyspi_colors[.x]))

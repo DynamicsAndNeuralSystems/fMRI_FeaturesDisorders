@@ -25,8 +25,6 @@ pyarrow_feather <- import("pyarrow.feather")
 ################################################################################
 
 library(tidyverse)
-library(knitr)
-library(kableExtra)
 library(glue)
 library(patchwork)
 library(cowplot)

@@ -320,3 +320,115 @@ plot_mvmt_corr_in_brain <- function(study_group, corr_df, min_fill,
   
   return(ggseg_plot_list)
 }
+
+# Function to plot specific data in a given iteration
+plot_network_data <- function(edge_color) {
+  
+  # connect = dataframe of pairwise correlations between cortical ROIs
+  connect <- data.frame("from" = sample(rois$to, 500, replace=T),
+                        "to" = sample(rois$to,500, replace=T),
+                        value = runif(500, 0, 1)) %>%
+    arrange(from, to) %>%
+    sample_n(100)
+  
+  # Collect edges where from = selected ROI and to = ROIs connected to the selected ROI
+  from <- match(connect$from, vertices$name)
+  to <- match(connect$to, vertices$name)
+  
+  # mygraph = igraph object linking each cortical ROI
+  # convert to a circular dendrogram-shaped ggraph object
+  p <- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) + 
+    theme_void() +  geom_conn_bundle(data = get_con(from = from, to = to, 
+                                                    value=connect$value), 
+                                     tension=runif(1, 0.55, 0.85), 
+                                     width=1,
+                                     aes(color=value,
+                                         alpha=value))  +
+    labs(edge_width="Pearson\nCorrelation") + 
+    geom_node_point(aes(filter = leaf, 
+                        x = x*1.05, y=y*1.05),   
+                    size=3) +
+    scale_edge_color_gradientn(colors=c(alpha(edge_color,0.3), edge_color)) +
+    theme_void() + 
+    theme(plot.title=element_text(size=14, face="bold", hjust=0.5),
+          legend.position="none")
+  
+  return(p)
+}
+
+# Plot balanced accuracy in the brain
+plot_balacc_in_brain <- function(significant_univariate_region_wise_results, 
+                                 color_palette=c("#FFEE75", "#FCA769", "#fb6555", "#D32345", "#401057"),
+                                 bin_seq_range=seq(50,75,by=5)) {
+  
+  # Find max fill and min fill values
+  min_fill <- floor(min(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Folds))
+  max_fill <- ceiling(max(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Folds))
+  
+  # Initialize list of ggseg plots
+  ggseg_plot_list <- list()
+  
+  # First plot within brain using ggseg
+  for (i in 1:nrow(study_group_df)) {
+    dataset_ID <- study_group_df$Study[i]
+    comparison_group <- study_group_df$Comparison_Group[i]
+    
+    # Define atlas by study
+    atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
+    
+    # If dataset is ABIDE ASD, convert regions to ggseg regions
+    if (dataset_ID == "ABIDE_ASD") {
+      significant_data_for_ggseg <- significant_univariate_region_wise_results %>%
+        filter(Study == dataset_ID,
+               Comparison_Group == comparison_group) %>%
+        dplyr::rename("Brain_Region" = "group_var") %>%
+        left_join(., ABIDE_ASD_brain_region_info)
+      
+    } else {
+      # Extract sig results to plot
+      significant_data_for_ggseg <- significant_univariate_region_wise_results %>%
+        filter(Study == dataset_ID,
+               Comparison_Group == comparison_group) %>%
+        distinct() %>%
+        mutate(label = ifelse(str_detect(group_var, "ctx-"),
+                              gsub("-", "_", group_var),
+                              as.character(group_var))) %>%
+        mutate(label = gsub("ctx_", "", label))
+    }
+    
+    
+    # Plot balanced accuracy data in cortex
+    dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+                                                   atlas_name = atlas,
+                                                   atlas_data = get(atlas) %>% as_tibble(),
+                                                   data_to_plot = significant_data_for_ggseg,
+                                                   fill_variable = "Balanced_Accuracy_Across_Folds",
+                                                   fill_colors = color_palette,
+                                                   bin_seq = bin_seq_range,
+                                                   line_color = "gray30",
+                                                   na_color = "white") +
+      labs(fill = "Mean Balanced Accuracy (%)") +
+      theme(plot.title = element_blank())
+    
+    # Append to list
+    ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
+    
+    # Add subcortical data for UCLA CNP
+    if (dataset_ID == "UCLA_CNP") {
+      dataset_ggseg_subctx <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
+                                                            atlas_name = "aseg",
+                                                            atlas_data = aseg %>% as_tibble(),
+                                                            data_to_plot = significant_data_for_ggseg,
+                                                            fill_variable = "Balanced_Accuracy_Across_Folds",
+                                                            fill_colors = color_palette,
+                                                            bin_seq = bin_seq_range,
+                                                            line_color = "gray30",
+                                                            na_color = "white") +
+        labs(fill = "Mean Balanced Accuracy (%)") +
+        theme(plot.title = element_blank()) 
+      # Append to list
+      ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg_subctx)
+    }
+  }
+  return(ggseg_plot_list)
+}

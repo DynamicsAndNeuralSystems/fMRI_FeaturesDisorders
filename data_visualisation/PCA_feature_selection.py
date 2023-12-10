@@ -1,6 +1,5 @@
 # https://scikit-learn.org/stable/auto_examples/compose/plot_digits_pipe.html
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
