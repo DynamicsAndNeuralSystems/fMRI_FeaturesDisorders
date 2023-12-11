@@ -19,6 +19,27 @@ from mixed_sigmoid_normalisation import MixedSigmoidScaler
 # Define data paths
 UCLA_CNP_data_path = "/headnode1/abry4213/data/UCLA_CNP/processed_data/"
 ABIDE_ASD_data_path = "/headnode1/abry4213/data/ABIDE_ASD/processed_data/"
+final_data_path = "/headnode1/abry4213/data/TS_feature_manuscript/"
+
+# Helper function to bin data
+def bin_feature_values(input_df):
+
+    results_list = []
+    for feature in input_df.names.unique().tolist():
+        df_feature = input_df.query("names==@feature")
+        df_feature['bin'] = pd.cut(df_feature['values'], bins=100)
+        
+        df_feature_binned = (df_feature
+                             .groupby(["names", "Normalisation", "bin"])
+                             .agg({"bin": "count"})
+                             .rename(columns={"bin": "count"})
+                             .reset_index()
+                             )
+        
+        results_list.append(df_feature_binned)
+        
+    all_binned_res = pd.concat(results_list, axis=0).reset_index()
+    return all_binned_res
 
 # Define normalisation function
 def apply_transform_by_region(input_data, transform_type, output_file):
@@ -65,15 +86,8 @@ def apply_transform_by_region(input_data, transform_type, output_file):
         # Save transformed data
         region_transformed_data = region_transformed_data.reset_index()
         
-        
-        # Bin data into evenly spaced bins and save counts across all samples
-        region_transformed_data_counts = (region_transformed_data
-                                          .assign(values_rounded = lambda x: x["values"].round(2))
-                                          .groupby(["names", "Normalisation", "values_rounded"])
-                                          .agg({"values_rounded": "count"})
-                                          .rename(columns={"values_rounded": "count"})
-                                          .reset_index())
-        
+        # Bin data for raw values
+        region_transformed_data_counts = bin_feature_values(region_transformed_data)
         region_transformed_data_counts.to_feather(output_file)
 
 ####################### Z-score #######################
@@ -124,3 +138,26 @@ if __name__ == '__main__':
     ABIDE_ASD_catch25_MixedSigmoid_p.join()
     UCLA_CNP_pyspi14_MixedSigmoid_p.join()
     ABIDE_ASD_pyspi14_MixedSigmoid_p.join()
+
+    # Merge the results into one dataframe
+    if not os.path.isfile(f"{final_data_path}/all_normalisations_counts.feather"):
+        UCLA_CNP_catch25_data_counts = bin_feature_values(UCLA_CNP_catch25_data.assign(Normalisation = "Raw_Values"))
+        ABIDE_ASD_catch25_data_counts = bin_feature_values(ABIDE_ASD_catch25_data.assign(Normalisation = "Raw_Values"))
+        UCLA_CNP_pyspi14_data_counts = bin_feature_values(UCLA_CNP_pyspi14_data.assign(Normalisation = "Raw_Values"))
+        ABIDE_ASD_pyspi14_data_counts = bin_feature_values(ABIDE_ASD_pyspi14_data.assign(Normalisation = "Raw_Values"))
+
+        UCLA_CNP_catch25_data_z = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_zscored_counts.feather")
+        ABIDE_ASD_catch25_data_z = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_zscored_counts.feather")
+        UCLA_CNP_pyspi14_data_z = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored_counts.feather")
+        ABIDE_ASD_pyspi14_data_z = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored_counts.feather")
+
+        UCLA_CNP_catch25_data_MS = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_MixedSigmoid_counts.feather")
+        ABIDE_ASD_catch25_data_MS = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_MixedSigmoid_counts.feather")
+        UCLA_CNP_pyspi14_data_MS = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_MixedSigmoid_counts.feather")
+        ABIDE_ASD_pyspi14_data_MS = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_MixedSigmoid_counts.feather")
+
+        # Concatenate all results
+        all_results = pd.concat([UCLA_CNP_catch25_data_counts, ABIDE_ASD_catch25_data_counts, UCLA_CNP_pyspi14_data_counts, ABIDE_ASD_pyspi14_data_counts,
+                                UCLA_CNP_catch25_data_z, ABIDE_ASD_catch25_data_z, UCLA_CNP_pyspi14_data_z, ABIDE_ASD_pyspi14_data_z,
+                                UCLA_CNP_catch25_data_MS, ABIDE_ASD_catch25_data_MS, UCLA_CNP_pyspi14_data_MS, ABIDE_ASD_pyspi14_data_MS]).reset_index()
+        all_results.to_feather(f"{final_data_path}/all_normalisations_counts.feather")
