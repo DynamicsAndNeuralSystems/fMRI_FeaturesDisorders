@@ -46,7 +46,7 @@ list.append <- function (.data, ...)
 
 github_dir <- "~/Library/CloudStorage/OneDrive-TheUniversityofSydney(Students)/github/fMRI_FeaturesDisorders/"
 
-source(paste0(github_dir, "data_visualisation/Manuscript_Draft_Visualisations_Helper.R"))
+source(paste0(github_dir, "data_visualisation/visualization_helper_functions.R"))
 plot_path <- paste0(github_dir, "plots/Manuscript_Draft/movement_analysis/")
 TAF::mkdir(plot_path)
 univariate_feature_set <- "catch25"
@@ -168,46 +168,6 @@ ggsave(paste0(plot_path, "mFD_Power_by_Group.svg"),
 # Compare region-specific SD values with whole-brain head movement
 ################################################################################
 
-# Calculate correlations
-head_motion_SD_corr_regional <- UCLA_CNP_catch25 %>%
-  plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
-  filter(names == "DN_Spread_Std") %>%
-  left_join(., plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)) %>%
-  left_join(., plyr::rbind.fill(UCLA_CNP_sample_metadata, ABIDE_ASD_sample_metadata)) %>%
-  group_by(Study, Brain_Region) %>%
-  nest() %>%
-  mutate(
-    test = map(data, ~ cor.test(.x$values, .x$Power, method="spearman")), # S3 list-col
-    tidied = map(test, tidy)
-  ) %>%
-  unnest(tidied) %>%
-  select(-data, -test) %>%
-  group_by(Study) %>%
-  mutate(p_HolmBonferroni = p.adjust(p.value, method="holm")) %>%
-  arrange(desc(abs(estimate)))
-
-# Plot regional SD correlations by brain region within the brain
-
-
-# Bar plot of correlated regions
-head_motion_SD_corr_regional %>%
-  mutate(Brain_Region = fct_reorder(Brain_Region, abs(estimate))) %>%
-  ggplot(data=., mapping=aes(x=Brain_Region,
-                             y=abs(estimate),
-                             fill=p_HolmBonferroni<0.05)) +
-  geom_bar(stat="identity") +
-  facet_grid(Study ~ ., scales="free", switch="both",
-             space="free") +
-  coord_flip() +
-  scale_fill_manual(values=list("TRUE"="#4C7FC0",
-                                "FALSE"="gray80")) +
-  labs(fill = "Significant") +
-  theme(strip.background = element_blank(),
-        legend.position="bottom",
-        strip.placement="outside")
-ggsave(paste0(plot_path, "SD_Correlation_with_Movement_by_Region.svg"),
-       width = 9, height = 16, units="in", dpi=300)
-
 # Plot brain-wide average SD vs head movement
 SD_brain_wide_avg <- UCLA_CNP_catch25 %>%
   plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
@@ -220,6 +180,17 @@ SD_brain_wide_avg <- UCLA_CNP_catch25 %>%
   mutate(Diagnosis = case_when(Diagnosis == "Schizophrenia" ~ "SCZ",
                                Diagnosis == "Bipolar" ~ "BP",
                                T ~ Diagnosis))
+
+# Calculate correlations
+SD_brain_wide_avg %>%
+  group_by(Study, Diagnosis) %>%
+  nest() %>%
+  mutate(
+    test = map(data, ~ cor.test(.x$meanval, .x$Power)), # S3 list-col
+    tidied = map(test, tidy)
+  ) %>%
+  unnest(tidied) %>%
+  select(-data, -test)
 
 SD_brain_wide_avg %>%
   ggplot(data=., mapping=aes(x=Power, y=meanval, color=Diagnosis)) +
@@ -236,16 +207,60 @@ SD_brain_wide_avg %>%
   theme(strip.background = element_blank(),
         legend.position="bottom",
         strip.placement="outside") +
-  stat_cor(method="spearman")
+  stat_cor()
 ggsave(paste0(plot_path, "mFD_vs_SD.svg"),
        width = 3.75, height=5.75, units="in", dpi=300)
+
+
+# Calculate correlations
+head_motion_SD_corr_regional <- UCLA_CNP_catch25 %>%
+  plyr::rbind.fill(., ABIDE_ASD_catch25) %>%
+  filter(names == "DN_Spread_Std") %>%
+  left_join(., plyr::rbind.fill(UCLA_CNP_mean_FD, ABIDE_ASD_mean_FD)) %>%
+  left_join(., plyr::rbind.fill(UCLA_CNP_sample_metadata, ABIDE_ASD_sample_metadata)) %>%
+  group_by(Study, Brain_Region) %>%
+  nest() %>%
+  mutate(
+    test = map(data, ~ cor.test(.x$values, .x$Power)), # S3 list-col
+    tidied = map(test, tidy)
+  ) %>%
+  unnest(tidied) %>%
+  select(-data, -test) %>%
+  group_by(Study) %>%
+  mutate(p_HolmBonferroni = p.adjust(p.value, method="holm")) %>%
+  arrange(desc(abs(estimate)))
+
+# Plot regional SD correlations by brain region within the brain
+
+
+# Bar plot of correlated regions
+head_motion_SD_corr_regional %>%
+  mutate(Brain_Region = fct_reorder(Brain_Region, estimate)) %>%
+  ggplot(data=., mapping=aes(x=Brain_Region,
+                             y=estimate,
+                             fill=p_HolmBonferroni<0.05)) +
+  geom_bar(stat="identity") +
+  facet_grid(Study ~ ., scales="free", switch="both",
+             space="free") +
+  coord_flip() +
+  scale_fill_manual(values=list("TRUE"="#4C7FC0",
+                                "FALSE"="gray80")) +
+  labs(fill = "Significant") +
+  xlab("Brain Regions") +
+  ylab("Regional SD and mean FD correlation, R") +
+  theme(strip.background = element_blank(),
+        legend.position="bottom",
+        strip.placement="outside")
+ggsave(paste0(plot_path, "SD_Correlation_with_Movement_by_Region.svg"),
+       width = 9, height = 16, units="in", dpi=300)
+
 
 # Calculate correlations
 SD_brain_wide_avg %>%
   group_by(Study, Diagnosis) %>%
   nest() %>%
   mutate(
-    test = map(data, ~ cor.test(.x$meanval, .x$Power, method="spearman")), # S3 list-col
+    test = map(data, ~ cor.test(.x$meanval, .x$Power)), # S3 list-col
     tidied = map(test, tidy)
   ) %>%
   unnest(tidied)

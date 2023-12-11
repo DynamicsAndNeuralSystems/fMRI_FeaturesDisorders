@@ -64,7 +64,17 @@ def apply_transform_by_region(input_data, transform_type, output_file):
         
         # Save transformed data
         region_transformed_data = region_transformed_data.reset_index()
-        region_transformed_data.to_feather(output_file)
+        
+        
+        # Bin data into evenly spaced bins and save counts across all samples
+        region_transformed_data_counts = (region_transformed_data
+                                          .assign(values_rounded = lambda x: x["values"].round(2))
+                                          .groupby(["names", "Normalisation", "values_rounded"])
+                                          .agg({"values_rounded": "count"})
+                                          .rename(columns={"values_rounded": "count"})
+                                          .reset_index())
+        
+        region_transformed_data_counts.to_feather(output_file)
 
 ####################### Z-score #######################
 
@@ -84,16 +94,16 @@ if __name__ == '__main__':
     ABIDE_ASD_pyspi14_data["Brain_Region"] = ABIDE_ASD_pyspi14_data["brain_region_from"].astype(str) + '_' + ABIDE_ASD_pyspi14_data["brain_region_to"].astype(str)
 
     # Define z-score processes
-    UCLA_CNP_catch25_zscore_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_catch25_data, "z-score", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_zscored.feather"))
-    ABIDE_ASD_catch25_zscore_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_catch25_data, "z-score", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_zscored.feather"))
-    UCLA_CNP_pyspi14_zscore_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_pyspi14_data, "z-score", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored.feather"))
-    ABIDE_ASD_pyspi14_zscore_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_pyspi14_data, "z-score", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored.feather"))
+    UCLA_CNP_catch25_zscore_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_catch25_data, "z-score", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_zscored_counts.feather"))
+    ABIDE_ASD_catch25_zscore_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_catch25_data, "z-score", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_zscored_counts.feather"))
+    UCLA_CNP_pyspi14_zscore_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_pyspi14_data, "z-score", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored_counts.feather"))
+    ABIDE_ASD_pyspi14_zscore_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_pyspi14_data, "z-score", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored_counts.feather"))
 
     # Define mixed sigmoid processes
-    UCLA_CNP_catch25_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_catch25_data, "MixedSigmoid", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_MixedSigmoid.feather"))
-    ABIDE_ASD_catch25_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_catch25_data, "MixedSigmoid", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_MixedSigmoid.feather"))
-    UCLA_CNP_pyspi14_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_pyspi14_data, "MixedSigmoid", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_MixedSigmoid.feather"))
-    ABIDE_ASD_pyspi14_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_pyspi14_data, "MixedSigmoid", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_MixedSigmoid.feather"))
+    UCLA_CNP_catch25_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_catch25_data, "MixedSigmoid", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_MixedSigmoid_counts.feather"))
+    ABIDE_ASD_catch25_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_catch25_data, "MixedSigmoid", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_MixedSigmoid_counts.feather"))
+    UCLA_CNP_pyspi14_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_pyspi14_data, "MixedSigmoid", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_MixedSigmoid_counts.feather"))
+    ABIDE_ASD_pyspi14_MixedSigmoid_p = Process(target=apply_transform_by_region, args=(ABIDE_ASD_pyspi14_data, "MixedSigmoid", f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_MixedSigmoid_counts.feather"))
 
     # Start the processes
     UCLA_CNP_catch25_zscore_p.start()

@@ -36,6 +36,14 @@ ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/processed_data/"
 catch25_feature_info <- read.csv("~/github/fMRI_FeaturesDisorders/data_visualisation/catch25_info.csv")
 pyspi14_feature_info <- read.csv("~/github/fMRI_FeaturesDisorders/data_visualisation/SPI_info.csv")
 
+UCLA_CNP_catch25 %>%
+  dplyr::select(names, values) %>%
+  mutate(values = round(values, digits=2)) %>%
+  group_by(names) %>%
+  count(values)
+   mutate(new_bin = ntile(values, n=1000)) %>%
+  
+
 # Load univariate catch25 data
 UCLA_CNP_catch25_raw_data <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather")) %>%
   mutate(Normalization = "Raw Data")

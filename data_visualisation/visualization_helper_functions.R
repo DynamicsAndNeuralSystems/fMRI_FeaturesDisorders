@@ -592,3 +592,39 @@ plot_fold_heatmap_for_dataset <- function(fold_assignments_df, group_var_to_use,
   
   return(p)
 }
+
+plot_group_vs_control_mean_FD <- function(FD_dataset,
+                                          study,
+                                          dx,
+                                          dx_title,
+                                          ymin,
+                                          ymax,
+                                          group_color) {
+  p <- FD_dataset %>%
+    filter(Study==study,
+           Diagnosis %in% c("Control", dx)) %>%
+    mutate(Diagnosis = factor(Diagnosis, levels = c(dx, "Control"))) %>%
+    ggplot(data=., mapping=aes(x=Diagnosis, y=as.numeric(Power))) +
+    geom_violinhalf(aes(fill=Diagnosis), scale="width", 
+                    position = position_nudge(x=0.2))  +
+    geom_boxplot(width=0.1, notch=FALSE, notchwidth = 0.4, outlier.shape = NA,
+                 fill=NA, color="white",
+                 position = position_nudge(x=0.27), coef = 0) +
+    geom_point(aes(color = Diagnosis), position = position_jitterdodge(dodge.width = 1,
+                                                                       jitter.width = 0.5),
+               size = 1, alpha=0.7) +
+    geom_signif(test = "wilcox.test",
+                comparisons = list(c(dx, "Control")), 
+                y_position = c(0.55, 0.6),
+                map_signif_level=TRUE) +
+    scale_fill_manual(values = c(group_color, control_color)) +
+    scale_color_manual(values = c(group_color, control_color)) +
+    scale_y_continuous(limits = c(ymin, ymax), expand = c(0,0,0.1,0)) +
+    scale_x_discrete(labels = c(dx_title, "Control")) +
+    ggtitle(dx_title) +
+    ylab("mFD-Power") +
+    theme(legend.position = "none",
+          axis.title.x = element_blank(),
+          plot.title = element_text(hjust=0.5, size=14))
+  return(p)
+}
