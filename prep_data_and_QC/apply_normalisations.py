@@ -1,15 +1,10 @@
 
 from sklearnex import patch_sklearn
 patch_sklearn()
-from multiprocessing import Pool, Process
+from multiprocessing import Process
 
-from numpy.random import randint
-import typing
 import pandas as pd
-import numpy as np
-import math
 import os
-from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import StandardScaler
 import sys
 from pyarrow import feather
@@ -20,26 +15,6 @@ from mixed_sigmoid_normalisation import MixedSigmoidScaler
 UCLA_CNP_data_path = "/headnode1/abry4213/data/UCLA_CNP/processed_data/"
 ABIDE_ASD_data_path = "/headnode1/abry4213/data/ABIDE_ASD/processed_data/"
 final_data_path = "/headnode1/abry4213/data/TS_feature_manuscript/"
-
-# Helper function to bin data
-def bin_feature_values(input_df):
-
-    results_list = []
-    for feature in input_df.names.unique().tolist():
-        df_feature = input_df.query("names==@feature")
-        df_feature['bin'] = pd.cut(df_feature['values'], bins=100)
-        
-        df_feature_binned = (df_feature
-                             .groupby(["names", "Normalisation", "bin"])
-                             .agg({"bin": "count"})
-                             .rename(columns={"bin": "count"})
-                             .reset_index()
-                             )
-        
-        results_list.append(df_feature_binned)
-        
-    all_binned_res = pd.concat(results_list, axis=0).reset_index()
-    return all_binned_res
 
 # Helper function to bin data
 def bin_feature_values(input_df):
@@ -108,6 +83,9 @@ def apply_transform_by_region(input_data, transform_type, output_file):
         
         # Bin data for raw values
         region_transformed_data_counts = bin_feature_values(region_transformed_data)
+
+        # Fix bug with parentheses in feather file
+        region_transformed_data_counts['bin'] = region_transformed_data_counts['bin'].astype(str).str.replace('(', '[')
         region_transformed_data_counts.to_feather(output_file)
 
 ####################### Z-score #######################
