@@ -36,13 +36,7 @@ ABIDE_ASD_data_path <- "~/data/ABIDE_ASD/processed_data/"
 catch25_feature_info <- read.csv("~/github/fMRI_FeaturesDisorders/data_visualisation/catch25_info.csv")
 pyspi14_feature_info <- read.csv("~/github/fMRI_FeaturesDisorders/data_visualisation/SPI_info.csv")
 
-UCLA_CNP_catch25 %>%
-  dplyr::select(names, values) %>%
-  mutate(values = round(values, digits=2)) %>%
-  group_by(names) %>%
-  count(values)
-   mutate(new_bin = ntile(values, n=1000)) %>%
-  
+normalized_bin_data = pyarrow_feather$read_feather("~/data/TS_feature_manuscript/all_normalisations_counts.feather")
 
 # Load univariate catch25 data
 UCLA_CNP_catch25_raw_data <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather")) %>%
@@ -81,29 +75,42 @@ ABIDE_ASD_pyspi14_z <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/
   mutate(Normalization = "z-score")
 
 UCLA_CNP_pyspi14_RS <- pyarrow_feather$read_feather(glue("{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_MixedSigmoid.feather")) %>%
-  mutate(Normalization = "Mixed Sigmoid")
+  mutate(Normalization = "MixedSigmoid")
 
 ABIDE_ASD_pyspi14_RS <- pyarrow_feather$read_feather(glue("{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_MixedSigmoid.feather")) %>%
-  mutate(Normalization = "Mixed Sigmoid")
+  mutate(Normalization = "MixedSigmoid")
 
 
 # Plot values for UCLA CNP
 # Function to plot raw data, z-scored data, and mixed sigmoid-transformed data for each catch25 featuree
-plot_values <- function(feature_data, TS_feature_info, norm_type="none", y_label="Raw\nValues") {
-  p <- feature_data %>%
+plot_values <- function(binned_feature_data, TS_feature_info, norm_type="Raw_Values", y_label="Raw\nValues") {
+  
+  binned_feature_data %>%
+    group_by(feature_name) %>%
+    mutate(feature_bin = cut(values_rounded, breaks = seq(0, max(values_rounded) + max(values_rounded)/100, max(values_rounded)/100))) %>%
+    group_by(feature_name, feature_bin) %>%
+    summarise(total_count = sum(count))
+  
+  p <- binned_feature_data %>%
     left_join(., TS_feature_info) %>%
+    filter(Normalisation == norm_type,Figure_name=="Mean") %>%
+    group_by(feature_name) %>%
+    mutate(feature_bin = cut(values_rounded, breaks = seq(0, max(values_rounded) + max(values_rounded)/10, max(values_rounded)/10))) %>%
+    group_by(feature_name, feature_bin) %>%
+    summarise(total_count = sum(count)) %>%
+    filter(total_count != 0, is.na(feature_bin)) %>%
     mutate(Figure_name = gsub("_", " ", Figure_name)) %>%
-    ggplot(data = ., mapping = aes(x = values,
-                                   y = after_stat(count)/sum(after_stat(count)), 
+    ggplot(data = ., mapping = aes(x = feature_bin,
+                                   y = total_count, 
                                    fill = Figure_name)) +
-    geom_histogram() +
+    geom_bar(stat="identity") +
     facet_wrap(Figure_name ~ ., scales="free", nrow=1,
                labeller = labeller(Figure_name = label_wrap_gen(10))) +
     ylab(y_label) +
     theme(legend.position = "none",
           axis.title.x = element_blank(),
           axis.text.x = element_text(size=10, angle=45, hjust=1),
-          axis.text.y = element_blank(),
+          # axis.text.y = element_blank(),
           axis.ticks.y = element_blank(),
           axis.title.y = element_text(angle=0, vjust=0.5, size=16))
   

@@ -41,6 +41,26 @@ def bin_feature_values(input_df):
     all_binned_res = pd.concat(results_list, axis=0).reset_index()
     return all_binned_res
 
+# Helper function to bin data
+def bin_feature_values(input_df):
+
+    results_list = []
+    for feature in input_df.names.unique().tolist():
+        df_feature = input_df.query("names==@feature")
+        df_feature['bin'] = pd.cut(df_feature['values'], bins=100)
+        
+        df_feature_binned = (df_feature
+                             .groupby(["names", "Normalisation", "bin"])
+                             .agg({"bin": "count"})
+                             .rename(columns={"bin": "count"})
+                             .reset_index()
+                             )
+        
+        results_list.append(df_feature_binned)
+        
+    all_binned_res = pd.concat(results_list, axis=0).reset_index()
+    return all_binned_res
+
 # Define normalisation function
 def apply_transform_by_region(input_data, transform_type, output_file):
     
@@ -92,6 +112,7 @@ def apply_transform_by_region(input_data, transform_type, output_file):
 
 ####################### Z-score #######################
 
+    
 if __name__ == '__main__':
 
     # Load all needed data
@@ -138,6 +159,12 @@ if __name__ == '__main__':
     ABIDE_ASD_catch25_MixedSigmoid_p.join()
     UCLA_CNP_pyspi14_MixedSigmoid_p.join()
     ABIDE_ASD_pyspi14_MixedSigmoid_p.join()
+
+    # Bin data for raw values
+    UCLA_CNP_catch25_raw_binned = bin_feature_values(UCLA_CNP_catch25_data.assign(Normalisation = "Raw_Values"))
+    ABIDE_ASD_catch25_raw_binned = bin_feature_values(ABIDE_ASD_catch25_data.assign(Normalisation = "Raw_Values"))
+    UCLA_CNP_pyspi14_raw_binned = bin_feature_values(UCLA_CNP_pyspi14_data.assign(Normalisation = "Raw_Values"))
+    ABIDE_ASD_pyspi14_raw_binned = bin_feature_values(ABIDE_ASD_pyspi14_data.assign(Normalisation = "Raw_Values"))
 
     # Merge the results into one dataframe
     if not os.path.isfile(f"{final_data_path}/all_normalisations_counts.feather"):
