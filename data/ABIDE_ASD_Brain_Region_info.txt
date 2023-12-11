@@ -1,0 +1,49 @@
+Index;Brain_Region;region;Cortex
+1;Frontal Pole;Frontal Pole;Frontal
+2;Insular Cortex;Insular Cortex;Insula
+3;Superior Frontal Gyrus;Sup. Frontal Gyrus;Frontal
+4;Middle Frontal Gyrus;Mid. Frontal Gyrus;Frontal
+5;Inferior Frontal Gyrus, pars triangularis;Inf. Frontal Gyrus pars triangularis;Frontal
+6;Inferior Frontal Gyrus, pars opercularis;Inf. Frontal Gyrus pars opercularis;Frontal
+7;Precentral Gyrus;Precentral Gyrus;Frontal
+8;Temporal Pole;Temporal Pole;Temporal
+9;Superior Temporal Gyrus, anterior division;Sup. Temporal Gyrus ant.;Temporal
+10;Superior Temporal Gyrus, posterior division;Sup. Temporal Gyrus post.;Temporal
+11;Middle Temporal Gyrus, anterior division;Mid. Temporal Gyrus ant.;Temporal
+12;Middle Temporal Gyrus, posterior division;Mid. Temporal Gyrus post.;Temporal
+13;Middle Temporal Gyrus, temporooccipital part;Mid. Temporal Gyrus temporooccipital;Temporal
+14;Inferior Temporal Gyrus, anterior division;Inf. Temporal Gyrus ant.;Temporal
+15;Inferior Temporal Gyrus, posterior division;Inf. Temporal Gyrus post.;Temporal
+16;Inferior Temporal Gyrus, temporooccipital part;Inf. Temporal Gyrus temporooccipital;Temporal
+17;Postcentral Gyrus;Postcentral Gyrus;Parietal
+18;Superior Parietal Lobule;Sup. Parietal Lobule;Parietal
+19;Supramarginal Gyrus, anterior division;Supramarginal Gyrus ant.;Parietal
+20;Supramarginal Gyrus, posterior division;Supramarginal Gyrus post.;Parietal
+21;Angular Gyrus;Angular Gyrus;Parietal
+22;Lateral Occipital Cortex, superior division;Lat. Occipital Cortex superior;Occipital
+23;Lateral Occipital Cortex, inferior division;Lat. Occipital Cortex inf.;Occipital
+24;Intracalcarine Cortex;Intracalcarine Cortex;Occipital
+25;Frontal Medial Cortex;Frontal Medial Cortex;Frontal
+26;Juxtapositional Lobule Cortex (formerly Supplementary Motor Cortex);Juxtapositional Lobule Cortex;Frontal
+27;Subcallosal Cortex;Subcallosal Cortex;Cingulate
+28;Paracingulate Gyrus;Paracingulate Gyrus;Cingulate
+29;Cingulate Gyrus, anterior division;Cingulate Gyrus ant.;Cingulate
+30;Cingulate Gyrus, posterior division;Cingulate Gyrus post.;Cingulate
+31;Precuneous Cortex;Precuneous Cortex;Parietal
+32;Cuneal Cortex;Cuneal Cortex;Occipital
+33;Frontal Orbital Cortex;Frontal Orbital Cortex;Frontal
+34;Parahippocampal Gyrus, anterior division;Parahippocampal Gyrus ant.;Temporal
+35;Parahippocampal Gyrus, posterior division;Parahippocampal Gyrus post.;Temporal
+36;Lingual Gyrus;Lingual Gyrus;Occipital
+37;Temporal Fusiform Cortex, anterior division;Temporal Fusiform Cortex ant.;Temporal
+38;Temporal Fusiform Cortex, posterior division;Temporal Fusiform Cortex post.;Temporal
+39;Temporal Occipital Fusiform Cortex;Temporal Occipital Fusiform Cortex;Temporal
+40;Occipital Fusiform Gyrus;Occipital Fusiform Gyrus;Occipital
+41;Frontal Operculum Cortex;Frontal Operculum Cortex;Frontal
+42;Central Opercular Cortex;Central Opercular Cortex;Insula
+43;Parietal Operculum Cortex;Parietal Operculum Cortex;Parietal
+44;Planum Polare;Planum Polare;Temporal
+45;Heschls Gyrus (includes H1 and H2);Heschl s Gyrus includes H1 and H2;Temporal
+46;Planum Temporale;Planum Temporale;Temporal
+47;Supracalcarine Cortex;Supracalcarine Cortex;Occipital
+48;Occipital Pole;Occipital Pole;Occipital
