@@ -1,0 +1,35 @@
+#!/bin/bash
+#PBS -q yossarian
+#PBS -j oe
+#PBS -l walltime=4:00:00
+#PBS -V
+
+cd "$PBS_O_WORKDIR" 
+
+# Load python
+#module load Anaconda3-5.1.0
+/usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
+source /usr/physics/python/anaconda3/etc/profile.d/conda.sh 
+
+conda activate $conda_env
+
+# Define directories
+mkdir -p $github_dir/cluster_output/
+
+# Run script
+cmd="python3 $github_dir/fMRI_FeaturesDisorders/prep_data_and_QC/merge_pyspi_data.py \
+--data_path $data_path \
+--dataset_ID $dataset_ID \
+--pkl_file $pkl_file \
+--pairwise_feature_set $pairwise_feature_set \
+--brain_region_lookup $brain_region_lookup \
+--noise_proc $noise_proc"
+echo $cmd
+$cmd
+
+exit
+
+# Verify the host on which the job ran
+hostname
+
+

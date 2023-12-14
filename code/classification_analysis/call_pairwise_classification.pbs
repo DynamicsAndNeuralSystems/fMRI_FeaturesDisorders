@@ -1,0 +1,31 @@
+#!/bin/bash
+#PBS -j oe
+#PBS -V
+
+cd "$PBS_O_WORKDIR"
+
+# Run classification
+cmd="python3 $github_dir/fMRI_FeaturesDisorders/classification_analysis/pairwise_classification.py \
+--data_path $data_path \
+--metadata_file $sample_metadata_file \
+--comparison_group $comparison_group \
+--univariate_feature_set $univariate_feature_set \
+--pairwise_feature_set $pairwise_feature_set \
+--pairwise_feature_file $pairwise_feature_file \
+--SPI_directionality_file $SPI_directionality_file \
+--noise_proc $noise_proc \
+--num_folds $num_folds \
+--classifier_type $classifier_type \
+--num_jobs $num_jobs \
+--num_repeats $num_repeats \
+--dataset_ID $dataset_ID"
+echo $cmd
+$cmd
+# /usr/physics/openmpi-gnu/openmpi-3.1.3/bin/mpirun -np $num_jobs $cmd
+
+exit
+
+# Verify the host on which the job ran
+hostname
+
+
