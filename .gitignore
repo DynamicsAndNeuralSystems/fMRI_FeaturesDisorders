@@ -6,5 +6,10 @@ cluster_output/
 *.gitignore
 scratch/
 data/*/intra_regional_fold_assignments.feather
-data/*/UCLA_CNP_AROMA_2P_GMR_fMRI_TS.feather
-data/*/ABIDE_ASD_FC1000_fMRI_TS.feather
+data/*/*_TS.feather
+data/*/*_catch24_features.feather
+data/*/*_catch25_filtered.feather
+data/time_series_features/UCLA_CNP/sub-70086/pyspi_run.out
+*.npy
+data/time_series_features/UCLA_CNP/sub-70086/
+data/time_series_features/UCLA_CNP_pyspi14_filtered.feather
