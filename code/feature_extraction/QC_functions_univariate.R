@@ -42,15 +42,7 @@ run_QC_for_univariate_dataset <- function(univariate_feature_set = "catch25",
                                           sample_metadata,
                                           catch24_results,
                                           fALFF_results,
-                                          participants_to_drop_file) {
-  
-  
-  # # Load TS feature data and subset by noise_proc
-  # theft_processed_data <- pyarrow_feather$read_feather(glue("{data_path}/processed_data/{theft_processed_data_file}")) %>%
-  #   filter(Noise_Proc == noise_proc) 
-  # fALFF_processed_data <- pyarrow_feather$read_feather(glue("{data_path}/processed_data/{fALFF_processed_data_file}")) %>%
-  #   mutate(Sample_ID = trimws(Sample_ID),
-  #          Brain_Region = trimws(Brain_Region))
+                                          participants_to_drop) {
 
   # Merge theft and fALFF data
   TS_feature_data <- catch24_results %>%
@@ -71,10 +63,8 @@ run_QC_for_univariate_dataset <- function(univariate_feature_set = "catch25",
     dplyr::filter(Sample_ID %in% sample_metadata$Sample_ID)
 
   # Find subjects to drop based on head movement
-  lenient_FD_subjects_to_drop <- unname(unlist(read.table(participants_to_drop_file, header = TRUE, 
-    sep = ",", stringsAsFactors = FALSE, colClasses = "character")[1]))
   TS_feature_data_filtered <- TS_feature_data_filtered %>%
-    dplyr::filter(!(Sample_ID %in% lenient_FD_subjects_to_drop))
+    dplyr::filter(!(Sample_ID %in% participants_to_drop))
 
     # Return the filtered data
   return(TS_feature_data_filtered)
