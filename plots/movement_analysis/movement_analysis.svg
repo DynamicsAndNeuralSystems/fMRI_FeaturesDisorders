@@ -28,12 +28,12 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="1.3850477"
-     inkscape:cx="379.77032"
-     inkscape:cy="254.50387"
+     inkscape:cx="290.60371"
+     inkscape:cy="202.5201"
      inkscape:window-width="1470"
      inkscape:window-height="803"
-     inkscape:window-x="1920"
-     inkscape:window-y="110"
+     inkscape:window-x="0"
+     inkscape:window-y="40"
      inkscape:window-maximized="0"
      inkscape:current-layer="layer1">
     <inkscape:grid
@@ -5675,16 +5675,16 @@
        xml:space="preserve"><tspan
          x="0"
          y="11.245833"
-         id="tspan112326"><tspan
+         id="tspan26747"><tspan
    style="font-weight:bold"
-   id="tspan112324">UCLA</tspan><tspan
+   id="tspan26745">UCLA</tspan><tspan
    y="11.245833"
-   id="tspan112328"> </tspan></tspan><tspan
+   id="tspan26749"> </tspan></tspan><tspan
          x="0"
          y="26.73987"
-         id="tspan112332"><tspan
+         id="tspan26753"><tspan
            style="font-weight:bold"
-           id="tspan112330">CNP</tspan></tspan></text>
+           id="tspan26751">CNP</tspan></tspan></text>
     <text
        fill="#000000"
        fill-opacity="1"
@@ -5983,7 +5983,7 @@
          id="tspan2506090-5-7"
          style="font-weight:bold;fill:#439e47;fill-opacity:1;stroke-width:0.347277"
          x="87.051025"
-         y="-143.63344">ρ = 0.51***</tspan></text>
+         y="-143.63344">R = 0.51***</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.02262px;line-height:0;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-decoration:none;text-decoration-line:none;text-decoration-color:#000000;text-anchor:middle;fill:#e28328;fill-opacity:1;stroke:none;stroke-width:0.347277;stroke-linejoin:round;stroke-miterlimit:3.7;stroke-opacity:0.792157;stop-color:#000000"
@@ -5994,7 +5994,7 @@
          id="tspan2506090-5-7-9"
          style="font-weight:bold;fill:#e28328;fill-opacity:1;stroke-width:0.347277"
          x="87.050652"
-         y="-131.793">ρ = 0.51***</tspan></text>
+         y="-131.793">R = 0.51***</tspan></text>
     <text
        x="159.23"
        y="403.66"
@@ -6037,7 +6037,7 @@
          id="tspan2506090"
          style="font-weight:normal;fill:#2f77c0;fill-opacity:1;stroke-width:0.347277"
          x="83.421318"
-         y="-177.07838">ρ = 0.26</tspan></text>
+         y="-177.07838">R = 0.26</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.02262px;line-height:0;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-decoration:none;text-decoration-line:none;text-decoration-color:#000000;text-anchor:middle;fill:#439e47;fill-opacity:1;stroke:none;stroke-width:0.347277;stroke-linejoin:round;stroke-miterlimit:3.7;stroke-opacity:0.792157;stop-color:#000000"
@@ -6059,7 +6059,7 @@
          id="tspan2506090-5-8"
          style="font-weight:normal;fill:#9d60a8;fill-opacity:1;stroke-width:0.347277"
          x="83.421318"
-         y="-188.97714">ρ = 0.15</tspan></text>
+         y="-188.97714">R = 0.15</tspan></text>
     <text
        xml:space="preserve"
        style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:4.02262px;line-height:0;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-decoration:none;text-decoration-line:none;text-decoration-color:#000000;text-anchor:middle;fill:#e45075;fill-opacity:1;stroke:none;stroke-width:0.347277;stroke-linejoin:round;stroke-miterlimit:3.7;stroke-opacity:0.792157;stop-color:#000000"
@@ -6070,7 +6070,7 @@
          id="tspan2506090-5-8-3"
          style="font-weight:bold;fill:#e45075;fill-opacity:1;stroke-width:0.347277"
          x="84.204025"
-         y="-165.48305">ρ = 0.40*</tspan></text>
+         y="-165.48305">R = 0.40*</tspan></text>
     <text
        transform="matrix(0,-0.2238641,0.26810853,0,13.890852,-8.781247)"
        text-anchor="middle"

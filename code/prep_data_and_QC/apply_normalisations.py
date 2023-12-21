@@ -17,12 +17,12 @@ ABIDE_ASD_data_path = "/headnode1/abry4213/data/ABIDE_ASD/processed_data/"
 final_data_path = "/headnode1/abry4213/data/TS_feature_manuscript/"
 
 # Helper function to bin data
-def bin_feature_values(input_df):
+def bin_feature_values(input_df, num_bins=100):
 
     results_list = []
     for feature in input_df.names.unique().tolist():
         df_feature = input_df.query("names==@feature")
-        df_feature['bin'] = pd.cut(df_feature['values'], bins=100)
+        df_feature['bin'] = pd.cut(df_feature['values'], bins=num_bins)
         
         df_feature_binned = (df_feature
                              .groupby(["names", "Normalisation", "bin"])
@@ -31,6 +31,8 @@ def bin_feature_values(input_df):
                              .reset_index()
                              )
         
+        # Fix bug with parentheses in feather file
+        df_feature_binned['bin'] = df_feature_binned['bin'].astype(str).str.replace('(', '[')
         results_list.append(df_feature_binned)
         
     all_binned_res = pd.concat(results_list, axis=0).reset_index()
@@ -81,11 +83,8 @@ def apply_transform_by_region(input_data, transform_type, output_file):
         # Save transformed data
         region_transformed_data = region_transformed_data.reset_index()
         
-        # Bin data for raw values
-        region_transformed_data_counts = bin_feature_values(region_transformed_data)
-
-        # Fix bug with parentheses in feather file
-        region_transformed_data_counts['bin'] = region_transformed_data_counts['bin'].astype(str).str.replace('(', '[')
+        # Bin data
+        region_transformed_data_counts = bin_feature_values(region_transformed_data, num_bins=40)
         region_transformed_data_counts.to_feather(output_file)
 
 ####################### Z-score #######################
@@ -93,18 +92,27 @@ def apply_transform_by_region(input_data, transform_type, output_file):
     
 if __name__ == '__main__':
 
-    # Load all needed data
     UCLA_CNP_catch25_data = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered.feather")
-
     ABIDE_ASD_catch25_data = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered.feather")
-
     UCLA_CNP_pyspi14_data = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered.feather")
     UCLA_CNP_pyspi14_data.rename(columns={"SPI": "names", "value": "values"}, inplace=True)
     UCLA_CNP_pyspi14_data["Brain_Region"] = UCLA_CNP_pyspi14_data["brain_region_from"].astype(str) + '_' + UCLA_CNP_pyspi14_data["brain_region_to"].astype(str)
-
     ABIDE_ASD_pyspi14_data = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered.feather")
     ABIDE_ASD_pyspi14_data.rename(columns={"SPI": "names", "value": "values"}, inplace=True)
     ABIDE_ASD_pyspi14_data["Brain_Region"] = ABIDE_ASD_pyspi14_data["brain_region_from"].astype(str) + '_' + ABIDE_ASD_pyspi14_data["brain_region_to"].astype(str)
+
+    # Load all needed data
+    if not os.path.isfile(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_counts.feather"):
+        UCLA_CNP_catch25_data_counts = bin_feature_values(UCLA_CNP_catch25_data.assign(Normalisation = "Raw_Values"), num_bins=40).assign(Study = "UCLA_CNP")
+        ABIDE_ASD_catch25_data_counts = bin_feature_values(ABIDE_ASD_catch25_data.assign(Normalisation = "Raw_Values"), num_bins=40).assign(Study = "ABIDE")
+        UCLA_CNP_pyspi14_data_counts = bin_feature_values(UCLA_CNP_pyspi14_data.assign(Normalisation = "Raw_Values"), num_bins=40).assign(Study = "UCLA_CNP")
+        ABIDE_ASD_pyspi14_data_counts = bin_feature_values(ABIDE_ASD_pyspi14_data.assign(Normalisation = "Raw_Values"), num_bins=40).assign(Study = "ABIDE")
+
+        # Write to feather files
+        UCLA_CNP_catch25_data_counts.to_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_counts.feather")
+        ABIDE_ASD_catch25_data_counts.to_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_counts.feather")
+        UCLA_CNP_pyspi14_data_counts.to_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_counts.feather")
+        ABIDE_ASD_pyspi14_data_counts.to_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_counts.feather")
 
     # Define z-score processes
     UCLA_CNP_catch25_zscore_p = Process(target=apply_transform_by_region, args=(UCLA_CNP_catch25_data, "z-score", f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_zscored_counts.feather"))
@@ -138,31 +146,26 @@ if __name__ == '__main__':
     UCLA_CNP_pyspi14_MixedSigmoid_p.join()
     ABIDE_ASD_pyspi14_MixedSigmoid_p.join()
 
-    # Bin data for raw values
-    UCLA_CNP_catch25_raw_binned = bin_feature_values(UCLA_CNP_catch25_data.assign(Normalisation = "Raw_Values"))
-    ABIDE_ASD_catch25_raw_binned = bin_feature_values(ABIDE_ASD_catch25_data.assign(Normalisation = "Raw_Values"))
-    UCLA_CNP_pyspi14_raw_binned = bin_feature_values(UCLA_CNP_pyspi14_data.assign(Normalisation = "Raw_Values"))
-    ABIDE_ASD_pyspi14_raw_binned = bin_feature_values(ABIDE_ASD_pyspi14_data.assign(Normalisation = "Raw_Values"))
-
     # Merge the results into one dataframe
     if not os.path.isfile(f"{final_data_path}/all_normalisations_counts.feather"):
-        UCLA_CNP_catch25_data_counts = bin_feature_values(UCLA_CNP_catch25_data.assign(Normalisation = "Raw_Values"))
-        ABIDE_ASD_catch25_data_counts = bin_feature_values(ABIDE_ASD_catch25_data.assign(Normalisation = "Raw_Values"))
-        UCLA_CNP_pyspi14_data_counts = bin_feature_values(UCLA_CNP_pyspi14_data.assign(Normalisation = "Raw_Values"))
-        ABIDE_ASD_pyspi14_data_counts = bin_feature_values(ABIDE_ASD_pyspi14_data.assign(Normalisation = "Raw_Values"))
+        UCLA_CNP_catch25_data_counts = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_counts.feather").assign(Study = "UCLA_CNP")
+        ABIDE_ASD_catch25_data_counts = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_counts.feather").assign(Study = "ABIDE")
+        UCLA_CNP_pyspi14_data_counts = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_counts.feather").assign(Study = "UCLA_CNP")
+        ABIDE_ASD_pyspi14_data_counts = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_counts.feather").assign(Study = "ABIDE")
 
-        UCLA_CNP_catch25_data_z = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_zscored_counts.feather")
-        ABIDE_ASD_catch25_data_z = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_zscored_counts.feather")
-        UCLA_CNP_pyspi14_data_z = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored_counts.feather")
-        ABIDE_ASD_pyspi14_data_z = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored_counts.feather")
+        UCLA_CNP_catch25_data_z = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_zscored_counts.feather").assign(Study = "UCLA_CNP")
+        ABIDE_ASD_catch25_data_z = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_zscored_counts.feather").assign(Study = "ABIDE")
+        UCLA_CNP_pyspi14_data_z = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_zscored_counts.feather").assign(Study = "UCLA_CNP")
+        ABIDE_ASD_pyspi14_data_z = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_zscored_counts.feather").assign(Study = "ABIDE")
 
-        UCLA_CNP_catch25_data_MS = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_MixedSigmoid_counts.feather")
-        ABIDE_ASD_catch25_data_MS = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_MixedSigmoid_counts.feather")
-        UCLA_CNP_pyspi14_data_MS = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_MixedSigmoid_counts.feather")
-        ABIDE_ASD_pyspi14_data_MS = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_MixedSigmoid_counts.feather")
+        UCLA_CNP_catch25_data_MS = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_catch25_filtered_MixedSigmoid_counts.feather").assign(Study = "UCLA_CNP")
+        ABIDE_ASD_catch25_data_MS = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_catch25_filtered_MixedSigmoid_counts.feather").assign(Study = "ABIDE")
+        UCLA_CNP_pyspi14_data_MS = feather.read_feather(f"{UCLA_CNP_data_path}/UCLA_CNP_AROMA_2P_GMR_pyspi14_filtered_MixedSigmoid_counts.feather").assign(Study = "UCLA_CNP")
+        ABIDE_ASD_pyspi14_data_MS = feather.read_feather(f"{ABIDE_ASD_data_path}/ABIDE_ASD_FC1000_pyspi14_filtered_MixedSigmoid_counts.feather").assign(Study = "ABIDE")
 
         # Concatenate all results
         all_results = pd.concat([UCLA_CNP_catch25_data_counts, ABIDE_ASD_catch25_data_counts, UCLA_CNP_pyspi14_data_counts, ABIDE_ASD_pyspi14_data_counts,
                                 UCLA_CNP_catch25_data_z, ABIDE_ASD_catch25_data_z, UCLA_CNP_pyspi14_data_z, ABIDE_ASD_pyspi14_data_z,
                                 UCLA_CNP_catch25_data_MS, ABIDE_ASD_catch25_data_MS, UCLA_CNP_pyspi14_data_MS, ABIDE_ASD_pyspi14_data_MS]).reset_index()
+        
         all_results.to_feather(f"{final_data_path}/all_normalisations_counts.feather")

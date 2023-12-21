@@ -1,0 +1,4 @@
+"Disorder","Analysis","Balanced Accuracy","SD","Holm--Bonferroni p-value"
+"SCZ","A[combo]",67.7,11.2,"4e-39"
+"BP","A[combo]",68.4,11.4,"2e-44"
+"ASD","A[combo]",53.6,4.7,"1e-10"
