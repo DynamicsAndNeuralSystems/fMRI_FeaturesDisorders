@@ -1,4 +1,4 @@
-"Disorder","Figure_name","statistic","p_value_corr_HolmBonferroni"
+"Disorder","SPI","Corrected T-statistic","Holm--Bonferroni p-value"
 "SCZ","barycenter_DTW",4.3148505262453,"3e-04"
 "SCZ","ANM",4.1220556963673,"5e-04"
 "SCZ","transfer_entropy",3.52078502833288,"5e-03"
