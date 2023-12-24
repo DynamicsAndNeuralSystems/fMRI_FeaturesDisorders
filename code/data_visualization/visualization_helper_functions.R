@@ -36,11 +36,11 @@ plot_data_with_ggseg_discrete <- function(dataset_ID,
     ggseg_plot <- ggseg_data %>%
       filter(type!="cortical") %>%
       ggplot() +
-      geom_brain(atlas = aseg, mapping = aes_string(fill = fill_variable), 
+      geom_brain(atlas = aseg, mapping = aes(fill = .data[[fill_variable]]), 
                  side = "coronal", colour = line_color)
   } else {
     ggseg_plot <- ggseg_data %>%
-      ggseg(atlas = atlas_name, mapping = aes_string(fill = fill_variable),
+      ggseg(atlas = atlas_name, mapping = aes(fill = .data[[fill_variable]]),
             position = "stacked", colour = line_color)
     
   }
