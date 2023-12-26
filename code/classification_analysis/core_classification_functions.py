@@ -14,6 +14,7 @@ def run_k_fold_classifier_for_feature(feature_data,
                                analysis_type,
                                sample_IDs,
                                class_labels,
+                               sample_weighting = "balanced",
                                classifier_type = "Linear_SVM",
                                num_folds = 10,
                                num_repeats = 10,
@@ -25,13 +26,13 @@ def run_k_fold_classifier_for_feature(feature_data,
     # Define the pipeline
     if classifier_type == "Linear_SVM":
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                         ('SVM', svm.SVC(kernel = "linear", C = 1, class_weight = "balanced"))])
+                         ('SVM', svm.SVC(kernel = "linear", C = 1, class_weight = sample_weighting))])
     elif classifier_type == "RBF_SVM":
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                         ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = "balanced"))])
+                         ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = sample_weighting))])
     else: 
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                         ('RF', RandomForestClassifier(class_weight = "balanced"))])
+                         ('RF', RandomForestClassifier(class_weight = sample_weighting))])
     
     # Define lists for: 
     # (1) balanced accuracy by fold/repeat,
@@ -115,6 +116,7 @@ def run_nulls_for_feature(feature_data,
                                output_file_base,
                                sample_and_class_df,
                                classifier_type,
+                               sample_weighting = "balanced",
                                num_folds = 10,
                                num_null_iters = 1000,
                                num_repeats = 10,
@@ -125,13 +127,13 @@ def run_nulls_for_feature(feature_data,
     # Define the pipeline
     if classifier_type == "Linear_SVM":
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                         ('SVM', svm.SVC(kernel = "linear", C = 1, class_weight = "balanced"))])
+                         ('SVM', svm.SVC(kernel = "linear", C = 1, class_weight = sample_weighting))])
     elif classifier_type == "RBF_SVM":
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                         ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = "balanced"))])
+                         ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = sample_weighting))])
     else: 
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                         ('RF', RandomForestClassifier(class_weight = "balanced"))])
+                         ('RF', RandomForestClassifier(class_weight = sample_weighting))])
     
     # Run per number of null iterations
     for j in range(num_null_iters):
@@ -232,10 +234,10 @@ def run_univariate_classifier(univariate_feature_data,
                        disorder,
                        data_path,
                        classifier_type = "Linear_SVM",
+                       sample_weighting = "balanced",
                        num_folds = 10,
                        num_jobs = 8,
                        num_repeats = 10,
-                       run_nulls = True,
                        num_null_iters = 1000,
                        overwrite=False):
 
@@ -300,25 +302,30 @@ def run_univariate_classifier(univariate_feature_data,
             if not os.path.isdir(f"{data_path}/classification_results/null_distributions/null_results/"):
                 os.makedirs(f"{data_path}/classification_results/null_distributions/null_results/", exist_ok=True)
 
-            if run_nulls:
-                run_nulls_for_feature(feature_data = regional_features_only, 
-                                        output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{ROI}_SVM",
-                                        sample_and_class_df = index_data,
-                                        classifier_type = classifier_type,
-                                        num_null_iters = num_null_iters,
-                                        num_folds = num_folds,
-                                        num_jobs = num_jobs,
-                                        num_repeats = num_repeats)
+            if sample_weighting is None:
+                regional_null_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{ROI}_SVM_no_weighting"
+            else:
+                regional_null_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{ROI}_SVM"
 
-                # Combine nulls
-                null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = ROI, 
-                                                                    analysis_type="Univariate_Brain_Region", 
-                                                                    classifier_type=classifier_type,
-                                                                    output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{ROI}_SVM", 
-                                                                    num_null_iters=num_null_iters)
+            run_nulls_for_feature(feature_data = regional_features_only, 
+                                    output_file_base = regional_null_base,
+                                    sample_and_class_df = index_data,
+                                    classifier_type = classifier_type,
+                                    sample_weighting = sample_weighting,
+                                    num_null_iters = num_null_iters,
+                                    num_folds = num_folds,
+                                    num_jobs = num_jobs,
+                                    num_repeats = num_repeats)
 
-                # Save to list of dataframes
-                null_balanced_accuracy_list.append(null_balanced_accuracies)
+            # Combine nulls
+            null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = ROI, 
+                                                                analysis_type="Univariate_Brain_Region", 
+                                                                classifier_type=classifier_type,
+                                                                output_file_base = regional_null_base, 
+                                                                num_null_iters=num_null_iters)
+
+            # Save to list of dataframes
+            null_balanced_accuracy_list.append(null_balanced_accuracies)
             
         ###########################################################################
         # TS Feature-wise
@@ -355,26 +362,31 @@ def run_univariate_classifier(univariate_feature_data,
             fold_assignments_list.append(fold_assignments)
             prop_correct_predictions_list.append(prop_correct_predictions)
 
-            # Run nulls
-            if run_nulls:
-                run_nulls_for_feature(feature_data = TS_features_only, 
-                                        output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{TS_feature}_SVM",
-                                        sample_and_class_df = index_data,
-                                        classifier_type = classifier_type,
-                                        num_null_iters = num_null_iters,
-                                        num_folds = num_folds,
-                                        num_jobs = num_jobs,
-                                        num_repeats = num_repeats)
-                
-                # Combine nulls
-                null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = TS_feature, 
-                                                                    analysis_type="Univariate_TS_Feature", 
-                                                                    classifier_type=classifier_type,
-                                                                    output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{TS_feature}_SVM", 
-                                                                    num_null_iters=num_null_iters)
+            if sample_weighting is None:
+                TS_feature_null_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{TS_feature}_SVM_no_weighting"
+            else:
+                TS_feature_null_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{TS_feature}_SVM"
 
-                # Save to list of dataframes
-                null_balanced_accuracy_list.append(null_balanced_accuracies)
+            # Run nulls
+            run_nulls_for_feature(feature_data = TS_features_only, 
+                                    output_file_base = TS_feature_null_base,
+                                    sample_and_class_df = index_data,
+                                    classifier_type = classifier_type,
+                                    sample_weighting = sample_weighting,
+                                    num_null_iters = num_null_iters,
+                                    num_folds = num_folds,
+                                    num_jobs = num_jobs,
+                                    num_repeats = num_repeats)
+            
+            # Combine nulls
+            null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = TS_feature, 
+                                                                analysis_type="Univariate_TS_Feature", 
+                                                                classifier_type=classifier_type,
+                                                                output_file_base = TS_feature_null_base, 
+                                                                num_null_iters=num_null_iters)
+
+            # Save to list of dataframes
+            null_balanced_accuracy_list.append(null_balanced_accuracies)
                 
         ###########################################################################
         # Combo-wise
@@ -416,37 +428,42 @@ def run_univariate_classifier(univariate_feature_data,
         fold_assignments_list.append(fold_assignments)
         prop_correct_predictions_list.append(prop_correct_predictions)
 
-        # Run nulls
-        if run_nulls:
-            run_nulls_for_feature(feature_data = combo_features_only, 
-                                    output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_Combo_SVM",
-                                    sample_and_class_df = index_data,
-                                    classifier_type = classifier_type,
-                                    num_null_iters = num_null_iters,
-                                    num_folds = num_folds,
-                                    num_jobs = num_jobs,
-                                    num_repeats = num_repeats)
+        if sample_weighting is None:
+            combo_null_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_Combo_SVM_no_weighting"
+        else:
+            combo_null_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_Combo_SVM"
 
-            # Combine nulls
-            null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = "Combo", 
-                                                                    analysis_type="Univariate_Combo", 
-                                                                    classifier_type=classifier_type,
-                                                                    output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_Combo_SVM", 
-                                                                    num_null_iters=num_null_iters)
-            
-            # Save to list of dataframes
-            null_balanced_accuracy_list.append(null_balanced_accuracies)
+        # Run nulls
+        run_nulls_for_feature(feature_data = combo_features_only, 
+                                output_file_base = combo_null_base,
+                                sample_and_class_df = index_data,
+                                classifier_type = classifier_type,
+                                sample_weighting = sample_weighting,
+                                num_null_iters = num_null_iters,
+                                num_folds = num_folds,
+                                num_jobs = num_jobs,
+                                num_repeats = num_repeats)
+
+        # Combine nulls
+        null_balanced_accuracies = combine_nulls_for_feature(grouping_var_name = "Combo", 
+                                                                analysis_type="Univariate_Combo", 
+                                                                classifier_type=classifier_type,
+                                                                output_file_base = combo_null_base, 
+                                                                num_null_iters=num_null_iters)
+        
+        # Save to list of dataframes
+        null_balanced_accuracy_list.append(null_balanced_accuracies)
         
         # Also run L1-regularized SVM as a sensitivity analysis
         if classifier_type == "Linear_SVM":
             regularized_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                                        ('SVM', svm.LinearSVC(penalty="l1", C = 1, dual=False, class_weight = "balanced"))])
+                                        ('SVM', svm.LinearSVC(penalty="l1", C = 1, dual=False, class_weight = sample_weighting))])
         elif classifier_type == "RBF_SVM":
             regularized_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                                        ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = "balanced"))])
+                                        ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = sample_weighting))])
         else:
             regularized_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                                        ('RF', RandomForestClassifier(class_weight = "balanced"))])
+                                        ('RF', RandomForestClassifier(class_weight = sample_weighting))])
         
         # Run 10 repeats of 10-fold CV SVM to measure balanced accuracy
         L1_regularized_balanced_accuracy_by_fold_list = []
@@ -473,13 +490,13 @@ def run_univariate_classifier(univariate_feature_data,
         ############### Classification using first 25 PCs
         if classifier_type == "Linear_SVM":
             PCA_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                        ('SVM', svm.SVC(kernel = "linear", C = 1, class_weight = "balanced"))])
+                        ('SVM', svm.SVC(kernel = "linear", C = 1, class_weight = sample_weighting))])
         elif classifier_type == "RBF_SVM":
             PCA_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                        ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = "balanced"))])
+                        ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = sample_weighting))])
         else:
             PCA_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                        ('RF', RandomForestClassifier(class_weight = "balanced"))])
+                        ('RF', RandomForestClassifier(class_weight = sample_weighting))])
 
         PCA_feature_data = univariate_first_25_PCs.query("Diagnosis in ['Control', @disorder] & Disorder == @disorder & Study == @dataset_ID") 
         PCA_feature_data = PCA_feature_data[PCA_feature_data.Sample_ID.isin(samples_to_keep.Sample_ID)]
@@ -513,6 +530,7 @@ def run_univariate_classifier(univariate_feature_data,
         prop_correct_predictions_res = pd.concat(prop_correct_predictions_list).reset_index()
         L1_regularized_balanced_accuracy_by_fold = pd.concat(L1_regularized_balanced_accuracy_by_fold_list).reset_index()
         PCA_balanced_accuracy_by_fold = pd.concat(PCA_balanced_accuracy_by_fold_list).reset_index()
+        null_balanced_accuracy_res = pd.concat(null_balanced_accuracy_list).reset_index()
         
         # Add comparison group info and classifier type info
         test_metrics_res["Disorder"] = disorder
@@ -530,18 +548,26 @@ def run_univariate_classifier(univariate_feature_data,
         PCA_balanced_accuracy_by_fold["Disorder"] = disorder
         PCA_balanced_accuracy_by_fold["Classifier_Type"] = classifier_type
 
-        test_metrics_res.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_balanced_accuracy.feather")
-        fold_assignments_res.to_feather(f"{data_path}/classification_results/fold_assignments/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_fold_assignments.feather")
-        prop_correct_predictions_res.to_feather(f"{data_path}/classification_results/sample_predictions/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_prop_correct_pred.feather")
-        L1_regularized_balanced_accuracy_by_fold.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_Combo_L1_Regularized_balanced_accuracy.feather")
-        PCA_balanced_accuracy_by_fold.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_Combo_25_PCs_balanced_accuracy.feather")
+        null_balanced_accuracy_res["Disorder"] = disorder
+        null_balanced_accuracy_res["Classifier_Type"] = classifier_type
 
-        # Compile nulls if flag was set
-        if run_nulls:
-            null_balanced_accuracy_res = pd.concat(null_balanced_accuracy_list).reset_index()
-            null_balanced_accuracy_res["Disorder"] = disorder
-            null_balanced_accuracy_res["Classifier_Type"] = classifier_type
+        # Specify no weighting if sample_weighting is None
+        if sample_weighting is None:
+            test_metrics_res.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_no_weighting_balanced_accuracy.feather")
+            fold_assignments_res.to_feather(f"{data_path}/classification_results/fold_assignments/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_no_weighting_fold_assignments.feather")
+            prop_correct_predictions_res.to_feather(f"{data_path}/classification_results/sample_predictions/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_no_weighting_prop_correct_pred.feather")
+            L1_regularized_balanced_accuracy_by_fold.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_no_weighting_Combo_L1_Regularized_balanced_accuracy.feather")
+            PCA_balanced_accuracy_by_fold.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_no_weighting_Combo_25_PCs_balanced_accuracy.feather")
+            null_balanced_accuracy_res.to_feather(f"{data_path}/classification_results/null_distributions/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_no_weighting_null_balanced_accuracy_distributions.feather")
+
+        else:
+            test_metrics_res.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_balanced_accuracy.feather")
+            fold_assignments_res.to_feather(f"{data_path}/classification_results/fold_assignments/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_fold_assignments.feather")
+            prop_correct_predictions_res.to_feather(f"{data_path}/classification_results/sample_predictions/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_prop_correct_pred.feather")
+            L1_regularized_balanced_accuracy_by_fold.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_Combo_L1_Regularized_balanced_accuracy.feather")
+            PCA_balanced_accuracy_by_fold.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_Combo_25_PCs_balanced_accuracy.feather")
             null_balanced_accuracy_res.to_feather(f"{data_path}/classification_results/null_distributions/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_null_balanced_accuracy_distributions.feather")
+
         
         
         
