@@ -1,5 +1,7 @@
 # Systematically comparing feature-based representations of intra-regional and inter-regional brain dynamics
 
+![Five statistical representations depicted schematically](./plots/final_figures/intra_vs_inter_regional_properties.png)
+
 This repository contains code to accompany our preprint, "Systematically comparing feature-based representations of intra-regional and inter-regional brain dynamics".
 Users may follow this repo to reproduce all analyses and visualizations contained in the preprint -- broadly, this includes extracting time-series features from functional magnetic resonance imaging (fMRI) data to serve as the basis for a series of linear support vector machine (SVM) classifiers for case--control comparisons.
 
@@ -51,7 +53,7 @@ R packages required for feature extraction and classification analysis can be in
 
 ### Data visualization
 
-Additional R packages will be needed to reproduce visualizations for the manuscript in `generate_all_figures.ipynb`, which can be installed with the following:
+Additional R packages will be needed to reproduce visualizations for the manuscript in []`generate_all_figures.ipynb`](https://github.com/DynamicsAndNeuralSystems/fMRI_FeaturesDisorders/blob/main/generate_all_figures.ipynb), which can be installed with the following:
 
     ```bash
     while IFS=" " read -r package version; 
@@ -62,12 +64,14 @@ Additional R packages will be needed to reproduce visualizations for the manuscr
 
 ## Preparing data
 
-After downloading the prepared data files from [Zenodo](website_to_cite) as listed above, kindly place all files in the `data/` folder included with this repository (which should be empty when you first clone).
+After downloading the prepared data files from [Zenodo](https://doi.org/10.5281/zenodo.10431855) as listed above, kindly place all files in the `data/` folder included with this repository (which should be empty when you first clone).
 This will get all files into their needed locations for feature extraction, classification, and visualization described in following.
 
 ## Extracting time-series features
 
-Please refer to the [`extract_time_series_features.ipynb`](link_to_notebook) Jupyter notebook for a walkthrough of how to extract intra-regional and inter-regional time series features from each participant's blood oxygen level dependent (BOLD) time series.
+![Schematic depiction of extracting time-series features from resting-state fMRI data](./plots/final_figures/time_series_feature_extraction.png)
+
+Please refer to the [`extract_time_series_features.ipynb`](https://github.com/DynamicsAndNeuralSystems/fMRI_FeaturesDisorders/blob/main/extract_time_series_features.ipynb) Jupyter notebook for a walkthrough of how to extract intra-regional and inter-regional time series features from each participant's blood oxygen level dependent (BOLD) time series.
 You can interactively click through each code chunk with a Jupyter notebook reader like VSCode (with the [Jupyter extension](https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter) installed) or the [Jupyter Notebook app](https://anaconda.org/anaconda/jupyter) from Anaconda.
 
 Alternatively, to run the notebook from the command line, you can use the following code:
@@ -83,13 +87,15 @@ This will yield the file `extract_time_series_features.nbconvert.ipynb` that inc
 
 Once all intra- and inter-regional time-series features have been computed across all participants, we can fit linear support vector machine (SVM) classifiers for each of the five statistical representations evaluated in the manuscript:
 
+![Five statistical representations depicted schematically](./plots/final_figures/five_representations.png)
+
 1. **A<sub>region</sub>**: represents each fMRI time series using a set of features capturing 25 dynamical properties of an individual brain region.
 2. **A<sub>feature</sub>**: represents each fMRI time series using a set of features that captures a single dynamical property from all brain regions (82 for SCZ, BP, and ADHD, and 48 for ASD).
 3. **A<sub>uni_combo</sub>**: represents each fMRI time series using a set of features combining the 25 time-series properties of each individual brain region.
 4. **A<sub>FC</sub>**: represents each fMRI time series using a set of features that capture all pairs of inter-regional coupling strengths computed using a single statistic of pairwise interactions (SPI).
 5. **A<sub>FC_combo</sub>**: represents each fMRI dataset as a set of features that capture all pairs of inter-regional coupling from a given SPI (as A<sub>FC</sub>) as well as 25 time-series properties of all individual brain regions (as A<sub>uni_combo</sub>). 
 
-These representations are all evaluated using [`fit_classifiers.ipynb`](path/to/file), which can also be run interactively in a Jupyter notebook viewer or run from the command line using:
+These representations are all evaluated using [`fit_classifiers.ipynb`](https://github.com/DynamicsAndNeuralSystems/fMRI_FeaturesDisorders/blob/main/fit_classifiers.ipynb), which can also be run interactively in a Jupyter notebook viewer or run from the command line using:
 
 ```
 jupyter nbconvert --to notebook --execute fit_classifiers.ipynb --allow-errors
@@ -103,14 +109,6 @@ You can run this from the command line and view outputs with the following:
 ```
 jupyter nbconvert --to notebook --execute fit_classifiers.ipynb --allow-errors
 ```
-
-## Contributing
-
-If you would like to contribute to this project, please follow the guidelines in [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
 
 ## Contact
 
