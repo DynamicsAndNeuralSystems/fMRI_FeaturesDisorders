@@ -26,6 +26,9 @@ def run_k_fold_classifier_for_feature(feature_data,
     if classifier_type == "Linear_SVM":
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
                          ('SVM', svm.SVC(kernel = "linear", C = 1, class_weight = "balanced"))])
+    elif classifier_type == "RBF_SVM":
+        pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
+                         ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = "balanced"))])
     else: 
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
                          ('RF', RandomForestClassifier(class_weight = "balanced"))])
@@ -123,6 +126,9 @@ def run_nulls_for_feature(feature_data,
     if classifier_type == "Linear_SVM":
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
                          ('SVM', svm.SVC(kernel = "linear", C = 1, class_weight = "balanced"))])
+    elif classifier_type == "RBF_SVM":
+        pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
+                         ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = "balanced"))])
     else: 
         pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
                          ('RF', RandomForestClassifier(class_weight = "balanced"))])
@@ -235,7 +241,6 @@ def run_univariate_classifier(univariate_feature_data,
 
     # Check if file already exists or overwrite flag is set
     if not os.path.isfile(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_balanced_accuracy.feather") or overwrite:
-
 
         # Load in data containing subjects with both univariate and pairwise data available
         samples_to_keep = pd.read_feather(f"{data_path}/time_series_features/{dataset_ID}_filtered_sample_info_{univariate_feature_set}_{pairwise_feature_set}.feather")                                                                           
@@ -433,8 +438,15 @@ def run_univariate_classifier(univariate_feature_data,
             null_balanced_accuracy_list.append(null_balanced_accuracies)
         
         # Also run L1-regularized SVM as a sensitivity analysis
-        regularized_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                                     ('SVM', svm.LinearSVC(penalty="l1", C = 1, dual=False, class_weight = "balanced"))])
+        if classifier_type == "Linear_SVM":
+            regularized_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
+                                        ('SVM', svm.LinearSVC(penalty="l1", C = 1, dual=False, class_weight = "balanced"))])
+        elif classifier_type == "RBF_SVM":
+            regularized_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
+                                        ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = "balanced"))])
+        else:
+            regularized_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
+                                        ('RF', RandomForestClassifier(class_weight = "balanced"))])
         
         # Run 10 repeats of 10-fold CV SVM to measure balanced accuracy
         L1_regularized_balanced_accuracy_by_fold_list = []
@@ -444,7 +456,7 @@ def run_univariate_classifier(univariate_feature_data,
             skf = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=r)
 
             # Fit SVM with 10-fold cross-validation for balanced accuracy
-            L1_cv_results_balacc = cross_validate(regularized_pipe, features_only, class_labels, 
+            L1_cv_results_balacc = cross_validate(regularized_pipe, combo_features_only, class_labels, 
                                         cv=skf, scoring=["balanced_accuracy"],
                                         return_estimator=True)
             
@@ -462,11 +474,15 @@ def run_univariate_classifier(univariate_feature_data,
         if classifier_type == "Linear_SVM":
             PCA_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
                         ('SVM', svm.SVC(kernel = "linear", C = 1, class_weight = "balanced"))])
+        elif classifier_type == "RBF_SVM":
+            PCA_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
+                        ('SVM', svm.SVC(kernel = "rbf", C = 1, class_weight = "balanced"))])
         else:
             PCA_pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
                         ('RF', RandomForestClassifier(class_weight = "balanced"))])
 
         PCA_feature_data = univariate_first_25_PCs.query("Diagnosis in ['Control', @disorder] & Disorder == @disorder & Study == @dataset_ID") 
+        PCA_feature_data = PCA_feature_data[PCA_feature_data.Sample_ID.isin(samples_to_keep.Sample_ID)]
         PCA_features_only = PCA_feature_data.drop(["Sample_ID", "Diagnosis", "Disorder", "Study", "index"],axis=1).to_numpy()
     
         PCA_balanced_accuracy_by_fold_list = []
@@ -495,7 +511,7 @@ def run_univariate_classifier(univariate_feature_data,
         test_metrics_res = pd.concat(test_metrics_list).reset_index()
         fold_assignments_res = pd.concat(fold_assignments_list).reset_index()
         prop_correct_predictions_res = pd.concat(prop_correct_predictions_list).reset_index()
-        L1_regularized_balanced_accuracy_by_fold = pd.concat(L1_regularized_balanced_accuracy_by_fold_list)
+        L1_regularized_balanced_accuracy_by_fold = pd.concat(L1_regularized_balanced_accuracy_by_fold_list).reset_index()
         PCA_balanced_accuracy_by_fold = pd.concat(PCA_balanced_accuracy_by_fold_list).reset_index()
         
         # Add comparison group info and classifier type info
@@ -517,8 +533,8 @@ def run_univariate_classifier(univariate_feature_data,
         test_metrics_res.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_balanced_accuracy.feather")
         fold_assignments_res.to_feather(f"{data_path}/classification_results/fold_assignments/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_fold_assignments.feather")
         prop_correct_predictions_res.to_feather(f"{data_path}/classification_results/sample_predictions/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_prop_correct_pred.feather")
-        L1_regularized_balanced_accuracy_by_fold.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_Combo_L1_Regularized_balanced_accuracy.feather")
-        PCA_balanced_accuracy_by_fold.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_Combo_25_PCs_balanced_accuracy.feather")
+        L1_regularized_balanced_accuracy_by_fold.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_Combo_L1_Regularized_balanced_accuracy.feather")
+        PCA_balanced_accuracy_by_fold.to_feather(f"{data_path}/classification_results/balanced_accuracy/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_{classifier_type}_Combo_25_PCs_balanced_accuracy.feather")
 
         # Compile nulls if flag was set
         if run_nulls:
@@ -605,10 +621,10 @@ def run_pairwise_classifier_by_SPI(pairwise_feature_data,
             SPI_data_imputed = SPI_data_wide.fillna(SPI_data_wide.mean())
             
             # Extract only the feature data
-            features_only = SPI_data_imputed.reset_index(drop=True).to_numpy()
+            pairwise_features_only = SPI_data_imputed.reset_index(drop=True).to_numpy()
             
             # Run main SVM
-            (test_metrics_by_fold, fold_assignments, prop_correct_predictions) = run_k_fold_classifier_for_feature(feature_data = features_only,
+            (test_metrics_by_fold, fold_assignments, prop_correct_predictions) = run_k_fold_classifier_for_feature(feature_data = pairwise_features_only,
                                         grouping_var_name = this_SPI,
                                         analysis_type = "Pairwise_SPI",
                                         sample_IDs = sample_IDs,
@@ -627,7 +643,7 @@ def run_pairwise_classifier_by_SPI(pairwise_feature_data,
             # Make the null_distributions/null_results/ folder if it doesn't exist
             if not os.path.isdir(f"{data_path}/classification_results/null_distributions/null_results/"):
                 os.makedirs(f"{data_path}/classification_results/null_distributions/null_results/", exist_ok=True)
-            run_nulls_for_feature(feature_data = features_only, 
+            run_nulls_for_feature(feature_data = pairwise_features_only, 
                                         output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM",
                                         sample_and_class_df = index_data,
                                         classifier_type = classifier_type,
@@ -770,10 +786,10 @@ def run_combined_uni_pairwise_classifier_by_SPI(univariate_feature_data,
             SPI_combo_data_imputed = SPI_combo_data_wide.fillna(SPI_combo_data_wide.mean())
             
             # Extract only the feature data
-            features_only = SPI_combo_data_imputed.reset_index(drop=True).to_numpy()
+            SPI_combo_features_only = SPI_combo_data_imputed.reset_index(drop=True).to_numpy()
             
             # Run main SVM
-            (test_metrics_by_fold, fold_assignments, prop_correct_predictions) = run_k_fold_classifier_for_feature(feature_data = features_only, 
+            (test_metrics_by_fold, fold_assignments, prop_correct_predictions) = run_k_fold_classifier_for_feature(feature_data = SPI_combo_features_only, 
                                         grouping_var_name = this_SPI,
                                         analysis_type = "Univariate_Pairwise_Combo",
                                         sample_IDs = sample_IDs,
@@ -792,7 +808,7 @@ def run_combined_uni_pairwise_classifier_by_SPI(univariate_feature_data,
             # Make the null_distributions/null_results/ folder if it doesn't exist
             if not os.path.isdir(f"{data_path}/classification_results/null_distributions/null_results/"):
                 os.makedirs(f"{data_path}/classification_results/null_distributions/null_results/", exist_ok=True)
-            run_nulls_for_feature(feature_data = features_only,
+            run_nulls_for_feature(feature_data = SPI_combo_features_only,
                                         output_file_base = f"{data_path}/classification_results/null_distributions/null_results/{dataset_ID}_{disorder}_Univariate_{univariate_feature_set}_Pairwise_{pairwise_feature_set}_{this_SPI}_SVM",
                                         sample_and_class_df = index_data,
                                         classifier_type = classifier_type,

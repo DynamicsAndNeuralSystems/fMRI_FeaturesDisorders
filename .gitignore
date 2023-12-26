@@ -12,5 +12,7 @@ data/*/*_catch25_filtered.feather
 data/time_series_features/UCLA_CNP/sub-70086/pyspi_run.out
 *.npy
 data/time_series_features/UCLA_CNP/sub-70086/
-data/time_series_features/UCLA_CNP_pyspi14_filtered.feather
+data/time_series_features/*_pyspi14.feather
+data/time_series_features/*_pyspi14_filtered.feather
 backup/*
+test*
