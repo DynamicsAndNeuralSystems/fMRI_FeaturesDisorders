@@ -53,7 +53,7 @@ R packages required for feature extraction and classification analysis can be in
 
 ### Data visualization
 
-Additional R packages will be needed to reproduce visualizations for the manuscript in []`generate_all_figures.ipynb`](https://github.com/DynamicsAndNeuralSystems/fMRI_FeaturesDisorders/blob/main/generate_all_figures.ipynb), which can be installed with the following:
+Additional R packages will be needed to reproduce visualizations for the manuscript in [`generate_all_figures.ipynb`](https://github.com/DynamicsAndNeuralSystems/fMRI_FeaturesDisorders/blob/main/generate_all_figures.ipynb), which can be installed with the following:
 
     ```bash
     while IFS=" " read -r package version; 
@@ -103,7 +103,7 @@ jupyter nbconvert --to notebook --execute fit_classifiers.ipynb --allow-errors
 
 ## Data visualization
 
-All figures included in the manuscript can be recreated using the Jupyter notebook [`generate_all_figures.ipynb`](path/to/file).
+All figures included in the manuscript can be recreated using the Jupyter notebook [`generate_all_figures.ipynb`](https://github.com/DynamicsAndNeuralSystems/fMRI_FeaturesDisorders/blob/main/generate_all_figures.ipynb).
 You can run this from the command line and view outputs with the following:
 
 ```
