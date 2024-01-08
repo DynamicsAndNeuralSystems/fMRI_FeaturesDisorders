@@ -18,7 +18,7 @@ All resting-state fMRI data used in this study is freely accessible to the publi
 * UCLA Consortium for Neuropsychiatric Phenomics (CNP) LA5c study: raw imaging volumes were accessed from OpenfMRI, [accession number ds000030](https://openfmri.org/dataset/ds000030/).
 * Autism Brain Imaging Data Exchange (ABIDE) I/II study: preprocessed fMRI time series (with the Harvard-Oxford parcellation atlas) were accessed from Zenodo at [Traut et al. (2020)](https://doi.org/10.5281/zenodo.3625740).
 
-All intermediate data files needed to replicate analysis and visuals in this repo are provided in [this Zenodo repository](https://doi.org/10.5281/zenodo.10431855).
+All intermediate data files needed to replicate analysis and visuals in this repo are provided in [this Zenodo repository](https://zenodo.org/doi/10.5281/zenodo.10431854).
 
 # Usage
 
@@ -66,7 +66,7 @@ Additional R packages will be needed to reproduce visualizations for the manuscr
 
 ## Preparing data
 
-After downloading the prepared data files from [Zenodo](https://doi.org/10.5281/zenodo.10431855) as listed above, create a `data` folder in this repository and place the downloaded files within that folder.
+After downloading the prepared data files from [Zenodo](https://zenodo.org/doi/10.5281/zenodo.10431854) as listed above, create a `data` folder in this repository and place the downloaded files within that folder.
 This will get all files into their needed locations for feature extraction, classification, and visualization described in following.
 
 ## Extracting time-series features
