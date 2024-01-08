@@ -1,5 +1,7 @@
 # Systematically comparing feature-based representations of intra-regional and inter-regional brain dynamics
 
+[![DOI](https://zenodo.org/badge/468609494.svg)](https://zenodo.org/doi/10.5281/zenodo.10467890)
+
 ![Five statistical representations depicted schematically](./plots/final_figures/intra_vs_inter_regional_properties.png)
 
 This repository contains code to accompany our preprint, "Systematically comparing feature-based representations of intra-regional and inter-regional brain dynamics".
