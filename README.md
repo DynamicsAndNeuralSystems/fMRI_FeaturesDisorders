@@ -64,7 +64,7 @@ Additional R packages will be needed to reproduce visualizations for the manuscr
 
 ## Preparing data
 
-After downloading the prepared data files from [Zenodo](https://doi.org/10.5281/zenodo.10431855) as listed above, kindly place all files in the `data/` folder included with this repository (which should be empty when you first clone).
+After downloading the prepared data files from [Zenodo](https://doi.org/10.5281/zenodo.10431855) as listed above, create a `data` folder in this repository and place the downloaded files within that folder.
 This will get all files into their needed locations for feature extraction, classification, and visualization described in following.
 
 ## Extracting time-series features
