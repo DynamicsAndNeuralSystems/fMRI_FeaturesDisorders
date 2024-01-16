@@ -1,11 +1,11 @@
-# Systematically comparing feature-based representations of intra-regional and inter-regional brain dynamics
+# Extracting interpretable signatures of whole-brain dynamics through systematic comparison
 
 [![DOI](https://zenodo.org/badge/468609494.svg)](https://zenodo.org/doi/10.5281/zenodo.10467890)
 
 ![Five statistical representations depicted schematically](./plots/final_figures/intra_vs_inter_regional_properties.png)
 
-This repository contains code to accompany our preprint, "Systematically comparing feature-based representations of intra-regional and inter-regional brain dynamics".
-Users may follow this repo to reproduce all analyses and visualizations contained in the preprint -- broadly, this includes extracting time-series features from functional magnetic resonance imaging (fMRI) data to serve as the basis for a series of linear support vector machine (SVM) classifiers for case--control comparisons.
+This repository contains code to accompany our [preprint](https://www.biorxiv.org/content/10.1101/2024.01.10.573372v1), "Extracting interpretable signatures of whole-brain dynamics through systematic comparison".
+Users may follow this repo to reproduce all analyses and visualizations contained in the [preprint](https://www.biorxiv.org/content/10.1101/2024.01.10.573372v1) -- broadly, this includes extracting time-series features from functional magnetic resonance imaging (fMRI) data to serve as the basis for a series of linear support vector machine (SVM) classifiers for case--control comparisons.
 
 All code is a mixture of R and python, with shell scripts used to execute operations.
 Please note that the repository is structured such that some steps are designed to be run on a high-performance computing (HPC) cluster for parallelization with a PBS job scheduler.
