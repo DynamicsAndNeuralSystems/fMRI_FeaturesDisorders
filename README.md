@@ -1,9 +1,11 @@
-# Systematically comparing feature-based representations of intra-regional and inter-regional brain dynamics
+# Extracting interpretable signatures of whole-brain dynamics through systematic comparison
+
+[![DOI](https://zenodo.org/badge/468609494.svg)](https://zenodo.org/doi/10.5281/zenodo.10467890)
 
 ![Five statistical representations depicted schematically](./plots/final_figures/intra_vs_inter_regional_properties.png)
 
-This repository contains code to accompany our preprint, "Systematically comparing feature-based representations of intra-regional and inter-regional brain dynamics".
-Users may follow this repo to reproduce all analyses and visualizations contained in the preprint -- broadly, this includes extracting time-series features from functional magnetic resonance imaging (fMRI) data to serve as the basis for a series of linear support vector machine (SVM) classifiers for case--control comparisons.
+This repository contains code to accompany our [preprint](https://www.biorxiv.org/content/10.1101/2024.01.10.573372v1), "Extracting interpretable signatures of whole-brain dynamics through systematic comparison".
+Users may follow this repo to reproduce all analyses and visualizations contained in the [preprint](https://www.biorxiv.org/content/10.1101/2024.01.10.573372v1) -- broadly, this includes extracting time-series features from functional magnetic resonance imaging (fMRI) data to serve as the basis for a series of linear support vector machine (SVM) classifiers for case--control comparisons.
 
 All code is a mixture of R and python, with shell scripts used to execute operations.
 Please note that the repository is structured such that some steps are designed to be run on a high-performance computing (HPC) cluster for parallelization with a PBS job scheduler.
@@ -16,7 +18,7 @@ All resting-state fMRI data used in this study is freely accessible to the publi
 * UCLA Consortium for Neuropsychiatric Phenomics (CNP) LA5c study: raw imaging volumes were accessed from OpenfMRI, [accession number ds000030](https://openfmri.org/dataset/ds000030/).
 * Autism Brain Imaging Data Exchange (ABIDE) I/II study: preprocessed fMRI time series (with the Harvard-Oxford parcellation atlas) were accessed from Zenodo at [Traut et al. (2020)](https://doi.org/10.5281/zenodo.3625740).
 
-All intermediate data files needed to replicate analysis and visuals in this repo are provided in [this Zenodo repository](https://doi.org/10.5281/zenodo.10431855).
+All intermediate data files needed to replicate analysis and visuals in this repo are provided in [this Zenodo repository](https://zenodo.org/doi/10.5281/zenodo.10431854).
 
 # Usage
 
@@ -64,7 +66,7 @@ Additional R packages will be needed to reproduce visualizations for the manuscr
 
 ## Preparing data
 
-After downloading the prepared data files from [Zenodo](https://doi.org/10.5281/zenodo.10431855) as listed above, kindly place all files in the `data/` folder included with this repository (which should be empty when you first clone).
+After downloading the prepared data files from [Zenodo](https://zenodo.org/doi/10.5281/zenodo.10431854) as listed above, create a `data` folder in this repository and place the downloaded files within that folder.
 This will get all files into their needed locations for feature extraction, classification, and visualization described in following.
 
 ## Extracting time-series features
