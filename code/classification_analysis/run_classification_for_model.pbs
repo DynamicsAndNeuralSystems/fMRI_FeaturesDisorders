@@ -1,0 +1,23 @@
+#!/bin/bash
+#PBS -j oe
+#PBS -l walltime=24:00:00
+#PBS -M abry4213@uni.sydney.edu.au
+#PBS -m a
+#PBS -V
+
+#module load Anaconda3-5.1.0
+/usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
+source /usr/physics/python/anaconda3/etc/profile.d/conda.sh 
+
+# Activate the pyspi environment
+conda activate pyspi
+
+cd /headnode1/abry4213/github/fMRI_FeaturesDisorders/code/classification_analysis
+
+# Submit classification script
+echo "Running brain region classification with $dataset_ID $disorder"
+python3 parse_npy_for_classification.py --dataset_ID $dataset_ID --disorder $disorder --input_data_file $input_npy_file \
+    --class_labels_file $class_labels_file --sample_IDs_file $sample_IDs_file --output_data_path $output_data_path \
+    --analysis_type $analysis_type --feature_name $feature_name --classifier_type $classifier_type \
+    --num_folds $num_folds --num_repeats $num_repeats --num_jobs $num_jobs --num_null_iters $num_null_iters \
+    --null_starting_point $null_starting_point --random_num_for_perm $random_num_for_perm
