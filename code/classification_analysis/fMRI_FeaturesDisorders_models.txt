@@ -1,2 +1,0 @@
-ABIDE_ASD_ROI_Superior_Frontal_Gyrus
-ABIDE_ASD_ROI_Middle_Frontal_Gyrus

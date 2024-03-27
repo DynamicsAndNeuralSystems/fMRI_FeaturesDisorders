@@ -1,0 +1,57 @@
+#!/bin/bash
+#PBS -j oe
+#PBS -l walltime=24:00:00
+#PBS -V
+
+##### Change to current working directory
+cd $PBS_O_WORKDIR
+
+##### Obtain Parameters from input.txt file using $PBS_ARRAY_INDEX as the line number #####
+
+# Check if user supplied a command-line argument
+if [ -z ${line_to_read+x} ]
+then
+    line_to_read=$PBS_ARRAY_INDEX
+fi
+
+model_name_params=`sed -n "${line_to_read} p" $input_model_file`
+model_name_array=($model_name_params)
+
+model_name=${model_name_array[0]}
+
+##### Execute Program #####
+
+#module load Anaconda3-5.1.0
+/usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
+source /usr/physics/python/anaconda3/etc/profile.d/conda.sh 
+
+# Activate the pyspi environment
+conda activate pyspi
+
+# Define standard variables
+parsing_python_script=/headnode1/abry4213/github/fMRI_FeaturesDisorders/code/classification_analysis/parse_npy_for_classification.py
+data_path=/headnode1/abry4213/data/TS_feature_manuscript
+output_data_path=/headnode1/abry4213/data/TS_feature_manuscript/classification_results/
+num_folds=10
+num_repeats=10
+queue=defaultQ
+classifier_type=Linear_SVM_sklearn
+
+# Define the input data file
+input_npy_file=/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/${model_name}.npy
+
+# Define output data file
+output_null_file=${output_data_path}/null_results/${dataset_ID}_${disorder}/${model_name}_${classifier_type}_${num_repeats}_repeats_${num_folds}_folds_CV_nulls.feather
+class_labels_file=${data_path}/input_data/${dataset_ID}_${disorder}_class_labels.npy
+sample_IDs_file=${data_path}/input_data/${dataset_ID}_${disorder}_sample_IDs.npy
+
+if ! test -f $output_null_file; then
+    # Submit hctsa fMRI classification script
+    echo "Running ${classifier_type} classification for ${model_name}"
+    python3 $parsing_python_script --dataset_ID $dataset_ID --disorder $disorder \
+        --input_data_file $input_npy_file --sample_IDs_file $sample_IDs_file \
+        --class_labels_file $class_labels_file --output_data_path $output_data_path \
+        --classifier_type $classifier_type --num_folds $num_folds --num_repeats $num_repeats \
+        --num_jobs $num_jobs --num_null_iters $num_null_iters
+fi
+

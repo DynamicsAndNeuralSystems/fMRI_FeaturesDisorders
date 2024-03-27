@@ -12,8 +12,6 @@ from sklearn.metrics import balanced_accuracy_score,make_scorer
 def run_k_fold_classifier_for_feature(feature_data, 
                                 pipe,
                                 CV_splitter,
-                               grouping_var_name,
-                               analysis_type, 
                                sample_IDs,
                                class_labels,
                                scorers,
@@ -76,47 +74,48 @@ def run_k_fold_classifier_for_feature(feature_data,
     # Assign the fold and repeat numbers
     splits_df["Fold"] = splits_df.index % num_folds
     splits_df["Repeat"] = splits_df.index // num_repeats
-    splits_df["group_var"] = grouping_var_name
-    splits_df["Analysis_Type"] = analysis_type
 
     main_res_by_fold["Fold"] = main_res_by_fold.index % num_folds
     main_res_by_fold["Repeat"] = main_res_by_fold.index // num_repeats
-    main_res_by_fold["group_var"] = grouping_var_name
-    main_res_by_fold["Analysis_Type"] = analysis_type
 
-    if num_null_iters > 0:
-        return (main_res_by_fold, splits_df, null_res)
-    else:
-        return (main_res_by_fold, splits_df)
+    return (main_res_by_fold, splits_df, null_res)
 
-def combine_null_results(data_path, dataset_ID, disorder):
-    disorder_path = f"{data_path}/{dataset_ID}_{disorder}"
-    disorder_nulls_list = []
-
+def combine_main_results(files_to_merge, dataset_ID, disorder, average_across_folds=True):
+    disorder_main_res_list = []
+        
     # Iterate over the files in data_path
-    for feather_file in os.listdir(disorder_path):
-        this_null_res = pd.read_feather(f"{disorder_path}/{feather_file}")
-        starting_point = int(feather_file.split("from_")[1].replace(".feather", "")) - 1
-        # Fix the null_iteration number by adding starting_point to the values
-        this_null_res["Null_Iteration"] = this_null_res["Null_Iteration"] + starting_point
+    for feather_file in files_to_merge:
+        this_main_res = pd.read_feather(feather_file)
+        this_main_res["Study"] = dataset_ID
+        this_main_res["Disorder"] = disorder
+        disorder_main_res_list.append(this_main_res)
+
+    disorder_main_res = pd.concat(disorder_main_res_list, axis=0).reset_index(drop=True)
+
+    # Average across folds/repeats if requested
+    if average_across_folds:
+        disorder_main_res = (disorder_main_res
+                             .groupby(["group_var", "Analysis_Type"], as_index=False)['Balanced_Accuracy']
+                             .agg(["mean", "std"])
+                             .reset_index()
+                             .rename(columns={"mean": "Balanced_Accuracy", "std": "Balanced_Accuracy_SD"}))
+        
+    # Return the nulls
+    return disorder_main_res
+
+
+def combine_null_results(files_to_merge, dataset_ID, disorder, num_null_iters=1000):
+    disorder_nulls_list = []
+        
+    # Iterate over the files in data_path
+    for feather_file in files_to_merge:
+        this_null_res = pd.read_feather(feather_file)
+        this_null_res["Null_Iteration"] = np.arange(1, num_null_iters+1)
+        this_null_res["Study"] = dataset_ID
+        this_null_res["Disorder"] = disorder
         disorder_nulls_list.append(this_null_res)
 
     disorder_nulls = pd.concat(disorder_nulls_list, axis=0).reset_index(drop=True)
-
-    # Fix the analysis type
-    def fix_analysis(analysis):
-        if "combo_catch25" in analysis:
-            return 'Univariate_Combo'
-        elif "ROI" in analysis:
-            return 'Brain_Region'
-        elif "catch25_feature" in analysis:
-            return 'catch25_feature'
-        else:
-            return "Other"
-        
-
-    disorder_nulls = pd.concat(disorder_nulls_list, axis=0).reset_index(drop=True)
-    disorder_nulls["Analysis_Type"] = disorder_nulls["Feature_Name"].map(lambda x: fix_analysis(x))
 
     # Return the nulls
     return disorder_nulls

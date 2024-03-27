@@ -1,0 +1,19 @@
+#!/bin/bash
+#PBS -j oe
+#PBS -q defaultQ
+#PBS -l walltime=1:00:00
+#PBS -V
+#PBS -N split_numpy
+#PBS -l select=1:ncpus=1:mem=8GB:mpiprocs=1
+
+#module load Anaconda3-5.1.0
+/usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
+source /usr/physics/python/anaconda3/etc/profile.d/conda.sh 
+
+# Activate the pyspi environment
+conda activate pyspi
+
+cd /headnode1/abry4213/github/fMRI_FeaturesDisorders/code/classification_analysis
+
+# Submit script to split time-series feature files into numpy arrays
+python3 split_into_numpy_files_for_classification.py
