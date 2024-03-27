@@ -27,14 +27,14 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="0.8172815"
-     inkscape:cx="395.82445"
-     inkscape:cy="293.65647"
-     inkscape:window-width="1470"
-     inkscape:window-height="806"
+     inkscape:zoom="1.1558106"
+     inkscape:cx="334.82995"
+     inkscape:cy="46.287861"
+     inkscape:window-width="1833"
+     inkscape:window-height="941"
      inkscape:window-x="0"
-     inkscape:window-y="37"
-     inkscape:window-maximized="1"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
      inkscape:current-layer="layer1" />
   <defs
      id="defs1343">
@@ -2146,22 +2146,6 @@
        id="g939"
        transform="matrix(0.41566086,0,0,0.41566086,1.3284269,2.4209781)" />
     <g
-       clip-path="url(#cpMzUzLjMwfDQ3OS4wM3w2Ljk3fDI1LjIx)"
-       id="g948"
-       transform="matrix(0.41566086,0,0,0.41566086,1.3284269,2.4209781)">
-      <text
-         x="416.16"
-         y="20.4"
-         text-anchor="middle"
-         style="font-size:12px;font-family:Arial;white-space:pre"
-         textLength="50.689999"
-         lengthAdjust="spacingAndGlyphs"
-         id="text946"
-         transform="matrix(1.3145991,0,0,1.4173823,-131.48869,-7.5654008)">A<tspan
-   style="font-size:65%;baseline-shift:sub"
-   id="tspan4529">uni_combo</tspan></text>
-    </g>
-    <g
        clip-path="url(#cpMC4wMHw0ODYuMDB8MC4wMHwzNjAuMDA=)"
        id="g950"
        transform="matrix(0.41566086,0,0,0.41566086,1.3284269,2.4209781)" />
@@ -2598,5 +2582,17 @@
          lengthAdjust="spacingAndGlyphs"
          id="text1108">Balanced Accuracy across Folds (%)</text>
     </g>
+    <text
+       x="416.16"
+       y="20.4"
+       text-anchor="middle"
+       style="font-size:12px;font-family:Arial;white-space:pre"
+       textLength="50.689999"
+       lengthAdjust="spacingAndGlyphs"
+       id="text946"
+       transform="matrix(0.5464274,0,0,0.58915035,-53.326276,1.2297918)"
+       dy="-3.02">A<tspan
+   style="font-size:65%;baseline-shift:sub"
+   id="tspan4529">uni_combo</tspan></text>
   </g>
 </svg>

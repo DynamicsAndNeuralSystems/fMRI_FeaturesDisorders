@@ -9,6 +9,40 @@ list.append <- function (.data, ...)
   }
 }
 
+# Function to plot network data
+plot_network_data <- function(edge_color) {
+  
+  # connect = dataframe of pairwise correlations between cortical ROIs
+  connect <- data.frame("from" = sample(rois$to, 500, replace=T),
+                        "to" = sample(rois$to,500, replace=T),
+                        value = runif(500, 0, 1)) %>%
+    arrange(from, to) %>%
+    sample_n(100)
+  
+  # Collect edges where from = selected ROI and to = ROIs connected to the selected ROI
+  from <- match(connect$from, vertices$name)
+  to <- match(connect$to, vertices$name)
+  
+  # mygraph = igraph object linking each cortical ROI
+  # convert to a circular dendrogram-shaped ggraph object
+  p <- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) + 
+    theme_void() +  geom_conn_bundle(data = get_con(from = from, to = to, 
+                                                    value=connect$value), 
+                                     tension=runif(1, 0.55, 0.85), 
+                                     width=1,
+                                     aes(color=value,
+                                         alpha=value))  +
+    labs(edge_width="Pearson\nCorrelation") + 
+    geom_node_point(aes(filter = leaf, 
+                        x = x*1.05, y=y*1.05),   
+                    size=3) +
+    scale_edge_color_gradientn(colors=c(alpha(edge_color,0.3), edge_color)) +
+    theme_void() + 
+    theme(plot.title=element_text(size=14, face="bold", hjust=0.5),
+          legend.position="none")
+  
+  return(p)
+}
 
 # Plot cortical + subcortical data in a discretized gradient
 plot_data_with_ggseg_discrete <- function(dataset_ID,
@@ -67,72 +101,6 @@ plot_data_with_ggseg_discrete <- function(dataset_ID,
   return(ggseg_plot)
 }
 
-# Function to plot specific data in a given iteration
-plot_network_data <- function(edge_color) {
-  
-  # connect = dataframe of pairwise correlations between cortical ROIs
-  connect <- data.frame("from" = sample(rois$to, 500, replace=T),
-                        "to" = sample(rois$to,500, replace=T),
-                        value = runif(500, 0, 1)) %>%
-    arrange(from, to) %>%
-    sample_n(100)
-  
-  # Collect edges where from = selected ROI and to = ROIs connected to the selected ROI
-  from <- match(connect$from, vertices$name)
-  to <- match(connect$to, vertices$name)
-  
-  # mygraph = igraph object linking each cortical ROI
-  # convert to a circular dendrogram-shaped ggraph object
-  p <- ggraph(mygraph, layout = 'dendrogram', circular = TRUE) + 
-    theme_void() +  geom_conn_bundle(data = get_con(from = from, to = to, 
-                                                    value=connect$value), 
-                                     tension=runif(1, 0.55, 0.85), 
-                                     width=1,
-                                     aes(color=value,
-                                         alpha=value))  +
-    labs(edge_width="Pearson\nCorrelation") + 
-    geom_node_point(aes(filter = leaf, 
-                        x = x*1.05, y=y*1.05),   
-                    size=3) +
-    scale_edge_color_gradientn(colors=c(alpha(edge_color,0.3), edge_color)) +
-    theme_void() + 
-    theme(plot.title=element_text(size=14, face="bold", hjust=0.5),
-          legend.position="none")
-  
-  return(p)
-}
-
-plot_feature_in_brain <- function(fill_color_gradient, region_label="all") {
-  if (region_label=="all") {
-    p <- dk %>%
-      as_tibble() %>%
-      mutate(region_values = runif(nrow(.))) %>%
-      ggseg(atlas = "dk", mapping = aes(fill = region_values),
-            hemisphere="left",
-            view = "lateral",
-            position = "stacked", colour = "black") +
-      scale_fill_gradientn(colors=c(alpha(fill_color_gradient, 0.3), 
-                                    fill_color_gradient), 
-                           na.value=NA)
-  } else {
-    p <- dk %>%
-      as_tibble() %>%
-      mutate(region_values = ifelse(label==region_label, "1", NA_character_)) %>%
-      ggseg(atlas = "dk", mapping = aes(fill = region_values),
-            hemisphere="left",
-            view = "lateral",
-            position = "stacked", colour = "gray40") +
-      scale_fill_manual(values=c(fill_color_gradient),
-                        na.value="white")
-  }
-
-  p <- p  +
-    theme_void() +
-    theme(plot.title = element_blank(),
-          legend.position = "none") 
-}
-
-
 # Plot balanced accuracy in the brain
 plot_balacc_in_brain <- function(significant_univariate_region_wise_results, 
                                  study_group_df,
@@ -141,8 +109,8 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
                                  bin_seq_range=seq(50,75,by=5)) {
   
   # Find max fill and min fill values
-  min_fill <- floor(min(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Folds))
-  max_fill <- ceiling(max(significant_univariate_region_wise_results$Balanced_Accuracy_Across_Folds))
+  min_fill <- floor(min(significant_univariate_region_wise_results$Balanced_Accuracy))
+  max_fill <- ceiling(max(significant_univariate_region_wise_results$Balanced_Accuracy))
   
   # Initialize list of ggseg plots
   ggseg_plot_list <- list()
@@ -175,13 +143,12 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
         mutate(label = gsub("ctx_", "", label))
     }
     
-    
     # Plot balanced accuracy data in cortex
     dataset_ggseg <- plot_data_with_ggseg_discrete(dataset_ID = dataset_ID,
                                                    atlas_name = atlas,
                                                    atlas_data = get(atlas) %>% as_tibble(),
                                                    data_to_plot = significant_data_for_ggseg,
-                                                   fill_variable = "Balanced_Accuracy_Across_Folds",
+                                                   fill_variable = "Balanced_Accuracy",
                                                    fill_colors = color_palette,
                                                    bin_seq = bin_seq_range,
                                                    line_color = "gray30",
@@ -198,7 +165,7 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
                                                             atlas_name = "aseg",
                                                             atlas_data = aseg %>% as_tibble(),
                                                             data_to_plot = significant_data_for_ggseg,
-                                                            fill_variable = "Balanced_Accuracy_Across_Folds",
+                                                            fill_variable = "Balanced_Accuracy",
                                                             fill_colors = color_palette,
                                                             bin_seq = bin_seq_range,
                                                             line_color = "gray30",
@@ -212,64 +179,126 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
   return(ggseg_plot_list)
 }
 
-
-repkfold_ttest <- function(data, n1, n2, k, r){
+# Plot a single discrete ggseg
+plot_data_with_ggseg_single_discrete <- function(dataset_ID,
+                                          atlas_name,
+                                          atlas_data,
+                                          data_to_plot,
+                                          fill_variable,
+                                          line_color="darkgrey",
+                                          na_color="white",
+                                          bin_seq = NULL,
+                                          fill_colors=NULL) {
   
-  # Arg checks
+  ggseg_data <- data_to_plot %>%
+    left_join(., atlas_data) %>%
+    filter(!is.na(region)) %>%
+    ungroup() %>%
+    dplyr::select(-label)
   
-  '%ni%' <- Negate('%in%')
+  # Find number of unique elements in fill_variable
+  num_unique_variables <- data_to_plot %>% pull(fill_variable) %>% unique() %>% length()
   
-  if("model" %ni% colnames(data) || "values" %ni% colnames(data) || "k" %ni% colnames(data) || "r" %ni% colnames(data)){
-    stop("data should contain at least four columns called 'model', 'values', 'k', and 'r'.")
+  if (is.null(fill_colors)) {
+    fill_colors = viridis::viridis(num_unique_variables)
   }
   
-  if(!is.numeric(data$values) || !is.numeric(data$k) || !is.numeric(data$r)){
-    stop("data should be a data.frame with only numerical values in columns 'values', 'k', and 'r'.")
-  }
-  
-  if(!is.numeric(n1) || !is.numeric(n2) || !is.numeric(k) || !is.numeric(r) ||
-     length(n1) != 1 || length(n2) != 1 || length(k) != 1 || length(r) != 1){
-    stop("n1, n2, k, and r should all be integer scalars.")
-  }
-  
-  if(length(unique(data$model)) != 2){
-    stop("Column 'model' in data should only have two unique labels (one for each model to compare).")
-  }
-  
-  # Calculations
-  
-  d <- c()
-  
-  for(i in 1:k){
-    for(j in 1:r){
-      x <- data[data$k == i, ]
-      x <- x[x$r == j, ]
-      d <- c(d, x[x$model == unique(x$model)[1], c("values")] - x[x$model == unique(x$model)[2], c("values")]) # Differences
-    }
-  }
-  
-  # Catch for when there is zero difference(s) between the models
-  
-  if (sum(unlist(d)) == 0) {
-    tmp <- data.frame(statistic = 0, p.value = 1)
-  } else{
+  if (atlas_name == "aseg") {
+    ggseg_plot <- ggseg_data %>%
+      filter(type!="cortical") %>%
+      ggplot() +
+      geom_brain(atlas = aseg, mapping = aes(fill = .data[[fill_variable]]), 
+                 side = "coronal", colour = line_color)
+  } else {
+    ggseg_plot <- ggseg_data %>%
+      ggseg(atlas = atlas_name, mapping = aes(fill = .data[[fill_variable]]),
+            position = "stacked", colour = line_color)
     
-    statistic <- mean(unlist(d), na.rm = TRUE) / sqrt(stats::var(unlist(d), na.rm = TRUE) * ((1/(k * r)) + (n2/n1))) # Calculate t-statistic
-    df <- n1 + n2 - 2
-    
-    if(statistic < 0){
-      p.value <- stats::pt(statistic, (k * r) - 1) # p-value for left tail
-    } else{
-      p.value <- stats::pt(statistic, (k * r) - 1, lower.tail = FALSE) # p-value for right tail
-    }
-    
-    tmp <- data.frame(statistic = statistic, p.value = p.value, df = df)
   }
   
-  return(tmp)
+  ggseg_plot <- ggseg_plot + 
+    theme_void() +
+    theme(plot.title = element_blank()) +
+    scale_fill_manual(values=fill_colors, na.value="white") +
+    guides(col = guide_legend(override.aes = list(color="black")))
+  
+  return(ggseg_plot)
 }
 
-run_correctR_group <- function(disorder, study, metadata, results_df) {
+# Plot significance type in ggseg
+plot_significance_type_in_brain <- function(significance_type_data, 
+                                 study_group_df,
+                                 ABIDE_brain_region_info,
+                                 color_palette=c("Nominal"="gray50", "Corrected"="red")) {
+  
+  
+  # Initialize list of ggseg plots
+  ggseg_plot_list <- list()
+  
+  # First plot within brain using ggseg
+  for (i in 1:nrow(study_group_df)) {
+    dataset_ID <- study_group_df$Study[i]
+    comparison_group <- study_group_df$Disorder[i]
+    
+    # Define atlas by study
+    atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
+    
+    # If dataset is ABIDE ASD, convert regions to ggseg regions
+    if (dataset_ID == "ABIDE") {
+      significant_data_for_ggseg <- significance_type_data %>%
+        filter(Study == dataset_ID,
+               Disorder == comparison_group) %>%
+        dplyr::rename("Brain_Region" = "group_var") %>%
+        left_join(., ABIDE_brain_region_info)
+      
+    } else {
+      # Extract sig results to plot
+      significant_data_for_ggseg <- significance_type_data %>%
+        filter(Study == dataset_ID,
+               Disorder == comparison_group) %>%
+        distinct() %>%
+        mutate(label = ifelse(str_detect(group_var, "ctx-"),
+                              gsub("-", "_", group_var),
+                              as.character(group_var))) %>%
+        mutate(label = gsub("ctx_", "", label))
+    }
+    
+    # Plot balanced accuracy data in cortex
+    dataset_ggseg <- plot_data_with_ggseg_single_discrete(dataset_ID = dataset_ID,
+                                                   atlas_name = atlas,
+                                                   atlas_data = get(atlas) %>% as_tibble(),
+                                                   data_to_plot = significant_data_for_ggseg,
+                                                   fill_variable = "Significance_Type",
+                                                   fill_colors = color_palette,
+                                                   line_color = "gray30",
+                                                   na_color = "white") +
+      labs(fill = "Mean Balanced Accuracy (%)") +
+      theme(plot.title = element_blank())
+    
+    # Append to list
+    ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg)
+    
+    # Add subcortical data for UCLA CNP
+    if (dataset_ID == "UCLA_CNP") {
+      dataset_ggseg_subctx <- plot_data_with_ggseg_single_discrete(dataset_ID = dataset_ID,
+                                                            atlas_name = "aseg",
+                                                            atlas_data = aseg %>% as_tibble(),
+                                                            data_to_plot = significant_data_for_ggseg,
+                                                            fill_variable = "Significance_Type",
+                                                            fill_colors = color_palette,
+                                                            line_color = "gray30",
+                                                            na_color = "white") +
+        labs(fill = "Mean Balanced Accuracy (%)") +
+        theme(plot.title = element_blank()) 
+      # Append to list
+      ggseg_plot_list <- list.append(ggseg_plot_list, dataset_ggseg_subctx)
+    }
+  }
+  return(ggseg_plot_list)
+}
+
+
+run_correctR_group <- function(disorder, study, metadata, results_df, alternative = "two.sided") {
   # Find number of subjects for the specified comparison group
   num_subjects <- metadata %>%
     filter(Study == study, 
@@ -303,17 +332,17 @@ run_correctR_group <- function(disorder, study, metadata, results_df) {
                                                  n1 = training_size,
                                                  n2 = test_size,
                                                  k = 10,
-                                                 r = 10)) %>%
+                                                 r = 10,
+                                                 confidence_level = 0.95,
+                                                 alternative = alternative)) %>%
                     mutate(SPI = unique(.x$SPI))) %>%
     ungroup() %>%
-    dplyr::rename("p_value_corr"="p.value") %>%
-    mutate(p_value_corr_HolmBonferroni = p.adjust(p_value_corr, method="bonferroni"),
+    mutate(p_value_corr_HolmBonferroni = p.adjust(p.value, method="bonferroni"),
            Disorder = disorder)
   
   return(res)
   
 }
-
 
 plot_fold_heatmap_for_dataset <- function(fold_assignments_df, group_var_to_use, plot_title) {
   p <- fold_assignments_df %>%

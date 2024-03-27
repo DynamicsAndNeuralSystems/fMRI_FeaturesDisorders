@@ -5,6 +5,7 @@ cluster_output/
 *.DS_Store
 *.gitignore
 scratch/
+data*
 data/*/intra_regional_fold_assignments.feather
 data/*/*_TS.feather
 data/*/*_catch24_features.feather
@@ -16,3 +17,6 @@ data/time_series_features/*_pyspi14.feather
 data/time_series_features/*_pyspi14_filtered.feather
 backup/*
 test*
+
+plots/PLoS_Biology
+*.pyc
