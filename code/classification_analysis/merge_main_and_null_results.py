@@ -27,10 +27,10 @@ data_path = args.data_path
 
 analysis_type_kwds = {"univariate": "Brain_Region|catch25_feature|Univariate_Combo",
                       "pairwise": f"{disorder}_pyspi14_SPI",
-                      "combined_univariate_pairwise": "combined_univariate_catch25_and_pyspi14"}
+                      "combined_univariate_pairwise": "SPI_Combo"}
 
-for main_analysis_type in ["univariate"]:
-# for main_analysis_type in ["univariate", "pairwise", "combined_univariate_pairwise"]:
+# for main_analysis_type in ["univariate"]:
+for main_analysis_type in ["univariate", "pairwise", "combined_univariate_pairwise"]:
 
     # Concatenate main results
     output_main_file = f"{data_path}/balanced_accuracy/{dataset_ID}_{disorder}_{main_analysis_type}_{classifier_type}_balanced_accuracy_all_folds.feather"

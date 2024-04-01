@@ -78,6 +78,19 @@ dataset_ID=UCLA_CNP
 # done
 
 #################################################################################
+
+queue=yossarian
+disorder=SCZ
+dataset_ID=UCLA_CNP
+cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pyspi14_SPI_classification_${disorder}_^array_index^.out \
+    -N ${disorder}_pyspi14 \
+    -l select=1:ncpus=32:mem=180GB:mpiprocs=32 \
+    -v num_null_iters=1000,num_jobs=50,dataset_ID=${dataset_ID},disorder=${disorder},input_model_file=${data_path}/time_series_features/processed_numpy_files/${dataset_ID}_${disorder}_pairwise_models.txt \
+    -J 1-2 \
+    -q $queue \
+    array_for_classification.pbs"
+$cmd
+
 # Pairwise
 num_running_cores=3
 num_cores=1
@@ -89,9 +102,9 @@ mem_directed=15
 queue=defaultQ
 num_null_iters=1000
 
-queue=yossarian
 # for disorder in SCZ BP ADHD; do
     # # 1-3
+    # queue=defaultQ
     # cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pyspi14_SPI_classification_${disorder}.out \
     #     -N ${disorder}_pyspi14 \
     #     -l select=1:ncpus=${num_cores}:mem=${mem_undirected}GB:mpiprocs=${num_cores} \
@@ -102,6 +115,7 @@ queue=yossarian
     # $cmd
 
     # # 7-8
+    # queue=defaultQ
     # cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pyspi14_SPI_classification_${disorder}.out \
     #     -N ${disorder}_pyspi14 \
     #     -l select=1:ncpus=${num_cores}:mem=${mem_undirected}GB:mpiprocs=${num_cores} \
@@ -112,6 +126,7 @@ queue=yossarian
     # $cmd
 
     # # 12-14
+    # queue=yossarian
     # cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pyspi14_SPI_classification_${disorder}.out \
     #     -N ${disorder}_pyspi14 \
     #     -l select=1:ncpus=${num_cores}:mem=${mem_undirected}GB:mpiprocs=${num_cores} \
@@ -122,6 +137,7 @@ queue=yossarian
     # $cmd
 
     # # 4-6
+    # queue=yossarian
     # cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pyspi14_SPI_classification_${disorder}.out \
     #     -N ${disorder}_pyspi14 \
     #     -l select=1:ncpus=${num_jobs_directed}:mem=${mem_directed}GB:mpiprocs=${num_jobs_directed} \
@@ -142,17 +158,56 @@ queue=yossarian
 #     $cmd
 # done
 
-dataset_ID=ABIDE
-num_jobs=6
-num_cores=30
-queue=yossarian
-for disorder in ASD; do
-    cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pyspi14_SPI_classification_${disorder}.out \
-        -N ${disorder}_pyspi14 \
-        -l select=1:ncpus=${num_jobs}:mem=${num_cores}GB:mpiprocs=${num_jobs} \
-        -v num_jobs=${num_jobs},dataset_ID=${dataset_ID},disorder=${disorder},input_model_file=${data_path}/time_series_features/processed_numpy_files/${dataset_ID}_${disorder}_pairwise_models.txt \
-        -J 1-14 \
-        -q $queue \
-        array_for_classification.pbs"
-    $cmd
-done
+# dataset_ID=ABIDE
+# num_jobs=6
+# num_cores=30
+# num_null_iters=1000
+# queue=yossarian
+# for disorder in ASD; do
+#     cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/pyspi14_SPI_classification_${disorder}.out \
+#         -N ${disorder}_pyspi14 \
+#         -l select=1:ncpus=${num_jobs}:mem=${num_cores}GB:mpiprocs=${num_jobs} \
+#         -v num_null_iters=${num_null_iters},num_jobs=${num_jobs},dataset_ID=${dataset_ID},disorder=${disorder},input_model_file=${data_path}/time_series_features/processed_numpy_files/${dataset_ID}_${disorder}_pairwise_models.txt \
+#         -J 1-14 \
+#         -q $queue \
+#         array_for_classification.pbs"
+#     $cmd
+# done
+
+#################################################################################
+# Combined univariate+pairwise
+# num_cores=6
+# mem_directed=15
+# num_null_iters=1000
+# queue=yossarian
+
+# dataset_ID=UCLA_CNP
+# for disorder in SCZ BP ADHD; do
+#     cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/combined_classification_${disorder}.out \
+#         -N ${disorder}_pyspi14 \
+#         -l select=1:ncpus=${num_cores}:mem=${mem_directed}GB:mpiprocs=${num_cores} \
+#         -v num_null_iters=${num_null_iters},num_jobs=${num_cores},dataset_ID=${dataset_ID},disorder=${disorder},input_model_file=${data_path}/time_series_features/processed_numpy_files/${dataset_ID}_${disorder}_combined_univariate_pairwise_models.txt \
+#         -J 1-14 \
+#         -q $queue \
+#         array_for_classification.pbs"
+#     $cmd
+#     sleep 10h
+# done
+
+# dataset_ID=ABIDE
+# queue=yossarian
+# num_cores=6
+# mem_GB=15
+# num_null_iters=1000
+
+# for disorder in ASD; do
+#     cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/combined_classification_${disorder}.out \
+#         -N ${disorder}_pyspi14 \
+#         -l select=1:ncpus=${num_cores}:mem=${mem_GB}GB:mpiprocs=${num_cores} \
+#         -v num_null_iters=${num_null_iters},num_jobs=${num_cores},dataset_ID=${dataset_ID},disorder=${disorder},input_model_file=${data_path}/time_series_features/processed_numpy_files/${dataset_ID}_${disorder}_combined_univariate_pairwise_models.txt \
+#         -J 1-14 \
+#         -q $queue \
+#         array_for_classification.pbs"
+#     $cmd
+# done
+

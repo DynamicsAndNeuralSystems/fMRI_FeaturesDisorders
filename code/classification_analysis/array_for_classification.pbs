@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -j oe
-#PBS -l walltime=24:00:00
+#PBS -l walltime=20:00:00
 #PBS -V
 
 ##### Change to current working directory

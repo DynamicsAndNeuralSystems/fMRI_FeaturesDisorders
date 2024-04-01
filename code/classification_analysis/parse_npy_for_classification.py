@@ -57,7 +57,7 @@ elif "combined_univariate_catch25_and_pyspi14" in input_data_file:
 elif "catch25_feature" in input_data_file:
     Analysis_Type = "catch25_feature"
 else:
-    Analysis_Type = "SPI"
+    Analysis_Type = "pyspi14_SPI"
 
 # Find grouping_var
 model_name = input_data_file.split(".")[0]
