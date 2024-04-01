@@ -89,7 +89,6 @@ plot_data_with_ggseg_discrete <- function(dataset_ID,
     theme_void() +
     theme(plot.title = element_blank()) +
     binned_scale(aesthetics = "fill",
-                 scale_name = "stepsn", 
                  palette = function(x) fill_colors,
                  breaks = bin_seq,
                  limits = c(min(bin_seq), max(bin_seq)),
@@ -105,7 +104,7 @@ plot_data_with_ggseg_discrete <- function(dataset_ID,
 plot_balacc_in_brain <- function(significant_univariate_region_wise_results, 
                                  study_group_df,
                                  ABIDE_brain_region_info,
-                                 color_palette=c("#FFEE75", "#FCA769", "#fb6555", "#D32345", "#401057"),
+                                 disorder_color_list=c("#FFEE75", "#FCA769", "#fb6555", "#D32345", "#401057"),
                                  bin_seq_range=seq(50,75,by=5)) {
   
   # Find max fill and min fill values
@@ -118,7 +117,10 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
   # First plot within brain using ggseg
   for (i in 1:nrow(study_group_df)) {
     dataset_ID <- study_group_df$Study[i]
-    comparison_group <- study_group_df$Disorder[i]
+    disorder <- study_group_df$Disorder[i]
+
+    # Find color palette
+    disorder_colors <- unname(disorder_color_list[disorder][[1]])
     
     # Define atlas by study
     atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
@@ -127,7 +129,7 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
     if (dataset_ID == "ABIDE") {
       significant_data_for_ggseg <- significant_univariate_region_wise_results %>%
         filter(Study == dataset_ID,
-               Disorder == comparison_group) %>%
+               Disorder == disorder) %>%
         dplyr::rename("Brain_Region" = "group_var") %>%
         left_join(., ABIDE_brain_region_info)
       
@@ -135,7 +137,7 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
       # Extract sig results to plot
       significant_data_for_ggseg <- significant_univariate_region_wise_results %>%
         filter(Study == dataset_ID,
-               Disorder == comparison_group) %>%
+               Disorder == disorder) %>%
         distinct() %>%
         mutate(label = ifelse(str_detect(group_var, "ctx-"),
                               gsub("-", "_", group_var),
@@ -149,7 +151,7 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
                                                    atlas_data = get(atlas) %>% as_tibble(),
                                                    data_to_plot = significant_data_for_ggseg,
                                                    fill_variable = "Balanced_Accuracy",
-                                                   fill_colors = color_palette,
+                                                   fill_colors = disorder_colors,
                                                    bin_seq = bin_seq_range,
                                                    line_color = "gray30",
                                                    na_color = "white") +
@@ -166,7 +168,7 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
                                                             atlas_data = aseg %>% as_tibble(),
                                                             data_to_plot = significant_data_for_ggseg,
                                                             fill_variable = "Balanced_Accuracy",
-                                                            fill_colors = color_palette,
+                                                            fill_colors = disorder_colors,
                                                             bin_seq = bin_seq_range,
                                                             line_color = "gray30",
                                                             na_color = "white") +
@@ -229,7 +231,7 @@ plot_data_with_ggseg_single_discrete <- function(dataset_ID,
 plot_significance_type_in_brain <- function(significance_type_data, 
                                  study_group_df,
                                  ABIDE_brain_region_info,
-                                 color_palette=c("Nominal"="gray50", "Corrected"="red")) {
+                                 disorder_color_list = list("SCZ" = c("Nominal" = "indianred3", "Corrected" = "red"))) {
   
   
   # Initialize list of ggseg plots
@@ -238,7 +240,10 @@ plot_significance_type_in_brain <- function(significance_type_data,
   # First plot within brain using ggseg
   for (i in 1:nrow(study_group_df)) {
     dataset_ID <- study_group_df$Study[i]
-    comparison_group <- study_group_df$Disorder[i]
+    disorder <- study_group_df$Disorder[i]
+
+    # Find color palette
+    disorder_colors <- disorder_color_list[disorder][[1]]
     
     # Define atlas by study
     atlas <- ifelse(dataset_ID == "UCLA_CNP", "dk", "hoCort")
@@ -247,7 +252,7 @@ plot_significance_type_in_brain <- function(significance_type_data,
     if (dataset_ID == "ABIDE") {
       significant_data_for_ggseg <- significance_type_data %>%
         filter(Study == dataset_ID,
-               Disorder == comparison_group) %>%
+               Disorder == disorder) %>%
         dplyr::rename("Brain_Region" = "group_var") %>%
         left_join(., ABIDE_brain_region_info)
       
@@ -255,7 +260,7 @@ plot_significance_type_in_brain <- function(significance_type_data,
       # Extract sig results to plot
       significant_data_for_ggseg <- significance_type_data %>%
         filter(Study == dataset_ID,
-               Disorder == comparison_group) %>%
+               Disorder == disorder) %>%
         distinct() %>%
         mutate(label = ifelse(str_detect(group_var, "ctx-"),
                               gsub("-", "_", group_var),
@@ -269,7 +274,7 @@ plot_significance_type_in_brain <- function(significance_type_data,
                                                    atlas_data = get(atlas) %>% as_tibble(),
                                                    data_to_plot = significant_data_for_ggseg,
                                                    fill_variable = "Significance_Type",
-                                                   fill_colors = color_palette,
+                                                   fill_colors = disorder_colors,
                                                    line_color = "gray30",
                                                    na_color = "white") +
       labs(fill = "Mean Balanced Accuracy (%)") +
@@ -285,7 +290,7 @@ plot_significance_type_in_brain <- function(significance_type_data,
                                                             atlas_data = aseg %>% as_tibble(),
                                                             data_to_plot = significant_data_for_ggseg,
                                                             fill_variable = "Significance_Type",
-                                                            fill_colors = color_palette,
+                                                            fill_colors = disorder_colors,
                                                             line_color = "gray30",
                                                             na_color = "white") +
         labs(fill = "Mean Balanced Accuracy (%)") +
@@ -404,4 +409,36 @@ plot_group_vs_control_mean_FD <- function(FD_dataset,
           axis.title.x = element_blank(),
           plot.title = element_text(hjust=0.5, size=14))
   return(p)
+}
+
+################################################################################
+# Helper function to plot the beta coefficients for a given feature in the brain
+plot_feature_in_brain <- function(fill_color_gradient, region_label="all") {
+  if (region_label=="all") {
+    p <- dk %>%
+      as_tibble() %>%
+      mutate(region_values = runif(nrow(.))) %>%
+      ggseg(atlas = "dk", mapping = aes(fill = region_values),
+            hemisphere="left",
+            view = "lateral",
+            position = "stacked", colour = "black") +
+      scale_fill_gradientn(colors=c(alpha(fill_color_gradient, 0.3), 
+                                    fill_color_gradient), 
+                           na.value=NA)
+  } else {
+    p <- dk %>%
+      as_tibble() %>%
+      mutate(region_values = ifelse(label==region_label, "1", NA_character_)) %>%
+      ggseg(atlas = "dk", mapping = aes(fill = region_values),
+            hemisphere="left",
+            view = "lateral",
+            position = "stacked", colour = "gray40") +
+      scale_fill_manual(values=c(fill_color_gradient),
+                        na.value="white")
+  }
+
+  p <- p  +
+    theme_void() +
+    theme(plot.title = element_blank(),
+          legend.position = "none") 
 }
