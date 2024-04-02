@@ -11,40 +11,22 @@ queue=yossarian
 num_null_iters=1000
 
 #################################################################################
+# Univariate analyses
 num_cores=1
 num_jobs=2
 num_GB=5
 dataset_ID=UCLA_CNP
-# Univariate analyses
+queue=yossarian
 
-# sleep 65m
-# for disorder in SCZ BP ADHD; do
-#     cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/all_univariate_classification_${disorder}.out \
-#         -N ${disorder}_catch25 \
-#         -l select=1:ncpus=${num_cores}:mem=${num_GB}GB:mpiprocs=${num_cores} \
-#         -v num_null_iters=${num_null_iters},num_jobs=${num_jobs},dataset_ID=${dataset_ID},disorder=${disorder},input_model_file=${data_path}/time_series_features/processed_numpy_files/${dataset_ID}_${disorder}_univariate_models.txt \
-#         -J 1-54 \
-#         -q $queue \
-#         array_for_classification.pbs"
-#     $cmd
-#     sleep 100m
-#     cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/all_univariate_classification_${disorder}.out \
-#         -N ${disorder}_catch25 \
-#         -l select=1:ncpus=${num_cores}:mem=${num_GB}GB:mpiprocs=${num_cores} \
-#         -v num_null_iters=${num_null_iters},num_jobs=${num_jobs},dataset_ID=${dataset_ID},disorder=${disorder},input_model_file=${data_path}/time_series_features/processed_numpy_files/${dataset_ID}_${disorder}_univariate_models.txt \
-#         -J 55-107 \
-#         -q $queue \
-#         array_for_classification.pbs"
-#     $cmd
-#     cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/all_univariate_classification_${disorder}_combo.out \
-#         -N ${disorder}_catch25_combo \
-#         -l select=1:ncpus=${num_cores}:mem=${num_GB}GB:mpiprocs=${num_cores} \
-#         -v line_to_read=108,num_null_iters=${num_null_iters},num_jobs=${num_jobs},dataset_ID=${dataset_ID},disorder=${disorder},input_model_file=${data_path}/time_series_features/processed_numpy_files/${dataset_ID}_${disorder}_univariate_models.txt \
-#         -q $queue \
-#         array_for_classification.pbs"
-#     $cmd
-#     sleep 120m
-# done
+for disorder in SCZ; do #BP ADHD; do
+    cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/all_univariate_classification_${disorder}.out \
+        -N ${disorder}_catch25 \
+        -l select=1:ncpus=${num_cores}:mem=${num_GB}GB:mpiprocs=${num_cores} \
+        -v line_to_read=1,num_null_iters=${num_null_iters},num_jobs=${num_jobs},dataset_ID=${dataset_ID},disorder=${disorder},input_model_file=${data_path}/time_series_features/processed_numpy_files/${dataset_ID}_${disorder}_univariate_models.txt \
+        -q $queue \
+        array_for_classification.pbs"
+    # sleep 120m
+done
 
 # for disorder in ASD; do
 #     dataset_ID=ABIDE
