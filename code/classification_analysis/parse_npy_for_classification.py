@@ -83,11 +83,12 @@ main_output_file_base = f"{dataset_ID}_{disorder}_{Analysis_Type}_{grouping_var}
 os.makedirs(output_data_path, exist_ok=True)
 os.makedirs(f"{output_data_path}/balanced_accuracy/{dataset_ID}_{disorder}", exist_ok=True)
 os.makedirs(f"{output_data_path}/null_results/{dataset_ID}_{disorder}", exist_ok=True)
+os.makedirs(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}", exist_ok=True)
 
 ############### Main analysis with default C-value ###############
     
 # Main analysis
-if not os.path.isfile(f"{output_data_path}/balanced_accuracy/{dataset_ID}_{disorder}/{main_output_file_base}_main_res.feather"):
+if not os.path.isfile(f"{output_data_path}/null_results/{dataset_ID}_{disorder}/{main_output_file_base}_nulls.featherr"):
     # Define RepeatedStratifiedKFold splitter
     RepeatedStratifiedKFold_splitter = RepeatedStratifiedKFold(n_splits=num_folds, n_repeats=num_repeats, random_state=127)
 
@@ -144,7 +145,9 @@ if not os.path.isfile(f"{output_data_path}/balanced_accuracy/{dataset_ID}_{disor
 
 # Robustness analysis
 robustness_output_file_base = f"{dataset_ID}_{disorder}_{Analysis_Type}_{grouping_var}"
-if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{main_output_file_base}_training_balacc_df.feather"):
+print(f"Robustness output file: {robustness_output_file_base}")
+if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_training_balacc_df.feather"):
+    print(f"Now running robustness analysis for {disorder} {grouping_var}")
 
     # Define CV splitters
     main_cv = RepeatedStratifiedKFold(n_splits=num_folds, n_repeats=num_repeats, random_state=127)
@@ -159,7 +162,6 @@ if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{dis
     
     # Define C parameter grid for tuning
     param_grid={"model__C": [0.0001, 0.001, 0.01, 0.1, 1, 10, 100]}
-    print(f"Now running robustness analysis for {disorder} {grouping_var}")
 
     # Run the robustness analysis
     (training_balacc_df, classifier_type_df, nested_CV_df) = robustness_analysis(feature_data, class_labels, model_dict, inner_cv, main_cv, 
@@ -175,6 +177,6 @@ if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{dis
         df["Dataset"] = dataset_ID
 
     # Save results to feather files
-    training_balacc_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{main_output_file_base}_training_balacc_df.feather")
-    classifier_type_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{main_output_file_base}_classifier_type_df.feather")
-    nested_CV_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{main_output_file_base}_nested_CV_df.feather")
+    training_balacc_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_training_balacc_df.feather")
+    classifier_type_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_classifier_type_df.feather")
+    nested_CV_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_nested_CV_df.feather")

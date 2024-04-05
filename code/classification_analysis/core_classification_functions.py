@@ -122,6 +122,7 @@ def combine_null_results(files_to_merge, dataset_ID, disorder, num_null_iters=10
     return disorder_nulls
 
 
+#######################################################################################################
 # Robustness analysis functions
 def fit_nested_CV(X, y, inner_cv, main_cv, pipe, num_folds=10, num_repeats=10, 
                   scoring="balanced_accuracy", num_jobs=2, 
@@ -182,7 +183,6 @@ def fit_nested_CV(X, y, inner_cv, main_cv, pipe, num_folds=10, num_repeats=10,
 
     return nested_CV_balacc_mean
 
-#######################################################################################################
 def robustness_analysis(X, y, model_dict, inner_cv, main_cv, num_folds=10, num_repeats=10, base_model_name="Linear_SVM_sklearn", scoring="balanced_accuracy", num_jobs=2):
     base_model = model_dict[base_model_name]
 

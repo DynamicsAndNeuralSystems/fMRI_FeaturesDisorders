@@ -41,17 +41,14 @@ classifier_type=Linear_SVM_sklearn
 input_npy_file=/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/${model_name}.npy
 
 # Define output data file
-output_null_file=${output_data_path}/null_results/${dataset_ID}_${disorder}/${model_name}_${classifier_type}_${num_repeats}_repeats_${num_folds}_folds_CV_nulls.feather
 class_labels_file=${data_path}/input_data/${dataset_ID}_${disorder}_class_labels.npy
 sample_IDs_file=${data_path}/input_data/${dataset_ID}_${disorder}_sample_IDs.npy
 
-if ! test -f $output_null_file; then
-    # Submit hctsa fMRI classification script
-    echo "Running ${classifier_type} classification for ${model_name}"
-    python3 $parsing_python_script --dataset_ID $dataset_ID --disorder $disorder \
-        --input_data_file $input_npy_file --sample_IDs_file $sample_IDs_file \
-        --class_labels_file $class_labels_file --output_data_path $output_data_path \
-        --classifier_type $classifier_type --num_folds $num_folds --num_repeats $num_repeats \
-        --num_jobs $num_jobs --num_null_iters $num_null_iters
-fi
+# Submit hctsa fMRI classification script
+echo "Running ${classifier_type} classification for ${model_name}"
+python3 $parsing_python_script --dataset_ID $dataset_ID --disorder $disorder \
+    --input_data_file $input_npy_file --sample_IDs_file $sample_IDs_file \
+    --class_labels_file $class_labels_file --output_data_path $output_data_path \
+    --classifier_type $classifier_type --num_folds $num_folds --num_repeats $num_repeats \
+    --num_jobs $num_jobs --num_null_iters $num_null_iters
 
