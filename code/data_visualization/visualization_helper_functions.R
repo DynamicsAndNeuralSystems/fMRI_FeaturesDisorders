@@ -118,7 +118,7 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
   for (i in 1:nrow(study_group_df)) {
     dataset_ID <- study_group_df$Study[i]
     disorder <- study_group_df$Disorder[i]
-
+    
     # Find color palette
     disorder_colors <- unname(disorder_color_list[disorder][[1]])
     
@@ -183,14 +183,14 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
 
 # Plot a single discrete ggseg
 plot_data_with_ggseg_single_discrete <- function(dataset_ID,
-                                          atlas_name,
-                                          atlas_data,
-                                          data_to_plot,
-                                          fill_variable,
-                                          line_color="darkgrey",
-                                          na_color="white",
-                                          bin_seq = NULL,
-                                          fill_colors=NULL) {
+                                                 atlas_name,
+                                                 atlas_data,
+                                                 data_to_plot,
+                                                 fill_variable,
+                                                 line_color="darkgrey",
+                                                 na_color="white",
+                                                 bin_seq = NULL,
+                                                 fill_colors=NULL) {
   
   ggseg_data <- data_to_plot %>%
     left_join(., atlas_data) %>%
@@ -229,9 +229,9 @@ plot_data_with_ggseg_single_discrete <- function(dataset_ID,
 
 # Plot significance type in ggseg
 plot_significance_type_in_brain <- function(significance_type_data, 
-                                 study_group_df,
-                                 ABIDE_brain_region_info,
-                                 disorder_color_list = list("SCZ" = c("Nominal" = "indianred3", "Corrected" = "red"))) {
+                                            study_group_df,
+                                            ABIDE_brain_region_info,
+                                            disorder_color_list = list("SCZ" = c("Nominal" = "indianred3", "Corrected" = "red"))) {
   
   
   # Initialize list of ggseg plots
@@ -241,7 +241,7 @@ plot_significance_type_in_brain <- function(significance_type_data,
   for (i in 1:nrow(study_group_df)) {
     dataset_ID <- study_group_df$Study[i]
     disorder <- study_group_df$Disorder[i]
-
+    
     # Find color palette
     disorder_colors <- disorder_color_list[disorder][[1]]
     
@@ -270,13 +270,13 @@ plot_significance_type_in_brain <- function(significance_type_data,
     
     # Plot balanced accuracy data in cortex
     dataset_ggseg <- plot_data_with_ggseg_single_discrete(dataset_ID = dataset_ID,
-                                                   atlas_name = atlas,
-                                                   atlas_data = get(atlas) %>% as_tibble(),
-                                                   data_to_plot = significant_data_for_ggseg,
-                                                   fill_variable = "Significance_Type",
-                                                   fill_colors = disorder_colors,
-                                                   line_color = "gray30",
-                                                   na_color = "white") +
+                                                          atlas_name = atlas,
+                                                          atlas_data = get(atlas) %>% as_tibble(),
+                                                          data_to_plot = significant_data_for_ggseg,
+                                                          fill_variable = "Significance_Type",
+                                                          fill_colors = disorder_colors,
+                                                          line_color = "gray30",
+                                                          na_color = "white") +
       labs(fill = "Mean Balanced Accuracy (%)") +
       theme(plot.title = element_blank())
     
@@ -286,13 +286,13 @@ plot_significance_type_in_brain <- function(significance_type_data,
     # Add subcortical data for UCLA CNP
     if (dataset_ID == "UCLA_CNP") {
       dataset_ggseg_subctx <- plot_data_with_ggseg_single_discrete(dataset_ID = dataset_ID,
-                                                            atlas_name = "aseg",
-                                                            atlas_data = aseg %>% as_tibble(),
-                                                            data_to_plot = significant_data_for_ggseg,
-                                                            fill_variable = "Significance_Type",
-                                                            fill_colors = disorder_colors,
-                                                            line_color = "gray30",
-                                                            na_color = "white") +
+                                                                   atlas_name = "aseg",
+                                                                   atlas_data = aseg %>% as_tibble(),
+                                                                   data_to_plot = significant_data_for_ggseg,
+                                                                   fill_variable = "Significance_Type",
+                                                                   fill_colors = disorder_colors,
+                                                                   line_color = "gray30",
+                                                                   na_color = "white") +
         labs(fill = "Mean Balanced Accuracy (%)") +
         theme(plot.title = element_blank()) 
       # Append to list
@@ -303,7 +303,7 @@ plot_significance_type_in_brain <- function(significance_type_data,
 }
 
 
-run_correctR_group <- function(disorder, study, metadata, results_df, alternative = "two.sided") {
+run_correctR_group <- function(disorder, study, metadata, results_df) {
   # Find number of subjects for the specified comparison group
   num_subjects <- metadata %>%
     filter(Study == study, 
@@ -320,32 +320,42 @@ run_correctR_group <- function(disorder, study, metadata, results_df, alternativ
     filter(Study == study, 
            Disorder == disorder) %>%
     group_by(group_var) %>%
-    filter(any(p_value_HolmBonferroni < 0.05)) %>%
+    filter(any(p_value_BenjaminiHochberg < 0.05)) %>%
     ungroup() %>%
     dplyr::rename("model" = "Analysis_Type",
                   "SPI" = "group_var",
                   "k" = "Fold",
-                  "r" = "Repeat_Number",
+                  "r" = "Repeat",
                   "values" = "Balanced_Accuracy") %>%
     dplyr::select(model, SPI, k, r, values) %>%
     dplyr::mutate(r = r + 1) %>%
     group_by(SPI) %>%
     group_split()
-
-  res <- data_for_correctR %>%
-    purrr::map_df(~ as.data.frame(repkfold_ttest(data = .x %>% dplyr::select(-SPI), 
-                                                 n1 = training_size,
-                                                 n2 = test_size,
-                                                 k = 10,
-                                                 r = 10,
-                                                 confidence_level = 0.95,
-                                                 alternative = alternative)) %>%
-                    mutate(SPI = unique(.x$SPI))) %>%
-    ungroup() %>%
-    mutate(p_value_corr_HolmBonferroni = p.adjust(p.value, method="bonferroni"),
-           Disorder = disorder)
   
-  return(res)
+  tryCatch({
+    res <- data_for_correctR %>%
+      purrr::map_df(~ as.data.frame(repkfold_ttest(data = .x %>% dplyr::select(-SPI), 
+                                                   n1 = training_size,
+                                                   n2 = test_size,
+                                                   k = 10,
+                                                   r = 10, 
+                                                   tailed = "two")) %>%
+                      mutate(SPI = unique(.x$SPI))) %>%
+      ungroup() %>%
+      mutate(p_value_corr_BenjaminiHochberg = p.adjust(p.value, method="BH"),
+             Disorder = disorder)
+    
+    return(res)}, 
+    error = function(e) {
+      print("error for disorder")
+      print(disorder)
+      return(data.frame(statistic = numeric(),
+                        p.value = numeric(),
+                        p_value_corr_BenjaminiHochberg = numeric(),
+                        Disorder = character(), 
+                        SPI = character()))
+    }
+  )
   
 }
 
@@ -436,7 +446,7 @@ plot_feature_in_brain <- function(fill_color_gradient, region_label="all") {
       scale_fill_manual(values=c(fill_color_gradient),
                         na.value="white")
   }
-
+  
   p <- p  +
     theme_void() +
     theme(plot.title = element_blank(),
