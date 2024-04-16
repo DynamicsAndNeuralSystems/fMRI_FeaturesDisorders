@@ -1,0 +1,20 @@
+#!/bin/bash
+#PBS -j oe
+#PBS -q yossarian
+#PBS -l walltime=3:00:00
+#PBS -V
+#PBS -N confound_analysis
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/confound_analysis.out
+#PBS -l select=1:ncpus=4:mem=20GB:mpiprocs=4
+
+#module load Anaconda3-5.1.0
+/usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
+source /usr/physics/python/anaconda3/etc/profile.d/conda.sh 
+
+# Activate the pyspi environment
+conda activate pyspi
+
+cd /headnode1/abry4213/github/fMRI_FeaturesDisorders/code/classification_analysis
+
+# Submit script to split time-series feature files into numpy arrays
+python3 confound_analysis.py --num_jobs 4
