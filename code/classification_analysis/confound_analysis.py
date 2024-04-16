@@ -17,8 +17,8 @@ import argparse
 
 # Command-line arguments to parse
 parser = argparse.ArgumentParser()
-args = parser.parse_args()
 parser.add_argument('--num_jobs', dest='num_jobs', default=4)
+args = parser.parse_args()
 num_jobs = int(args.num_jobs)
 
 # add path to classification analysis functions
@@ -27,25 +27,25 @@ from core_classification_functions import *
 current_path = os.getcwd()
 from mixed_sigmoid_normalisation import MixedSigmoidScaler
 
-data_path="/headnode1/abry4213/data/TS_features_manuscript/"
+data_path="/headnode1/abry4213/data/TS_feature_manuscript/"
 
 # Load participants included
 UCLA_CNP_subjects_to_keep = pd.read_feather(f"{data_path}/time_series_features/UCLA_CNP_filtered_sample_info_catch25_pyspi14.feather")
 ABIDE_subjects_to_keep = pd.read_feather(f"{data_path}/time_series_features/ABIDE_filtered_sample_info_catch25_pyspi14.feather")
 
 # Load metadata
-UCLA_CNP_metadata = (pd.read_feather("{data_path}/input_data/UCLA_CNP_sample_metadata.feather")
+UCLA_CNP_metadata = (pd.read_feather(f"{data_path}/input_data/UCLA_CNP_sample_metadata.feather")
                         .assign(Study = "UCLA_CNP")
                         .query("Sample_ID in @UCLA_CNP_subjects_to_keep.Sample_ID"))
-ABIDE_metadata = (pd.read_feather("{data_path}/input_data/ABIDE_sample_metadata.feather")
+ABIDE_metadata = (pd.read_feather(f"{data_path}/input_data/ABIDE_sample_metadata.feather")
                         .assign(Study = "ABIDE")
                         .query("Sample_ID in @ABIDE_subjects_to_keep.Sample_ID"))
 
 # Load head movement 
-UCLA_CNP_head_mvmt = (pd.read_table('{data_path}/movement_data/UCLA_CNP_Mean_FD_Power.txt', sep=',')
+UCLA_CNP_head_mvmt = (pd.read_table(f'{data_path}/movement_data/UCLA_CNP_Mean_FD_Power.txt', sep=',')
                       .assign(Study = "UCLA_CNP")
                         .query("Sample_ID in @UCLA_CNP_subjects_to_keep.Sample_ID"))
-ABIDE_head_mvmt = (pd.read_table('{data_path}/data/movement_data/ABIDE_Mean_FD_Power.txt', sep=',', dtype={'Sample_ID': str,
+ABIDE_head_mvmt = (pd.read_table(f'{data_path}/movement_data/ABIDE_Mean_FD_Power.txt', sep=',', dtype={'Sample_ID': str,
                                                                                               'Mean_FD_Power': float})
                    .assign(Study = "ABIDE")
                         .query("Sample_ID in @ABIDE_subjects_to_keep.Sample_ID"))
@@ -61,7 +61,7 @@ study_disorder_lookup = {'SCZ': 'UCLA_CNP',
 
 
 # Analysis 1: Predicting diagnosis based on confound variables -- age, sex, and/or head motion
-if not os.path.isfile(f"{data_path}/classification_results/confounds_predicting_dx_balanced_accuracy_results.feather"):
+if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/confounds_predicting_dx_balanced_accuracy_results.feather"):
     confounds_balanced_accuracy_list = []
 
     # Iterate over the four disorders
@@ -127,11 +127,11 @@ if not os.path.isfile(f"{data_path}/classification_results/confounds_predicting_
                                     .rename(columns={"mean": "Balanced_Accuracy", "std": "Balanced_Accuracy_SD"}))
 
     # Save to feather file
-    confounds_balanced_accuracy_results_all_folds.reset_index().to_feather(f"{data_path}/classification_results/confounds_predicting_dx_balanced_accuracy_results_all_folds.feather")
-    confounds_balanced_accuracy_results.reset_index().to_feather(f"{data_path}/classification_results/confounds_predicting_dx_balanced_accuracy_results.feather")
+    confounds_balanced_accuracy_results_all_folds.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/confounds_predicting_dx_balanced_accuracy_results_all_folds.feather")
+    confounds_balanced_accuracy_results.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/confounds_predicting_dx_balanced_accuracy_results.feather")
 
 # Analysis 2: Predicting confound variables based on time-series features
-if not os.path.isfile(f"{data_path}/classification_results/time_series_features_predicting_confounds_r2_results.feather"):
+if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/time_series_features_predicting_confounds_r2_results.feather"):
     confounds_prediction_list = []
 
     # Iterate over the four disorders
@@ -158,9 +158,12 @@ if not os.path.isfile(f"{data_path}/classification_results/time_series_features_
         classification_pipeline = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
                                 ('model', SVM_model)])
 
-        # Define univariate models to test
-        disorder_univariate_models = pd.read_table(f"/Users/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{study}_{disorder}_univariate_models.txt",header=None)
-        disorder_univariate_models.columns = ["Model_Name"]
+        # Define all models to test
+        disorder_univariate_models = pd.read_table(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{study}_{disorder}_univariate_models.txt",header=None)
+        disorder_pairwise_models = pd.read_table(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{study}_{disorder}_pairwise_models.txt",header=None)
+        disorder_combined_univariate_pairwise_models  = pd.read_table(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{study}_{disorder}_combined_univariate_pairwise_models.txt",header=None)
+        disorder_all_models = pd.concat([disorder_univariate_models, disorder_pairwise_models, disorder_combined_univariate_pairwise_models])
+        disorder_all_models.columns = ["Model_Name"]
 
         for confound_variable in ["Age", "Sex", "Mean_FD_Power"]:
             if confound_variable == "Age":
@@ -174,7 +177,7 @@ if not os.path.isfile(f"{data_path}/classification_results/time_series_features_
                 pipeline = deepcopy(regression_pipeline)
 
             # Iterate over univariate models 
-            for model_name in disorder_univariate_models["Model_Name"].tolist()[0:2]: 
+            for model_name in disorder_all_models["Model_Name"].tolist()[0:2]: 
             # Define analysis type
                 if "ROI" in model_name:
                     Analysis_Type = "Brain_Region"
@@ -198,7 +201,7 @@ if not os.path.isfile(f"{data_path}/classification_results/time_series_features_
                 else:
                     grouping_var = model_name.split("_pyspi14_SPI_")[1]
 
-                model_data = np.load(f"/Users/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{model_name}.npy")
+                model_data = np.load(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{model_name}.npy")
 
                 # Find balanced accuracy for dataset 
                 model_confound_r2 = cross_validate(pipeline, model_data, confound_data, 
@@ -221,4 +224,4 @@ if not os.path.isfile(f"{data_path}/classification_results/time_series_features_
     time_series_features_predicting_confounds_r2_results = pd.concat(confounds_prediction_list, axis=0)
 
     # Save to feather file
-    time_series_features_predicting_confounds_r2_results.reset_index().to_feather(f"{data_path}/classification_results/time_series_features_predicting_confounds_r2_results.feather")
+    time_series_features_predicting_confounds_r2_results.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/time_series_features_predicting_confounds_r2_results.feather")
