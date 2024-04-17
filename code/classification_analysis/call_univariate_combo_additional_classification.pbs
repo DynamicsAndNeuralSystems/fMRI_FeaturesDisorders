@@ -3,8 +3,8 @@
 #PBS -q defaultQ
 #PBS -l walltime=12:00:00
 #PBS -V
-#PBS -N confound_analysis
-#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/confound_analysis.out
+#PBS -N univariate_combo_additional_classification
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/univariate_combo_additional_classification.out
 #PBS -l select=1:ncpus=8:mem=20GB:mpiprocs=8
 
 #module load Anaconda3-5.1.0
@@ -17,4 +17,4 @@ conda activate pyspi
 cd /headnode1/abry4213/github/fMRI_FeaturesDisorders/code/classification_analysis
 
 # Submit script to split time-series feature files into numpy arrays
-python3 confound_analysis.py --num_jobs 10
+python3 univariate_combo_additional_classification.py --num_jobs 10

@@ -87,66 +87,66 @@ os.makedirs(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}", e
 
 ############### Main analysis with default C-value ###############
     
-# Main analysis
-if not os.path.isfile(f"{output_data_path}/null_results/{dataset_ID}_{disorder}/{main_output_file_base}_nulls.featherr"):
-    # Define RepeatedStratifiedKFold splitter
-    RepeatedStratifiedKFold_splitter = RepeatedStratifiedKFold(n_splits=num_folds, n_repeats=num_repeats, random_state=127)
+# # Main analysis
+# if not os.path.isfile(f"{output_data_path}/null_results/{dataset_ID}_{disorder}/{main_output_file_base}_nulls.featherr"):
+#     # Define RepeatedStratifiedKFold splitter
+#     RepeatedStratifiedKFold_splitter = RepeatedStratifiedKFold(n_splits=num_folds, n_repeats=num_repeats, random_state=127)
 
-    # Define classification pipelines
-    if classifier_type=="Linear_SVM_sklearn":
-        model = svm.SVC(kernel="linear", C=1, class_weight="balanced")
-        model_noreg = svm.SVC(kernel="linear", class_weight="balanced")
-    elif classifier_type=="RBF_SVM_sklearn":
-        model = svm.SVC(kernel="rbf", C=1, class_weight="balanced")
-        model_noreg = svm.SVC(kernel="rbf", class_weight="balanced")
-    elif classifier_type=="RandomForest":
-        model = model_noreg = RandomForestClassifier(n_estimators=100, class_weight="balanced", n_jobs=1)
-    elif classifier_type=="GradientBoost":
-        model = model_noreg = GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1)
+#     # Define classification pipelines
+#     if classifier_type=="Linear_SVM_sklearn":
+#         model = svm.SVC(kernel="linear", C=1, class_weight="balanced")
+#         model_noreg = svm.SVC(kernel="linear")
+#     elif classifier_type=="RBF_SVM_sklearn":
+#         model = svm.SVC(kernel="rbf", C=1, class_weight="balanced")
+#         model_noreg = svm.SVC(kernel="rbf")
+#     elif classifier_type=="RandomForest":
+#         model = model_noreg = RandomForestClassifier(n_estimators=100, class_weight="balanced", n_jobs=1)
+#     elif classifier_type=="GradientBoost":
+#         model = model_noreg = GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1)
 
-    pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)),
-                    ('model', model)])
-    pipe_noreg = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)),
-                            ('model', model_noreg)])
+#     pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)),
+#                     ('model', model)])
+#     pipe_noreg = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)),
+#                             ('model', model_noreg)])
         
-    # Define scorers
-    scorers = [make_scorer(balanced_accuracy_score)]
-    scoring_names = ["Balanced_Accuracy"]
+#     # Define scorers
+#     scorers = [make_scorer(balanced_accuracy_score)]
+#     scoring_names = ["Balanced_Accuracy"]
 
-    print(f"Now running {classifier_type} for {disorder} {grouping_var}")
-    main_classification_res, splits_df, null_classification_res = run_k_fold_classifier_for_feature(feature_data = feature_data, 
-                                                                                        pipe = pipe,
-                                                                                        CV_splitter = RepeatedStratifiedKFold_splitter,
-                                                                                        class_labels=class_labels,
-                                                                                        sample_IDs = sample_IDs,
-                                                                                        scorers=scorers,
-                                                                                        scoring_names=scoring_names,
-                                                                                        num_null_iters=num_null_iters,
-                                                                                        num_folds = 10,
-                                                                                        num_repeats = 10,
-                                                                                        num_jobs = num_jobs)
+#     print(f"Now running {classifier_type} for {disorder} {grouping_var}")
+#     main_classification_res, splits_df, null_classification_res = run_k_fold_classifier_for_feature(feature_data = feature_data, 
+#                                                                                         pipe = pipe,
+#                                                                                         CV_splitter = RepeatedStratifiedKFold_splitter,
+#                                                                                         class_labels=class_labels,
+#                                                                                         sample_IDs = sample_IDs,
+#                                                                                         scorers=scorers,
+#                                                                                         scoring_names=scoring_names,
+#                                                                                         num_null_iters=num_null_iters,
+#                                                                                         num_folds = 10,
+#                                                                                         num_repeats = 10,
+#                                                                                         num_jobs = num_jobs)
 
-    # Assign key details to dataframes
-    main_classification_res["Analysis_Type"] = Analysis_Type
-    main_classification_res["group_var"] = grouping_var
-    main_classification_res["Classifier_Type"] = classifier_type
+#     # Assign key details to dataframes
+#     main_classification_res["Analysis_Type"] = Analysis_Type
+#     main_classification_res["group_var"] = grouping_var
+#     main_classification_res["Classifier_Type"] = classifier_type
 
-    # Save results to feather file
-    main_classification_res.to_feather(f"{output_data_path}/balanced_accuracy/{dataset_ID}_{disorder}/{main_output_file_base}_main_res.feather")
+#     # Save results to feather file
+#     main_classification_res.to_feather(f"{output_data_path}/balanced_accuracy/{dataset_ID}_{disorder}/{main_output_file_base}_main_res.feather")
 
-    # If nulls were requested, save those too
-    if num_null_iters > 0:
-        null_classification_res["Analysis_Type"] = Analysis_Type
-        null_classification_res["model_name"] = model_name
-        null_classification_res["Classifier_Type"] = classifier_type
-        null_classification_res["group_var"] = grouping_var
-        null_classification_res.to_feather(f"{output_data_path}/null_results/{dataset_ID}_{disorder}/{main_output_file_base}_nulls.feather")
+#     # If nulls were requested, save those too
+#     if num_null_iters > 0:
+#         null_classification_res["Analysis_Type"] = Analysis_Type
+#         null_classification_res["model_name"] = model_name
+#         null_classification_res["Classifier_Type"] = classifier_type
+#         null_classification_res["group_var"] = grouping_var
+#         null_classification_res.to_feather(f"{output_data_path}/null_results/{dataset_ID}_{disorder}/{main_output_file_base}_nulls.feather")
 
 
 # Robustness analysis
 robustness_output_file_base = f"{dataset_ID}_{disorder}_{Analysis_Type}_{grouping_var}"
 print(f"Robustness output file: {robustness_output_file_base}")
-if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_training_balacc_df.feather"):
+if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_nested_CV_df.feather"):
     print(f"Now running robustness analysis for {disorder} {grouping_var}")
 
     # Define CV splitters
@@ -160,8 +160,9 @@ if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{dis
                    "RandomForest": RandomForestClassifier(n_estimators=100, class_weight="balanced"),
                    "GradientBoost": GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1)}
     
-    # Define C parameter grid for tuning
-    param_grid={"model__C": [0.0001, 0.001, 0.01, 0.1, 1, 10, 100]}
+    # Define class weight and C parameter grid for tuning
+    param_grid={"model__C": [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
+                "model__class_weight": [None, "balanced"]}
 
     # Run the robustness analysis
     (training_balacc_df, classifier_type_df, nested_CV_df) = robustness_analysis(feature_data, class_labels, model_dict, inner_cv, main_cv, 

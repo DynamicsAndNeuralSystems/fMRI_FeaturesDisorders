@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn import svm
 from sklearn.pipeline import Pipeline
 import os.path
-from sklearn.model_selection import RepeatedStratifiedKFold, cross_validate, permutation_test_score, StratifiedKFold, GridSearchCV
+from sklearn.model_selection import RepeatedStratifiedKFold, cross_validate, permutation_test_score, StratifiedKFold, GridSearchCV, RandomizedSearchCV
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier,GradientBoostingClassifier
 from mixed_sigmoid_normalisation import MixedSigmoidScaler
@@ -126,7 +126,8 @@ def combine_null_results(files_to_merge, dataset_ID, disorder, num_null_iters=10
 # Robustness analysis functions
 def fit_nested_CV(X, y, inner_cv, main_cv, pipe, num_folds=10, num_repeats=10, 
                   scoring="balanced_accuracy", num_jobs=2, 
-                  param_grid={"model__C": [0.0001, 0.001, 0.01, 0.1, 1, 10, 100]}):
+                  param_grid={"model__C": [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
+                              "model__class_weight": [None, "balanced"]}):
 
     # Define train/test splits from the passed cv argument
     repeat_folds = list(main_cv.split(X, y))
@@ -156,19 +157,18 @@ def fit_nested_CV(X, y, inner_cv, main_cv, pipe, num_folds=10, num_repeats=10,
         testing_labels = np.array(y)[test_folds]
         
         # Define an inner 10-fold cross-validation for the grid search
-        search = GridSearchCV(pipe, 
-                              param_grid, 
-                              scoring=scoring, 
-                              cv=inner_cv, 
-                              refit=True, 
-                              n_jobs=num_jobs)
+        search = RandomizedSearchCV(pipe, 
+                                    param_grid, 
+                                    scoring=scoring, 
+                                    cv=inner_cv, 
+                                    refit=True, 
+                                    n_jobs=num_jobs)
         
         # Execute the search
         search_result = search.fit(training_data, training_labels)
         
         # Extract the best-performing model fit on the whole training set
         best_model = search_result.best_estimator_
-        C_value = search_result.best_params_[list(param_grid.keys())[0]]
         
         # Predict the class values with best_model
         predicted_labels = best_model.predict(testing_data)

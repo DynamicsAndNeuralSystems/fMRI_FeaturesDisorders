@@ -131,7 +131,7 @@ if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/con
     confounds_balanced_accuracy_results.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/confounds_predicting_dx_balanced_accuracy_results.feather")
 
 # Analysis 2: Predicting confound variables based on time-series features
-if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/time_series_features_predicting_confounds_r2_results.feather"):
+if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/time_series_features_predicting_confounds_score_results.feather"):
     confounds_prediction_list = []
 
     # Iterate over the four disorders
@@ -169,15 +169,18 @@ if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/tim
             if confound_variable == "Age":
                 confound_data = age_feature
                 pipeline = deepcopy(regression_pipeline)
+                scoring = "r2"
             elif confound_variable == "Sex": 
                 confound_data = sex_feature
                 pipeline = deepcopy(classification_pipeline)
+                scoring = "balanced_accuracy"
             elif confound_variable == "Mean_FD_Power": 
                 confound_data = head_mvmt_feature
                 pipeline = deepcopy(regression_pipeline)
+                scoring = "r2"
 
             # Iterate over univariate models 
-            for model_name in disorder_all_models["Model_Name"].tolist()[0:2]: 
+            for model_name in disorder_all_models["Model_Name"].tolist(): 
             # Define analysis type
                 if "ROI" in model_name:
                     Analysis_Type = "Brain_Region"
@@ -204,24 +207,26 @@ if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/tim
                 model_data = np.load(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{model_name}.npy")
 
                 # Find balanced accuracy for dataset 
-                model_confound_r2 = cross_validate(pipeline, model_data, confound_data, 
+
+                model_confound_score = cross_validate(pipeline, model_data, confound_data, 
                                                             cv=RepeatedKFold_splitter, 
-                                                            n_jobs=num_jobs, scoring='r2',
+                                                            n_jobs=num_jobs, scoring=scoring,
                                                             return_estimator=False)['test_score']
 
                 # Create dataframe
-                model_confound_r2_df = pd.DataFrame({"Study" : study, 
+                model_confound_score_df = pd.DataFrame({"Study" : study, 
                                                         "Disorder": disorder,
                                                         "Confound_Variable": confound_variable,
                                                         "Analysis_Type": Analysis_Type,
                                                         "group_var": grouping_var,
-                                                        "r2": np.mean(model_confound_r2),
-                                                        "r2_SD": np.std(model_confound_r2)}, index=[0])
+                                                        "scoring_type": scoring,
+                                                        "score": np.mean(model_confound_score),
+                                                        "score_SD": np.std(model_confound_score)}, index=[0])
                 # Append results to list 
-                confounds_prediction_list.append(model_confound_r2_df)
+                confounds_prediction_list.append(model_confound_score_df)
 
     # Concatenate results
-    time_series_features_predicting_confounds_r2_results = pd.concat(confounds_prediction_list, axis=0)
+    time_series_features_predicting_confounds_score_results = pd.concat(confounds_prediction_list, axis=0)
 
     # Save to feather file
-    time_series_features_predicting_confounds_r2_results.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/time_series_features_predicting_confounds_r2_results.feather")
+    time_series_features_predicting_confounds_score_results.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/time_series_features_predicting_confounds_score_results.feather")
