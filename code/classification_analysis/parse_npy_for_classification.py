@@ -168,7 +168,7 @@ if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{dis
     (training_balacc_df, classifier_type_df, nested_CV_df) = robustness_analysis(feature_data, class_labels, model_dict, inner_cv, main_cv, 
                                                                                  num_folds=num_folds, num_repeats=num_repeats, 
                                                                                  base_model_name="Linear_SVM_sklearn", 
-                                                                                 scoring="balanced_accuracy", num_jobs=2)
+                                                                                 scoring="balanced_accuracy", num_jobs=num_jobs)
 
     # Assign Analysis_Type, group_var, Disorder, and Dataset columns
     for df in [training_balacc_df, classifier_type_df, nested_CV_df]:

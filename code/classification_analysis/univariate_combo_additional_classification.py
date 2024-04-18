@@ -96,8 +96,6 @@ if not os.path.isfile(f"{data_path}/classification_results/robustness_analysis/A
 
         class_labels = np.load(f"{data_path}/input_data/{study}_{disorder}_class_labels.npy", allow_pickle=True).tolist()
         sample_IDs = np.load(f"{data_path}/input_data/{study}_{disorder}_sample_IDs.npy", allow_pickle=True).tolist()
-        num_folds=10
-        num_repeats=10
 
         # Start with SCZ 
         disorder_univariate_combo_first25_PCs = univariate_combo_first25_PCs.query("Study==@study & Disorder == @disorder & Sample_ID in @merged_subjects_to_keep")
@@ -111,8 +109,8 @@ if not os.path.isfile(f"{data_path}/classification_results/robustness_analysis/A
                                                                                                 scorers=scorers,
                                                                                                 scoring_names=scoring_names,
                                                                                                 num_null_iters=num_null_iters,
-                                                                                                num_folds = 10,
-                                                                                                num_repeats = 10,
+                                                                                                num_folds = num_folds,
+                                                                                                num_repeats = num_folds,
                                                                                                 num_jobs = num_jobs)
 
         # Assign key details to dataframes
