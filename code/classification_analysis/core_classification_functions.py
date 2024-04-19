@@ -196,13 +196,15 @@ def robustness_analysis(X, y, model_dict, inner_cv, main_cv, num_folds=10, num_r
     training_classification_res = cross_validate(deepcopy(base_pipe), X, y,
                                                      cv=main_cv, scoring=scoring, n_jobs=num_jobs, 
                                                      return_estimator=False, return_train_score=True)
-    test_balacc = training_classification_res["test_score"].mean()
-    train_balacc = training_classification_res["train_score"].mean()
+    test_balacc = training_classification_res["test_score"]
+    train_balacc = training_classification_res["train_score"]
 
     # Save results to list
     training_balacc_df = pd.DataFrame({"Classifier_Type": base_model_name,
                                         "Train_Balanced_Accuracy": test_balacc,
-                                        "Test_Balanced_Accuracy": train_balacc}, index=[0])
+                                        "Test_Balanced_Accuracy": train_balacc})
+    training_balacc_df["Fold"] = training_balacc_df.index % num_folds
+    training_balacc_df["Repeat"] = training_balacc_df.index // num_repeats
 
     #######################################################################################################
     # Compare across classifier types

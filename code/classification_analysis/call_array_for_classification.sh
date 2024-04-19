@@ -18,8 +18,7 @@ num_GB=5
 dataset_ID=UCLA_CNP
 queue=defaultQ
 
-# for disorder in SCZ BP ADHD; do
-for disorder in BP ADHD; do
+for disorder in SCZ BP ADHD; do
     cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/all_univariate_classification_${disorder}_^array_index^.out \
         -N ${disorder}_^array_index^_catch25 \
         -l select=1:ncpus=${num_cores}:mem=${num_GB}GB:mpiprocs=${num_cores} \
@@ -28,7 +27,7 @@ for disorder in BP ADHD; do
         -q $queue \
         array_for_classification.pbs"
     $cmd
-    sleep 15m
+    sleep 3m
     cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/all_univariate_classification_${disorder}_^array_index^.out \
         -N ${disorder}_^array_index^_catch25 \
         -l select=1:ncpus=${num_cores}:mem=${num_GB}GB:mpiprocs=${num_cores} \
@@ -37,7 +36,7 @@ for disorder in BP ADHD; do
         -q $queue \
         array_for_classification.pbs"
     $cmd
-    sleep 15m
+    sleep 3m
     cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/all_univariate_classification_${disorder}_^array_index^.out \
         -N ${disorder}_^array_index^_catch25 \
         -l select=1:ncpus=${num_cores}:mem=${num_GB}GB:mpiprocs=${num_cores} \
@@ -53,7 +52,7 @@ for disorder in BP ADHD; do
         -q $queue \
         array_for_classification.pbs"
     $cmd
-    sleep 15m
+    sleep 3m
 done
 
 for disorder in ASD; do
@@ -66,7 +65,7 @@ for disorder in ASD; do
         -q $queue \
         array_for_classification.pbs"
     $cmd
-    sleep 20m
+    sleep 5m
     cmd="qsub -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/all_univariate_classification_${disorder}_^array_index^.out \
         -N ${disorder}_catch25 \
         -l select=1:ncpus=${num_cores}:mem=${num_GB}GB:mpiprocs=${num_cores} \

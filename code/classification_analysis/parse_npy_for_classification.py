@@ -88,7 +88,7 @@ os.makedirs(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}", e
 ############### Main analysis with default C-value ###############
     
 # # Main analysis
-# if not os.path.isfile(f"{output_data_path}/null_results/{dataset_ID}_{disorder}/{main_output_file_base}_nulls.featherr"):
+# if not os.path.isfile(f"{output_data_path}/null_results/{dataset_ID}_{disorder}/{main_output_file_base}_nulls.feather"):
 #     # Define RepeatedStratifiedKFold splitter
 #     RepeatedStratifiedKFold_splitter = RepeatedStratifiedKFold(n_splits=num_folds, n_repeats=num_repeats, random_state=127)
 
@@ -122,11 +122,13 @@ os.makedirs(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}", e
 #                                                                                         scorers=scorers,
 #                                                                                         scoring_names=scoring_names,
 #                                                                                         num_null_iters=num_null_iters,
-#                                                                                         num_folds = 10,
-#                                                                                         num_repeats = 10,
+#                                                                                         num_folds = num_folds,
+#                                                                                         num_repeats = num_repeats,
 #                                                                                         num_jobs = num_jobs)
 
 #     # Assign key details to dataframes
+#     main_classification_res["Disorder"] = disorder
+#     main_classification_res["Study"] = dataset_ID
 #     main_classification_res["Analysis_Type"] = Analysis_Type
 #     main_classification_res["group_var"] = grouping_var
 #     main_classification_res["Classifier_Type"] = classifier_type
@@ -137,7 +139,8 @@ os.makedirs(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}", e
 #     # If nulls were requested, save those too
 #     if num_null_iters > 0:
 #         null_classification_res["Analysis_Type"] = Analysis_Type
-#         null_classification_res["model_name"] = model_name
+#         null_classification_res["Disorder"] = disorder
+#         null_classification_res["Study"] = dataset_ID
 #         null_classification_res["Classifier_Type"] = classifier_type
 #         null_classification_res["group_var"] = grouping_var
 #         null_classification_res.to_feather(f"{output_data_path}/null_results/{dataset_ID}_{disorder}/{main_output_file_base}_nulls.feather")
@@ -146,7 +149,7 @@ os.makedirs(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}", e
 # Robustness analysis
 robustness_output_file_base = f"{dataset_ID}_{disorder}_{Analysis_Type}_{grouping_var}"
 print(f"Robustness output file: {robustness_output_file_base}")
-if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_nested_CV_df.feather"):
+if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_training_balacc_df.feather"):
     print(f"Now running robustness analysis for {disorder} {grouping_var}")
 
     # Define CV splitters
