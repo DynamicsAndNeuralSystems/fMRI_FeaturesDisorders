@@ -9,6 +9,8 @@ from sklearn.ensemble import RandomForestClassifier,GradientBoostingClassifier
 from mixed_sigmoid_normalisation import MixedSigmoidScaler
 from sklearn.metrics import balanced_accuracy_score,make_scorer
 from copy import deepcopy
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 def run_k_fold_classifier_for_feature(feature_data, 
                                 pipe,
@@ -196,13 +198,13 @@ def robustness_analysis(X, y, model_dict, inner_cv, main_cv, num_folds=10, num_r
     training_classification_res = cross_validate(deepcopy(base_pipe), X, y,
                                                      cv=main_cv, scoring=scoring, n_jobs=num_jobs, 
                                                      return_estimator=False, return_train_score=True)
-    test_balacc = training_classification_res["test_score"]
     train_balacc = training_classification_res["train_score"]
+    test_balacc = training_classification_res["test_score"]
 
     # Save results to list
     training_balacc_df = pd.DataFrame({"Classifier_Type": base_model_name,
-                                        "Train_Balanced_Accuracy": test_balacc,
-                                        "Test_Balanced_Accuracy": train_balacc})
+                                        "Train_Balanced_Accuracy": train_balacc,
+                                        "Test_Balanced_Accuracy": test_balacc})
     training_balacc_df["Fold"] = training_balacc_df.index % num_folds
     training_balacc_df["Repeat"] = training_balacc_df.index // num_repeats
 
@@ -238,3 +240,36 @@ def robustness_analysis(X, y, model_dict, inner_cv, main_cv, num_folds=10, num_r
     
     # Return the three sets of results as a tuple
     return (training_balacc_df, classifier_type_df, nested_CV_df)
+
+
+def first10_PC_analysis(X, y, pipe, CV_splitter,
+                               scoring="balanced_accuracy",
+                               num_folds = 10,
+                               num_repeats = 10,
+                               num_jobs = 10): 
+
+    # z-score normalize the X array
+    std_scaler = StandardScaler()
+    X_scaled = std_scaler.fit_transform(X)
+
+    # Fit the PCA
+    pca = PCA(n_components=10)
+    pca.fit(X_scaled)
+
+    # Compute first 10 PCs
+    X_10_PCs = pca.transform(X_scaled)
+
+    # Fit the classifier 
+    X_10_PCs_classification_res = cross_validate(pipe, X_10_PCs, y,
+                                                     cv=CV_splitter, scoring=scoring, n_jobs=num_jobs, 
+                                                     return_estimator=False, return_train_score=True)
+    train_balacc = X_10_PCs_classification_res["train_score"]
+    test_balacc = X_10_PCs_classification_res["test_score"]
+
+    # Save results to list
+    X_10_PCs_classification_res_df = pd.DataFrame({"Train_Balanced_Accuracy": train_balacc,
+                                                    "Test_Balanced_Accuracy": test_balacc})
+    X_10_PCs_classification_res_df["Fold"] = X_10_PCs_classification_res_df.index % num_folds
+    X_10_PCs_classification_res_df["Repeat"] = X_10_PCs_classification_res_df.index // num_repeats
+
+    return X_10_PCs_classification_res_df

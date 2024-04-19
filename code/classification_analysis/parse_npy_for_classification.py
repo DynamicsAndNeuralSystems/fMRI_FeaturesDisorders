@@ -85,6 +85,24 @@ os.makedirs(f"{output_data_path}/balanced_accuracy/{dataset_ID}_{disorder}", exi
 os.makedirs(f"{output_data_path}/null_results/{dataset_ID}_{disorder}", exist_ok=True)
 os.makedirs(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}", exist_ok=True)
 
+
+# Define classification pipelines
+if classifier_type=="Linear_SVM_sklearn":
+    model = svm.SVC(kernel="linear", C=1, class_weight="balanced")
+    model_noreg = svm.SVC(kernel="linear")
+elif classifier_type=="RBF_SVM_sklearn":
+    model = svm.SVC(kernel="rbf", C=1, class_weight="balanced")
+    model_noreg = svm.SVC(kernel="rbf")
+elif classifier_type=="RandomForest":
+    model = model_noreg = RandomForestClassifier(n_estimators=100, class_weight="balanced", n_jobs=1)
+elif classifier_type=="GradientBoost":
+    model = model_noreg = GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1)
+
+pipe = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)),
+                ('model', model)])
+pipe_noreg = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)),
+                        ('model', model_noreg)])
+
 ############### Main analysis with default C-value ###############
     
 # # Main analysis
@@ -146,41 +164,70 @@ os.makedirs(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}", e
 #         null_classification_res.to_feather(f"{output_data_path}/null_results/{dataset_ID}_{disorder}/{main_output_file_base}_nulls.feather")
 
 
-# Robustness analysis
-robustness_output_file_base = f"{dataset_ID}_{disorder}_{Analysis_Type}_{grouping_var}"
-print(f"Robustness output file: {robustness_output_file_base}")
-if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_training_balacc_df.feather"):
-    print(f"Now running robustness analysis for {disorder} {grouping_var}")
+# # Robustness analysis
+# robustness_output_file_base = f"{dataset_ID}_{disorder}_{Analysis_Type}_{grouping_var}"
+# print(f"Robustness output file: {robustness_output_file_base}")
+# if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_training_balacc_df.feather"):
+#     print(f"Now running robustness analysis for {disorder} {grouping_var}")
 
-    # Define CV splitters
-    main_cv = RepeatedStratifiedKFold(n_splits=num_folds, n_repeats=num_repeats, random_state=127)
-    inner_cv = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=127)
+#     # Define CV splitters
+#     main_cv = RepeatedStratifiedKFold(n_splits=num_folds, n_repeats=num_repeats, random_state=127)
+#     inner_cv = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=127)
 
-    # Define the model dict
-    model_dict = {"Linear_SVM_sklearn": svm.SVC(kernel="linear", class_weight="balanced", C=1),
-                   "Linear_SVM_libsvm": svm.LinearSVC(C=1, dual=False, penalty='l1', class_weight='balanced'),
-                   "RBF_SVM_sklearn": svm.SVC(kernel="rbf", class_weight="balanced", C=1),
-                   "RandomForest": RandomForestClassifier(n_estimators=100, class_weight="balanced"),
-                   "GradientBoost": GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1)}
+#     # Define the model dict
+#     model_dict = {"Linear_SVM_sklearn": svm.SVC(kernel="linear", class_weight="balanced", C=1),
+#                    "Linear_SVM_libsvm": svm.LinearSVC(C=1, dual=False, penalty='l1', class_weight='balanced'),
+#                    "RBF_SVM_sklearn": svm.SVC(kernel="rbf", class_weight="balanced", C=1),
+#                    "RandomForest": RandomForestClassifier(n_estimators=100, class_weight="balanced"),
+#                    "GradientBoost": GradientBoostingClassifier(n_estimators=100, learning_rate=1.0, max_depth=1)}
     
-    # Define class weight and C parameter grid for tuning
-    param_grid={"model__C": [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
-                "model__class_weight": [None, "balanced"]}
+#     # Define class weight and C parameter grid for tuning
+#     param_grid={"model__C": [0.0001, 0.001, 0.01, 0.1, 1, 10, 100],
+#                 "model__class_weight": [None, "balanced"]}
+
+#     # Run the robustness analysis
+#     (training_balacc_df, classifier_type_df, nested_CV_df) = robustness_analysis(feature_data, class_labels, model_dict, inner_cv, main_cv, 
+#                                                                                  num_folds=num_folds, num_repeats=num_repeats, 
+#                                                                                  base_model_name="Linear_SVM_sklearn", 
+#                                                                                  scoring="balanced_accuracy", num_jobs=num_jobs)
+
+#     # Assign Analysis_Type, group_var, Disorder, and Dataset columns
+#     for df in [training_balacc_df, classifier_type_df, nested_CV_df]:
+#         df["Analysis_Type"] = Analysis_Type
+#         df["group_var"] = grouping_var
+#         df["Disorder"] = disorder
+#         df["Dataset"] = dataset_ID
+
+#     # Save results to feather files
+#     training_balacc_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_training_balacc_df.feather")
+#     classifier_type_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_classifier_type_df.feather")
+#     nested_CV_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_nested_CV_df.feather")
+
+
+
+# First 10 principal components analysis
+first10_PC_output_file_base = f"{dataset_ID}_{disorder}_{Analysis_Type}_{grouping_var}"
+print(f"First 10 PCs output file: {first10_PC_output_file_base}")
+if not os.path.isfile(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{first10_PC_output_file_base}_first10_PCs_main_classification_res.feather"):
+    
+    # Define RepeatedStratifiedKFold splitter
+    RepeatedStratifiedKFold_splitter = RepeatedStratifiedKFold(n_splits=num_folds, n_repeats=num_repeats, random_state=127)
 
     # Run the robustness analysis
-    (training_balacc_df, classifier_type_df, nested_CV_df) = robustness_analysis(feature_data, class_labels, model_dict, inner_cv, main_cv, 
-                                                                                 num_folds=num_folds, num_repeats=num_repeats, 
-                                                                                 base_model_name="Linear_SVM_sklearn", 
-                                                                                 scoring="balanced_accuracy", num_jobs=num_jobs)
+    X_10_PCs_classification_res_df = first10_PC_analysis(X=feature_data, 
+                                                         y=class_labels, 
+                                                         pipe=pipe, 
+                                                         CV_splitter=RepeatedStratifiedKFold_splitter,
+                                                         scoring="balanced_accuracy",
+                                                         num_folds = num_folds,
+                                                         num_repeats = num_repeats,
+                                                         num_jobs = num_jobs)
 
     # Assign Analysis_Type, group_var, Disorder, and Dataset columns
-    for df in [training_balacc_df, classifier_type_df, nested_CV_df]:
-        df["Analysis_Type"] = Analysis_Type
-        df["group_var"] = grouping_var
-        df["Disorder"] = disorder
-        df["Dataset"] = dataset_ID
-
+    X_10_PCs_classification_res_df = (X_10_PCs_classification_res_df.assign(Analysis_Type=Analysis_Type,
+                                                                            group_var=grouping_var,
+                                                                            Disorder=disorder,
+                                                                            Dataset=dataset_ID))
+    
     # Save results to feather files
-    training_balacc_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_training_balacc_df.feather")
-    classifier_type_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_classifier_type_df.feather")
-    nested_CV_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{robustness_output_file_base}_nested_CV_df.feather")
+    X_10_PCs_classification_res_df.to_feather(f"{output_data_path}/robustness_analysis/{dataset_ID}_{disorder}/{first10_PC_output_file_base}_first10_PCs_main_classification_res.feather")
