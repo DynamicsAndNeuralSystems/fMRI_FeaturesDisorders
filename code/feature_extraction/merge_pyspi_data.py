@@ -11,6 +11,7 @@ parser.add_argument('--data_path', default="data/", dest='data_path')
 parser.add_argument('--dataset_ID', default="UCLA_CNP", dest='dataset_ID')
 parser.add_argument('--pkl_file', default="calc.pkl", dest='pkl_file')
 parser.add_argument('--pairwise_feature_set', default="pyspi14", dest='pairwise_feature_set')
+parser.add_argument('--pairwise_feature_set_info_file', default="pyspi14", dest='pairwise_feature_set_info_file')
 parser.add_argument('--brain_region_lookup', default="UCLA_CNP_Brain_Region_Lookup.feather", dest='brain_region_lookup')
 
 # Parse arguments
@@ -20,10 +21,14 @@ dataset_ID = args.dataset_ID
 pkl_file = args.pkl_file
 pairwise_feature_set = args.pairwise_feature_set
 brain_region_lookup = args.brain_region_lookup
+pairwise_feature_set_info_file = args.pairwise_feature_set_info_file
 
 # Define output data paths
 output_data_path = data_path + 'time_series_features/'
 pkl_data_path = f"{data_path}/time_series_features/{dataset_ID}/"
+
+# Define pyspi14 lookup
+pairwise_feature_set_info = pd.read_csv(pairwise_feature_set_info_file)
 
 def merge_calcs_into_df(output_data_path, 
                         pkl_data_path, 
@@ -50,6 +55,9 @@ def merge_calcs_into_df(output_data_path,
                 
                 # Exclude data points between the same brain region
                 sample_data = sample_data.query("brain_region_from != brain_region_to")
+
+                # Check that SPI is in pyspi14
+                sample_data = sample_data.query("SPI in @pairwise_feature_set_info.SPI.tolist()")
                 
                 # Add Sample_ID column
                 sample_data["Sample_ID"] = sample
