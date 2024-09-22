@@ -26,11 +26,6 @@ for index, row in disorder_dataset_df.iterrows():
     open(univariate_pairwise_combo_output_model_file, 'w').close()
 
     # Load sample metadata
-    sample_metadata = pd.read_feather(f"{data_path}/input_data/{dataset_ID}_sample_metadata.feather")
-    # Load catch25 results
-    catch25_data = pd.read_feather(f"{data_path}/time_series_features/{dataset_ID}_catch25_filtered.feather")
-
-    # Load sample metadata
     sample_metadata = pd.read_feather(f"{data_path}/input_data/{dataset_ID}_sample_metadata_filtered.feather")
 
     # Load catch25 results
