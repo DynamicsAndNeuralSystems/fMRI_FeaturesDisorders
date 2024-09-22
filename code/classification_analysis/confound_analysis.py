@@ -1,5 +1,5 @@
-from sklearnex import patch_sklearn
-patch_sklearn()
+# from sklearnex import patch_sklearn
+# patch_sklearn()
 
 import os
 import sys
@@ -27,7 +27,7 @@ from core_classification_functions import *
 current_path = os.getcwd()
 from mixed_sigmoid_normalisation import MixedSigmoidScaler
 
-data_path="/headnode1/abry4213/data/TS_feature_manuscript/"
+data_path="/project/hctsa/annie/data/TS_feature_manuscript/"
 
 # Load participants included
 UCLA_CNP_subjects_to_keep = pd.read_feather(f"{data_path}/time_series_features/UCLA_CNP_filtered_sample_info_catch25_pyspi14.feather")
@@ -68,7 +68,7 @@ pipeline = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)),
 RepeatedStratifiedKFold_splitter = RepeatedStratifiedKFold(n_splits=num_folds, n_repeats=num_repeats, random_state=127) 
 
 # Analysis 1: Predicting diagnosis based on confound variables -- age, sex, and/or head motion
-if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/confounds_predicting_dx_balanced_accuracy_results.feather"):
+if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/age_sex_FD_predicting_dx_balanced_accuracy_results.feather"):
     confounds_balanced_accuracy_list = []
 
     # Iterate over the four disorders
@@ -84,19 +84,24 @@ if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/con
         # Convert M to 0 and F to 1
         sex_feature = np.where(sex_feature == "M", 0, 1)
 
-        # One dataset that includes age, sex, and head motion in one model
+        # One dataset that includes age and sex
         age_and_sex_features = np.concatenate([age_feature, sex_feature], axis=1)
 
+        # One dataset that includes age, sex, and head motion
+        age_sex_and_fd_features = np.concatenate([age_feature, sex_feature, head_mvmt_feature], axis=1)
+
         analysis_type_results = []
-        for analysis_type in ["Age", "Sex", "Mean_FD_Power", "Age_And_Sex"]:
+        for analysis_type in ["Age", "Sex", "Mean_FD_Power", "Age_And_Sex", "Age_Sex_and_FD"]:
             if analysis_type == "Age":
                 feature_data = age_feature
             elif analysis_type == "Sex": 
                 feature_data = sex_feature
             elif analysis_type == "Mean_FD_Power": 
                 feature_data = head_mvmt_feature
-            else: 
+            elif analysis_type == "Age_And_Sex": 
                 feature_data = age_and_sex_features
+            else: 
+                feature_data = age_sex_and_fd_features
 
             # Find balanced accuracy for dataset 
             confound_balanced_accuracy = cross_validate(pipeline, feature_data, class_labels, 
@@ -127,13 +132,13 @@ if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/con
                                     .rename(columns={"mean": "Balanced_Accuracy", "std": "Balanced_Accuracy_SD"}))
 
     # Save to feather file
-    confounds_balanced_accuracy_results_all_folds.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/confounds_predicting_dx_balanced_accuracy_results_all_folds.feather")
-    confounds_balanced_accuracy_results.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/confounds_predicting_dx_balanced_accuracy_results.feather")
+    confounds_balanced_accuracy_results_all_folds.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/age_sex_FD_predicting_dx_balanced_accuracy_results_all_folds.feather")
+    confounds_balanced_accuracy_results.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/age_sex_FD_predicting_dx_balanced_accuracy_results.feather")
 
 
-# Analysis 2: Comparing how well a given feature-based model performs with the addition of age+sex
-if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/feature_based_models_with_age_and_sex_main_classification_res.feather"):
-    model_data_with_age_and_sex_balanced_accuracy_list = []
+# Analysis 2: Comparing how well a given feature-based model performs with the addition of age+sex+head motion
+if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/feature_based_models_with_age_sex_FD_main_classification_res.feather"):
+    model_data_with_age_sex_FD_balanced_accuracy_list = []
 
     # Iterate over the four disorders
     for disorder in study_disorder_lookup.keys():
@@ -143,6 +148,7 @@ if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/fea
 
         age_feature = merged_metadata.query("Diagnosis in ['Control', @disorder] & Study == @study").Age.values.reshape(-1,1) 
         sex_feature = merged_metadata.query("Diagnosis in ['Control', @disorder] & Study == @study").Sex.values.reshape(-1,1) 
+        head_mvmt_feature = merged_metadata.query("Diagnosis in ['Control', @disorder] & Study == @study").Mean_FD_Power.values.reshape(-1,1)
 
         # Convert M to 0 and F to 1
         sex_feature = np.where(sex_feature == "M", 0, 1)
@@ -150,10 +156,13 @@ if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/fea
         # One dataset that includes age, sex, and head motion in one model
         age_and_sex_features = np.concatenate([age_feature, sex_feature], axis=1)
 
+        # One dataset that includes age, sex, and head motion
+        age_sex_and_fd_features = np.concatenate([age_feature, sex_feature, head_mvmt_feature], axis=1)
+
         # Define all models to test
-        disorder_univariate_models = pd.read_table(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{study}_{disorder}_univariate_models.txt",header=None)
-        disorder_pairwise_models = pd.read_table(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{study}_{disorder}_pairwise_models.txt",header=None)
-        disorder_combined_univariate_pairwise_models  = pd.read_table(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{study}_{disorder}_combined_univariate_pairwise_models.txt",header=None)
+        disorder_univariate_models = pd.read_table(f"{data_path}/time_series_features/processed_numpy_files/{study}_{disorder}_univariate_models.txt",header=None)
+        disorder_pairwise_models = pd.read_table(f"{data_path}/time_series_features/processed_numpy_files/{study}_{disorder}_pairwise_models.txt",header=None)
+        disorder_combined_univariate_pairwise_models  = pd.read_table(f"{data_path}/time_series_features/processed_numpy_files/{study}_{disorder}_combined_univariate_pairwise_models.txt",header=None)
         disorder_all_models = pd.concat([disorder_univariate_models, disorder_pairwise_models, disorder_combined_univariate_pairwise_models])
         disorder_all_models.columns = ["Model_Name"]
 
@@ -182,141 +191,164 @@ if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/fea
             else:
                 grouping_var = model_name.split("_pyspi14_SPI_")[1]
 
-            model_data = np.load(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{model_name}.npy")
+            model_data = np.load(f"{data_path}/time_series_features/processed_numpy_files/{model_name}.npy")
 
-            # Concatenate with age + sex 
+            # Concatenate with age + sex + head motion (FD)
             model_data_with_age_and_sex = np.concatenate([model_data, age_and_sex_features], axis=1)
+            model_data_with_age_sex_FD = np.concatenate([model_data, age_sex_and_fd_features], axis=1)
 
-            # Find balanced accuracy for dataset 
+            ########################### Age and sex (no head motion) ########################################
+            # Find balanced accuracy for dataset using age and sex (no head motion)
             model_data_with_age_and_sex_balanced_accuracy = cross_validate(pipeline, model_data_with_age_and_sex, class_labels, 
+                                                        cv=RepeatedStratifiedKFold_splitter, 
+                                                        n_jobs=num_jobs, scoring="balanced_accuracy",
+                                                        return_estimator=False)['test_score']
+            
+            # Create dataframe
+            model_data_with_age_and_sex_balanced_accuracy_df = pd.DataFrame({"Study" : study,
+                                                    "Disorder": disorder,
+                                                    "Analysis_Type": Analysis_Type,
+                                                    "group_var": grouping_var,
+                                                    "Confounds": "Age+Sex",
+                                                    "Balanced_Accuracy": model_data_with_age_and_sex_balanced_accuracy})
+            model_data_with_age_and_sex_balanced_accuracy_df["Fold"] = model_data_with_age_and_sex_balanced_accuracy_df.index % num_folds
+            model_data_with_age_and_sex_balanced_accuracy_df["Repeat"] = model_data_with_age_and_sex_balanced_accuracy_df.index // num_repeats
+
+            # Append results to list
+            model_data_with_age_sex_FD_balanced_accuracy_list.append(model_data_with_age_and_sex_balanced_accuracy_df)
+
+            ########################### Age, sex, and head motion ########################################
+            # Find balanced accuracy for dataset using age, sex, and FD
+            model_data_with_age_sex_FD_balanced_accuracy = cross_validate(pipeline, model_data_with_age_sex_FD, class_labels, 
                                                         cv=RepeatedStratifiedKFold_splitter, 
                                                         n_jobs=num_jobs, scoring="balanced_accuracy",
                                                         return_estimator=False)['test_score']
 
             # Create dataframe
-            model_data_with_age_and_sex_balanced_accuracy_df = pd.DataFrame({"Study" : study, 
+            model_data_with_age_sex_FD_balanced_accuracy_df = pd.DataFrame({"Study" : study, 
                                                     "Disorder": disorder,
                                                     "Analysis_Type": Analysis_Type,
                                                     "group_var": grouping_var,
-                                                    "Balanced_Accuracy": model_data_with_age_and_sex_balanced_accuracy})
-            model_data_with_age_and_sex_balanced_accuracy_df["Fold"] = model_data_with_age_and_sex_balanced_accuracy_df.index % num_folds
-            model_data_with_age_and_sex_balanced_accuracy_df["Repeat"] = model_data_with_age_and_sex_balanced_accuracy_df.index // num_repeats
+                                                    "Confounds": "Age+Sex+FD",
+                                                    "Balanced_Accuracy": model_data_with_age_sex_FD_balanced_accuracy})
+            model_data_with_age_sex_FD_balanced_accuracy_df["Fold"] = model_data_with_age_sex_FD_balanced_accuracy_df.index % num_folds
+            model_data_with_age_sex_FD_balanced_accuracy_df["Repeat"] = model_data_with_age_sex_FD_balanced_accuracy_df.index // num_repeats
 
             # Append results to list 
-            model_data_with_age_and_sex_balanced_accuracy_list.append(model_data_with_age_and_sex_balanced_accuracy_df)
+            model_data_with_age_sex_FD_balanced_accuracy_list.append(model_data_with_age_sex_FD_balanced_accuracy_df)
 
     # Concatenate results
-    model_data_with_age_and_sex_balanced_accuracy_results_all_folds = pd.concat(model_data_with_age_and_sex_balanced_accuracy_list, axis=0)
+    model_data_with_age_sex_FD_balanced_accuracy_results_all_folds = pd.concat(model_data_with_age_sex_FD_balanced_accuracy_list, axis=0)
 
     # Take average across folds per disorder 
-    model_data_with_age_and_sex_balanced_accuracy_results = (model_data_with_age_and_sex_balanced_accuracy_results_all_folds
-                                    .groupby(["Study", "Disorder", "Analysis_Type", "group_var"], as_index=False)['Balanced_Accuracy']
+    model_data_with_age_sex_FD_balanced_accuracy_results = (model_data_with_age_sex_FD_balanced_accuracy_results_all_folds
+                                    .groupby(["Study", "Disorder", "Analysis_Type", "Confounds", "group_var"], as_index=False)['Balanced_Accuracy']
                                     .agg(['mean', 'std'])
                                     .reset_index()
                                     .rename(columns={"mean": "Balanced_Accuracy", "std": "Balanced_Accuracy_SD"}))
 
     # Save to feather file
-    model_data_with_age_and_sex_balanced_accuracy_results_all_folds.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/feature_based_models_with_age_and_sex_main_classification_res_all_folds.feather")
-    model_data_with_age_and_sex_balanced_accuracy_results.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/feature_based_models_with_age_and_sex_main_classification_res.feather")
+    model_data_with_age_sex_FD_balanced_accuracy_results_all_folds.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/feature_based_models_with_age_sex_FD_main_classification_res_all_folds.feather")
+    model_data_with_age_sex_FD_balanced_accuracy_results.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/feature_based_models_with_age_sex_FD_main_classification_res.feather")
 
 
-# Analysis 3: Predicting confound variables based on time-series features
-if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/time_series_features_predicting_confounds_score_results.feather"):
-    confounds_prediction_list = []
+# # Analysis 3: Predicting confound variables based on time-series features
+# if not os.path.isfile(f"{data_path}/classification_results/confound_analysis/time_series_features_predicting_confounds_score_results.feather"):
+#     confounds_prediction_list = []
 
-    # Iterate over the four disorders
-    for disorder in study_disorder_lookup.keys():
-        study = study_disorder_lookup[disorder]
+#     # Iterate over the four disorders
+#     for disorder in study_disorder_lookup.keys():
+#         study = study_disorder_lookup[disorder]
 
-        class_labels = np.load(f"../../data/input_data/{study}_{disorder}_class_labels.npy")
-        num_folds=10
-        num_repeats=10
+#         class_labels = np.load(f"../../data/input_data/{study}_{disorder}_class_labels.npy")
+#         num_folds=10
+#         num_repeats=10
 
-        age_feature = merged_metadata.query("Diagnosis in ['Control', @disorder] & Study == @study").Age.values
-        sex_feature = merged_metadata.query("Diagnosis in ['Control', @disorder] & Study == @study").Sex.values
-        head_mvmt_feature = merged_metadata.query("Diagnosis in ['Control', @disorder] & Study == @study").Mean_FD_Power.values
+#         age_feature = merged_metadata.query("Diagnosis in ['Control', @disorder] & Study == @study").Age.values
+#         sex_feature = merged_metadata.query("Diagnosis in ['Control', @disorder] & Study == @study").Sex.values
+#         head_mvmt_feature = merged_metadata.query("Diagnosis in ['Control', @disorder] & Study == @study").Mean_FD_Power.values
 
-        # Convert M to 0 and F to 1
-        sex_feature = np.where(sex_feature == "M", 0, 1)
+#         # Convert M to 0 and F to 1
+#         sex_feature = np.where(sex_feature == "M", 0, 1)
 
-        # Apply support vector regression to predict age 
-        RepeatedKFold_splitter = RepeatedKFold(n_splits=num_folds, n_repeats=num_repeats, random_state=127) 
-        SVR_model = svm.SVR(kernel='linear', C=1)
-        regression_pipeline = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                                ('model', SVR_model)])
-        SVM_model = svm.SVC(kernel='linear', class_weight='balanced', C=1)
-        classification_pipeline = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
-                                ('model', SVM_model)])
+#         # Apply support vector regression to predict age 
+#         RepeatedKFold_splitter = RepeatedKFold(n_splits=num_folds, n_repeats=num_repeats, random_state=127) 
+#         SVR_model = svm.SVR(kernel='linear', C=1)
+#         regression_pipeline = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
+#                                 ('model', SVR_model)])
+#         SVM_model = svm.SVC(kernel='linear', class_weight='balanced', C=1)
+#         classification_pipeline = Pipeline([('scaler', MixedSigmoidScaler(unit_variance=True)), 
+#                                 ('model', SVM_model)])
 
-        # Define all models to test
-        disorder_univariate_models = pd.read_table(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{study}_{disorder}_univariate_models.txt",header=None)
-        disorder_pairwise_models = pd.read_table(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{study}_{disorder}_pairwise_models.txt",header=None)
-        disorder_combined_univariate_pairwise_models  = pd.read_table(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{study}_{disorder}_combined_univariate_pairwise_models.txt",header=None)
-        disorder_all_models = pd.concat([disorder_univariate_models, disorder_pairwise_models, disorder_combined_univariate_pairwise_models])
-        disorder_all_models.columns = ["Model_Name"]
+#         # Define all models to test
+#         disorder_univariate_models = pd.read_table(f"{data_path}/time_series_features/processed_numpy_files/{study}_{disorder}_univariate_models.txt",header=None)
+#         disorder_pairwise_models = pd.read_table(f"{data_path}/time_series_features/processed_numpy_files/{study}_{disorder}_pairwise_models.txt",header=None)
+#         disorder_combined_univariate_pairwise_models  = pd.read_table(f"{data_path}/time_series_features/processed_numpy_files/{study}_{disorder}_combined_univariate_pairwise_models.txt",header=None)
+#         disorder_all_models = pd.concat([disorder_univariate_models, disorder_pairwise_models, disorder_combined_univariate_pairwise_models])
+#         disorder_all_models.columns = ["Model_Name"]
 
-        for confound_variable in ["Age", "Sex", "Mean_FD_Power"]:
-            if confound_variable == "Age":
-                confound_data = age_feature
-                pipeline = deepcopy(regression_pipeline)
-                scoring = "r2"
-            elif confound_variable == "Sex": 
-                confound_data = sex_feature
-                pipeline = deepcopy(classification_pipeline)
-                scoring = "balanced_accuracy"
-            elif confound_variable == "Mean_FD_Power": 
-                confound_data = head_mvmt_feature
-                pipeline = deepcopy(regression_pipeline)
-                scoring = "r2"
+#         for confound_variable in ["Age", "Sex", "Mean_FD_Power"]:
+#             if confound_variable == "Age":
+#                 confound_data = age_feature
+#                 pipeline = deepcopy(regression_pipeline)
+#                 scoring = "r2"
+#             elif confound_variable == "Sex": 
+#                 confound_data = sex_feature
+#                 pipeline = deepcopy(classification_pipeline)
+#                 scoring = "balanced_accuracy"
+#             elif confound_variable == "Mean_FD_Power": 
+#                 confound_data = head_mvmt_feature
+#                 pipeline = deepcopy(regression_pipeline)
+#                 scoring = "r2"
 
-            # Iterate over univariate models 
-            for model_name in disorder_all_models["Model_Name"].tolist(): 
-            # Define analysis type
-                if "ROI" in model_name:
-                    Analysis_Type = "Brain_Region"
-                elif "combo_catch25_features_all_regions" in model_name:
-                    Analysis_Type = "Univariate_Combo"
-                elif "combined_univariate_catch25_and_pyspi14" in model_name:
-                    Analysis_Type = "SPI_Combo"
-                elif "catch25_feature" in model_name:
-                    Analysis_Type = "catch25_feature"
-                else:
-                    Analysis_Type = "pyspi14_SPI"
+#             # Iterate over univariate models 
+#             for model_name in disorder_all_models["Model_Name"].tolist(): 
+#             # Define analysis type
+#                 if "ROI" in model_name:
+#                     Analysis_Type = "Brain_Region"
+#                 elif "combo_catch25_features_all_regions" in model_name:
+#                     Analysis_Type = "Univariate_Combo"
+#                 elif "combined_univariate_catch25_and_pyspi14" in model_name:
+#                     Analysis_Type = "SPI_Combo"
+#                 elif "catch25_feature" in model_name:
+#                     Analysis_Type = "catch25_feature"
+#                 else:
+#                     Analysis_Type = "pyspi14_SPI"
 
-                if Analysis_Type=="Brain_Region":
-                    grouping_var = model_name.split("_ROI_")[1]
-                elif Analysis_Type=="Univariate_Combo":
-                    grouping_var = "Combo"
-                elif Analysis_Type == "SPI_Combo":
-                    grouping_var = model_name.split("combined_univariate_catch25_and_pyspi14_SPI_")[1]
-                elif Analysis_Type == "catch25_feature":
-                    grouping_var = model_name.split("_catch25_feature_")[1]
-                else:
-                    grouping_var = model_name.split("_pyspi14_SPI_")[1]
+#                 if Analysis_Type=="Brain_Region":
+#                     grouping_var = model_name.split("_ROI_")[1]
+#                 elif Analysis_Type=="Univariate_Combo":
+#                     grouping_var = "Combo"
+#                 elif Analysis_Type == "SPI_Combo":
+#                     grouping_var = model_name.split("combined_univariate_catch25_and_pyspi14_SPI_")[1]
+#                 elif Analysis_Type == "catch25_feature":
+#                     grouping_var = model_name.split("_catch25_feature_")[1]
+#                 else:
+#                     grouping_var = model_name.split("_pyspi14_SPI_")[1]
 
-                model_data = np.load(f"/headnode1/abry4213/data/TS_feature_manuscript/time_series_features/processed_numpy_files/{model_name}.npy")
+#                 model_data = np.load(f"{data_path}/time_series_features/processed_numpy_files/{model_name}.npy")
 
-                # Find balanced accuracy for dataset 
+#                 # Find balanced accuracy for dataset 
 
-                model_confound_score = cross_validate(pipeline, model_data, confound_data, 
-                                                            cv=RepeatedKFold_splitter, 
-                                                            n_jobs=num_jobs, scoring=scoring,
-                                                            return_estimator=False)['test_score']
+#                 model_confound_score = cross_validate(pipeline, model_data, confound_data, 
+#                                                             cv=RepeatedKFold_splitter, 
+#                                                             n_jobs=num_jobs, scoring=scoring,
+#                                                             return_estimator=False)['test_score']
 
-                # Create dataframe
-                model_confound_score_df = pd.DataFrame({"Study" : study, 
-                                                        "Disorder": disorder,
-                                                        "Confound_Variable": confound_variable,
-                                                        "Analysis_Type": Analysis_Type,
-                                                        "group_var": grouping_var,
-                                                        "scoring_type": scoring,
-                                                        "score": np.mean(model_confound_score),
-                                                        "score_SD": np.std(model_confound_score)}, index=[0])
-                # Append results to list 
-                confounds_prediction_list.append(model_confound_score_df)
+#                 # Create dataframe
+#                 model_confound_score_df = pd.DataFrame({"Study" : study, 
+#                                                         "Disorder": disorder,
+#                                                         "Confound_Variable": confound_variable,
+#                                                         "Analysis_Type": Analysis_Type,
+#                                                         "group_var": grouping_var,
+#                                                         "scoring_type": scoring,
+#                                                         "score": np.mean(model_confound_score),
+#                                                         "score_SD": np.std(model_confound_score)}, index=[0])
+#                 # Append results to list 
+#                 confounds_prediction_list.append(model_confound_score_df)
 
-    # Concatenate results
-    time_series_features_predicting_confounds_score_results = pd.concat(confounds_prediction_list, axis=0)
+#     # Concatenate results
+#     time_series_features_predicting_confounds_score_results = pd.concat(confounds_prediction_list, axis=0)
 
-    # Save to feather file
-    time_series_features_predicting_confounds_score_results.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/time_series_features_predicting_confounds_score_results.feather")
+#     # Save to feather file
+#     time_series_features_predicting_confounds_score_results.reset_index().to_feather(f"{data_path}/classification_results/confound_analysis/time_series_features_predicting_confounds_score_results.feather")

@@ -1,20 +1,21 @@
 #!/bin/bash
 #PBS -j oe
-#PBS -q defaultQ
+#PBS -P hctsa
 #PBS -l walltime=12:00:00
 #PBS -V
 #PBS -N confound_analysis
-#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/confound_analysis.out
+#PBS -o /project/hctsa/annie/github/fMRI_FeaturesDisorders/cluster_output/confound_analysis.out
 #PBS -l select=1:ncpus=8:mem=20GB:mpiprocs=8
 
-#module load Anaconda3-5.1.0
-/usr/physics/Modules/3.2.8/bin/modulecmd bash load Anaconda3-5.1.0 --silent
-source /usr/physics/python/anaconda3/etc/profile.d/conda.sh 
 
-# Activate the pyspi environment
-conda activate pyspi
+# Activate the fmriprep environment
+module load anaconda3
+conda activate fmriprep
 
-cd /headnode1/abry4213/github/fMRI_FeaturesDisorders/code/classification_analysis
+# Load python
+module load python/3.9.15
+
+cd /project/hctsa/annie/github/fMRI_FeaturesDisorders/code/classification_analysis
 
 # Submit script to split time-series feature files into numpy arrays
 python3 confound_analysis.py --num_jobs 10
