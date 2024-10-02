@@ -1,0 +1,18 @@
+#!/bin/tcsh
+#PBS -j oe
+#PBS -q defaultQ
+#PBS -l walltime=48:00:00
+#PBS -V
+#PBS -N univariate_combo_additional_classification
+#PBS -o /headnode1/abry4213/github/fMRI_FeaturesDisorders/cluster_output/additional_AUC_analysis.out
+#PBS -l select=1:ncpus=8:mem=180GB:mpiprocs=8
+
+#module load Anaconda3-5.1.0
+source /usr/physics/python/Anaconda3-2022.10/etc/profile.d/conda.csh
+
+# Activate the pyspi environment
+conda activate annie_env
+
+# Submit script to compute the AUC for the additional classification analysis
+cd /headnode1/abry4213/github/fMRI_FeaturesDisorders/code/classification_analysis
+python3 additional_AUC_analysis.py --num_jobs 10
