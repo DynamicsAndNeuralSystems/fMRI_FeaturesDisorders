@@ -116,6 +116,57 @@ for disorder, dataset_ID in study_lookup_df.values:
             # Run classification if file doesn't exist already
             if not os.path.isfile(output_file):
                 feature_data = np.load(f"{data_path}/time_series_features/processed_numpy_files/{model_name}.npy")
+                # # Define splits
+                # # Find splits
+                # splits = list(RepeatedStratifiedKFold_splitter.split(feature_data, class_labels))
+                # # Convert splits to a dataframe
+                # splits_df = pd.DataFrame(splits, columns = ["Train", "Test"])
+                # # Assign the fold and repeat numbers
+                # splits_df["Fold"] = splits_df.index % num_folds
+                # splits_df["Repeat"] = splits_df.index // num_repeats
+
+                # fold_res_list = []
+
+                # # Iterate over each row of fold_splits dataframe
+                # for i, row in splits_df.iterrows():
+                #     fold_num = row["Fold"]
+                #     repeat_num = row["Repeat"]
+                #     train_indices = row["Train"]
+                #     test_indices = row["Test"]
+
+                #     train_data = feature_data[train_indices]
+                #     test_data = feature_data[test_indices]
+
+                #     train_labels = class_labels[train_indices]
+                #     test_labels = class_labels[test_indices]
+
+                #     # Fit pipe to train_data
+                #     loop_pipe = deepcopy(pipe)
+                #     loop_pipe.fit(train_data, train_labels)
+                #     test_preds = loop_pipe.predict(test_data)
+                #     test_preds_prob = loop_pipe.predict_proba(test_data)
+
+                #     # Figure out which column to keep: 
+                #     if len(test_preds[test_preds==0]) == 0:
+                #         # Find whichever column of test_preds_prob has the lower mean
+                #         prob_col = np.argmin([np.mean(test_preds_prob[:,0]), np.mean(test_preds_prob[:,1])])
+                #     elif len(test_preds[test_preds==1]) == 0:
+                #         # Find whichever column of test_preds_prob has the higher mean
+                #         prob_col = np.argmax([np.mean(test_preds_prob[:,0]), np.mean(test_preds_prob[:,1])])
+                #     elif np.mean(test_preds_prob[test_preds==0]) < 0.5: 
+                #         prob_col = 1
+                #     else: 
+                #         prob_col = 0
+                #     test_preds_prob_data = test_preds_prob[:,prob_col]
+
+                #     # Compute AUC
+                #     auc = roc_auc_score(test_labels, test_preds_prob_data)
+
+                #     this_loop_res = pd.DataFrame({"Fold": fold_num, "Repeat": repeat_num, "AUC": auc}, index=[0])
+                #     fold_res_list.append(this_loop_res)
+
+                # main_classification_res = pd.concat(fold_res_list)
+
                 main_classification_res, _, _ = run_k_fold_classifier_for_feature(feature_data = feature_data, 
                                                                                         pipe = pipe,
                                                                                         CV_splitter = RepeatedStratifiedKFold_splitter,
