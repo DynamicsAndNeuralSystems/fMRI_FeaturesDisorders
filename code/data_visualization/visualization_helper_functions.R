@@ -139,10 +139,7 @@ plot_balacc_in_brain <- function(significant_univariate_region_wise_results,
         filter(Study == dataset_ID,
                Disorder == disorder) %>%
         distinct() %>%
-        mutate(label = ifelse(str_detect(group_var, "ctx-"),
-                              gsub("-", "_", group_var),
-                              as.character(group_var))) %>%
-        mutate(label = gsub("ctx_", "", label))
+        w
     }
     
     # Plot balanced accuracy data in cortex
