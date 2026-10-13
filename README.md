@@ -44,6 +44,23 @@ From this conda environment, install the required Python packages:
     pip install -r python_requirements.txt
     ```
 
+On Apple Silicon (M-series) Macs, some of these pinned versions have no pre-built pip wheels, so install them from conda-forge instead:
+
+    ```bash
+    conda install -c conda-forge --file python_requirements.txt
+    ```
+
+[`pyspi`](https://github.com/DynamicsAndNeuralSystems/pyspi) v0.4 is only needed to compute the pairwise SPI features (run on an HPC cluster; see [Extracting time-series features](#extracting-time-series-features) below).
+It pins its own (older) versions of `scikit-learn`, `torch`, and other packages, so install it in a separate conda environment rather than the one above:
+
+    ```bash
+    conda create -n pyspi python=3.9.0
+    conda activate pyspi
+    pip install "pyspi @ git+https://github.com/DynamicsAndNeuralSystems/pyspi.git@v0.4"
+    ```
+
+Then set `conda_env='pyspi'` when distributing the `pyspi` jobs in [`extract_time_series_features.ipynb`](https://github.com/DynamicsAndNeuralSystems/fMRI_FeaturesDisorders/blob/main/extract_time_series_features.ipynb).
+
 R packages required for feature extraction and classification analysis can be installed from `R_requirements.txt` as follows:
 
     ```bash
